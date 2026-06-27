@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "front": "skyent:block/combustion_generator_front_on",
+    "side": "skyent:block/combustion_generator_side",
+    "top": "skyent:block/combustion_generator_top"
+  }
+}
