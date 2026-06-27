@@ -187,6 +187,7 @@ public class CombustionGeneratorScreen extends AbstractContainerScreen<Combustio
         );
     }
 
+
     private List<Component> energyTooltip() {
         return List.of(
                 Component.literal(menu.getEnergyStored() + " / " + menu.getMaxEnergyStored() + " FE").withStyle(ChatFormatting.RED),
