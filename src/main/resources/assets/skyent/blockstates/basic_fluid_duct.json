@@ -1,0 +1,31 @@
+{
+  "multipart": [
+    {
+      "apply": { "model": "skyent:block/basic_fluid_duct_core" }
+    },
+    {
+      "when": { "north": "true" },
+      "apply": { "model": "skyent:block/basic_fluid_duct_arm_north" }
+    },
+    {
+      "when": { "south": "true" },
+      "apply": { "model": "skyent:block/basic_fluid_duct_arm_south" }
+    },
+    {
+      "when": { "east": "true" },
+      "apply": { "model": "skyent:block/basic_fluid_duct_arm_east" }
+    },
+    {
+      "when": { "west": "true" },
+      "apply": { "model": "skyent:block/basic_fluid_duct_arm_west" }
+    },
+    {
+      "when": { "up": "true" },
+      "apply": { "model": "skyent:block/basic_fluid_duct_arm_up" }
+    },
+    {
+      "when": { "down": "true" },
+      "apply": { "model": "skyent:block/basic_fluid_duct_arm_down" }
+    }
+  ]
+}

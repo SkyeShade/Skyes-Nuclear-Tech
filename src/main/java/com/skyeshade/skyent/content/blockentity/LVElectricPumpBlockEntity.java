@@ -307,36 +307,39 @@ public class LVElectricPumpBlockEntity extends BlockEntity implements MenuProvid
             return false;
         }
 
-        int remaining = Math.min(FLUID_OUTPUT_MB_PER_TICK, fluidTank.getFluidAmount());
-        boolean changed = false;
-        for (Direction direction : Direction.values()) {
-            if (remaining <= 0) {
-                break;
-            }
-
-            IFluidHandler receiver = level.getCapability(
-                    Capabilities.FluidHandler.BLOCK,
-                    worldPosition.relative(direction),
-                    direction.getOpposite()
-            );
-            if (receiver == null) {
-                continue;
-            }
-
-            FluidStack offered = fluidTank.drain(remaining, IFluidHandler.FluidAction.SIMULATE);
-            int accepted = receiver.fill(offered, IFluidHandler.FluidAction.EXECUTE);
-            if (accepted > 0) {
-                fluidTank.drain(accepted, IFluidHandler.FluidAction.EXECUTE);
-                remaining -= accepted;
-                changed = true;
-            }
+        Direction direction = Direction.UP;
+        IFluidHandler receiver = level.getCapability(
+                Capabilities.FluidHandler.BLOCK,
+                worldPosition.relative(direction),
+                direction.getOpposite()
+        );
+        if (receiver == null) {
+            return false;
         }
 
-        return changed;
+        FluidStack offered = fluidTank.drain(Math.min(FLUID_OUTPUT_MB_PER_TICK, fluidTank.getFluidAmount()), IFluidHandler.FluidAction.SIMULATE);
+        int accepted = receiver.fill(offered, IFluidHandler.FluidAction.SIMULATE);
+        if (accepted <= 0) {
+            return false;
+        }
+
+        FluidStack drained = fluidTank.drain(accepted, IFluidHandler.FluidAction.EXECUTE);
+        int inserted = receiver.fill(drained, IFluidHandler.FluidAction.EXECUTE);
+        if (inserted < drained.getAmount()) {
+            fluidTank.fill(copyWithAmount(drained, drained.getAmount() - inserted), IFluidHandler.FluidAction.EXECUTE);
+        }
+
+        return inserted > 0;
     }
 
     private boolean canAcceptFluid(FluidStack stack) {
         return stack.isEmpty() || fluidTank.getFluid().isEmpty() || fluidTank.getFluid().is(stack.getFluid());
+    }
+
+    private static FluidStack copyWithAmount(FluidStack stack, int amount) {
+        FluidStack copy = stack.copy();
+        copy.setAmount(amount);
+        return copy;
     }
 
     private boolean canPlaceOutput(int slot, ItemStack result) {

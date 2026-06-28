@@ -28,6 +28,16 @@ public final class ModItems {
             new Item.Properties()
     );
 
+    public static final DeferredItem<BlockItem> BASIC_FLUID_DUCT = ITEMS.registerSimpleBlockItem(
+            ModBlocks.BASIC_FLUID_DUCT,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> SILT = ITEMS.registerSimpleBlockItem(
+            ModBlocks.SILT,
+            new Item.Properties()
+    );
+
     public static final DeferredItem<BlockItem> LV_CONNECTOR = ITEMS.registerSimpleBlockItem(
             ModBlocks.LV_CONNECTOR,
             new Item.Properties()

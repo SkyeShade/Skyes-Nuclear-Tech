@@ -7,6 +7,9 @@ import java.text.NumberFormat;
 import java.util.Locale;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
@@ -27,6 +30,7 @@ public enum RJComponentProvider implements IBlockComponentProvider, IServerDataP
     INSTANCE;
 
     private static final ResourceLocation UID = ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "rj_energy");
+    private static final ResourceLocation RJ_BAR_TEXTURE = ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "textures/compat/rj_bar.png");
     private static final String DATA_STORED_RJ = "SkyentStoredRJ";
     private static final String DATA_CAPACITY_RJ = "SkyentCapacityRJ";
     private static final String DATA_GENERATION_RJ_PER_TICK = "SkyentGenerationRJPerTick";
@@ -36,9 +40,12 @@ public enum RJComponentProvider implements IBlockComponentProvider, IServerDataP
     private static final NumberFormat NUMBER_FORMAT = NumberFormat.getIntegerInstance(Locale.US);
     private static final int ENERGY_BAR_WIDTH = 120;
     private static final int ENERGY_BAR_HEIGHT = 14;
-    private static final int BAR_START_COLOR = 0xFF9C1F1F;
-    private static final int BAR_END_COLOR = 0xFFE04747;
-    private static final int BAR_TEXT_COLOR = 0xFFFFFFFF;
+    private static final int RJ_BAR_TEXTURE_WIDTH = 120;
+    private static final int RJ_BAR_TEXTURE_HEIGHT = 12;
+    private static final int EXPECTED_INNER_FILL_WIDTH = 118;
+    private static final int EXPECTED_INNER_FILL_HEIGHT = 12;
+    private static final int TEXT_SHADOW_COLOR = 0xFF202020;
+    // Dev note: rj_bar is 113x16; the restored Jade frame is 120x14 with an expected ~118x12 inner fill, so the fill is tiled horizontally and cropped vertically.
     private static final long KILO_RJ = 1_000L;
     private static final long MEGA_RJ = 1_000_000L;
     private static final long GIGA_RJ = 1_000_000_000L;
@@ -115,14 +122,11 @@ public enum RJComponentProvider implements IBlockComponentProvider, IServerDataP
 
     private static IElement energyBar(int stored, int capacity) {
         float progress = Math.min(1.0F, stored / (float) capacity);
-        Component label = energyLabel(stored, capacity);
-        ProgressStyle style = IElementHelper.get()
-                .progressStyle()
-                .color(BAR_START_COLOR, BAR_END_COLOR)
-                .textColor(BAR_TEXT_COLOR)
+        ProgressStyle style = new RJTextureProgressStyle()
+                .textColor(0xFFFFFFFF)
                 .direction(ScreenDirection.RIGHT);
         return IElementHelper.get()
-                .progress(progress, label, style, BoxStyle.getNestedBox(), true)
+                .progress(progress, energyLabel(stored, capacity), style, BoxStyle.getNestedBox(), true)
                 .size(new Vec2(ENERGY_BAR_WIDTH, ENERGY_BAR_HEIGHT));
     }
 
@@ -158,5 +162,57 @@ public enum RJComponentProvider implements IBlockComponentProvider, IServerDataP
         }
 
         return formatted;
+    }
+
+    private static final class RJTextureProgressStyle extends ProgressStyle {
+        private int textColor = 0xFFFFFFFF;
+
+        @Override
+        public ProgressStyle color(int firstColor, int secondColor) {
+            return this;
+        }
+
+        @Override
+        public ProgressStyle textColor(int textColor) {
+            this.textColor = textColor;
+            return this;
+        }
+
+        @Override
+        public void render(GuiGraphics guiGraphics, float x, float y, float width, float height, float progress, Component text) {
+            int filledWidth = Math.min(Math.round(width), Math.round(width * Math.max(0.0F, Math.min(1.0F, progress))));
+            if (filledWidth > 0) {
+                renderTiledFill(guiGraphics, Math.round(x), Math.round(y), filledWidth, Math.round(height));
+            }
+
+            if (text != null) {
+                Font font = Minecraft.getInstance().font;
+                int textX = Math.round(x) + 1;
+                int textY = Math.round(y + height - font.lineHeight);
+                guiGraphics.drawString(font, Component.literal(text.getString()), textX + 1, textY + 1, TEXT_SHADOW_COLOR, false);
+                guiGraphics.drawString(font, text, textX, textY, textColor, false);
+            }
+        }
+
+        private static void renderTiledFill(GuiGraphics guiGraphics, int x, int y, int width, int height) {
+            int remainingWidth = width;
+            int drawX = x;
+            while (remainingWidth > 0) {
+                int tileWidth = Math.min(RJ_BAR_TEXTURE_WIDTH, remainingWidth);
+                guiGraphics.blit(
+                        RJ_BAR_TEXTURE,
+                        drawX,
+                        y,
+                        0,
+                        0,
+                        tileWidth,
+                        height,
+                        RJ_BAR_TEXTURE_WIDTH,
+                        RJ_BAR_TEXTURE_HEIGHT
+                );
+                drawX += tileWidth;
+                remainingWidth -= tileWidth;
+            }
+        }
     }
 }

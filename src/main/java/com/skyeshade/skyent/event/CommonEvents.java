@@ -52,6 +52,12 @@ public final class CommonEvents {
         );
 
         event.registerBlockEntity(
+                Capabilities.FluidHandler.BLOCK,
+                ModBlockEntities.BASIC_FLUID_DUCT.get(),
+                (duct, side) -> duct.getFluidHandler(side)
+        );
+
+        event.registerBlockEntity(
                 Capabilities.EnergyStorage.BLOCK,
                 ModBlockEntities.LV_RJ_CONVERTER.get(),
                 (converter, side) -> converter.getFEOutput()

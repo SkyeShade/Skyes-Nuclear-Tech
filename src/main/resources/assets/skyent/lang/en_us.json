@@ -2,6 +2,8 @@
   "block.skyent.combustion_generator": "Combustion Generator",
   "block.skyent.electric_furnace": "Electric Furnace",
   "block.skyent.lv_electric_pump": "LV Electric Pump",
+  "block.skyent.basic_fluid_duct": "Basic Fluid Duct",
+  "block.skyent.silt": "Silt",
   "block.skyent.lv_connector": "LV Connector",
   "block.skyent.lv_rj_converter": "LV RJ Converter",
   "block.skyent.lv_fe_converter": "LV FE Converter",
