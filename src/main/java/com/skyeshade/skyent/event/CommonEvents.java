@@ -38,5 +38,17 @@ public final class CommonEvents {
                 ModBlockEntities.COMBUSTION_GENERATOR.get(),
                 (generator, side) -> generator.getAutomationFluidHandler(side)
         );
+
+        event.registerBlockEntity(
+                Capabilities.EnergyStorage.BLOCK,
+                ModBlockEntities.ELECTRIC_FURNACE.get(),
+                (furnace, side) -> furnace.getEnergyStorage()
+        );
+
+        event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
+                ModBlockEntities.ELECTRIC_FURNACE.get(),
+                (furnace, side) -> furnace.getAutomationItemHandler()
+        );
     }
 }

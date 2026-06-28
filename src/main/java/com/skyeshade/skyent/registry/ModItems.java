@@ -15,6 +15,11 @@ public final class ModItems {
             new Item.Properties()
     );
 
+    public static final DeferredItem<BlockItem> ELECTRIC_FURNACE = ITEMS.registerSimpleBlockItem(
+            ModBlocks.ELECTRIC_FURNACE,
+            new Item.Properties()
+    );
+
     private ModItems() {
     }
 

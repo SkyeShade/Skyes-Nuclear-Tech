@@ -2,6 +2,7 @@ package com.skyeshade.skyent.registry;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.blockentity.CombustionGeneratorBlockEntity;
+import com.skyeshade.skyent.content.blockentity.ElectricFurnaceBlockEntity;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.bus.api.IEventBus;
@@ -18,6 +19,12 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("combustion_generator", () -> BlockEntityType.Builder.of(
                     CombustionGeneratorBlockEntity::new,
                     ModBlocks.COMBUSTION_GENERATOR.get()
+            ).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ElectricFurnaceBlockEntity>> ELECTRIC_FURNACE =
+            BLOCK_ENTITIES.register("electric_furnace", () -> BlockEntityType.Builder.of(
+                    ElectricFurnaceBlockEntity::new,
+                    ModBlocks.ELECTRIC_FURNACE.get()
             ).build(null));
 
     private ModBlockEntities() {

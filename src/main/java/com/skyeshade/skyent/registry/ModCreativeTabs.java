@@ -19,7 +19,10 @@ public final class ModCreativeTabs {
             () -> CreativeModeTab.builder()
                     .title(Component.translatable("itemGroup.skyent.skyent_tab"))
                     .icon(() -> ModItems.COMBUSTION_GENERATOR.get().getDefaultInstance())
-                    .displayItems((parameters, output) -> output.accept(ModItems.COMBUSTION_GENERATOR.get()))
+                    .displayItems((parameters, output) -> {
+                        output.accept(ModItems.COMBUSTION_GENERATOR.get());
+                        output.accept(ModItems.ELECTRIC_FURNACE.get());
+                    })
                     .build()
     );
 

@@ -2,6 +2,7 @@ package com.skyeshade.skyent.registry;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.block.CombustionGeneratorBlock;
+import com.skyeshade.skyent.content.block.ElectricFurnaceBlock;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.neoforged.bus.api.IEventBus;
@@ -14,6 +15,12 @@ public final class ModBlocks {
     public static final DeferredBlock<CombustionGeneratorBlock> COMBUSTION_GENERATOR = BLOCKS.registerBlock(
             "combustion_generator",
             CombustionGeneratorBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.FURNACE)
+    );
+
+    public static final DeferredBlock<ElectricFurnaceBlock> ELECTRIC_FURNACE = BLOCKS.registerBlock(
+            "electric_furnace",
+            ElectricFurnaceBlock::new,
             BlockBehaviour.Properties.ofFullCopy(Blocks.FURNACE)
     );
 

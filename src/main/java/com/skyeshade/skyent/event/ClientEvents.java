@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.event;
 
 import com.skyeshade.skyent.client.screen.CombustionGeneratorScreen;
+import com.skyeshade.skyent.client.screen.ElectricFurnaceScreen;
 import com.skyeshade.skyent.event.systems.BootstrapSystem;
 import com.skyeshade.skyent.registry.ModMenus;
 import net.neoforged.bus.api.IEventBus;
@@ -22,5 +23,6 @@ public final class ClientEvents {
 
     public static void onRegisterMenuScreens(RegisterMenuScreensEvent event) {
         event.register(ModMenus.COMBUSTION_GENERATOR.get(), CombustionGeneratorScreen::new);
+        event.register(ModMenus.ELECTRIC_FURNACE.get(), ElectricFurnaceScreen::new);
     }
 }
