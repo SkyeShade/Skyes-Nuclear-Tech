@@ -1,10 +1,11 @@
 package com.skyeshade.skyent.content.blockentity;
 
 import com.skyeshade.skyent.registry.ModBlockEntities;
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -26,7 +27,7 @@ public class LVConnectorBlockEntity extends BlockEntity {
     private static final double HEAT_SYNC_THRESHOLD = 0.25D;
     private static final int HEAT_SYNC_INTERVAL_TICKS = 5;
 
-    private final List<BlockPos> connections = new ArrayList<>();
+    private final Set<BlockPos> connections = new LinkedHashSet<>();
     private final Map<BlockPos, Integer> currentTickTransferredRJ = new HashMap<>();
     private final Map<BlockPos, Double> connectionHeat = new HashMap<>();
     private final Map<BlockPos, Double> lastSyncedConnectionHeat = new HashMap<>();
@@ -49,8 +50,9 @@ public class LVConnectorBlockEntity extends BlockEntity {
             return false;
         }
 
-        connections.add(pos.immutable());
-        connectionHeat.put(pos.immutable(), 0.0D);
+        BlockPos immutablePos = pos.immutable();
+        connections.add(immutablePos);
+        connectionHeat.put(immutablePos, 0.0D);
         sync();
         return true;
     }
@@ -187,6 +189,7 @@ public class LVConnectorBlockEntity extends BlockEntity {
         for (int index = 0; index < list.size() && connections.size() < MAX_CONNECTIONS; index++) {
             BlockPos connection = BlockPos.of(list.getCompound(index).getLong(POSITION_TAG));
             if (!worldPosition.equals(connection) && !connections.contains(connection)) {
+                connection = connection.immutable();
                 connections.add(connection);
                 double heat = list.getCompound(index).getDouble(HEAT_TAG);
                 connectionHeat.put(connection, heat);

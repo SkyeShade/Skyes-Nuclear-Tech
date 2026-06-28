@@ -7,6 +7,7 @@ public final class CopperWireConstants {
     public static final double MAX_CURRENT_AMPS = COPPER_MAX_CURRENT_A;
     public static final int MAX_SAFE_TRANSFER_RJ_PER_TICK = 128;
     public static final double RESISTANCE_RJ_PER_BLOCK_PER_AMP = 0.05D;
+    public static final double COPPER_VOLTAGE_DROP_PER_BLOCK = 1.0D;
     public static final double COPPER_HEAT_PER_AMP_OVER = 0.5D;
     public static final double COPPER_COOLING_PER_TICK = 0.25D;
     public static final double COPPER_SMOKE_HEAT = 35.0D;

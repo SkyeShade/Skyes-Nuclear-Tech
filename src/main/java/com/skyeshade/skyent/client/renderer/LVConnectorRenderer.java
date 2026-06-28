@@ -1,14 +1,20 @@
 package com.skyeshade.skyent.client.renderer;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.blaze3d.vertex.VertexFormat;
+import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.blockentity.LVConnectorBlockEntity;
 import com.skyeshade.skyent.content.energy.CopperWireConstants;
 import com.skyeshade.skyent.content.item.CopperWireDrumItem;
 import com.skyeshade.skyent.event.systems.LVElectricalNetworkSystem;
+import java.util.HashSet;
+import java.util.Set;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
@@ -25,6 +31,21 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
     private static final float CABLE_GREEN = 0.36F;
     private static final float CABLE_BLUE = 0.16F;
     private static final float CABLE_ALPHA = 1.0F;
+    private static final boolean DEBUG_RENDERED_CONNECTIONS = false;
+    private static long renderedConnectionFrame = Long.MIN_VALUE;
+    private static final Set<ConnectionKey> RENDERED_CONNECTIONS = new HashSet<>();
+    private static final RenderType CABLE_RENDER_TYPE = RenderType.create(
+            "skyent_lv_cable_quads",
+            DefaultVertexFormat.POSITION_COLOR_LIGHTMAP,
+            VertexFormat.Mode.QUADS,
+            512,
+            RenderType.CompositeState.builder()
+                    .setShaderState(RenderStateShard.RENDERTYPE_LEASH_SHADER)
+                    .setTextureState(RenderStateShard.NO_TEXTURE)
+                    .setCullState(RenderStateShard.NO_CULL)
+                    .setLightmapState(RenderStateShard.LIGHTMAP)
+                    .createCompositeState(false)
+    );
     private static final ColorStop[] HEAT_COLOR_STOPS = {
             new ColorStop(0.00F, new CableColor(0.72F, 0.36F, 0.16F)),
             new ColorStop(0.35F, new CableColor(0.85F, 0.05F, 0.02F)),
@@ -39,10 +60,10 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
 
     @Override
     public void render(LVConnectorBlockEntity connector, float partialTick, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
-        VertexConsumer coldBuffer = bufferSource.getBuffer(RenderType.leash());
-        VertexConsumer hotBuffer = bufferSource.getBuffer(RenderType.debugQuads());
+        VertexConsumer buffer = bufferSource.getBuffer(CABLE_RENDER_TYPE);
         Matrix4f pose = poseStack.last().pose();
         BlockPos origin = connector.getBlockPos();
+        beginFrame(Minecraft.getInstance().getFrameTimeNs());
         Vec3 cameraWorld = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
         Vector3f camera = new Vector3f(
                 (float) (cameraWorld.x - origin.getX()),
@@ -56,7 +77,8 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
         );
 
         for (BlockPos connection : connector.getConnections()) {
-            if (origin.asLong() > connection.asLong()) {
+            ConnectionKey key = new ConnectionKey(origin, connection);
+            if (!RENDERED_CONNECTIONS.add(key)) {
                 continue;
             }
 
@@ -66,12 +88,9 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
                     (float) (LVConnectorBlockEntity.anchorZ(connection) - origin.getZ())
             );
             double heat = connector.getConnectionHeat(connection);
+            debugRenderedConnection(origin, connection, key, heat);
             CableColor color = getCableHeatColor(heat).withAlpha(1.0F);
-            if (heat >= CopperWireConstants.COPPER_FULLBRIGHT_HEAT) {
-                drawCable(hotBuffer, pose, start, end, camera, color, LightTexture.FULL_BRIGHT, false, false);
-            } else {
-                drawCable(coldBuffer, pose, start, end, camera, color, blendedPackedLight(packedLight, heat), true, true);
-            }
+            drawCable(buffer, pose, start, end, camera, color, getCableLight(packedLight, heat));
         }
     }
 
@@ -85,7 +104,20 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
         return CopperWireDrumItem.MAX_CONNECTION_DISTANCE * 2;
     }
 
-    private static void drawCable(VertexConsumer buffer, Matrix4f pose, Vector3f start, Vector3f end, Vector3f camera, CableColor color, int packedLight, boolean useLightmap, boolean triangleStrip) {
+    private static void beginFrame(long frame) {
+        if (renderedConnectionFrame != frame) {
+            renderedConnectionFrame = frame;
+            RENDERED_CONNECTIONS.clear();
+        }
+    }
+
+    private static void debugRenderedConnection(BlockPos origin, BlockPos connection, ConnectionKey key, double heat) {
+        if (DEBUG_RENDERED_CONNECTIONS) {
+            SkyesNuclearTech.LOGGER.info("LV cable render origin={} target={} key={}:{} heat={}", origin, connection, key.first, key.second, heat);
+        }
+    }
+
+    private static void drawCable(VertexConsumer buffer, Matrix4f pose, Vector3f start, Vector3f end, Vector3f camera, CableColor color, int packedLight) {
         Vector3f cable = new Vector3f(end).sub(start);
         if (cable.lengthSquared() <= 0.0001F) {
             return;
@@ -105,18 +137,11 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
             right[sample] = new Vector3f(points[sample]).add(side);
         }
 
-        if (triangleStrip) {
-            for (int sample = 0; sample <= CABLE_SEGMENTS; sample++) {
-                addVertex(buffer, pose, left[sample], color, packedLight, useLightmap);
-                addVertex(buffer, pose, right[sample], color, packedLight, useLightmap);
-            }
-        } else {
-            for (int segment = 0; segment < CABLE_SEGMENTS; segment++) {
-                addVertex(buffer, pose, left[segment], color, packedLight, useLightmap);
-                addVertex(buffer, pose, right[segment], color, packedLight, useLightmap);
-                addVertex(buffer, pose, right[segment + 1], color, packedLight, useLightmap);
-                addVertex(buffer, pose, left[segment + 1], color, packedLight, useLightmap);
-            }
+        for (int segment = 0; segment < CABLE_SEGMENTS; segment++) {
+            addVertex(buffer, pose, left[segment], color, packedLight);
+            addVertex(buffer, pose, right[segment], color, packedLight);
+            addVertex(buffer, pose, right[segment + 1], color, packedLight);
+            addVertex(buffer, pose, left[segment + 1], color, packedLight);
         }
     }
 
@@ -192,7 +217,7 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
         return clamp((value - start) / (end - start));
     }
 
-    private static int blendedPackedLight(int packedLight, double heat) {
+    private static int getCableLight(int packedLight, double heat) {
         float glowT = inverseLerp(
                 (float) CopperWireConstants.COPPER_GLOW_RED_HEAT,
                 (float) CopperWireConstants.COPPER_FULLBRIGHT_HEAT,
@@ -200,8 +225,13 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
         );
         glowT = smoothstep(glowT);
 
-        int block = lerpInt(LightTexture.block(packedLight), LightTexture.FULL_BLOCK, glowT);
-        int sky = lerpInt(LightTexture.sky(packedLight), LightTexture.FULL_SKY, glowT);
+        int currentBlock = LightTexture.block(packedLight);
+        int currentSky = LightTexture.sky(packedLight);
+        int fullBlock = LightTexture.block(LightTexture.FULL_BRIGHT);
+        int fullSky = LightTexture.sky(LightTexture.FULL_BRIGHT);
+
+        int block = lerpInt(currentBlock, fullBlock, glowT);
+        int sky = lerpInt(currentSky, fullSky, glowT);
         return LightTexture.pack(block, sky);
     }
 
@@ -218,12 +248,10 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
         return Math.max(0.0F, Math.min(1.0F, value));
     }
 
-    private static void addVertex(VertexConsumer buffer, Matrix4f pose, Vector3f position, CableColor color, int packedLight, boolean useLightmap) {
-        VertexConsumer vertex = buffer.addVertex(pose, position.x(), position.y(), position.z())
-                .setColor(color.red, color.green, color.blue, color.alpha);
-        if (useLightmap) {
-            vertex.setLight(packedLight);
-        }
+    private static void addVertex(VertexConsumer buffer, Matrix4f pose, Vector3f position, CableColor color, int packedLight) {
+        buffer.addVertex(pose, position.x(), position.y(), position.z())
+                .setColor(color.red, color.green, color.blue, color.alpha)
+                .setLight(packedLight);
     }
 
     private record CableColor(float red, float green, float blue, float alpha) {
@@ -237,5 +265,11 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
     }
 
     private record ColorStop(float position, CableColor color) {
+    }
+
+    private record ConnectionKey(long first, long second) {
+        private ConnectionKey(BlockPos first, BlockPos second) {
+            this(Math.min(first.asLong(), second.asLong()), Math.max(first.asLong(), second.asLong()));
+        }
     }
 }

@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.content.item;
 
 import com.skyeshade.skyent.content.blockentity.LVConnectorBlockEntity;
+import com.skyeshade.skyent.event.systems.LVElectricalNetworkSystem;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
@@ -13,11 +14,15 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
 public class CopperWireDrumItem extends Item {
     public static final int MAX_CONNECTION_DISTANCE = 32;
 
     private static final String SELECTED_CONNECTOR_TAG = "SelectedConnector";
+    private static final double PATH_SAMPLE_EPSILON = 0.001D;
 
     public CopperWireDrumItem(Properties properties) {
         super(properties);
@@ -83,6 +88,11 @@ public class CopperWireDrumItem extends Item {
             return InteractionResult.CONSUME;
         }
 
+        if (isCablePathObstructed(serverLevel, selectedPos, clickedPos)) {
+            message(player, "Cable path is obstructed.");
+            return InteractionResult.CONSUME;
+        }
+
         selectedConnector.addConnection(clickedPos);
         clickedConnector.addConnection(selectedPos);
         clearSelection(stack);
@@ -115,6 +125,25 @@ public class CopperWireDrumItem extends Item {
     private static CompoundTag getOrCreateCustomTag(ItemStack stack) {
         CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
         return customData == null ? new CompoundTag() : customData.copyTag();
+    }
+
+    private static boolean isCablePathObstructed(ServerLevel level, BlockPos startPos, BlockPos endPos) {
+        for (int sample = 1; sample < LVElectricalNetworkSystem.CABLE_SEGMENTS; sample++) {
+            double t = sample / (double) LVElectricalNetworkSystem.CABLE_SEGMENTS;
+            Vec3 point = LVElectricalNetworkSystem.sagPoint(startPos, endPos, t);
+            BlockPos blockPos = BlockPos.containing(point);
+            if (blockPos.equals(startPos) || blockPos.equals(endPos)) {
+                continue;
+            }
+
+            BlockState state = level.getBlockState(blockPos);
+            VoxelShape collisionShape = state.getCollisionShape(level, blockPos);
+            if (!collisionShape.isEmpty() && collisionShape.bounds().inflate(PATH_SAMPLE_EPSILON).contains(point.subtract(blockPos.getX(), blockPos.getY(), blockPos.getZ()))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static void message(Player player, String message) {

@@ -132,14 +132,21 @@ public final class LVElectricalNetworkSystem {
     }
 
     private static int transferToConsumer(Map<BlockPos, LVConnectorBlockEntity> connectors, Producer producer, TransferTarget target, int maxSentRJ, Map<EdgeKey, Double> edgeCurrent) {
-        int sent = Math.min(Math.min(maxSentRJ, target.capacity), CopperWireConstants.MAX_SAFE_TRANSFER_RJ_PER_TICK);
+        double sourceVoltage = CopperWireConstants.VOLTAGE;
+        double voltageDrop = target.path.distance * CopperWireConstants.COPPER_VOLTAGE_DROP_PER_BLOCK;
+        double deliveredVoltage = Math.max(0.0D, sourceVoltage - voltageDrop);
+        if (deliveredVoltage <= 0.0D) {
+            return 0;
+        }
+
+        int capacityAdjustedSent = (int) Math.ceil(target.capacity * sourceVoltage / deliveredVoltage);
+        int sent = Math.min(Math.min(maxSentRJ, capacityAdjustedSent), CopperWireConstants.MAX_SAFE_TRANSFER_RJ_PER_TICK);
         if (sent <= 0) {
             return 0;
         }
 
-        double amps = sent / (double) CopperWireConstants.VOLTAGE;
-        int loss = (int) Math.ceil(target.path.distance * CopperWireConstants.RESISTANCE_RJ_PER_BLOCK_PER_AMP * amps);
-        int delivered = Math.max(0, sent - loss);
+        double amps = sent / sourceVoltage;
+        int delivered = (int) Math.floor(deliveredVoltage * amps);
         if (delivered <= 0 || target.consumer.furnace.receiveRJ(delivered, true) <= 0) {
             return 0;
         }
@@ -149,7 +156,7 @@ public final class LVElectricalNetworkSystem {
             return 0;
         }
 
-        int adjustedDelivered = Math.min(delivered, extracted);
+        int adjustedDelivered = Math.min((int) Math.floor(deliveredVoltage * (extracted / sourceVoltage)), target.capacity);
         int accepted = target.consumer.furnace.receiveRJ(adjustedDelivered, false);
         if (accepted > 0) {
             addPower(connectors, target.path.edges, edgeCurrent, extracted);
