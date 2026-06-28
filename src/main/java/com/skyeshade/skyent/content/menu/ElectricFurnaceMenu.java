@@ -49,11 +49,11 @@ public class ElectricFurnaceMenu extends AbstractContainerMenu {
         addDataSlots(data);
     }
 
-    public int getEnergyStored() {
+    public int getEnergyStoredRJ() {
         return (data.get(1) << 16) | data.get(0);
     }
 
-    public int getMaxEnergyStored() {
+    public int getMaxEnergyStoredRJ() {
         return (data.get(3) << 16) | data.get(2);
     }
 

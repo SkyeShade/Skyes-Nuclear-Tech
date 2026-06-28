@@ -1,7 +1,9 @@
 package com.skyeshade.skyent.registry;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
-import com.skyeshade.skyent.content.item.CopperWireDrumItem;
+import com.skyeshade.skyent.content.energy.LVWireType;
+import com.skyeshade.skyent.content.item.LVWireDrumItem;
+import com.skyeshade.skyent.content.item.TooltipBlockItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
@@ -26,10 +28,45 @@ public final class ModItems {
             new Item.Properties()
     );
 
-    public static final DeferredItem<CopperWireDrumItem> COPPER_WIRE_DRUM = ITEMS.registerItem(
-            "copper_wire_drum",
-            CopperWireDrumItem::new,
+    public static final DeferredItem<Item> STEEL_INGOT = ITEMS.registerSimpleItem(
+            "steel_ingot",
             new Item.Properties()
+    );
+
+    public static final DeferredItem<LVWireDrumItem> LV_COPPER_WIRE_DRUM = ITEMS.register(
+            "lv_copper_wire_drum",
+            () -> new LVWireDrumItem(
+                    new Item.Properties().stacksTo(1),
+                    LVWireType.COPPER,
+                    "tooltip.skyent.lv_copper_wire_drum"
+            )
+    );
+
+    public static final DeferredItem<LVWireDrumItem> LV_STEEL_WIRE_DRUM = ITEMS.register(
+            "lv_steel_wire_drum",
+            () -> new LVWireDrumItem(
+                    new Item.Properties().stacksTo(1),
+                    LVWireType.STEEL,
+                    "tooltip.skyent.lv_steel_wire_drum"
+            )
+    );
+
+    public static final DeferredItem<TooltipBlockItem> LV_RJ_CONVERTER = ITEMS.register(
+            "lv_rj_converter",
+            () -> new TooltipBlockItem(
+                    ModBlocks.LV_RJ_CONVERTER.get(),
+                    new Item.Properties(),
+                    "tooltip.skyent.lv_rj_converter.line1"
+            )
+    );
+
+    public static final DeferredItem<TooltipBlockItem> LV_FE_CONVERTER = ITEMS.register(
+            "lv_fe_converter",
+            () -> new TooltipBlockItem(
+                    ModBlocks.LV_FE_CONVERTER.get(),
+                    new Item.Properties(),
+                    "tooltip.skyent.lv_fe_converter.line1"
+            )
     );
 
     private ModItems() {

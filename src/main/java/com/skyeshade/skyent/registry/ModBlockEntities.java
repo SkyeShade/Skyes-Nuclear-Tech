@@ -3,6 +3,8 @@ package com.skyeshade.skyent.registry;
 import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.blockentity.CombustionGeneratorBlockEntity;
 import com.skyeshade.skyent.content.blockentity.ElectricFurnaceBlockEntity;
+import com.skyeshade.skyent.content.blockentity.LVFEConverterBlockEntity;
+import com.skyeshade.skyent.content.blockentity.LVRJConverterBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVConnectorBlockEntity;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -32,6 +34,18 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("lv_connector", () -> BlockEntityType.Builder.of(
                     LVConnectorBlockEntity::new,
                     ModBlocks.LV_CONNECTOR.get()
+            ).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<LVRJConverterBlockEntity>> LV_RJ_CONVERTER =
+            BLOCK_ENTITIES.register("lv_rj_converter", () -> BlockEntityType.Builder.of(
+                    LVRJConverterBlockEntity::new,
+                    ModBlocks.LV_RJ_CONVERTER.get()
+            ).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<LVFEConverterBlockEntity>> LV_FE_CONVERTER =
+            BLOCK_ENTITIES.register("lv_fe_converter", () -> BlockEntityType.Builder.of(
+                    LVFEConverterBlockEntity::new,
+                    ModBlocks.LV_FE_CONVERTER.get()
             ).build(null));
 
     private ModBlockEntities() {

@@ -7,7 +7,8 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.blockentity.LVConnectorBlockEntity;
 import com.skyeshade.skyent.content.energy.CopperWireConstants;
-import com.skyeshade.skyent.content.item.CopperWireDrumItem;
+import com.skyeshade.skyent.content.energy.LVWireType;
+import com.skyeshade.skyent.content.item.LVWireDrumItem;
 import com.skyeshade.skyent.event.systems.LVElectricalNetworkSystem;
 import java.util.HashSet;
 import java.util.Set;
@@ -27,9 +28,6 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
     public static final float CABLE_HALF_WIDTH = 0.025F;
     private static final int CABLE_SEGMENTS = LVElectricalNetworkSystem.CABLE_SEGMENTS;
 
-    private static final float CABLE_RED = 0.72F;
-    private static final float CABLE_GREEN = 0.36F;
-    private static final float CABLE_BLUE = 0.16F;
     private static final float CABLE_ALPHA = 1.0F;
     private static final boolean DEBUG_RENDERED_CONNECTIONS = false;
     private static long renderedConnectionFrame = Long.MIN_VALUE;
@@ -88,8 +86,9 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
                     (float) (LVConnectorBlockEntity.anchorZ(connection) - origin.getZ())
             );
             double heat = connector.getConnectionHeat(connection);
+            LVWireType wireType = connector.getConnectionWireType(connection);
             debugRenderedConnection(origin, connection, key, heat);
-            CableColor color = getCableHeatColor(heat).withAlpha(1.0F);
+            CableColor color = getCableHeatColor(wireType, heat).withAlpha(1.0F);
             drawCable(buffer, pose, start, end, camera, color, getCableLight(packedLight, heat));
         }
     }
@@ -101,7 +100,7 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
 
     @Override
     public int getViewDistance() {
-        return CopperWireDrumItem.MAX_CONNECTION_DISTANCE * 2;
+        return LVWireDrumItem.MAX_CONNECTION_DISTANCE * 2;
     }
 
     private static void beginFrame(long frame) {
@@ -188,8 +187,13 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
         return new Vector3f(start).lerp(end, amount).sub(0.0F, (float) (Math.sin(Math.PI * amount) * sag), 0.0F);
     }
 
-    private static CableColor getCableHeatColor(double heat) {
+    private static CableColor getCableHeatColor(LVWireType wireType, double heat) {
         float heatProgress = clamp((float) (heat / CopperWireConstants.COPPER_BURNOUT_HEAT));
+        if (heatProgress <= HEAT_COLOR_STOPS[1].position) {
+            CableColor baseColor = new CableColor(wireType.red(), wireType.green(), wireType.blue());
+            return lerpColor(baseColor, HEAT_COLOR_STOPS[1].color, inverseLerp(HEAT_COLOR_STOPS[0].position, HEAT_COLOR_STOPS[1].position, heatProgress));
+        }
+
         for (int index = 0; index < HEAT_COLOR_STOPS.length - 1; index++) {
             ColorStop lower = HEAT_COLOR_STOPS[index];
             ColorStop upper = HEAT_COLOR_STOPS[index + 1];

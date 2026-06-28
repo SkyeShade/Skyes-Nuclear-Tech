@@ -52,12 +52,12 @@ public class CombustionGeneratorMenu extends AbstractContainerMenu {
         addDataSlots(data);
     }
 
-    public int getEnergyStored() {
+    public int getEnergyStoredRJ() {
         return (data.get(1) << 16) | data.get(0);
     }
 
-    public int getMaxEnergyStored() {
-        return CombustionGeneratorBlockEntity.ENERGY_CAPACITY;
+    public int getMaxEnergyStoredRJ() {
+        return CombustionGeneratorBlockEntity.ENERGY_CAPACITY_RJ;
     }
 
     public int getBurnTime() {

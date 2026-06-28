@@ -1,7 +1,10 @@
 package com.skyeshade.skyent.content.item;
 
 import com.skyeshade.skyent.content.blockentity.LVConnectorBlockEntity;
+import com.skyeshade.skyent.content.energy.LVWireType;
 import com.skyeshade.skyent.event.systems.LVElectricalNetworkSystem;
+import java.util.List;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
@@ -11,6 +14,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
@@ -18,14 +22,32 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-public class CopperWireDrumItem extends Item {
+public class LVWireDrumItem extends Item {
     public static final int MAX_CONNECTION_DISTANCE = 32;
 
     private static final String SELECTED_CONNECTOR_TAG = "SelectedConnector";
     private static final double PATH_SAMPLE_EPSILON = 0.001D;
 
-    public CopperWireDrumItem(Properties properties) {
+    private final LVWireType wireType;
+    private final String tooltipPrefix;
+
+    public LVWireDrumItem(Properties properties) {
+        this(properties, LVWireType.COPPER, "tooltip.skyent.lv_copper_wire_drum");
+    }
+
+    public LVWireDrumItem(Properties properties, LVWireType wireType, String tooltipPrefix) {
         super(properties);
+        this.wireType = wireType;
+        this.tooltipPrefix = tooltipPrefix;
+    }
+
+    @Override
+    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
+        tooltipComponents.add(Component.translatable(tooltipPrefix + ".description").withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.translatable(tooltipPrefix + ".voltage").withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.translatable(tooltipPrefix + ".current").withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.translatable(tooltipPrefix + ".max_transfer").withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.translatable(tooltipPrefix + ".voltage_drop").withStyle(ChatFormatting.GRAY));
     }
 
     @Override
@@ -93,8 +115,9 @@ public class CopperWireDrumItem extends Item {
             return InteractionResult.CONSUME;
         }
 
-        selectedConnector.addConnection(clickedPos);
-        clickedConnector.addConnection(selectedPos);
+        // TODO: consume Copper Wire Coil items here once wire material costs are added.
+        selectedConnector.addConnection(clickedPos, wireType);
+        clickedConnector.addConnection(selectedPos, wireType);
         clearSelection(stack);
         message(player, "Connected LV cable.");
         return InteractionResult.CONSUME;

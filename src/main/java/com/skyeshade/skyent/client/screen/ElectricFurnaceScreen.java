@@ -73,12 +73,12 @@ public class ElectricFurnaceScreen extends AbstractContainerScreen<ElectricFurna
     }
 
     private void renderEnergyBar(GuiGraphics guiGraphics) {
-        int stored = menu.getEnergyStored();
+        int stored = menu.getEnergyStoredRJ();
         if (stored <= 0) {
             return;
         }
 
-        int maxEnergy = Math.max(1, menu.getMaxEnergyStored());
+        int maxEnergy = Math.max(1, menu.getMaxEnergyStoredRJ());
         int filledHeight = stored * ENERGY_BAR_HEIGHT / maxEnergy;
         guiGraphics.blit(
                 TEXTURE,
@@ -137,7 +137,7 @@ public class ElectricFurnaceScreen extends AbstractContainerScreen<ElectricFurna
 
     private List<Component> energyTooltip() {
         return List.of(
-                Component.literal(menu.getEnergyStored() + " / " + menu.getMaxEnergyStored() + " " + EnergyUnits.UNIT).withStyle(ChatFormatting.RED),
+                Component.literal(menu.getEnergyStoredRJ() + " / " + menu.getMaxEnergyStoredRJ() + " " + EnergyUnits.UNIT).withStyle(ChatFormatting.RED),
                 Component.literal("Usage: " + menu.getCurrentEnergyUsage() + " " + EnergyUnits.UNIT_PER_TICK).withStyle(ChatFormatting.RED),
                 Component.literal("Required: " + ElectricFurnaceBlockEntity.REQUIRED_TIER.displayName()).withStyle(ChatFormatting.RED),
                 Component.literal("Current: " + ElectricFurnaceBlockEntity.RUNNING_CURRENT_AMPS + " A").withStyle(ChatFormatting.RED)

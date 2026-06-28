@@ -2,6 +2,8 @@ package com.skyeshade.skyent.content.blockentity;
 
 import com.skyeshade.skyent.content.block.ElectricFurnaceBlock;
 import com.skyeshade.skyent.content.energy.ElectricalTier;
+import com.skyeshade.skyent.content.energy.RJEnergyInfo;
+import com.skyeshade.skyent.content.energy.RJStorage;
 import com.skyeshade.skyent.content.menu.ElectricFurnaceMenu;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
@@ -25,15 +27,13 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.energy.EnergyStorage;
-import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import org.jetbrains.annotations.Nullable;
 
-public class ElectricFurnaceBlockEntity extends BlockEntity implements MenuProvider {
-    public static final int ENERGY_CAPACITY = 20_000;
-    public static final int ENERGY_USAGE_PER_TICK = 16;
+public class ElectricFurnaceBlockEntity extends BlockEntity implements MenuProvider, RJEnergyInfo {
+    public static final int ENERGY_CAPACITY_RJ = 20_000;
+    public static final int ENERGY_USAGE_RJ_PER_TICK = 16;
     public static final ElectricalTier REQUIRED_TIER = ElectricalTier.LV;
     public static final int REQUIRED_VOLTAGE = REQUIRED_TIER.voltage();
     public static final double RUNNING_CURRENT_AMPS = 0.5D;
@@ -41,6 +41,8 @@ public class ElectricFurnaceBlockEntity extends BlockEntity implements MenuProvi
     public static final int OUTPUT_SLOT = 1;
     public static final int DEFAULT_COOK_TIME = 200;
     private static final int INVENTORY_SLOT_COUNT = 2;
+    private static final String TAG_STORED_RJ = "StoredRJ";
+    private static final String LEGACY_TAG_ENERGY = "Energy";
 
     private static final int DATA_ENERGY_LOW = 0;
     private static final int DATA_ENERGY_HIGH = 1;
@@ -68,17 +70,17 @@ public class ElectricFurnaceBlockEntity extends BlockEntity implements MenuProvi
         }
     };
 
-    private final FurnaceEnergyStorage energy = new FurnaceEnergyStorage();
+    private final RJStorage rjStorage = new RJStorage(ENERGY_CAPACITY_RJ);
     private final IItemHandler automationItemHandler = new AutomationItemHandler();
 
     private final ContainerData data = new ContainerData() {
         @Override
         public int get(int index) {
             return switch (index) {
-                case DATA_ENERGY_LOW -> energy.getEnergyStored() & 0xFFFF;
-                case DATA_ENERGY_HIGH -> energy.getEnergyStored() >>> 16;
-                case DATA_MAX_ENERGY_LOW -> energy.getMaxEnergyStored() & 0xFFFF;
-                case DATA_MAX_ENERGY_HIGH -> energy.getMaxEnergyStored() >>> 16;
+                case DATA_ENERGY_LOW -> rjStorage.getStoredRJ() & 0xFFFF;
+                case DATA_ENERGY_HIGH -> rjStorage.getStoredRJ() >>> 16;
+                case DATA_MAX_ENERGY_LOW -> rjStorage.getCapacityRJ() & 0xFFFF;
+                case DATA_MAX_ENERGY_HIGH -> rjStorage.getCapacityRJ() >>> 16;
                 case DATA_COOK_PROGRESS -> cookProgress;
                 case DATA_MAX_COOK_PROGRESS -> maxCookProgress;
                 case DATA_CURRENT_ENERGY_USAGE -> currentEnergyUsage;
@@ -89,8 +91,8 @@ public class ElectricFurnaceBlockEntity extends BlockEntity implements MenuProvi
         @Override
         public void set(int index, int value) {
             switch (index) {
-                case DATA_ENERGY_LOW -> energy.setEnergy((energy.getEnergyStored() & 0xFFFF0000) | (value & 0xFFFF));
-                case DATA_ENERGY_HIGH -> energy.setEnergy((energy.getEnergyStored() & 0xFFFF) | ((value & 0xFFFF) << 16));
+                case DATA_ENERGY_LOW -> rjStorage.setStoredRJ((rjStorage.getStoredRJ() & 0xFFFF0000) | (value & 0xFFFF));
+                case DATA_ENERGY_HIGH -> rjStorage.setStoredRJ((rjStorage.getStoredRJ() & 0xFFFF) | ((value & 0xFFFF) << 16));
                 case DATA_COOK_PROGRESS -> cookProgress = value;
                 case DATA_MAX_COOK_PROGRESS -> maxCookProgress = value;
                 case DATA_CURRENT_ENERGY_USAGE -> currentEnergyUsage = value;
@@ -121,10 +123,10 @@ public class ElectricFurnaceBlockEntity extends BlockEntity implements MenuProvi
                 furnace.cookProgress = 0;
                 changed = true;
             }
-        } else if (furnace.energy.getEnergyStored() >= ENERGY_USAGE_PER_TICK) {
+        } else if (furnace.rjStorage.getStoredRJ() >= ENERGY_USAGE_RJ_PER_TICK) {
             furnace.maxCookProgress = Math.max(1, recipe.value().getCookingTime());
-            furnace.energy.consumeEnergy(ENERGY_USAGE_PER_TICK);
-            furnace.currentEnergyUsage = ENERGY_USAGE_PER_TICK;
+            furnace.rjStorage.consumeRJ(ENERGY_USAGE_RJ_PER_TICK);
+            furnace.currentEnergyUsage = ENERGY_USAGE_RJ_PER_TICK;
             furnace.cookProgress++;
             changed = true;
 
@@ -202,16 +204,37 @@ public class ElectricFurnaceBlockEntity extends BlockEntity implements MenuProvi
         return automationItemHandler;
     }
 
-    public IEnergyStorage getEnergyStorage() {
-        return energy;
-    }
-
     public int getAvailableRJCapacity() {
-        return energy.getMaxEnergyStored() - energy.getEnergyStored();
+        return rjStorage.getAvailableRJCapacity();
     }
 
     public int receiveRJ(int maxAmount, boolean simulate) {
-        return energy.receiveEnergy(maxAmount, simulate);
+        int received = rjStorage.receiveRJ(maxAmount, simulate);
+        if (received > 0 && !simulate) {
+            setChanged();
+        }
+
+        return received;
+    }
+
+    @Override
+    public int getEnergyStoredRJ() {
+        return rjStorage.getStoredRJ();
+    }
+
+    @Override
+    public int getEnergyCapacityRJ() {
+        return ENERGY_CAPACITY_RJ;
+    }
+
+    @Override
+    public int getCurrentUsageRJPerTick() {
+        return currentEnergyUsage;
+    }
+
+    @Override
+    public String getVoltageTierName() {
+        return REQUIRED_TIER.displayName();
     }
 
     public ContainerData getData() {
@@ -245,7 +268,7 @@ public class ElectricFurnaceBlockEntity extends BlockEntity implements MenuProvi
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
-        tag.putInt("Energy", energy.getEnergyStored());
+        tag.putInt(TAG_STORED_RJ, rjStorage.getStoredRJ());
         tag.putInt("CookProgress", cookProgress);
         tag.putInt("MaxCookProgress", maxCookProgress);
         tag.put("Inventory", inventory.serializeNBT(registries));
@@ -254,34 +277,10 @@ public class ElectricFurnaceBlockEntity extends BlockEntity implements MenuProvi
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
-        energy.setEnergy(tag.getInt("Energy"));
+        rjStorage.setStoredRJ(tag.contains(TAG_STORED_RJ) ? tag.getInt(TAG_STORED_RJ) : tag.getInt(LEGACY_TAG_ENERGY));
         cookProgress = tag.getInt("CookProgress");
         maxCookProgress = tag.contains("MaxCookProgress") ? tag.getInt("MaxCookProgress") : DEFAULT_COOK_TIME;
         inventory.deserializeNBT(registries, tag.getCompound("Inventory"));
-    }
-
-    private final class FurnaceEnergyStorage extends EnergyStorage {
-        private FurnaceEnergyStorage() {
-            super(ENERGY_CAPACITY, ENERGY_CAPACITY, 0);
-        }
-
-        @Override
-        public int receiveEnergy(int maxReceive, boolean simulate) {
-            int received = super.receiveEnergy(maxReceive, simulate);
-            if (received > 0 && !simulate) {
-                setChanged();
-            }
-
-            return received;
-        }
-
-        private void consumeEnergy(int amount) {
-            energy = Math.max(0, energy - amount);
-        }
-
-        private void setEnergy(int amount) {
-            energy = Mth.clamp(amount, 0, capacity);
-        }
     }
 
     private final class AutomationItemHandler implements IItemHandler {

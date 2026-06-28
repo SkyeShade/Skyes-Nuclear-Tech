@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.content.blockentity;
 
 import com.skyeshade.skyent.registry.ModBlockEntities;
+import com.skyeshade.skyent.content.energy.LVWireType;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -24,12 +25,14 @@ public class LVConnectorBlockEntity extends BlockEntity {
     private static final String CONNECTIONS_TAG = "Connections";
     private static final String POSITION_TAG = "Position";
     private static final String HEAT_TAG = "Heat";
+    private static final String WIRE_TYPE_TAG = "WireType";
     private static final double HEAT_SYNC_THRESHOLD = 0.25D;
     private static final int HEAT_SYNC_INTERVAL_TICKS = 5;
 
     private final Set<BlockPos> connections = new LinkedHashSet<>();
     private final Map<BlockPos, Integer> currentTickTransferredRJ = new HashMap<>();
     private final Map<BlockPos, Double> connectionHeat = new HashMap<>();
+    private final Map<BlockPos, LVWireType> connectionWireTypes = new HashMap<>();
     private final Map<BlockPos, Double> lastSyncedConnectionHeat = new HashMap<>();
     private final Map<BlockPos, Long> lastHeatSyncTick = new HashMap<>();
 
@@ -46,6 +49,10 @@ public class LVConnectorBlockEntity extends BlockEntity {
     }
 
     public boolean addConnection(BlockPos pos) {
+        return addConnection(pos, LVWireType.COPPER);
+    }
+
+    public boolean addConnection(BlockPos pos, LVWireType wireType) {
         if (!canAddConnection(pos)) {
             return false;
         }
@@ -53,6 +60,7 @@ public class LVConnectorBlockEntity extends BlockEntity {
         BlockPos immutablePos = pos.immutable();
         connections.add(immutablePos);
         connectionHeat.put(immutablePos, 0.0D);
+        connectionWireTypes.put(immutablePos, wireType);
         sync();
         return true;
     }
@@ -61,6 +69,7 @@ public class LVConnectorBlockEntity extends BlockEntity {
         if (connections.remove(pos)) {
             currentTickTransferredRJ.remove(pos);
             connectionHeat.remove(pos);
+            connectionWireTypes.remove(pos);
             lastSyncedConnectionHeat.remove(pos);
             lastHeatSyncTick.remove(pos);
             sync();
@@ -80,6 +89,7 @@ public class LVConnectorBlockEntity extends BlockEntity {
             connections.clear();
             currentTickTransferredRJ.clear();
             connectionHeat.clear();
+            connectionWireTypes.clear();
             lastSyncedConnectionHeat.clear();
             lastHeatSyncTick.clear();
             sync();
@@ -102,6 +112,10 @@ public class LVConnectorBlockEntity extends BlockEntity {
 
     public double getConnectionHeat(BlockPos connection) {
         return connectionHeat.getOrDefault(connection, 0.0D);
+    }
+
+    public LVWireType getConnectionWireType(BlockPos connection) {
+        return connectionWireTypes.getOrDefault(connection, LVWireType.COPPER);
     }
 
     public void setConnectionHeat(BlockPos connection, double heat) {
@@ -173,6 +187,7 @@ public class LVConnectorBlockEntity extends BlockEntity {
             CompoundTag entry = new CompoundTag();
             entry.putLong(POSITION_TAG, connection.asLong());
             entry.putDouble(HEAT_TAG, getConnectionHeat(connection));
+            entry.putString(WIRE_TYPE_TAG, getConnectionWireType(connection).serializedName());
             list.add(entry);
         }
 
@@ -183,6 +198,7 @@ public class LVConnectorBlockEntity extends BlockEntity {
         Map<BlockPos, Integer> previousLoads = new HashMap<>(currentTickTransferredRJ);
         connections.clear();
         connectionHeat.clear();
+        connectionWireTypes.clear();
         lastSyncedConnectionHeat.clear();
         lastHeatSyncTick.clear();
         ListTag list = tag.getList(CONNECTIONS_TAG, Tag.TAG_COMPOUND);
@@ -192,7 +208,9 @@ public class LVConnectorBlockEntity extends BlockEntity {
                 connection = connection.immutable();
                 connections.add(connection);
                 double heat = list.getCompound(index).getDouble(HEAT_TAG);
+                LVWireType wireType = LVWireType.byName(list.getCompound(index).getString(WIRE_TYPE_TAG));
                 connectionHeat.put(connection, heat);
+                connectionWireTypes.put(connection, wireType);
                 lastSyncedConnectionHeat.put(connection, heat);
                 lastHeatSyncTick.put(connection, level == null ? 0L : level.getGameTime());
             }

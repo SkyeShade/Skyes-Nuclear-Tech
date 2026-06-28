@@ -86,12 +86,12 @@ public class CombustionGeneratorScreen extends AbstractContainerScreen<Combustio
     }
 
     private void renderEnergyBar(GuiGraphics guiGraphics) {
-        int stored = menu.getEnergyStored();
+        int stored = menu.getEnergyStoredRJ();
         if (stored <= 0) {
             return;
         }
 
-        int filledHeight = stored * ENERGY_BAR_HEIGHT / menu.getMaxEnergyStored();
+        int filledHeight = stored * ENERGY_BAR_HEIGHT / menu.getMaxEnergyStoredRJ();
         guiGraphics.blit(
                 TEXTURE,
                 leftPos + ENERGY_BAR_X,
@@ -191,7 +191,7 @@ public class CombustionGeneratorScreen extends AbstractContainerScreen<Combustio
 
     private List<Component> energyTooltip() {
         return List.of(
-                Component.literal(menu.getEnergyStored() + " / " + menu.getMaxEnergyStored() + " " + EnergyUnits.UNIT).withStyle(ChatFormatting.RED),
+                Component.literal(menu.getEnergyStoredRJ() + " / " + menu.getMaxEnergyStoredRJ() + " " + EnergyUnits.UNIT).withStyle(ChatFormatting.RED),
                 Component.literal(menu.getCurrentGenerationRate() + " " + EnergyUnits.UNIT_PER_TICK).withStyle(ChatFormatting.RED),
                 Component.literal("Output: " + CombustionGeneratorBlockEntity.OUTPUT_TIER.displayName()).withStyle(ChatFormatting.RED),
                 Component.literal("Max current: " + CombustionGeneratorBlockEntity.MAX_OUTPUT_CURRENT_AMPS + " A").withStyle(ChatFormatting.RED)

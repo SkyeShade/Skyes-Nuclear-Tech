@@ -2,6 +2,8 @@ package com.skyeshade.skyent.content.blockentity;
 
 import com.skyeshade.skyent.content.block.CombustionGeneratorBlock;
 import com.skyeshade.skyent.content.energy.ElectricalTier;
+import com.skyeshade.skyent.content.energy.RJEnergyInfo;
+import com.skyeshade.skyent.content.energy.RJStorage;
 import com.skyeshade.skyent.content.menu.CombustionGeneratorMenu;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
@@ -23,8 +25,6 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.energy.EnergyStorage;
-import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.neoforged.neoforge.fluids.FluidActionResult;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.FluidUtil;
@@ -32,15 +32,13 @@ import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
 import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
-import net.neoforged.neoforge.capabilities.Capabilities;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.core.Direction;
 import org.jetbrains.annotations.Nullable;
 
-public class CombustionGeneratorBlockEntity extends BlockEntity implements MenuProvider {
-    public static final int ENERGY_CAPACITY = 100_000;
-    public static final int ENERGY_PER_TICK = 32;
-    public static final int MAX_EXTRACT = 64;
+public class CombustionGeneratorBlockEntity extends BlockEntity implements MenuProvider, RJEnergyInfo {
+    public static final int ENERGY_CAPACITY_RJ = 100_000;
+    public static final int GENERATION_RATE_RJ_PER_TICK = 32;
     public static final ElectricalTier OUTPUT_TIER = ElectricalTier.LV;
     public static final int OUTPUT_VOLTAGE = OUTPUT_TIER.voltage();
     public static final double MAX_OUTPUT_CURRENT_AMPS = 2.0D;
@@ -49,6 +47,8 @@ public class CombustionGeneratorBlockEntity extends BlockEntity implements MenuP
     public static final int WATER_CONSUMPTION_PER_TICK = 1;
     private static final int FIRE_SPREAD_RADIUS = 2;
     private static final float FIRE_PLACEMENT_CHANCE = 0.28F;
+    private static final String TAG_STORED_RJ = "StoredRJ";
+    private static final String LEGACY_TAG_ENERGY = "Energy";
 
     public static final int WATER_INPUT_SLOT = 0;
     public static final int EMPTY_CONTAINER_SLOT = 1;
@@ -85,7 +85,7 @@ public class CombustionGeneratorBlockEntity extends BlockEntity implements MenuP
         }
     };
 
-    private final GeneratorEnergyStorage energy = new GeneratorEnergyStorage();
+    private final RJStorage rjStorage = new RJStorage(ENERGY_CAPACITY_RJ);
     private final IFluidHandler automationFluidHandler = new WaterInputFluidHandler();
     private final FluidTank waterTank = new FluidTank(WATER_CAPACITY, stack -> stack.is(Fluids.WATER)) {
         @Override
@@ -98,8 +98,8 @@ public class CombustionGeneratorBlockEntity extends BlockEntity implements MenuP
         @Override
         public int get(int index) {
             return switch (index) {
-                case DATA_ENERGY_LOW -> energy.getEnergyStored() & 0xFFFF;
-                case DATA_ENERGY_HIGH -> energy.getEnergyStored() >>> 16;
+                case DATA_ENERGY_LOW -> rjStorage.getStoredRJ() & 0xFFFF;
+                case DATA_ENERGY_HIGH -> rjStorage.getStoredRJ() >>> 16;
                 case DATA_BURN_TIME -> burnTime;
                 case DATA_BURN_TIME_TOTAL -> burnTimeTotal;
                 case DATA_WATER_AMOUNT -> waterTank.getFluidAmount();
@@ -112,8 +112,8 @@ public class CombustionGeneratorBlockEntity extends BlockEntity implements MenuP
         @Override
         public void set(int index, int value) {
             switch (index) {
-                case DATA_ENERGY_LOW -> energy.setEnergy((energy.getEnergyStored() & 0xFFFF0000) | (value & 0xFFFF));
-                case DATA_ENERGY_HIGH -> energy.setEnergy((energy.getEnergyStored() & 0xFFFF) | ((value & 0xFFFF) << 16));
+                case DATA_ENERGY_LOW -> rjStorage.setStoredRJ((rjStorage.getStoredRJ() & 0xFFFF0000) | (value & 0xFFFF));
+                case DATA_ENERGY_HIGH -> rjStorage.setStoredRJ((rjStorage.getStoredRJ() & 0xFFFF) | ((value & 0xFFFF) << 16));
                 case DATA_BURN_TIME -> burnTime = value;
                 case DATA_BURN_TIME_TOTAL -> burnTimeTotal = value;
                 case DATA_WATER_AMOUNT -> waterTank.setFluid(value > 0 ? new FluidStack(Fluids.WATER, value) : FluidStack.EMPTY);
@@ -143,10 +143,6 @@ public class CombustionGeneratorBlockEntity extends BlockEntity implements MenuP
             changed = true;
         }
 
-        if (generator.pushEnergyToNeighbors(level, pos)) {
-            changed = true;
-        }
-
         if (generator.isBurning()) {
             if (generator.waterTank.getFluidAmount() <= 0) {
                 generator.explode(level, pos);
@@ -160,13 +156,13 @@ public class CombustionGeneratorBlockEntity extends BlockEntity implements MenuP
             }
 
             generator.burnTime--;
-            if (generator.energy.generateEnergy(ENERGY_PER_TICK) > 0) {
-                generator.currentGenerationRate = ENERGY_PER_TICK;
+            if (generator.rjStorage.receiveRJ(GENERATION_RATE_RJ_PER_TICK, false) > 0) {
+                generator.currentGenerationRate = GENERATION_RATE_RJ_PER_TICK;
             }
             changed = true;
         }
 
-        if (!generator.isBurning() && generator.energy.getEnergyStored() < ENERGY_CAPACITY && generator.waterTank.getFluidAmount() > 0) {
+        if (!generator.isBurning() && generator.rjStorage.getStoredRJ() < ENERGY_CAPACITY_RJ && generator.waterTank.getFluidAmount() > 0) {
             ItemStack fuel = generator.inventory.getStackInSlot(FUEL_SLOT);
             int fuelBurnTime = getBurnTime(fuel);
 
@@ -302,10 +298,6 @@ public class CombustionGeneratorBlockEntity extends BlockEntity implements MenuP
         return data;
     }
 
-    public IEnergyStorage getEnergyStorage() {
-        return energy;
-    }
-
     public IFluidHandler getAutomationFluidHandler(@Nullable Direction side) {
         return automationFluidHandler;
     }
@@ -322,8 +314,28 @@ public class CombustionGeneratorBlockEntity extends BlockEntity implements MenuP
         return currentGenerationRate;
     }
 
+    @Override
+    public int getEnergyStoredRJ() {
+        return rjStorage.getStoredRJ();
+    }
+
+    @Override
+    public int getEnergyCapacityRJ() {
+        return ENERGY_CAPACITY_RJ;
+    }
+
+    @Override
+    public int getCurrentGenerationRJPerTick() {
+        return currentGenerationRate;
+    }
+
+    @Override
+    public String getVoltageTierName() {
+        return OUTPUT_TIER.displayName();
+    }
+
     public int getStoredRJ() {
-        return energy.getEnergyStored();
+        return getEnergyStoredRJ();
     }
 
     public int getMaxOutputRJPerTick() {
@@ -331,7 +343,7 @@ public class CombustionGeneratorBlockEntity extends BlockEntity implements MenuP
     }
 
     public int extractRJ(int maxAmount, boolean simulate) {
-        int extracted = energy.extractEnergy(maxAmount, simulate);
+        int extracted = rjStorage.extractRJ(maxAmount, simulate);
         if (extracted > 0 && !simulate) {
             setChanged();
         }
@@ -340,7 +352,7 @@ public class CombustionGeneratorBlockEntity extends BlockEntity implements MenuP
     }
 
     public int getRedstoneSignal() {
-        return Mth.floor((float) energy.getEnergyStored() / ENERGY_CAPACITY * 15.0F);
+        return Mth.floor((float) rjStorage.getStoredRJ() / ENERGY_CAPACITY_RJ * 15.0F);
     }
 
     public void dropContents(Level level, BlockPos pos) {
@@ -366,7 +378,7 @@ public class CombustionGeneratorBlockEntity extends BlockEntity implements MenuP
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
-        tag.putInt("Energy", energy.getEnergyStored());
+        tag.putInt(TAG_STORED_RJ, rjStorage.getStoredRJ());
         tag.putInt("BurnTime", burnTime);
         tag.putInt("BurnTimeTotal", burnTimeTotal);
         tag.put("WaterTank", waterTank.writeToNBT(registries, new CompoundTag()));
@@ -376,54 +388,11 @@ public class CombustionGeneratorBlockEntity extends BlockEntity implements MenuP
     @Override
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
-        energy.setEnergy(tag.getInt("Energy"));
+        rjStorage.setStoredRJ(tag.contains(TAG_STORED_RJ) ? tag.getInt(TAG_STORED_RJ) : tag.getInt(LEGACY_TAG_ENERGY));
         burnTime = tag.getInt("BurnTime");
         burnTimeTotal = tag.getInt("BurnTimeTotal");
         waterTank.readFromNBT(registries, tag.getCompound("WaterTank"));
         inventory.deserializeNBT(registries, tag.getCompound("Inventory"));
-    }
-
-    private static final class GeneratorEnergyStorage extends EnergyStorage {
-        private GeneratorEnergyStorage() {
-            super(ENERGY_CAPACITY, 0, MAX_EXTRACT);
-        }
-
-        private int generateEnergy(int amount) {
-            int previousEnergy = energy;
-            energy = Math.min(capacity, energy + amount);
-            return energy - previousEnergy;
-        }
-
-        private void setEnergy(int amount) {
-            energy = Mth.clamp(amount, 0, capacity);
-        }
-    }
-
-    private boolean pushEnergyToNeighbors(Level level, BlockPos pos) {
-        if (energy.getEnergyStored() <= 0) {
-            return false;
-        }
-
-        boolean transferred = false;
-        for (Direction direction : Direction.values()) {
-            IEnergyStorage receiver = level.getCapability(Capabilities.EnergyStorage.BLOCK, pos.relative(direction), direction.getOpposite());
-            if (receiver == null || !receiver.canReceive()) {
-                continue;
-            }
-
-            int simulatedExtract = energy.extractEnergy(MAX_EXTRACT, true);
-            if (simulatedExtract <= 0) {
-                break;
-            }
-
-            int accepted = receiver.receiveEnergy(simulatedExtract, false);
-            if (accepted > 0) {
-                energy.extractEnergy(accepted, false);
-                transferred = true;
-            }
-        }
-
-        return transferred;
     }
 
     private final class WaterInputFluidHandler implements IFluidHandler {

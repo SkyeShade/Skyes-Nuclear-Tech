@@ -2,8 +2,10 @@ package com.skyeshade.skyent.event.systems;
 
 import com.skyeshade.skyent.content.blockentity.CombustionGeneratorBlockEntity;
 import com.skyeshade.skyent.content.blockentity.ElectricFurnaceBlockEntity;
+import com.skyeshade.skyent.content.blockentity.LVRJConverterBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVConnectorBlockEntity;
 import com.skyeshade.skyent.content.energy.CopperWireConstants;
+import com.skyeshade.skyent.content.energy.LVWireType;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -14,6 +16,8 @@ import java.util.PriorityQueue;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -30,6 +34,9 @@ public final class LVElectricalNetworkSystem {
     private static final int HOT_PARTICLE_ATTEMPTS = 2;
     private static final int BURNOUT_PARTICLE_SAMPLES = 12;
     private static final float BURNOUT_FIRE_CHANCE = 0.18F;
+    private static final float BURNOUT_SOUND_VOLUME = 0.85F;
+    private static final float BURNOUT_SOUND_BASE_PITCH = 0.85F;
+    private static final float BURNOUT_SOUND_RANDOM_PITCH = 0.35F;
 
     private LVElectricalNetworkSystem() {
     }
@@ -47,13 +54,13 @@ public final class LVElectricalNetworkSystem {
         List<Producer> producers = new ArrayList<>();
         List<Consumer> consumers = new ArrayList<>();
         for (LVConnectorBlockEntity connector : connectors.values()) {
-            collectAttachedMachines(level, connector.getBlockPos(), producers, consumers);
+            collectAttachedEndpoints(level, connector.getBlockPos(), producers, consumers);
         }
 
         Map<EdgeKey, Double> edgeCurrent = new HashMap<>();
         if (!producers.isEmpty() && !consumers.isEmpty()) {
             for (Producer producer : producers) {
-                int availableOutput = Math.min(producer.generator.getStoredRJ(), producer.generator.getMaxOutputRJPerTick());
+                int availableOutput = Math.min(producer.endpoint.availableOutputRJ(), producer.endpoint.maxOutputRJPerTick());
                 if (availableOutput <= 0) {
                     continue;
                 }
@@ -64,13 +71,90 @@ public final class LVElectricalNetworkSystem {
                     TransferTarget target = targets.get(index);
                     int remainingTargets = targets.size() - index;
                     int evenShare = Math.max(1, remainingOutput / remainingTargets);
-                    int accepted = transferToConsumer(connectors, producer, target, evenShare, edgeCurrent);
+                    int accepted = transferToConsumer(connectors, producer, target, evenShare, edgeCurrent, false, true);
                     remainingOutput -= accepted;
                 }
             }
         }
 
         updateCableHeat(level, connectors);
+    }
+
+    public static int insertRJFromConverter(ServerLevel level, BlockPos converterPos, int maxAmount, boolean simulate) {
+        if (maxAmount <= 0) {
+            return 0;
+        }
+
+        List<BlockPos> connectorPositions = new ArrayList<>();
+        for (Direction direction : Direction.values()) {
+            if (level.getBlockEntity(converterPos.relative(direction)) instanceof LVConnectorBlockEntity connector) {
+                connectorPositions.add(connector.getBlockPos());
+            }
+        }
+
+        if (connectorPositions.isEmpty()) {
+            return 0;
+        }
+
+        int[] remaining = {maxAmount};
+        List<BlockPos> handledNetworks = new ArrayList<>();
+        for (BlockPos connectorPos : connectorPositions) {
+            if (remaining[0] <= 0) {
+                break;
+            }
+
+            if (!(level.getBlockEntity(connectorPos) instanceof LVConnectorBlockEntity connector)) {
+                continue;
+            }
+
+            Map<BlockPos, LVConnectorBlockEntity> connectors = collectNetwork(level, connector);
+            BlockPos owner = owner(connectors);
+            if (handledNetworks.contains(owner)) {
+                continue;
+            }
+            handledNetworks.add(owner);
+
+            List<Producer> ignoredProducers = new ArrayList<>();
+            List<Consumer> consumers = new ArrayList<>();
+            for (LVConnectorBlockEntity networkConnector : connectors.values()) {
+                collectAttachedEndpoints(level, networkConnector.getBlockPos(), ignoredProducers, consumers);
+            }
+
+            if (consumers.isEmpty()) {
+                continue;
+            }
+
+            Producer converterProducer = new Producer(connectorPos, new NetworkProducer() {
+                @Override
+                public int availableOutputRJ() {
+                    return remaining[0];
+                }
+
+                @Override
+                public int maxOutputRJPerTick() {
+                    return remaining[0];
+                }
+
+                @Override
+                public int extractRJ(int amount, boolean extractionSimulate) {
+                    int extracted = Math.min(amount, remaining[0]);
+                    if (extracted > 0) {
+                        remaining[0] -= extracted;
+                    }
+                    return extracted;
+                }
+            });
+
+            List<TransferTarget> targets = reachableConsumers(connectors, converterProducer, consumers);
+            for (int index = 0; index < targets.size() && remaining[0] > 0; index++) {
+                TransferTarget target = targets.get(index);
+                int remainingTargets = targets.size() - index;
+                int evenShare = Math.max(1, remaining[0] / remainingTargets);
+                transferToConsumer(connectors, converterProducer, target, evenShare, new HashMap<>(), simulate, false);
+            }
+        }
+
+        return maxAmount - remaining[0];
     }
 
     private static Map<BlockPos, LVConnectorBlockEntity> collectNetwork(ServerLevel level, LVConnectorBlockEntity startConnector) {
@@ -103,13 +187,50 @@ public final class LVElectricalNetworkSystem {
         return connectors.keySet().stream().min(Comparator.comparingLong(BlockPos::asLong)).orElseThrow();
     }
 
-    private static void collectAttachedMachines(ServerLevel level, BlockPos connectorPos, List<Producer> producers, List<Consumer> consumers) {
+    private static void collectAttachedEndpoints(ServerLevel level, BlockPos connectorPos, List<Producer> producers, List<Consumer> consumers) {
         for (Direction direction : Direction.values()) {
             BlockEntity blockEntity = level.getBlockEntity(connectorPos.relative(direction));
             if (blockEntity instanceof CombustionGeneratorBlockEntity generator) {
-                producers.add(new Producer(connectorPos, generator));
+                producers.add(new Producer(connectorPos, new NetworkProducer() {
+                    @Override
+                    public int availableOutputRJ() {
+                        return generator.getStoredRJ();
+                    }
+
+                    @Override
+                    public int maxOutputRJPerTick() {
+                        return generator.getMaxOutputRJPerTick();
+                    }
+
+                    @Override
+                    public int extractRJ(int amount, boolean simulate) {
+                        return generator.extractRJ(amount, simulate);
+                    }
+                }));
             } else if (blockEntity instanceof ElectricFurnaceBlockEntity furnace) {
-                consumers.add(new Consumer(connectorPos, furnace));
+                consumers.add(new Consumer(connectorPos, new NetworkConsumer() {
+                    @Override
+                    public int availableRJCapacity() {
+                        return furnace.getAvailableRJCapacity();
+                    }
+
+                    @Override
+                    public int receiveRJ(int amount, boolean simulate) {
+                        return furnace.receiveRJ(amount, simulate);
+                    }
+                }));
+            } else if (blockEntity instanceof LVRJConverterBlockEntity converter) {
+                consumers.add(new Consumer(connectorPos, new NetworkConsumer() {
+                    @Override
+                    public int availableRJCapacity() {
+                        return converter.getAvailableRJCapacity();
+                    }
+
+                    @Override
+                    public int receiveRJ(int amount, boolean simulate) {
+                        return converter.receiveRJ(amount, simulate);
+                    }
+                }));
             }
         }
     }
@@ -117,7 +238,7 @@ public final class LVElectricalNetworkSystem {
     private static List<TransferTarget> reachableConsumers(Map<BlockPos, LVConnectorBlockEntity> connectors, Producer producer, List<Consumer> consumers) {
         List<TransferTarget> targets = new ArrayList<>();
         for (Consumer consumer : consumers) {
-            int capacity = consumer.furnace.getAvailableRJCapacity();
+            int capacity = consumer.endpoint.availableRJCapacity();
             if (capacity <= 0) {
                 continue;
             }
@@ -131,34 +252,37 @@ public final class LVElectricalNetworkSystem {
         return targets;
     }
 
-    private static int transferToConsumer(Map<BlockPos, LVConnectorBlockEntity> connectors, Producer producer, TransferTarget target, int maxSentRJ, Map<EdgeKey, Double> edgeCurrent) {
+    private static int transferToConsumer(Map<BlockPos, LVConnectorBlockEntity> connectors, Producer producer, TransferTarget target, int maxSentRJ, Map<EdgeKey, Double> edgeCurrent, boolean simulate, boolean applySafeTransferCap) {
         double sourceVoltage = CopperWireConstants.VOLTAGE;
-        double voltageDrop = target.path.distance * CopperWireConstants.COPPER_VOLTAGE_DROP_PER_BLOCK;
+        double voltageDrop = target.path.voltageDrop;
         double deliveredVoltage = Math.max(0.0D, sourceVoltage - voltageDrop);
         if (deliveredVoltage <= 0.0D) {
             return 0;
         }
 
         int capacityAdjustedSent = (int) Math.ceil(target.capacity * sourceVoltage / deliveredVoltage);
-        int sent = Math.min(Math.min(maxSentRJ, capacityAdjustedSent), CopperWireConstants.MAX_SAFE_TRANSFER_RJ_PER_TICK);
+        int sent = Math.min(maxSentRJ, capacityAdjustedSent);
+        if (applySafeTransferCap) {
+            sent = Math.min(sent, target.path.maxTransferRJPerTick);
+        }
         if (sent <= 0) {
             return 0;
         }
 
         double amps = sent / sourceVoltage;
         int delivered = (int) Math.floor(deliveredVoltage * amps);
-        if (delivered <= 0 || target.consumer.furnace.receiveRJ(delivered, true) <= 0) {
+        if (delivered <= 0 || target.consumer.endpoint.receiveRJ(delivered, true) <= 0) {
             return 0;
         }
 
-        int extracted = producer.generator.extractRJ(sent, false);
+        int extracted = producer.endpoint.extractRJ(sent, simulate);
         if (extracted <= 0) {
             return 0;
         }
 
         int adjustedDelivered = Math.min((int) Math.floor(deliveredVoltage * (extracted / sourceVoltage)), target.capacity);
-        int accepted = target.consumer.furnace.receiveRJ(adjustedDelivered, false);
-        if (accepted > 0) {
+        int accepted = target.consumer.endpoint.receiveRJ(adjustedDelivered, simulate);
+        if (accepted > 0 && !simulate) {
             addPower(connectors, target.path.edges, edgeCurrent, extracted);
         }
 
@@ -167,7 +291,7 @@ public final class LVElectricalNetworkSystem {
 
     private static Path shortestPath(Map<BlockPos, LVConnectorBlockEntity> connectors, BlockPos start, BlockPos end) {
         if (start.equals(end)) {
-            return new Path(List.of(), 0.0D);
+            return new Path(List.of(), 0.0D, 0.0D, Integer.MAX_VALUE);
         }
 
         PriorityQueue<PathNode> queue = new PriorityQueue<>(Comparator.comparingDouble(PathNode::distance));
@@ -211,6 +335,9 @@ public final class LVElectricalNetworkSystem {
         }
 
         List<EdgeKey> edges = new ArrayList<>();
+        double pathDistance = 0.0D;
+        double voltageDrop = 0.0D;
+        int maxTransferRJPerTick = Integer.MAX_VALUE;
         BlockPos current = end;
         while (!current.equals(start)) {
             BlockPos previousPos = previous.get(current);
@@ -219,10 +346,16 @@ public final class LVElectricalNetworkSystem {
             }
 
             edges.add(new EdgeKey(previousPos, current));
+            LVConnectorBlockEntity previousConnector = connectors.get(previousPos);
+            LVWireType wireType = previousConnector == null ? LVWireType.COPPER : previousConnector.getConnectionWireType(current);
+            double edgeDistance = Math.sqrt(previousPos.distSqr(current));
+            pathDistance += edgeDistance;
+            voltageDrop += edgeDistance * wireType.voltageDropPerBlock();
+            maxTransferRJPerTick = Math.min(maxTransferRJPerTick, wireType.maxTransferRJPerTick());
             current = previousPos;
         }
 
-        return new Path(edges, distance);
+        return new Path(edges, pathDistance, voltageDrop, maxTransferRJPerTick);
     }
 
     private static void addPower(Map<BlockPos, LVConnectorBlockEntity> connectors, List<EdgeKey> edges, Map<EdgeKey, Double> edgePower, int sentRJ) {
@@ -252,14 +385,15 @@ public final class LVElectricalNetworkSystem {
 
                 int transferred = connector.getCurrentTickTransferredRJ(connection);
                 double current = transferred / (double) CopperWireConstants.VOLTAGE;
+                LVWireType wireType = connector.getConnectionWireType(connection);
                 double heat = Math.max(connector.getConnectionHeat(connection), other.getConnectionHeat(connector.getBlockPos()));
                 if (current <= 0.0D && heat <= 0.0D) {
                     continue;
                 }
 
-                if (current > CopperWireConstants.COPPER_MAX_CURRENT_A) {
+                if (current > wireType.maxCurrentAmps()) {
                     // TODO: add explicit overload logging/debug visualization once cable diagnostics exist.
-                    heat += (current - CopperWireConstants.COPPER_MAX_CURRENT_A) * CopperWireConstants.COPPER_HEAT_PER_AMP_OVER;
+                    heat += (current - wireType.maxCurrentAmps()) * CopperWireConstants.COPPER_HEAT_PER_AMP_OVER;
                 } else {
                     heat = Math.max(0.0D, heat - CopperWireConstants.COPPER_COOLING_PER_TICK);
                 }
@@ -306,6 +440,8 @@ public final class LVElectricalNetworkSystem {
     }
 
     private static void spawnBurnoutEffects(ServerLevel level, BlockPos startPos, BlockPos endPos) {
+        playBurnoutSound(level, startPos, endPos);
+
         BlockState fireState = Blocks.FIRE.defaultBlockState();
         for (int index = 0; index <= BURNOUT_PARTICLE_SAMPLES; index++) {
             double t = index / (double) BURNOUT_PARTICLE_SAMPLES;
@@ -323,6 +459,20 @@ public final class LVElectricalNetworkSystem {
         }
     }
 
+    private static void playBurnoutSound(ServerLevel level, BlockPos startPos, BlockPos endPos) {
+        Vec3 midpoint = sagPoint(startPos, endPos, 0.5D);
+        level.playSound(
+                null,
+                midpoint.x,
+                midpoint.y,
+                midpoint.z,
+                SoundEvents.FIRE_EXTINGUISH,
+                SoundSource.BLOCKS,
+                BURNOUT_SOUND_VOLUME,
+                BURNOUT_SOUND_BASE_PITCH + level.random.nextFloat() * BURNOUT_SOUND_RANDOM_PITCH
+        );
+    }
+
     public static Vec3 sagPoint(BlockPos startPos, BlockPos endPos, double t) {
         Vec3 start = anchor(startPos);
         Vec3 end = anchor(endPos);
@@ -335,16 +485,30 @@ public final class LVElectricalNetworkSystem {
         return new Vec3(LVConnectorBlockEntity.anchorX(pos), LVConnectorBlockEntity.anchorY(pos), LVConnectorBlockEntity.anchorZ(pos));
     }
 
-    private record Producer(BlockPos connectorPos, CombustionGeneratorBlockEntity generator) {
+    private interface NetworkProducer {
+        int availableOutputRJ();
+
+        int maxOutputRJPerTick();
+
+        int extractRJ(int amount, boolean simulate);
     }
 
-    private record Consumer(BlockPos connectorPos, ElectricFurnaceBlockEntity furnace) {
+    private interface NetworkConsumer {
+        int availableRJCapacity();
+
+        int receiveRJ(int amount, boolean simulate);
+    }
+
+    private record Producer(BlockPos connectorPos, NetworkProducer endpoint) {
+    }
+
+    private record Consumer(BlockPos connectorPos, NetworkConsumer endpoint) {
     }
 
     private record TransferTarget(Consumer consumer, Path path, int capacity) {
     }
 
-    private record Path(List<EdgeKey> edges, double distance) {
+    private record Path(List<EdgeKey> edges, double distance, double voltageDrop, int maxTransferRJPerTick) {
     }
 
     private record PathNode(BlockPos pos, double distance) {

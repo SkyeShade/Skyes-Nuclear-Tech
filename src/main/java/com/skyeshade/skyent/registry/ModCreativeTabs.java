@@ -23,7 +23,11 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.COMBUSTION_GENERATOR.get());
                         output.accept(ModItems.ELECTRIC_FURNACE.get());
                         output.accept(ModItems.LV_CONNECTOR.get());
-                        output.accept(ModItems.COPPER_WIRE_DRUM.get());
+                        output.accept(ModItems.STEEL_INGOT.get());
+                        output.accept(ModItems.LV_COPPER_WIRE_DRUM.get());
+                        output.accept(ModItems.LV_STEEL_WIRE_DRUM.get());
+                        output.accept(ModItems.LV_RJ_CONVERTER.get());
+                        output.accept(ModItems.LV_FE_CONVERTER.get());
                     })
                     .build()
     );

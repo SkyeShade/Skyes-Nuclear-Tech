@@ -21,13 +21,6 @@ public final class CommonEvents {
     }
 
     public static void onRegisterCapabilities(RegisterCapabilitiesEvent event) {
-        // Temporary FE compatibility. Internal/displayed energy is RJ at 1 RJ = 1 FE.
-        event.registerBlockEntity(
-                Capabilities.EnergyStorage.BLOCK,
-                ModBlockEntities.COMBUSTION_GENERATOR.get(),
-                (generator, side) -> generator.getEnergyStorage()
-        );
-
         event.registerBlockEntity(
                 Capabilities.ItemHandler.BLOCK,
                 ModBlockEntities.COMBUSTION_GENERATOR.get(),
@@ -41,15 +34,21 @@ public final class CommonEvents {
         );
 
         event.registerBlockEntity(
-                Capabilities.EnergyStorage.BLOCK,
-                ModBlockEntities.ELECTRIC_FURNACE.get(),
-                (furnace, side) -> furnace.getEnergyStorage()
-        );
-
-        event.registerBlockEntity(
                 Capabilities.ItemHandler.BLOCK,
                 ModBlockEntities.ELECTRIC_FURNACE.get(),
                 (furnace, side) -> furnace.getAutomationItemHandler()
+        );
+
+        event.registerBlockEntity(
+                Capabilities.EnergyStorage.BLOCK,
+                ModBlockEntities.LV_RJ_CONVERTER.get(),
+                (converter, side) -> converter.getFEOutput()
+        );
+
+        event.registerBlockEntity(
+                Capabilities.EnergyStorage.BLOCK,
+                ModBlockEntities.LV_FE_CONVERTER.get(),
+                (converter, side) -> converter.getFEInput()
         );
     }
 }
