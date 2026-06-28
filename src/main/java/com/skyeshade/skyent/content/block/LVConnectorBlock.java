@@ -6,8 +6,11 @@ import com.skyeshade.skyent.event.systems.LVElectricalNetworkSystem;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RenderShape;
@@ -16,23 +19,63 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 public class LVConnectorBlock extends BaseEntityBlock {
+    public static final DirectionProperty FACING = BlockStateProperties.FACING;
     public static final MapCodec<LVConnectorBlock> CODEC = simpleCodec(LVConnectorBlock::new);
 
-    private static final VoxelShape SHAPE = Shapes.or(
+    private static final VoxelShape UP_SHAPE = Shapes.or(
             Block.box(5.0D, 0.0D, 5.0D, 11.0D, 2.0D, 11.0D),
             Block.box(6.0D, 2.0D, 6.0D, 10.0D, 3.0D, 10.0D),
             Block.box(5.0D, 3.0D, 5.0D, 11.0D, 5.0D, 11.0D),
             Block.box(6.0D, 5.0D, 6.0D, 10.0D, 6.0D, 10.0D),
             Block.box(6.5D, 6.0D, 6.5D, 9.5D, 7.0D, 9.5D)
     );
+    private static final VoxelShape DOWN_SHAPE = Shapes.or(
+            Block.box(5.0D, 14.0D, 5.0D, 11.0D, 16.0D, 11.0D),
+            Block.box(6.0D, 13.0D, 6.0D, 10.0D, 14.0D, 10.0D),
+            Block.box(5.0D, 11.0D, 5.0D, 11.0D, 13.0D, 11.0D),
+            Block.box(6.0D, 10.0D, 6.0D, 10.0D, 11.0D, 10.0D),
+            Block.box(6.5D, 9.0D, 6.5D, 9.5D, 10.0D, 9.5D)
+    );
+    private static final VoxelShape NORTH_SHAPE = Shapes.or(
+            Block.box(5.0D, 5.0D, 14.0D, 11.0D, 11.0D, 16.0D),
+            Block.box(6.0D, 6.0D, 13.0D, 10.0D, 10.0D, 14.0D),
+            Block.box(5.0D, 5.0D, 11.0D, 11.0D, 11.0D, 13.0D),
+            Block.box(6.0D, 6.0D, 10.0D, 10.0D, 10.0D, 11.0D),
+            Block.box(6.5D, 6.5D, 9.0D, 9.5D, 9.5D, 10.0D)
+    );
+    private static final VoxelShape SOUTH_SHAPE = Shapes.or(
+            Block.box(5.0D, 5.0D, 0.0D, 11.0D, 11.0D, 2.0D),
+            Block.box(6.0D, 6.0D, 2.0D, 10.0D, 10.0D, 3.0D),
+            Block.box(5.0D, 5.0D, 3.0D, 11.0D, 11.0D, 5.0D),
+            Block.box(6.0D, 6.0D, 5.0D, 10.0D, 10.0D, 6.0D),
+            Block.box(6.5D, 6.5D, 6.0D, 9.5D, 9.5D, 7.0D)
+    );
+    private static final VoxelShape EAST_SHAPE = Shapes.or(
+            Block.box(0.0D, 5.0D, 5.0D, 2.0D, 11.0D, 11.0D),
+            Block.box(2.0D, 6.0D, 6.0D, 3.0D, 10.0D, 10.0D),
+            Block.box(3.0D, 5.0D, 5.0D, 5.0D, 11.0D, 11.0D),
+            Block.box(5.0D, 6.0D, 6.0D, 6.0D, 10.0D, 10.0D),
+            Block.box(6.0D, 6.5D, 6.5D, 7.0D, 9.5D, 9.5D)
+    );
+    private static final VoxelShape WEST_SHAPE = Shapes.or(
+            Block.box(14.0D, 5.0D, 5.0D, 16.0D, 11.0D, 11.0D),
+            Block.box(13.0D, 6.0D, 6.0D, 14.0D, 10.0D, 10.0D),
+            Block.box(11.0D, 5.0D, 5.0D, 13.0D, 11.0D, 11.0D),
+            Block.box(10.0D, 6.0D, 6.0D, 11.0D, 10.0D, 10.0D),
+            Block.box(9.0D, 6.5D, 6.5D, 10.0D, 9.5D, 9.5D)
+    );
 
     public LVConnectorBlock(BlockBehaviour.Properties properties) {
         super(properties);
+        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.UP));
     }
 
     @Override
@@ -42,12 +85,47 @@ public class LVConnectorBlock extends BaseEntityBlock {
 
     @Override
     protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return SHAPE;
+        return shapeFor(state.getValue(FACING));
+    }
+
+    @Override
+    protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        return shapeFor(state.getValue(FACING));
     }
 
     @Override
     protected RenderShape getRenderShape(BlockState state) {
         return RenderShape.MODEL;
+    }
+
+    @Nullable
+    @Override
+    public BlockState getStateForPlacement(BlockPlaceContext context) {
+        BlockState state = defaultBlockState().setValue(FACING, context.getClickedFace());
+        return canSurvive(state, context.getLevel(), context.getClickedPos()) ? state : null;
+    }
+
+    @Override
+    protected boolean canSurvive(BlockState state, net.minecraft.world.level.LevelReader level, BlockPos pos) {
+        Direction facing = state.getValue(FACING);
+        BlockPos supportPos = pos.relative(facing.getOpposite());
+        return level.getBlockState(supportPos).isFaceSturdy(level, supportPos, facing);
+    }
+
+    @Override
+    protected BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
+        if (direction == state.getValue(FACING).getOpposite() && !canSurvive(state, level, pos)) {
+            return net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
+        }
+
+        return super.updateShape(state, direction, neighborState, level, pos, neighborPos);
+    }
+
+    @Override
+    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
+        if (!level.isClientSide && !canSurvive(state, level, pos)) {
+            level.destroyBlock(pos, true);
+        }
     }
 
     @Nullable
@@ -77,5 +155,21 @@ public class LVConnectorBlock extends BaseEntityBlock {
         }
 
         super.onRemove(state, level, pos, newState, isMoving);
+    }
+
+    @Override
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        builder.add(FACING);
+    }
+
+    private static VoxelShape shapeFor(Direction facing) {
+        return switch (facing) {
+            case DOWN -> DOWN_SHAPE;
+            case NORTH -> NORTH_SHAPE;
+            case SOUTH -> SOUTH_SHAPE;
+            case EAST -> EAST_SHAPE;
+            case WEST -> WEST_SHAPE;
+            case UP -> UP_SHAPE;
+        };
     }
 }

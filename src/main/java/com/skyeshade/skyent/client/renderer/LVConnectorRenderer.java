@@ -20,6 +20,7 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
@@ -61,6 +62,7 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
         VertexConsumer buffer = bufferSource.getBuffer(CABLE_RENDER_TYPE);
         Matrix4f pose = poseStack.last().pose();
         BlockPos origin = connector.getBlockPos();
+        Level level = connector.getLevel();
         beginFrame(Minecraft.getInstance().getFrameTimeNs());
         Vec3 cameraWorld = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
         Vector3f camera = new Vector3f(
@@ -68,10 +70,11 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
                 (float) (cameraWorld.y - origin.getY()),
                 (float) (cameraWorld.z - origin.getZ())
         );
+        Vec3 startAnchor = anchor(level, connector.getBlockState(), origin);
         Vector3f start = new Vector3f(
-                (float) (LVConnectorBlockEntity.anchorX(origin) - origin.getX()),
-                (float) (LVConnectorBlockEntity.anchorY(origin) - origin.getY()),
-                (float) (LVConnectorBlockEntity.anchorZ(origin) - origin.getZ())
+                (float) (startAnchor.x - origin.getX()),
+                (float) (startAnchor.y - origin.getY()),
+                (float) (startAnchor.z - origin.getZ())
         );
 
         for (BlockPos connection : connector.getConnections()) {
@@ -80,10 +83,13 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
                 continue;
             }
 
+            Vec3 endAnchor = level == null
+                    ? new Vec3(LVConnectorBlockEntity.anchorX(connection), LVConnectorBlockEntity.anchorY(connection), LVConnectorBlockEntity.anchorZ(connection))
+                    : LVConnectorBlockEntity.anchor(level.getBlockState(connection), connection);
             Vector3f end = new Vector3f(
-                    (float) (LVConnectorBlockEntity.anchorX(connection) - origin.getX()),
-                    (float) (LVConnectorBlockEntity.anchorY(connection) - origin.getY()),
-                    (float) (LVConnectorBlockEntity.anchorZ(connection) - origin.getZ())
+                    (float) (endAnchor.x - origin.getX()),
+                    (float) (endAnchor.y - origin.getY()),
+                    (float) (endAnchor.z - origin.getZ())
             );
             double heat = connector.getConnectionHeat(connection);
             LVWireType wireType = connector.getConnectionWireType(connection);
@@ -108,6 +114,12 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
             renderedConnectionFrame = frame;
             RENDERED_CONNECTIONS.clear();
         }
+    }
+
+    private static Vec3 anchor(Level level, net.minecraft.world.level.block.state.BlockState state, BlockPos pos) {
+        return level == null
+                ? new Vec3(LVConnectorBlockEntity.anchorX(pos), LVConnectorBlockEntity.anchorY(pos), LVConnectorBlockEntity.anchorZ(pos))
+                : LVConnectorBlockEntity.anchor(state, pos);
     }
 
     private static void debugRenderedConnection(BlockPos origin, BlockPos connection, ConnectionKey key, double heat) {

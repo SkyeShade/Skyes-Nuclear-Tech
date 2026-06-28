@@ -431,7 +431,7 @@ public final class LVElectricalNetworkSystem {
         RandomSource random = level.random;
         int attempts = heat >= CopperWireConstants.COPPER_GLOW_ORANGE_HEAT ? HOT_PARTICLE_ATTEMPTS + 1 : HOT_PARTICLE_ATTEMPTS;
         for (int index = 0; index < attempts; index++) {
-            Vec3 point = sagPoint(startPos, endPos, random.nextDouble());
+            Vec3 point = sagPoint(level, startPos, endPos, random.nextDouble());
             level.sendParticles(ParticleTypes.SMOKE, point.x, point.y, point.z, 1, 0.02D, 0.02D, 0.02D, 0.0D);
             if (heat >= CopperWireConstants.COPPER_GLOW_ORANGE_HEAT && random.nextFloat() < 0.35F) {
                 level.sendParticles(ParticleTypes.FLAME, point.x, point.y, point.z, 1, 0.01D, 0.01D, 0.01D, 0.0D);
@@ -445,7 +445,7 @@ public final class LVElectricalNetworkSystem {
         BlockState fireState = Blocks.FIRE.defaultBlockState();
         for (int index = 0; index <= BURNOUT_PARTICLE_SAMPLES; index++) {
             double t = index / (double) BURNOUT_PARTICLE_SAMPLES;
-            Vec3 point = sagPoint(startPos, endPos, t);
+            Vec3 point = sagPoint(level, startPos, endPos, t);
             level.sendParticles(ParticleTypes.LARGE_SMOKE, point.x, point.y, point.z, 2, 0.04D, 0.04D, 0.04D, 0.0D);
 
             if (level.random.nextFloat() > BURNOUT_FIRE_CHANCE) {
@@ -460,7 +460,7 @@ public final class LVElectricalNetworkSystem {
     }
 
     private static void playBurnoutSound(ServerLevel level, BlockPos startPos, BlockPos endPos) {
-        Vec3 midpoint = sagPoint(startPos, endPos, 0.5D);
+        Vec3 midpoint = sagPoint(level, startPos, endPos, 0.5D);
         level.playSound(
                 null,
                 midpoint.x,
@@ -476,6 +476,16 @@ public final class LVElectricalNetworkSystem {
     public static Vec3 sagPoint(BlockPos startPos, BlockPos endPos, double t) {
         Vec3 start = anchor(startPos);
         Vec3 end = anchor(endPos);
+        return sagPoint(start, end, t);
+    }
+
+    public static Vec3 sagPoint(net.minecraft.world.level.BlockGetter level, BlockPos startPos, BlockPos endPos, double t) {
+        Vec3 start = LVConnectorBlockEntity.anchor(level.getBlockState(startPos), startPos);
+        Vec3 end = LVConnectorBlockEntity.anchor(level.getBlockState(endPos), endPos);
+        return sagPoint(start, end, t);
+    }
+
+    private static Vec3 sagPoint(Vec3 start, Vec3 end, double t) {
         double distance = start.distanceTo(end);
         double sag = Math.min(CABLE_MAX_SAG, CABLE_BASE_SAG + distance * CABLE_SAG_PER_BLOCK);
         return start.lerp(end, t).subtract(0.0D, Math.sin(Math.PI * t) * sag, 0.0D);

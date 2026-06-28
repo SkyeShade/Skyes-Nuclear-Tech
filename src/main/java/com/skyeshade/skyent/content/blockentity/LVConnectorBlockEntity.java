@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -16,11 +17,14 @@ import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 public class LVConnectorBlockEntity extends BlockEntity {
     public static final int MAX_CONNECTIONS = 4;
-    public static final double CONNECTOR_ANCHOR_Y_OFFSET = 0.45D - 1.0D / 16.0D;
+    public static final double CONNECTOR_ANCHOR_CENTER = 0.5D;
+    public static final double CONNECTOR_ANCHOR_NEAR_FACE = 0.45D - 1.0D / 16.0D;
+    public static final double CONNECTOR_ANCHOR_FAR_FACE = 1.0D - CONNECTOR_ANCHOR_NEAR_FACE;
 
     private static final String CONNECTIONS_TAG = "Connections";
     private static final String POSITION_TAG = "Position";
@@ -144,11 +148,29 @@ public class LVConnectorBlockEntity extends BlockEntity {
     }
 
     public static double anchorY(BlockPos pos) {
-        return pos.getY() + CONNECTOR_ANCHOR_Y_OFFSET;
+        return pos.getY() + CONNECTOR_ANCHOR_NEAR_FACE;
     }
 
     public static double anchorZ(BlockPos pos) {
         return pos.getZ() + 0.5D;
+    }
+
+    public static Vec3 anchor(BlockState state, BlockPos pos) {
+        Direction facing = state.hasProperty(com.skyeshade.skyent.content.block.LVConnectorBlock.FACING)
+                ? state.getValue(com.skyeshade.skyent.content.block.LVConnectorBlock.FACING)
+                : Direction.UP;
+        double x = pos.getX() + CONNECTOR_ANCHOR_CENTER;
+        double y = pos.getY() + CONNECTOR_ANCHOR_CENTER;
+        double z = pos.getZ() + CONNECTOR_ANCHOR_CENTER;
+
+        return switch (facing) {
+            case UP -> new Vec3(x, pos.getY() + CONNECTOR_ANCHOR_NEAR_FACE, z);
+            case DOWN -> new Vec3(x, pos.getY() + CONNECTOR_ANCHOR_FAR_FACE, z);
+            case NORTH -> new Vec3(x, y, pos.getZ() + CONNECTOR_ANCHOR_FAR_FACE);
+            case SOUTH -> new Vec3(x, y, pos.getZ() + CONNECTOR_ANCHOR_NEAR_FACE);
+            case EAST -> new Vec3(pos.getX() + CONNECTOR_ANCHOR_NEAR_FACE, y, z);
+            case WEST -> new Vec3(pos.getX() + CONNECTOR_ANCHOR_FAR_FACE, y, z);
+        };
     }
 
     @Override

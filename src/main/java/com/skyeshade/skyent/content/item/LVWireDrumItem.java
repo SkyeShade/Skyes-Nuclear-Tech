@@ -153,7 +153,7 @@ public class LVWireDrumItem extends Item {
     private static boolean isCablePathObstructed(ServerLevel level, BlockPos startPos, BlockPos endPos) {
         for (int sample = 1; sample < LVElectricalNetworkSystem.CABLE_SEGMENTS; sample++) {
             double t = sample / (double) LVElectricalNetworkSystem.CABLE_SEGMENTS;
-            Vec3 point = LVElectricalNetworkSystem.sagPoint(startPos, endPos, t);
+            Vec3 point = LVElectricalNetworkSystem.sagPoint(level, startPos, endPos, t);
             BlockPos blockPos = BlockPos.containing(point);
             if (blockPos.equals(startPos) || blockPos.equals(endPos)) {
                 continue;
