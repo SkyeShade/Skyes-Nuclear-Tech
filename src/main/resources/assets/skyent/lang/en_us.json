@@ -1,11 +1,13 @@
 {
   "block.skyent.combustion_generator": "Combustion Generator",
   "block.skyent.electric_furnace": "Electric Furnace",
+  "block.skyent.lv_electric_pump": "LV Electric Pump",
   "block.skyent.lv_connector": "LV Connector",
   "block.skyent.lv_rj_converter": "LV RJ Converter",
   "block.skyent.lv_fe_converter": "LV FE Converter",
   "container.skyent.combustion_generator": "Combustion Generator",
   "container.skyent.electric_furnace": "Electric Furnace",
+  "container.skyent.lv_electric_pump": "LV Electric Pump",
   "item.skyent.lv_copper_wire_drum": "LV Copper Wire Drum",
   "item.skyent.lv_steel_wire_drum": "LV Steel Wire Drum",
   "item.skyent.steel_ingot": "Steel Ingot",

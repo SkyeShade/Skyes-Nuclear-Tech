@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "skyent:block/lv_electric_pump_sides",
+    "down": "skyent:block/lv_electric_pump_bottom",
+    "up": "skyent:block/lv_electric_pump_top",
+    "north": "skyent:block/lv_electric_pump_front",
+    "south": "skyent:block/lv_electric_pump_sides",
+    "east": "skyent:block/lv_electric_pump_sides",
+    "west": "skyent:block/lv_electric_pump_sides"
+  }
+}

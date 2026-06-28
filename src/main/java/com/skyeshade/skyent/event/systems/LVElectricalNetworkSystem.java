@@ -2,6 +2,7 @@ package com.skyeshade.skyent.event.systems;
 
 import com.skyeshade.skyent.content.blockentity.CombustionGeneratorBlockEntity;
 import com.skyeshade.skyent.content.blockentity.ElectricFurnaceBlockEntity;
+import com.skyeshade.skyent.content.blockentity.LVElectricPumpBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVRJConverterBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVConnectorBlockEntity;
 import com.skyeshade.skyent.content.energy.CopperWireConstants;
@@ -217,6 +218,18 @@ public final class LVElectricalNetworkSystem {
                     @Override
                     public int receiveRJ(int amount, boolean simulate) {
                         return furnace.receiveRJ(amount, simulate);
+                    }
+                }));
+            } else if (blockEntity instanceof LVElectricPumpBlockEntity pump) {
+                consumers.add(new Consumer(connectorPos, new NetworkConsumer() {
+                    @Override
+                    public int availableRJCapacity() {
+                        return pump.getAvailableRJCapacity();
+                    }
+
+                    @Override
+                    public int receiveRJ(int amount, boolean simulate) {
+                        return pump.receiveRJ(amount, simulate);
                     }
                 }));
             } else if (blockEntity instanceof LVRJConverterBlockEntity converter) {

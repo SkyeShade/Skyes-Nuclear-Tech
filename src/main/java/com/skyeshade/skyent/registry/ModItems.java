@@ -23,6 +23,11 @@ public final class ModItems {
             new Item.Properties()
     );
 
+    public static final DeferredItem<BlockItem> LV_ELECTRIC_PUMP = ITEMS.registerSimpleBlockItem(
+            ModBlocks.LV_ELECTRIC_PUMP,
+            new Item.Properties()
+    );
+
     public static final DeferredItem<BlockItem> LV_CONNECTOR = ITEMS.registerSimpleBlockItem(
             ModBlocks.LV_CONNECTOR,
             new Item.Properties()

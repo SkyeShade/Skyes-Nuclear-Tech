@@ -1,8 +1,10 @@
 package com.skyeshade.skyent.event;
 
 import com.skyeshade.skyent.client.renderer.LVConnectorRenderer;
+import com.skyeshade.skyent.client.renderer.LVElectricPumpRenderer;
 import com.skyeshade.skyent.client.screen.CombustionGeneratorScreen;
 import com.skyeshade.skyent.client.screen.ElectricFurnaceScreen;
+import com.skyeshade.skyent.client.screen.LVElectricPumpScreen;
 import com.skyeshade.skyent.event.systems.BootstrapSystem;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import com.skyeshade.skyent.registry.ModMenus;
@@ -28,9 +30,11 @@ public final class ClientEvents {
     public static void onRegisterMenuScreens(RegisterMenuScreensEvent event) {
         event.register(ModMenus.COMBUSTION_GENERATOR.get(), CombustionGeneratorScreen::new);
         event.register(ModMenus.ELECTRIC_FURNACE.get(), ElectricFurnaceScreen::new);
+        event.register(ModMenus.LV_ELECTRIC_PUMP.get(), LVElectricPumpScreen::new);
     }
 
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerBlockEntityRenderer(ModBlockEntities.LV_CONNECTOR.get(), LVConnectorRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.LV_ELECTRIC_PUMP.get(), LVElectricPumpRenderer::new);
     }
 }

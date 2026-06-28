@@ -4,6 +4,7 @@ import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.blockentity.CombustionGeneratorBlockEntity;
 import com.skyeshade.skyent.content.blockentity.ElectricFurnaceBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVFEConverterBlockEntity;
+import com.skyeshade.skyent.content.blockentity.LVElectricPumpBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVRJConverterBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVConnectorBlockEntity;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -28,6 +29,12 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("electric_furnace", () -> BlockEntityType.Builder.of(
                     ElectricFurnaceBlockEntity::new,
                     ModBlocks.ELECTRIC_FURNACE.get()
+            ).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<LVElectricPumpBlockEntity>> LV_ELECTRIC_PUMP =
+            BLOCK_ENTITIES.register("lv_electric_pump", () -> BlockEntityType.Builder.of(
+                    LVElectricPumpBlockEntity::new,
+                    ModBlocks.LV_ELECTRIC_PUMP.get()
             ).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<LVConnectorBlockEntity>> LV_CONNECTOR =

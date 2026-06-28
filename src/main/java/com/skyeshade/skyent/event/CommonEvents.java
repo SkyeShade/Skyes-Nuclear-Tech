@@ -40,6 +40,18 @@ public final class CommonEvents {
         );
 
         event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
+                ModBlockEntities.LV_ELECTRIC_PUMP.get(),
+                (pump, side) -> pump.getAutomationItemHandler()
+        );
+
+        event.registerBlockEntity(
+                Capabilities.FluidHandler.BLOCK,
+                ModBlockEntities.LV_ELECTRIC_PUMP.get(),
+                (pump, side) -> pump.getAutomationFluidHandler()
+        );
+
+        event.registerBlockEntity(
                 Capabilities.EnergyStorage.BLOCK,
                 ModBlockEntities.LV_RJ_CONVERTER.get(),
                 (converter, side) -> converter.getFEOutput()

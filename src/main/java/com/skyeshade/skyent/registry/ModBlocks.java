@@ -5,6 +5,7 @@ import com.skyeshade.skyent.content.block.CombustionGeneratorBlock;
 import com.skyeshade.skyent.content.block.ElectricFurnaceBlock;
 import com.skyeshade.skyent.content.block.LVConverterBlock;
 import com.skyeshade.skyent.content.block.LVConnectorBlock;
+import com.skyeshade.skyent.content.block.LVElectricPumpBlock;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.neoforged.bus.api.IEventBus;
@@ -24,6 +25,12 @@ public final class ModBlocks {
             "electric_furnace",
             ElectricFurnaceBlock::new,
             BlockBehaviour.Properties.ofFullCopy(Blocks.FURNACE)
+    );
+
+    public static final DeferredBlock<LVElectricPumpBlock> LV_ELECTRIC_PUMP = BLOCKS.registerBlock(
+            "lv_electric_pump",
+            LVElectricPumpBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
     );
 
     public static final DeferredBlock<LVConnectorBlock> LV_CONNECTOR = BLOCKS.registerBlock(

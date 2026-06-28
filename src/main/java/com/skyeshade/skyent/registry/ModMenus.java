@@ -3,6 +3,7 @@ package com.skyeshade.skyent.registry;
 import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.menu.CombustionGeneratorMenu;
 import com.skyeshade.skyent.content.menu.ElectricFurnaceMenu;
+import com.skyeshade.skyent.content.menu.LVElectricPumpMenu;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.inventory.MenuType;
 import net.neoforged.bus.api.IEventBus;
@@ -21,6 +22,9 @@ public final class ModMenus {
 
     public static final DeferredHolder<MenuType<?>, MenuType<ElectricFurnaceMenu>> ELECTRIC_FURNACE =
             MENUS.register("electric_furnace", () -> IMenuTypeExtension.create(ElectricFurnaceMenu::new));
+
+    public static final DeferredHolder<MenuType<?>, MenuType<LVElectricPumpMenu>> LV_ELECTRIC_PUMP =
+            MENUS.register("lv_electric_pump", () -> IMenuTypeExtension.create(LVElectricPumpMenu::new));
 
     private ModMenus() {
     }
