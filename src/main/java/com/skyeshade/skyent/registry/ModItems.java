@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.registry;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
+import com.skyeshade.skyent.content.item.CopperWireDrumItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
@@ -17,6 +18,17 @@ public final class ModItems {
 
     public static final DeferredItem<BlockItem> ELECTRIC_FURNACE = ITEMS.registerSimpleBlockItem(
             ModBlocks.ELECTRIC_FURNACE,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> LV_CONNECTOR = ITEMS.registerSimpleBlockItem(
+            ModBlocks.LV_CONNECTOR,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<CopperWireDrumItem> COPPER_WIRE_DRUM = ITEMS.registerItem(
+            "copper_wire_drum",
+            CopperWireDrumItem::new,
             new Item.Properties()
     );
 

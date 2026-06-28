@@ -1,7 +1,9 @@
 {
   "block.skyent.combustion_generator": "Combustion Generator",
   "block.skyent.electric_furnace": "Electric Furnace",
+  "block.skyent.lv_connector": "LV Connector",
   "container.skyent.combustion_generator": "Combustion Generator",
   "container.skyent.electric_furnace": "Electric Furnace",
+  "item.skyent.copper_wire_drum": "Copper Wire Drum",
   "itemGroup.skyent.skyent_tab": "Skye's Nuclear Tech"
 }

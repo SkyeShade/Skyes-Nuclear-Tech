@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.content.blockentity;
 
 import com.skyeshade.skyent.content.block.CombustionGeneratorBlock;
+import com.skyeshade.skyent.content.energy.ElectricalTier;
 import com.skyeshade.skyent.content.menu.CombustionGeneratorMenu;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
@@ -38,8 +39,12 @@ import org.jetbrains.annotations.Nullable;
 
 public class CombustionGeneratorBlockEntity extends BlockEntity implements MenuProvider {
     public static final int ENERGY_CAPACITY = 100_000;
-    public static final int ENERGY_PER_TICK = 40;
-    public static final int MAX_EXTRACT = 80;
+    public static final int ENERGY_PER_TICK = 32;
+    public static final int MAX_EXTRACT = 64;
+    public static final ElectricalTier OUTPUT_TIER = ElectricalTier.LV;
+    public static final int OUTPUT_VOLTAGE = OUTPUT_TIER.voltage();
+    public static final double MAX_OUTPUT_CURRENT_AMPS = 2.0D;
+    public static final int MAX_OUTPUT_RJ_PER_TICK = 64;
     public static final int WATER_CAPACITY = 10_000;
     public static final int WATER_CONSUMPTION_PER_TICK = 1;
     private static final int FIRE_SPREAD_RADIUS = 2;
@@ -315,6 +320,23 @@ public class CombustionGeneratorBlockEntity extends BlockEntity implements MenuP
 
     public int getCurrentGenerationRate() {
         return currentGenerationRate;
+    }
+
+    public int getStoredRJ() {
+        return energy.getEnergyStored();
+    }
+
+    public int getMaxOutputRJPerTick() {
+        return MAX_OUTPUT_RJ_PER_TICK;
+    }
+
+    public int extractRJ(int maxAmount, boolean simulate) {
+        int extracted = energy.extractEnergy(maxAmount, simulate);
+        if (extracted > 0 && !simulate) {
+            setChanged();
+        }
+
+        return extracted;
     }
 
     public int getRedstoneSignal() {

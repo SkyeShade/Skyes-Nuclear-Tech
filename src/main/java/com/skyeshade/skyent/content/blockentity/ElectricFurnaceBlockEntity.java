@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.content.blockentity;
 
 import com.skyeshade.skyent.content.block.ElectricFurnaceBlock;
+import com.skyeshade.skyent.content.energy.ElectricalTier;
 import com.skyeshade.skyent.content.menu.ElectricFurnaceMenu;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
@@ -31,8 +32,11 @@ import net.neoforged.neoforge.items.ItemStackHandler;
 import org.jetbrains.annotations.Nullable;
 
 public class ElectricFurnaceBlockEntity extends BlockEntity implements MenuProvider {
-    public static final int ENERGY_CAPACITY = 100_000;
-    public static final int ENERGY_USAGE_PER_TICK = 20;
+    public static final int ENERGY_CAPACITY = 20_000;
+    public static final int ENERGY_USAGE_PER_TICK = 16;
+    public static final ElectricalTier REQUIRED_TIER = ElectricalTier.LV;
+    public static final int REQUIRED_VOLTAGE = REQUIRED_TIER.voltage();
+    public static final double RUNNING_CURRENT_AMPS = 0.5D;
     public static final int INPUT_SLOT = 0;
     public static final int OUTPUT_SLOT = 1;
     public static final int DEFAULT_COOK_TIME = 200;
@@ -200,6 +204,14 @@ public class ElectricFurnaceBlockEntity extends BlockEntity implements MenuProvi
 
     public IEnergyStorage getEnergyStorage() {
         return energy;
+    }
+
+    public int getAvailableRJCapacity() {
+        return energy.getMaxEnergyStored() - energy.getEnergyStored();
+    }
+
+    public int receiveRJ(int maxAmount, boolean simulate) {
+        return energy.receiveEnergy(maxAmount, simulate);
     }
 
     public ContainerData getData() {

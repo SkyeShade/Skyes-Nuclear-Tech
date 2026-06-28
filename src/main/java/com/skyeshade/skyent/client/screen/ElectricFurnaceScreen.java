@@ -1,6 +1,8 @@
 package com.skyeshade.skyent.client.screen;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
+import com.skyeshade.skyent.content.blockentity.ElectricFurnaceBlockEntity;
+import com.skyeshade.skyent.content.energy.EnergyUnits;
 import com.skyeshade.skyent.content.menu.ElectricFurnaceMenu;
 import java.util.List;
 import net.minecraft.ChatFormatting;
@@ -135,8 +137,10 @@ public class ElectricFurnaceScreen extends AbstractContainerScreen<ElectricFurna
 
     private List<Component> energyTooltip() {
         return List.of(
-                Component.literal(menu.getEnergyStored() + " / " + menu.getMaxEnergyStored() + " FE").withStyle(ChatFormatting.RED),
-                Component.literal("Usage: " + menu.getCurrentEnergyUsage() + " FE/t").withStyle(ChatFormatting.RED)
+                Component.literal(menu.getEnergyStored() + " / " + menu.getMaxEnergyStored() + " " + EnergyUnits.UNIT).withStyle(ChatFormatting.RED),
+                Component.literal("Usage: " + menu.getCurrentEnergyUsage() + " " + EnergyUnits.UNIT_PER_TICK).withStyle(ChatFormatting.RED),
+                Component.literal("Required: " + ElectricFurnaceBlockEntity.REQUIRED_TIER.displayName()).withStyle(ChatFormatting.RED),
+                Component.literal("Current: " + ElectricFurnaceBlockEntity.RUNNING_CURRENT_AMPS + " A").withStyle(ChatFormatting.RED)
         );
     }
 }

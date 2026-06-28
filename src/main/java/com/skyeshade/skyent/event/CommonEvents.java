@@ -21,6 +21,7 @@ public final class CommonEvents {
     }
 
     public static void onRegisterCapabilities(RegisterCapabilitiesEvent event) {
+        // Temporary FE compatibility. Internal/displayed energy is RJ at 1 RJ = 1 FE.
         event.registerBlockEntity(
                 Capabilities.EnergyStorage.BLOCK,
                 ModBlockEntities.COMBUSTION_GENERATOR.get(),

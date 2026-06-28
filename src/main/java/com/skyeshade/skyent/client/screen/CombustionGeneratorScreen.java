@@ -2,6 +2,7 @@ package com.skyeshade.skyent.client.screen;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.blockentity.CombustionGeneratorBlockEntity;
+import com.skyeshade.skyent.content.energy.EnergyUnits;
 import com.skyeshade.skyent.content.menu.CombustionGeneratorMenu;
 import com.mojang.blaze3d.systems.RenderSystem;
 import java.util.List;
@@ -190,8 +191,10 @@ public class CombustionGeneratorScreen extends AbstractContainerScreen<Combustio
 
     private List<Component> energyTooltip() {
         return List.of(
-                Component.literal(menu.getEnergyStored() + " / " + menu.getMaxEnergyStored() + " FE").withStyle(ChatFormatting.RED),
-                Component.literal(menu.getCurrentGenerationRate() + " FE/t").withStyle(ChatFormatting.RED)
+                Component.literal(menu.getEnergyStored() + " / " + menu.getMaxEnergyStored() + " " + EnergyUnits.UNIT).withStyle(ChatFormatting.RED),
+                Component.literal(menu.getCurrentGenerationRate() + " " + EnergyUnits.UNIT_PER_TICK).withStyle(ChatFormatting.RED),
+                Component.literal("Output: " + CombustionGeneratorBlockEntity.OUTPUT_TIER.displayName()).withStyle(ChatFormatting.RED),
+                Component.literal("Max current: " + CombustionGeneratorBlockEntity.MAX_OUTPUT_CURRENT_AMPS + " A").withStyle(ChatFormatting.RED)
         );
     }
 

@@ -22,6 +22,8 @@ public final class ModCreativeTabs {
                     .displayItems((parameters, output) -> {
                         output.accept(ModItems.COMBUSTION_GENERATOR.get());
                         output.accept(ModItems.ELECTRIC_FURNACE.get());
+                        output.accept(ModItems.LV_CONNECTOR.get());
+                        output.accept(ModItems.COPPER_WIRE_DRUM.get());
                     })
                     .build()
     );
