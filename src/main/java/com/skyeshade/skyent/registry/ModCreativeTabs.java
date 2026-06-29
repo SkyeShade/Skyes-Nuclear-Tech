@@ -71,6 +71,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.MEDIUM_HYDRAULIC.get());
                         output.accept(ModItems.INDUSTRIAL_HYDRAULIC.get());
                         output.accept(ModItems.HEAVY_HYDRAULIC.get());
+                        output.accept(ModItems.GEIGER_COUNTER.get());
                         output.accept(ModItems.TITANIUM_SWORD.get());
                         output.accept(ModItems.TITANIUM_PICKAXE.get());
                         output.accept(ModItems.TITANIUM_AXE.get());

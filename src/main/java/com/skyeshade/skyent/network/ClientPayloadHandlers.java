@@ -16,6 +16,10 @@ public final class ClientPayloadHandlers {
         context.enqueueWork(() -> addClientRadiationRays(payload));
     }
 
+    public static void handleGeigerExposure(GeigerExposurePayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> setClientGeigerExposure(payload.exposureMillisievertsPerSecond()));
+    }
+
     private static void setClientRadiationRays(boolean enabled) {
         if (FMLEnvironment.dist != Dist.CLIENT) {
             return;
@@ -39,6 +43,19 @@ public final class ClientPayloadHandlers {
             clientDebug.getMethod("addRays", RadiationRayBatchPayload.class).invoke(null, payload);
         } catch (ReflectiveOperationException exception) {
             throw new IllegalStateException("Unable to add client radiation ray debug records", exception);
+        }
+    }
+
+    private static void setClientGeigerExposure(double exposureMillisievertsPerSecond) {
+        if (FMLEnvironment.dist != Dist.CLIENT) {
+            return;
+        }
+
+        try {
+            Class<?> geigerState = Class.forName("com.skyeshade.skyent.client.item.GeigerCounterClientState");
+            geigerState.getMethod("setExposureMillisievertsPerSecond", double.class).invoke(null, exposureMillisievertsPerSecond);
+        } catch (ReflectiveOperationException exception) {
+            throw new IllegalStateException("Unable to update client Geiger exposure state", exception);
         }
     }
 }

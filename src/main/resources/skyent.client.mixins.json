@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.skyeshade.skyent.mixin.client",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "MixinItemInHandRenderer"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

@@ -9,6 +9,7 @@ import com.skyeshade.skyent.registry.ModBlocks;
 import com.skyeshade.skyent.registry.ModCreativeTabs;
 import com.skyeshade.skyent.registry.ModItems;
 import com.skyeshade.skyent.registry.ModMenus;
+import com.skyeshade.skyent.registry.ModSounds;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.loading.FMLEnvironment;
@@ -29,6 +30,7 @@ public final class SkyesNuclearTech {
         ModItems.register(modEventBus);
         ModBlockEntities.register(modEventBus);
         ModMenus.register(modEventBus);
+        ModSounds.register(modEventBus);
         ModCreativeTabs.register(modEventBus);
 
         CommonEvents.register(modEventBus);

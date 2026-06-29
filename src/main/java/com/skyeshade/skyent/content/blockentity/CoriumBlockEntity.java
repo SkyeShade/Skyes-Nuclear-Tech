@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.content.blockentity;
 
 import com.skyeshade.skyent.content.radiation.RadiationConstants;
+import com.skyeshade.skyent.content.radiation.RadioactiveSourceRegistry;
 import com.skyeshade.skyent.content.radiation.RadiationUtil;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
@@ -25,6 +26,7 @@ public class CoriumBlockEntity extends BlockEntity {
             return;
         }
 
+        RadioactiveSourceRegistry.register(serverLevel, pos);
         corium.radiationTickCounter++;
         if (corium.radiationTickCounter < RADIATION_INTERVAL_TICKS) {
             return;

@@ -66,7 +66,7 @@ public final class ModBlocks {
     public static final DeferredBlock<DeadGrassBlock> DEAD_GRASS = BLOCKS.registerBlock(
             "dead_grass",
             DeadGrassBlock::new,
-            BlockBehaviour.Properties.ofFullCopy(Blocks.DIRT).randomTicks()
+            BlockBehaviour.Properties.ofFullCopy(Blocks.GRASS_BLOCK).randomTicks()
     );
 
     public static final DeferredBlock<DeadPlantBlock> DEAD_SHORT_GRASS = BLOCKS.registerBlock(
@@ -128,6 +128,7 @@ public final class ModBlocks {
                     properties,
                     RadiationConstants.URANIUM_ORE_RADIATION_STRENGTH,
                     RadiationConstants.URANIUM_ORE_RADIATION_RANGE,
+                    RadiationConstants.URANIUM_ORE_ENTITY_RADIATION_RANGE,
                     EnvironmentalRadiationMode.FULL_RAY
             ),
             BlockBehaviour.Properties.ofFullCopy(Blocks.GOLD_ORE)
@@ -139,6 +140,7 @@ public final class ModBlocks {
                     properties,
                     RadiationConstants.URANIUM_ORE_RADIATION_STRENGTH,
                     RadiationConstants.URANIUM_ORE_RADIATION_RANGE,
+                    RadiationConstants.URANIUM_ORE_ENTITY_RADIATION_RANGE,
                     EnvironmentalRadiationMode.FULL_RAY
             ),
             BlockBehaviour.Properties.ofFullCopy(Blocks.DEEPSLATE_GOLD_ORE)

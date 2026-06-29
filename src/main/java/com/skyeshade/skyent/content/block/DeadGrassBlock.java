@@ -1,8 +1,10 @@
 package com.skyeshade.skyent.content.block;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -10,9 +12,27 @@ import net.minecraft.world.level.block.state.BlockState;
 public class DeadGrassBlock extends Block {
     private static final int RECOVERY_LIGHT_LEVEL = 9;
     private static final int RECOVERY_CHANCE = 8;
+    private static final int AMBIENT_PARTICLE_CHANCE = 16;
 
     public DeadGrassBlock(Properties properties) {
         super(properties);
+    }
+
+    @Override
+    public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
+        if (random.nextInt(AMBIENT_PARTICLE_CHANCE) != 0) {
+            return;
+        }
+
+        level.addParticle(
+                ParticleTypes.MYCELIUM,
+                pos.getX() + random.nextDouble(),
+                pos.getY() + 1.1D,
+                pos.getZ() + random.nextDouble(),
+                0.0D,
+                0.0D,
+                0.0D
+        );
     }
 
     @Override

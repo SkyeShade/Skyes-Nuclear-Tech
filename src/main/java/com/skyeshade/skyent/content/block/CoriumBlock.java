@@ -3,10 +3,12 @@ package com.skyeshade.skyent.content.block;
 import com.mojang.serialization.MapCodec;
 import com.skyeshade.skyent.content.blockentity.CoriumBlockEntity;
 import com.skyeshade.skyent.content.radiation.RadiationConstants;
+import com.skyeshade.skyent.content.radiation.RadioactiveSourceRegistry;
 import com.skyeshade.skyent.content.radiation.RadioactiveSource;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.RenderShape;
@@ -25,6 +27,23 @@ public class CoriumBlock extends BaseEntityBlock implements RadioactiveSource {
     @Override
     protected MapCodec<? extends BaseEntityBlock> codec() {
         return CODEC;
+    }
+
+    @Override
+    public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean movedByPiston) {
+        super.onPlace(state, level, pos, oldState, movedByPiston);
+        if (level instanceof ServerLevel serverLevel) {
+            RadioactiveSourceRegistry.register(serverLevel, pos);
+        }
+    }
+
+    @Override
+    protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
+        if (level instanceof ServerLevel serverLevel && !newState.is(state.getBlock())) {
+            RadioactiveSourceRegistry.unregister(serverLevel, pos);
+        }
+
+        super.onRemove(state, level, pos, newState, movedByPiston);
     }
 
     @Override
@@ -58,7 +77,12 @@ public class CoriumBlock extends BaseEntityBlock implements RadioactiveSource {
     }
 
     @Override
-    public int getRadiationRange() {
+    public int getEnvironmentalRadiationRange() {
         return RadiationConstants.CORIUM_BLOCK_RADIATION_RANGE;
+    }
+
+    @Override
+    public int getEntityRadiationRange() {
+        return RadiationConstants.CORIUM_BLOCK_ENTITY_RADIATION_RANGE;
     }
 }

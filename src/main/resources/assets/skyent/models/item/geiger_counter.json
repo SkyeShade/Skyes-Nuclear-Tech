@@ -1,0 +1,18 @@
+{
+  "parent": "minecraft:item/handheld",
+  "loader": "neoforge:separate_transforms",
+  "base": {
+    "parent": "skyent:item/geiger_counter_handheld"
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "skyent:item/geiger_counter_inventory"
+    },
+    "ground": {
+      "parent": "skyent:item/geiger_counter_inventory"
+    },
+    "fixed": {
+      "parent": "skyent:item/geiger_counter_inventory"
+    }
+  }
+}

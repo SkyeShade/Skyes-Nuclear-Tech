@@ -2,6 +2,7 @@ package com.skyeshade.skyent.event;
 
 import com.skyeshade.skyent.event.systems.BootstrapSystem;
 import com.skyeshade.skyent.network.ClientPayloadHandlers;
+import com.skyeshade.skyent.network.GeigerExposurePayload;
 import com.skyeshade.skyent.network.RadiationRayBatchPayload;
 import com.skyeshade.skyent.network.RadiationRaysDebugPayload;
 import com.skyeshade.skyent.registry.ModBlockEntities;
@@ -92,6 +93,11 @@ public final class CommonEvents {
                         RadiationRayBatchPayload.TYPE,
                         RadiationRayBatchPayload.STREAM_CODEC,
                         ClientPayloadHandlers::handleRadiationRayBatch
+                )
+                .playToClient(
+                        GeigerExposurePayload.TYPE,
+                        GeigerExposurePayload.STREAM_CODEC,
+                        ClientPayloadHandlers::handleGeigerExposure
                 );
     }
 }

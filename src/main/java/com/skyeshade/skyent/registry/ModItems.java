@@ -2,6 +2,7 @@ package com.skyeshade.skyent.registry;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.energy.LVWireType;
+import com.skyeshade.skyent.content.item.GeigerCounterItem;
 import com.skyeshade.skyent.content.item.LVWireDrumItem;
 import com.skyeshade.skyent.content.item.RadioactiveBlockItem;
 import com.skyeshade.skyent.content.item.SkyentToolTier;
@@ -196,6 +197,10 @@ public final class ModItems {
     public static final DeferredItem<Item> INDUSTRIAL_HYDRAULIC = simpleItem("industrial_hydraulic");
     public static final DeferredItem<Item> HEAVY_HYDRAULIC = simpleItem("heavy_hydraulic");
     public static final DeferredItem<Item> SUPERHEAVY_ELECTRIC_MOTOR = simpleItem("superheavy_electric_motor");
+    public static final DeferredItem<GeigerCounterItem> GEIGER_COUNTER = ITEMS.register(
+            "geiger_counter",
+            () -> new GeigerCounterItem(new Item.Properties())
+    );
 
     public static final DeferredItem<SwordItem> TITANIUM_SWORD = ITEMS.register(
             "titanium_sword",

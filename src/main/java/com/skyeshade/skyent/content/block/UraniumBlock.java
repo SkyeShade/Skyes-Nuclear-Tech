@@ -9,6 +9,7 @@ public class UraniumBlock extends RadioactiveBlock {
                 properties,
                 RadiationConstants.URANIUM_BLOCK_RADIATION_STRENGTH,
                 RadiationConstants.URANIUM_BLOCK_RADIATION_RANGE,
+                RadiationConstants.URANIUM_BLOCK_ENTITY_RADIATION_RANGE,
                 EnvironmentalRadiationMode.FULL_RAY
         );
     }

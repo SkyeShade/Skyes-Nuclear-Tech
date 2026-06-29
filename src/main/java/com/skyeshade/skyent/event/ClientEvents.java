@@ -1,6 +1,8 @@
 package com.skyeshade.skyent.event;
 
 import com.skyeshade.skyent.client.debug.RadiationRayDebugClient;
+import com.skyeshade.skyent.client.item.GeigerCounterClientState;
+import com.skyeshade.skyent.client.item.GeigerCounterSoundManager;
 import com.skyeshade.skyent.client.renderer.LVConnectorRenderer;
 import com.skyeshade.skyent.client.renderer.LVElectricPumpRenderer;
 import com.skyeshade.skyent.client.screen.BrickBlastFurnaceScreen;
@@ -47,6 +49,8 @@ public final class ClientEvents {
     }
 
     public static void onClientTick(ClientTickEvent.Post event) {
+        GeigerCounterClientState.clientTick();
+        GeigerCounterSoundManager.clientTick();
         RadiationRayDebugClient.onClientTick(event);
     }
 

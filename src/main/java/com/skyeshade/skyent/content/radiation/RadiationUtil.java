@@ -350,7 +350,7 @@ public final class RadiationUtil {
         return new RayInteractionResult(maxEnd, false, lastChance, convertibleHits, conversions);
     }
 
-    private static double environmentalRadiationTransmission(BlockState state, ServerLevel level, BlockPos pos) {
+    public static double environmentalRadiationTransmission(BlockState state, ServerLevel level, BlockPos pos) {
         if (state.isAir()) {
             return 1.0D;
         }
