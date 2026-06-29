@@ -1,11 +1,15 @@
 package com.skyeshade.skyent.event;
 
 import com.skyeshade.skyent.event.systems.BootstrapSystem;
+import com.skyeshade.skyent.network.ClientPayloadHandlers;
+import com.skyeshade.skyent.network.RadiationRayBatchPayload;
+import com.skyeshade.skyent.network.RadiationRaysDebugPayload;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 
 public final class CommonEvents {
     private CommonEvents() {
@@ -14,6 +18,7 @@ public final class CommonEvents {
     public static void register(IEventBus modEventBus) {
         modEventBus.addListener(CommonEvents::onCommonSetup);
         modEventBus.addListener(CommonEvents::onRegisterCapabilities);
+        modEventBus.addListener(CommonEvents::onRegisterPayloads);
     }
 
     public static void onCommonSetup(FMLCommonSetupEvent event) {
@@ -37,6 +42,12 @@ public final class CommonEvents {
                 Capabilities.ItemHandler.BLOCK,
                 ModBlockEntities.ELECTRIC_FURNACE.get(),
                 (furnace, side) -> furnace.getAutomationItemHandler()
+        );
+
+        event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
+                ModBlockEntities.BRICK_BLAST_FURNACE.get(),
+                (furnace, side) -> furnace.getAutomationItemHandler(side)
         );
 
         event.registerBlockEntity(
@@ -68,5 +79,19 @@ public final class CommonEvents {
                 ModBlockEntities.LV_FE_CONVERTER.get(),
                 (converter, side) -> converter.getFEInput()
         );
+    }
+
+    public static void onRegisterPayloads(RegisterPayloadHandlersEvent event) {
+        event.registrar("1")
+                .playToClient(
+                        RadiationRaysDebugPayload.TYPE,
+                        RadiationRaysDebugPayload.STREAM_CODEC,
+                        ClientPayloadHandlers::handleRadiationRaysDebug
+                )
+                .playToClient(
+                        RadiationRayBatchPayload.TYPE,
+                        RadiationRayBatchPayload.STREAM_CODEC,
+                        ClientPayloadHandlers::handleRadiationRayBatch
+                );
     }
 }

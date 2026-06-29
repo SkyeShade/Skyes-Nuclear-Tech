@@ -3,9 +3,17 @@ package com.skyeshade.skyent.registry;
 import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.energy.LVWireType;
 import com.skyeshade.skyent.content.item.LVWireDrumItem;
+import com.skyeshade.skyent.content.item.RadioactiveBlockItem;
+import com.skyeshade.skyent.content.item.SkyentToolTier;
 import com.skyeshade.skyent.content.item.TooltipBlockItem;
+import com.skyeshade.skyent.content.item.UraniumBlockItem;
+import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.HoeItem;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.PickaxeItem;
+import net.minecraft.world.item.ShovelItem;
+import net.minecraft.world.item.SwordItem;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -20,6 +28,11 @@ public final class ModItems {
 
     public static final DeferredItem<BlockItem> ELECTRIC_FURNACE = ITEMS.registerSimpleBlockItem(
             ModBlocks.ELECTRIC_FURNACE,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> BRICK_BLAST_FURNACE = ITEMS.registerSimpleBlockItem(
+            ModBlocks.BRICK_BLAST_FURNACE,
             new Item.Properties()
     );
 
@@ -38,6 +51,121 @@ public final class ModItems {
             new Item.Properties()
     );
 
+    public static final DeferredItem<BlockItem> DEAD_GRASS = ITEMS.registerSimpleBlockItem(
+            ModBlocks.DEAD_GRASS,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> DEAD_SHORT_GRASS = ITEMS.registerSimpleBlockItem(
+            ModBlocks.DEAD_SHORT_GRASS,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> DEAD_TALL_GRASS = ITEMS.registerSimpleBlockItem(
+            ModBlocks.DEAD_TALL_GRASS,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> DEAD_OAK_LEAVES = ITEMS.registerSimpleBlockItem(
+            ModBlocks.DEAD_OAK_LEAVES,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> DEAD_BIRCH_LEAVES = ITEMS.registerSimpleBlockItem(
+            ModBlocks.DEAD_BIRCH_LEAVES,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> DEAD_SPRUCE_LEAVES = ITEMS.registerSimpleBlockItem(
+            ModBlocks.DEAD_SPRUCE_LEAVES,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> DEAD_JUNGLE_LEAVES = ITEMS.registerSimpleBlockItem(
+            ModBlocks.DEAD_JUNGLE_LEAVES,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> DEAD_ACACIA_LEAVES = ITEMS.registerSimpleBlockItem(
+            ModBlocks.DEAD_ACACIA_LEAVES,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> DEAD_DARK_OAK_LEAVES = ITEMS.registerSimpleBlockItem(
+            ModBlocks.DEAD_DARK_OAK_LEAVES,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> DEAD_MANGROVE_LEAVES = ITEMS.registerSimpleBlockItem(
+            ModBlocks.DEAD_MANGROVE_LEAVES,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> DEAD_CHERRY_LEAVES = ITEMS.registerSimpleBlockItem(
+            ModBlocks.DEAD_CHERRY_LEAVES,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> DEAD_AZALEA_LEAVES = ITEMS.registerSimpleBlockItem(
+            ModBlocks.DEAD_AZALEA_LEAVES,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> DEAD_FLOWERING_AZALEA_LEAVES = ITEMS.registerSimpleBlockItem(
+            ModBlocks.DEAD_FLOWERING_AZALEA_LEAVES,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> TITANIUM_ORE = ITEMS.registerSimpleBlockItem(
+            ModBlocks.TITANIUM_ORE,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> DEEPSLATE_TITANIUM_ORE = ITEMS.registerSimpleBlockItem(
+            ModBlocks.DEEPSLATE_TITANIUM_ORE,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> ALUMINUM_ORE = ITEMS.registerSimpleBlockItem(
+            ModBlocks.ALUMINUM_ORE,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> DEEPSLATE_ALUMINUM_ORE = ITEMS.registerSimpleBlockItem(
+            ModBlocks.DEEPSLATE_ALUMINUM_ORE,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> TUNGSTEN_ORE = ITEMS.registerSimpleBlockItem(
+            ModBlocks.TUNGSTEN_ORE,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> DEEPSLATE_TUNGSTEN_ORE = ITEMS.registerSimpleBlockItem(
+            ModBlocks.DEEPSLATE_TUNGSTEN_ORE,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<RadioactiveBlockItem> URANIUM_ORE = ITEMS.register(
+            "uranium_ore",
+            () -> new RadioactiveBlockItem(ModBlocks.URANIUM_ORE.get(), new Item.Properties())
+    );
+
+    public static final DeferredItem<RadioactiveBlockItem> DEEPSLATE_URANIUM_ORE = ITEMS.register(
+            "deepslate_uranium_ore",
+            () -> new RadioactiveBlockItem(ModBlocks.DEEPSLATE_URANIUM_ORE.get(), new Item.Properties())
+    );
+
+    public static final DeferredItem<UraniumBlockItem> URANIUM_BLOCK = ITEMS.register(
+            "uranium_block",
+            () -> new UraniumBlockItem(ModBlocks.URANIUM_BLOCK.get(), new Item.Properties())
+    );
+
+    public static final DeferredItem<RadioactiveBlockItem> CORIUM_BLOCK = ITEMS.register(
+            "corium_block",
+            () -> new RadioactiveBlockItem(ModBlocks.CORIUM_BLOCK.get(), new Item.Properties())
+    );
+
     public static final DeferredItem<BlockItem> LV_CONNECTOR = ITEMS.registerSimpleBlockItem(
             ModBlocks.LV_CONNECTOR,
             new Item.Properties()
@@ -46,6 +174,77 @@ public final class ModItems {
     public static final DeferredItem<Item> STEEL_INGOT = ITEMS.registerSimpleItem(
             "steel_ingot",
             new Item.Properties()
+    );
+
+    public static final DeferredItem<Item> RAW_TITANIUM = simpleItem("raw_titanium");
+    public static final DeferredItem<Item> RAW_TUNGSTEN = simpleItem("raw_tungsten");
+    public static final DeferredItem<Item> RAW_ALUMINUM = simpleItem("raw_aluminum");
+    public static final DeferredItem<Item> RAW_URANIUM = simpleItem("raw_uranium");
+    public static final DeferredItem<Item> TITANIUM_INGOT = simpleItem("titanium_ingot");
+    public static final DeferredItem<Item> TUNGSTEN_INGOT = simpleItem("tungsten_ingot");
+    public static final DeferredItem<Item> ALUMINUM_INGOT = simpleItem("aluminum_ingot");
+    public static final DeferredItem<Item> URANIUM_INGOT = simpleItem("uranium_ingot");
+    public static final DeferredItem<Item> IRON_LIGHT_PLATING = simpleItem("iron_light_plating");
+    public static final DeferredItem<Item> IRON_MEDIUM_PLATING = simpleItem("iron_medium_plating");
+    public static final DeferredItem<Item> IRON_HEAVY_PLATING = simpleItem("iron_heavy_plating");
+    public static final DeferredItem<Item> LIGHT_ELECTRIC_MOTOR = simpleItem("light_electric_motor");
+    public static final DeferredItem<Item> MEDIUM_ELECTRIC_MOTOR = simpleItem("medium_electric_motor");
+    public static final DeferredItem<Item> INDUSTRIAL_ELECTRIC_MOTOR = simpleItem("industrial_electric_motor");
+    public static final DeferredItem<Item> HEAVY_ELECTRIC_MOTOR = simpleItem("heavy_electric_motor");
+    public static final DeferredItem<Item> LIGHT_HYDRAULIC = simpleItem("light_hydraulic");
+    public static final DeferredItem<Item> MEDIUM_HYDRAULIC = simpleItem("medium_hydraulic");
+    public static final DeferredItem<Item> INDUSTRIAL_HYDRAULIC = simpleItem("industrial_hydraulic");
+    public static final DeferredItem<Item> HEAVY_HYDRAULIC = simpleItem("heavy_hydraulic");
+    public static final DeferredItem<Item> SUPERHEAVY_ELECTRIC_MOTOR = simpleItem("superheavy_electric_motor");
+
+    public static final DeferredItem<SwordItem> TITANIUM_SWORD = ITEMS.register(
+            "titanium_sword",
+            () -> new SwordItem(SkyentToolTier.TITANIUM, new Item.Properties().durability(SkyentToolTier.TITANIUM.getUses()))
+    );
+
+    public static final DeferredItem<PickaxeItem> TITANIUM_PICKAXE = ITEMS.register(
+            "titanium_pickaxe",
+            () -> new PickaxeItem(SkyentToolTier.TITANIUM, new Item.Properties().durability(SkyentToolTier.TITANIUM.getUses()))
+    );
+
+    public static final DeferredItem<AxeItem> TITANIUM_AXE = ITEMS.register(
+            "titanium_axe",
+            () -> new AxeItem(SkyentToolTier.TITANIUM, new Item.Properties().durability(SkyentToolTier.TITANIUM.getUses()))
+    );
+
+    public static final DeferredItem<ShovelItem> TITANIUM_SHOVEL = ITEMS.register(
+            "titanium_shovel",
+            () -> new ShovelItem(SkyentToolTier.TITANIUM, new Item.Properties().durability(SkyentToolTier.TITANIUM.getUses()))
+    );
+
+    public static final DeferredItem<HoeItem> TITANIUM_HOE = ITEMS.register(
+            "titanium_hoe",
+            () -> new HoeItem(SkyentToolTier.TITANIUM, new Item.Properties().durability(SkyentToolTier.TITANIUM.getUses()))
+    );
+
+    public static final DeferredItem<SwordItem> TUNGSTEN_SWORD = ITEMS.register(
+            "tungsten_sword",
+            () -> new SwordItem(SkyentToolTier.TUNGSTEN, new Item.Properties().durability(SkyentToolTier.TUNGSTEN.getUses()))
+    );
+
+    public static final DeferredItem<PickaxeItem> TUNGSTEN_PICKAXE = ITEMS.register(
+            "tungsten_pickaxe",
+            () -> new PickaxeItem(SkyentToolTier.TUNGSTEN, new Item.Properties().durability(SkyentToolTier.TUNGSTEN.getUses()))
+    );
+
+    public static final DeferredItem<AxeItem> TUNGSTEN_AXE = ITEMS.register(
+            "tungsten_axe",
+            () -> new AxeItem(SkyentToolTier.TUNGSTEN, new Item.Properties().durability(SkyentToolTier.TUNGSTEN.getUses()))
+    );
+
+    public static final DeferredItem<ShovelItem> TUNGSTEN_SHOVEL = ITEMS.register(
+            "tungsten_shovel",
+            () -> new ShovelItem(SkyentToolTier.TUNGSTEN, new Item.Properties().durability(SkyentToolTier.TUNGSTEN.getUses()))
+    );
+
+    public static final DeferredItem<HoeItem> TUNGSTEN_HOE = ITEMS.register(
+            "tungsten_hoe",
+            () -> new HoeItem(SkyentToolTier.TUNGSTEN, new Item.Properties().durability(SkyentToolTier.TUNGSTEN.getUses()))
     );
 
     public static final DeferredItem<LVWireDrumItem> LV_COPPER_WIRE_DRUM = ITEMS.register(
@@ -85,6 +284,10 @@ public final class ModItems {
     );
 
     private ModItems() {
+    }
+
+    private static DeferredItem<Item> simpleItem(String name) {
+        return ITEMS.registerSimpleItem(name, new Item.Properties());
     }
 
     public static void register(IEventBus modEventBus) {

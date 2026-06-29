@@ -1,0 +1,15 @@
+{
+  "replace": false,
+  "values": [
+    "skyent:titanium_ore",
+    "skyent:deepslate_titanium_ore",
+    "skyent:aluminum_ore",
+    "skyent:deepslate_aluminum_ore",
+    "skyent:tungsten_ore",
+    "skyent:deepslate_tungsten_ore",
+    "skyent:uranium_ore",
+    "skyent:deepslate_uranium_ore",
+    "skyent:uranium_block",
+    "skyent:corium_block"
+  ]
+}

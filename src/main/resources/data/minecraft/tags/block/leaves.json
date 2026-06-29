@@ -1,0 +1,15 @@
+{
+  "replace": false,
+  "values": [
+    "skyent:dead_oak_leaves",
+    "skyent:dead_birch_leaves",
+    "skyent:dead_spruce_leaves",
+    "skyent:dead_jungle_leaves",
+    "skyent:dead_acacia_leaves",
+    "skyent:dead_dark_oak_leaves",
+    "skyent:dead_mangrove_leaves",
+    "skyent:dead_cherry_leaves",
+    "skyent:dead_azalea_leaves",
+    "skyent:dead_flowering_azalea_leaves"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "": [
+      { "model": "skyent:block/dead_grass" },
+      { "model": "skyent:block/dead_grass", "y": 90 },
+      { "model": "skyent:block/dead_grass", "y": 180 },
+      { "model": "skyent:block/dead_grass", "y": 270 }
+    ]
+  }
+}

@@ -2,7 +2,9 @@ package com.skyeshade.skyent.registry;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.blockentity.BasicFluidDuctBlockEntity;
+import com.skyeshade.skyent.content.blockentity.BrickBlastFurnaceBlockEntity;
 import com.skyeshade.skyent.content.blockentity.CombustionGeneratorBlockEntity;
+import com.skyeshade.skyent.content.blockentity.CoriumBlockEntity;
 import com.skyeshade.skyent.content.blockentity.ElectricFurnaceBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVFEConverterBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVElectricPumpBlockEntity;
@@ -30,6 +32,12 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("electric_furnace", () -> BlockEntityType.Builder.of(
                     ElectricFurnaceBlockEntity::new,
                     ModBlocks.ELECTRIC_FURNACE.get()
+            ).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<BrickBlastFurnaceBlockEntity>> BRICK_BLAST_FURNACE =
+            BLOCK_ENTITIES.register("brick_blast_furnace", () -> BlockEntityType.Builder.of(
+                    BrickBlastFurnaceBlockEntity::new,
+                    ModBlocks.BRICK_BLAST_FURNACE.get()
             ).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<LVElectricPumpBlockEntity>> LV_ELECTRIC_PUMP =
@@ -60,6 +68,12 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("lv_fe_converter", () -> BlockEntityType.Builder.of(
                     LVFEConverterBlockEntity::new,
                     ModBlocks.LV_FE_CONVERTER.get()
+            ).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CoriumBlockEntity>> CORIUM_BLOCK =
+            BLOCK_ENTITIES.register("corium_block", () -> BlockEntityType.Builder.of(
+                    CoriumBlockEntity::new,
+                    ModBlocks.CORIUM_BLOCK.get()
             ).build(null));
 
     private ModBlockEntities() {
