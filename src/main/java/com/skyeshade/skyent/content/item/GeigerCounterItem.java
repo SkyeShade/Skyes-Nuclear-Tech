@@ -30,7 +30,7 @@ public class GeigerCounterItem extends Item {
         if (!level.isClientSide) {
             boolean enabled = toggleAudio(stack);
             player.displayClientMessage(
-                    Component.literal(enabled ? "Geiger counter audio enabled" : "Geiger counter audio disabled"),
+                    Component.literal(enabled ? "Audio Enabled" : "Audio Disabled"),
                     true
             );
             level.playSound(null, player.blockPosition(), SoundEvents.METAL_PRESSURE_PLATE_CLICK_ON, SoundSource.PLAYERS, 0.4F, 1.0F);

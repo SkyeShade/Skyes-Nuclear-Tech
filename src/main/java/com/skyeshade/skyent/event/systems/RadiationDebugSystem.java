@@ -23,7 +23,11 @@ public final class RadiationDebugSystem {
                 .then(Commands.literal("radiation_rays")
                         .requires(source -> source.hasPermission(PERMISSION_LEVEL))
                         .then(Commands.argument("enabled", BoolArgumentType.bool())
-                                .executes(context -> setRadiationRays(context.getSource(), BoolArgumentType.getBool(context, "enabled"))))));
+                                .executes(context -> setRadiationRays(context.getSource(), BoolArgumentType.getBool(context, "enabled")))))
+                .then(Commands.literal("radiation_debug")
+                        .requires(source -> source.hasPermission(PERMISSION_LEVEL))
+                        .then(Commands.argument("enabled", BoolArgumentType.bool())
+                                .executes(context -> setRadiationDebugOverlay(context.getSource(), BoolArgumentType.getBool(context, "enabled"))))));
     }
 
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
@@ -37,6 +41,13 @@ public final class RadiationDebugSystem {
         RadiationDebugRays.setEnabled(player, enabled);
         PacketDistributor.sendToPlayer(player, new RadiationRaysDebugPayload(enabled));
         player.sendSystemMessage(Component.literal(enabled ? "Radiation rays enabled" : "Radiation rays disabled"));
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int setRadiationDebugOverlay(CommandSourceStack source, boolean enabled) throws com.mojang.brigadier.exceptions.CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        RadiationExposureSystem.setDebugOverlayEnabled(player, enabled);
+        player.sendSystemMessage(Component.literal(enabled ? "Radiation debug overlay enabled" : "Radiation debug overlay disabled"));
         return Command.SINGLE_SUCCESS;
     }
 }

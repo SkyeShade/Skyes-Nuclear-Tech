@@ -13,14 +13,17 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public final class RadiationExposureSystem {
     public static final int PLAYER_EXPOSURE_UPDATE_INTERVAL_TICKS = 5;
-    public static final boolean DEBUG_GEIGER_ACTIONBAR = true;
+    private static final boolean FORCE_GEIGER_ACTIONBAR_DEBUG = false;
 
     private static final Map<UUID, RadiationExposureData> PLAYER_DATA = new HashMap<>();
+    private static final Set<UUID> PLAYERS_WITH_DEBUG_OVERLAY = new HashSet<>();
 
     private RadiationExposureSystem() {
     }
@@ -47,13 +50,26 @@ public final class RadiationExposureSystem {
         data.setLastExposureUpdateTick(gameTime);
         PacketDistributor.sendToPlayer(player, new GeigerExposurePayload(exposure));
 
-        if (DEBUG_GEIGER_ACTIONBAR && gameTime % 20 == 0 && isHoldingGeigerCounter(player)) {
+        if (isDebugOverlayEnabled(player) && gameTime % 20 == 0 && isHoldingGeigerCounter(player)) {
             player.displayClientMessage(formatDebugActionbar(scan), true);
         }
     }
 
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         PLAYER_DATA.remove(event.getEntity().getUUID());
+        PLAYERS_WITH_DEBUG_OVERLAY.remove(event.getEntity().getUUID());
+    }
+
+    public static void setDebugOverlayEnabled(ServerPlayer player, boolean enabled) {
+        if (enabled) {
+            PLAYERS_WITH_DEBUG_OVERLAY.add(player.getUUID());
+        } else {
+            PLAYERS_WITH_DEBUG_OVERLAY.remove(player.getUUID());
+        }
+    }
+
+    public static boolean isDebugOverlayEnabled(ServerPlayer player) {
+        return FORCE_GEIGER_ACTIONBAR_DEBUG || PLAYERS_WITH_DEBUG_OVERLAY.contains(player.getUUID());
     }
 
     private static boolean isHoldingGeigerCounter(ServerPlayer player) {
