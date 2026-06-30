@@ -94,7 +94,7 @@ public final class RadiationMeltdownUtil {
 
     private static double meltdownValue(BlockState state) {
         if (state.is(ModBlocks.URANIUM_BLOCK.get())) {
-            return RadiationConstants.URANIUM_BLOCK_RADIATION_STRENGTH;
+            return RadiationBlockProfiles.getRadiationStrength(state);
         }
         return 0.0D;
     }

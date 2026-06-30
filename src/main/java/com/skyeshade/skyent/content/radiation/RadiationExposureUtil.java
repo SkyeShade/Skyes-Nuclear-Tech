@@ -3,7 +3,9 @@ package com.skyeshade.skyent.content.radiation;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
@@ -25,10 +27,19 @@ public final class RadiationExposureUtil {
         return scanEnvironmentalExposure(level, entityPos, scanRadius).exposureMillisievertsPerSecond();
     }
 
+    public static double calculateEnvironmentalExposure(ServerLevel level, Vec3 entityPos, double scanRadius, LivingEntity excludedEntity) {
+        return scanEnvironmentalExposure(level, entityPos, scanRadius, excludedEntity).exposureMillisievertsPerSecond();
+    }
+
     public static ExposureScanResult scanEnvironmentalExposure(ServerLevel level, Vec3 entityPos, double scanRadius) {
+        return scanEnvironmentalExposure(level, entityPos, scanRadius, null);
+    }
+
+    public static ExposureScanResult scanEnvironmentalExposure(ServerLevel level, Vec3 entityPos, double scanRadius, LivingEntity excludedEntity) {
         RadioactiveSourceRegistry registry = RadioactiveSourceRegistry.get(level);
         SourceScanResult sourceScan = findRadioactiveSources(level, entityPos, scanRadius, registry);
         List<SourceCandidate> sources = sourceScan.sources();
+        sources.addAll(findCarriedRadiationSources(level, entityPos, scanRadius, excludedEntity));
         int foundSources = sources.size();
         int contributingSources = 0;
         double nearestSourceDistance = Double.NaN;
@@ -52,7 +63,7 @@ public final class RadiationExposureUtil {
         double exposure = 0.0D;
         double strongestContribution = 0.0D;
         for (SourceCandidate source : contributing) {
-            double transmission = calculateTransmissionBetween(level, source.center(), entityPos, source.pos());
+            double transmission = calculateTransmissionBetween(level, source.center(), entityPos, source.sourceBlockToSkip());
             if (transmission <= 0.0D) {
                 continue;
             }
@@ -91,16 +102,53 @@ public final class RadiationExposureUtil {
             Vec3 sourceCenter = Vec3.atCenterOf(pos);
             double distance = sourceCenter.distanceTo(entityPos);
             if (distance > source.getEntityRadiationRange()) {
-                sources.add(new SourceCandidate(pos, sourceCenter, distance, 0.0D));
+                sources.add(new SourceCandidate(pos, sourceCenter, distance, 0.0D, pos));
                 continue;
             }
 
             double clampedDistance = Math.max(1.0D, distance);
             double baseContribution = source.getRadiationStrength() / (clampedDistance * clampedDistance);
-            sources.add(new SourceCandidate(pos, sourceCenter, distance, baseContribution));
+            sources.add(new SourceCandidate(pos, sourceCenter, distance, baseContribution, pos));
         }
 
         return new SourceScanResult(sources, candidates.size());
+    }
+
+    private static List<SourceCandidate> findCarriedRadiationSources(ServerLevel level, Vec3 entityPos, double scanRadius, LivingEntity excludedEntity) {
+        double queryRadius = Math.min(scanRadius, CarriedRadiationUtil.MAX_CARRIED_RADIATION_RANGE);
+        if (queryRadius <= 0.0D) {
+            return List.of();
+        }
+
+        AABB searchBox = new AABB(entityPos, entityPos).inflate(queryRadius);
+        List<SourceCandidate> sources = new ArrayList<>();
+        for (LivingEntity carrier : level.getEntitiesOfClass(LivingEntity.class, searchBox, entity -> entity.isAlive() && !entity.isRemoved())) {
+            if (carrier == excludedEntity) {
+                continue;
+            }
+
+            double strength = CarriedRadiationUtil.carriedRadiationStrength(carrier);
+            int range = CarriedRadiationUtil.carriedRadiationRange(strength);
+            if (range <= 0) {
+                continue;
+            }
+
+            Vec3 sourceCenter = carrier.position().add(0.0D, carrier.getBbHeight() * 0.5D, 0.0D);
+            double distance = sourceCenter.distanceTo(entityPos);
+            if (distance > scanRadius) {
+                continue;
+            }
+
+            double baseContribution = 0.0D;
+            if (distance <= range) {
+                double clampedDistance = Math.max(1.0D, distance);
+                baseContribution = strength / (clampedDistance * clampedDistance);
+            }
+
+            sources.add(new SourceCandidate(null, sourceCenter, distance, baseContribution, null));
+        }
+
+        return sources;
     }
 
     private static double calculateTransmissionBetween(ServerLevel level, Vec3 start, Vec3 end, BlockPos sourcePos) {
@@ -118,7 +166,7 @@ public final class RadiationExposureUtil {
         for (int step = 1; step <= steps; step++) {
             double stepDistance = Math.min(distance, step * EXPOSURE_RAY_STEP);
             BlockPos currentPos = BlockPos.containing(start.add(direction.scale(stepDistance)));
-            if (currentPos.equals(sourcePos) || !visited.add(currentPos)) {
+            if (sourcePos != null && currentPos.equals(sourcePos) || !visited.add(currentPos)) {
                 continue;
             }
 
@@ -150,7 +198,7 @@ public final class RadiationExposureUtil {
     private record SourceScanResult(List<SourceCandidate> sources, int registryCandidates) {
     }
 
-    private record SourceCandidate(BlockPos pos, Vec3 center, double distance, double baseContribution) {
+    private record SourceCandidate(BlockPos pos, Vec3 center, double distance, double baseContribution, BlockPos sourceBlockToSkip) {
         private boolean contributes() {
             return baseContribution > 0.0D;
         }

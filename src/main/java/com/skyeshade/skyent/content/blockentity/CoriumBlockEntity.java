@@ -1,6 +1,6 @@
 package com.skyeshade.skyent.content.blockentity;
 
-import com.skyeshade.skyent.content.radiation.RadiationConstants;
+import com.skyeshade.skyent.content.radiation.RadiationBlockProfiles;
 import com.skyeshade.skyent.content.radiation.RadioactiveSourceRegistry;
 import com.skyeshade.skyent.content.radiation.RadiationUtil;
 import com.skyeshade.skyent.registry.ModBlockEntities;
@@ -36,8 +36,8 @@ public class CoriumBlockEntity extends BlockEntity {
         RadiationUtil.applyFullEnvironmentalRadiation(
                 serverLevel,
                 pos,
-                RadiationConstants.CORIUM_BLOCK_RADIATION_STRENGTH,
-                RadiationConstants.CORIUM_BLOCK_RADIATION_RANGE,
+                RadiationBlockProfiles.getRadiationStrength(state),
+                RadiationBlockProfiles.getEnvironmentalRange(state),
                 RADIATION_ATTEMPTS_PER_RUN,
                 MAX_CONVERSIONS_PER_RUN,
                 serverLevel.random

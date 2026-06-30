@@ -3,6 +3,7 @@ package com.skyeshade.skyent.content.block;
 import com.skyeshade.skyent.content.radiation.EnvironmentalRadiationMode;
 import com.skyeshade.skyent.content.radiation.RadioactiveSourceRegistry;
 import com.skyeshade.skyent.content.radiation.RadiationMeltdownUtil;
+import com.skyeshade.skyent.content.radiation.RadiationBlockProfiles;
 import com.skyeshade.skyent.content.radiation.RadiationUtil;
 import com.skyeshade.skyent.content.radiation.RadioactiveSource;
 import net.minecraft.core.BlockPos;
@@ -13,24 +14,14 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
 public class RadioactiveBlock extends Block implements RadioactiveSource {
-    private final double radiationStrength;
-    private final int environmentalRadiationRange;
-    private final int entityRadiationRange;
     private final EnvironmentalRadiationMode environmentalMode;
 
-    public RadioactiveBlock(Properties properties, double radiationStrength, int environmentalRadiationRange) {
-        this(properties, radiationStrength, environmentalRadiationRange, environmentalRadiationRange, EnvironmentalRadiationMode.CHEAP);
+    public RadioactiveBlock(Properties properties) {
+        this(properties, EnvironmentalRadiationMode.CHEAP);
     }
 
-    public RadioactiveBlock(Properties properties, double radiationStrength, int environmentalRadiationRange, EnvironmentalRadiationMode environmentalMode) {
-        this(properties, radiationStrength, environmentalRadiationRange, environmentalRadiationRange, environmentalMode);
-    }
-
-    public RadioactiveBlock(Properties properties, double radiationStrength, int environmentalRadiationRange, int entityRadiationRange, EnvironmentalRadiationMode environmentalMode) {
+    public RadioactiveBlock(Properties properties, EnvironmentalRadiationMode environmentalMode) {
         super(properties.randomTicks());
-        this.radiationStrength = radiationStrength;
-        this.environmentalRadiationRange = environmentalRadiationRange;
-        this.entityRadiationRange = entityRadiationRange;
         this.environmentalMode = environmentalMode;
     }
 
@@ -56,24 +47,24 @@ public class RadioactiveBlock extends Block implements RadioactiveSource {
         RadioactiveSourceRegistry.register(level, pos);
         RadiationMeltdownUtil.tryTriggerMeltdown(level, pos, random);
         if (environmentalMode == EnvironmentalRadiationMode.FULL_RAY) {
-            RadiationUtil.applyFullEnvironmentalRadiation(level, pos, radiationStrength, environmentalRadiationRange, random);
+            RadiationUtil.applyFullEnvironmentalRadiation(level, pos, getRadiationStrength(), getEnvironmentalRadiationRange(), random);
         } else {
-            RadiationUtil.applyCheapEnvironmentalRadiation(level, pos, radiationStrength, environmentalRadiationRange, random);
+            RadiationUtil.applyCheapEnvironmentalRadiation(level, pos, getRadiationStrength(), getEnvironmentalRadiationRange(), random);
         }
     }
 
     @Override
     public double getRadiationStrength() {
-        return radiationStrength;
+        return RadiationBlockProfiles.getRadiationStrength(this);
     }
 
     @Override
     public int getEnvironmentalRadiationRange() {
-        return environmentalRadiationRange;
+        return RadiationBlockProfiles.getEnvironmentalRange(this);
     }
 
     @Override
     public int getEntityRadiationRange() {
-        return entityRadiationRange;
+        return RadiationBlockProfiles.getEntityRange(this);
     }
 }

@@ -6,8 +6,11 @@ import com.skyeshade.skyent.content.item.GeigerCounterItem;
 import com.skyeshade.skyent.content.item.LVWireDrumItem;
 import com.skyeshade.skyent.content.item.RadioactiveBlockItem;
 import com.skyeshade.skyent.content.item.RadioactiveItem;
+import com.skyeshade.skyent.content.item.ShieldingBlockItem;
 import com.skyeshade.skyent.content.item.SkyentToolTier;
 import com.skyeshade.skyent.content.item.TooltipBlockItem;
+import com.skyeshade.skyent.content.item.ToxicBlockItem;
+import com.skyeshade.skyent.content.item.ToxicItem;
 import com.skyeshade.skyent.content.item.UraniumBlockItem;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.BlockItem;
@@ -140,6 +143,16 @@ public final class ModItems {
             new Item.Properties()
     );
 
+    public static final DeferredItem<ShieldingBlockItem> ALUMINUM_BLOCK = ITEMS.register(
+            "aluminum_block",
+            () -> new ShieldingBlockItem(ModBlocks.ALUMINUM_BLOCK.get(), new Item.Properties())
+    );
+
+    public static final DeferredItem<ShieldingBlockItem> TITANIUM_BLOCK = ITEMS.register(
+            "titanium_block",
+            () -> new ShieldingBlockItem(ModBlocks.TITANIUM_BLOCK.get(), new Item.Properties())
+    );
+
     public static final DeferredItem<BlockItem> TUNGSTEN_ORE = ITEMS.registerSimpleBlockItem(
             ModBlocks.TUNGSTEN_ORE,
             new Item.Properties()
@@ -148,6 +161,26 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> DEEPSLATE_TUNGSTEN_ORE = ITEMS.registerSimpleBlockItem(
             ModBlocks.DEEPSLATE_TUNGSTEN_ORE,
             new Item.Properties()
+    );
+
+    public static final DeferredItem<ShieldingBlockItem> TUNGSTEN_BLOCK = ITEMS.register(
+            "tungsten_block",
+            () -> new ShieldingBlockItem(ModBlocks.TUNGSTEN_BLOCK.get(), new Item.Properties())
+    );
+
+    public static final DeferredItem<ShieldingBlockItem> STEEL_BLOCK = ITEMS.register(
+            "steel_block",
+            () -> new ShieldingBlockItem(ModBlocks.STEEL_BLOCK.get(), new Item.Properties())
+    );
+
+    public static final DeferredItem<ToxicBlockItem> LEAD_ORE = ITEMS.register(
+            "lead_ore",
+            () -> new ToxicBlockItem(ModBlocks.LEAD_ORE.get(), new Item.Properties())
+    );
+
+    public static final DeferredItem<ToxicBlockItem> LEAD_BLOCK = ITEMS.register(
+            "lead_block",
+            () -> new ToxicBlockItem(ModBlocks.LEAD_BLOCK.get(), new Item.Properties())
     );
 
     public static final DeferredItem<RadioactiveBlockItem> URANIUM_ORE = ITEMS.register(
@@ -188,6 +221,10 @@ public final class ModItems {
     public static final DeferredItem<Item> RAW_TITANIUM = simpleItem("raw_titanium");
     public static final DeferredItem<Item> RAW_TUNGSTEN = simpleItem("raw_tungsten");
     public static final DeferredItem<Item> RAW_ALUMINUM = simpleItem("raw_aluminum");
+    public static final DeferredItem<ToxicItem> RAW_LEAD = ITEMS.register(
+            "raw_lead",
+            () -> new ToxicItem(new Item.Properties())
+    );
     public static final DeferredItem<RadioactiveItem> RAW_URANIUM = ITEMS.register(
             "raw_uranium",
             () -> new RadioactiveItem(new Item.Properties())
@@ -195,6 +232,10 @@ public final class ModItems {
     public static final DeferredItem<Item> TITANIUM_INGOT = simpleItem("titanium_ingot");
     public static final DeferredItem<Item> TUNGSTEN_INGOT = simpleItem("tungsten_ingot");
     public static final DeferredItem<Item> ALUMINUM_INGOT = simpleItem("aluminum_ingot");
+    public static final DeferredItem<ToxicItem> LEAD_INGOT = ITEMS.register(
+            "lead_ingot",
+            () -> new ToxicItem(new Item.Properties())
+    );
     public static final DeferredItem<RadioactiveItem> URANIUM_INGOT = ITEMS.register(
             "uranium_ingot",
             () -> new RadioactiveItem(new Item.Properties())

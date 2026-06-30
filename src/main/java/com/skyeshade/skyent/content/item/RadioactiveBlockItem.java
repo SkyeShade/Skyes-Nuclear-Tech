@@ -15,6 +15,7 @@ public class RadioactiveBlockItem extends BlockItem {
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
+        RadiationShieldingTooltip.append(stack, tooltipComponents);
         RadioactiveTooltip.append(stack, tooltipComponents);
     }
 }

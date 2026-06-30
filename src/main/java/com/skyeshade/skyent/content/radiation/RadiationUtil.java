@@ -20,6 +20,7 @@ import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.OptionalDouble;
 import java.util.Set;
 
 public final class RadiationUtil {
@@ -68,16 +69,24 @@ public final class RadiationUtil {
     }
 
     public static void applyFullEnvironmentalRadiation(ServerLevel level, BlockPos sourcePos, double strength, int range, int attempts, int maxConversions, RandomSource random) {
+        applyFullEnvironmentalRadiation(level, sourcePos, Vec3.atCenterOf(sourcePos), strength, range, attempts, maxConversions, random);
+    }
+
+    public static void applyFullEnvironmentalRadiation(ServerLevel level, Vec3 sourceCenter, double strength, int range, int attempts, int maxConversions, RandomSource random) {
+        applyFullEnvironmentalRadiation(level, BlockPos.containing(sourceCenter), sourceCenter, strength, range, attempts, maxConversions, random);
+    }
+
+    private static void applyFullEnvironmentalRadiation(ServerLevel level, BlockPos sourcePos, Vec3 sourceCenter, double strength, int range, int attempts, int maxConversions, RandomSource random) {
         if (strength <= 0.0D || range <= 0) {
             return;
         }
 
-        DebugRayCollector debugRays = DebugRayCollector.create(level, sourcePos, strength, range);
+        DebugRayCollector debugRays = DebugRayCollector.create(level, sourcePos, sourceCenter, strength, range);
         attempts = Mth.clamp(attempts, 0, MAX_FULL_RAY_ATTEMPTS_PER_RANDOM_TICK);
         maxConversions = Mth.clamp(maxConversions, 0, MAX_FULL_RAY_CONVERSIONS_PER_RANDOM_TICK);
         int conversions = 0;
         for (int attempt = 0; attempt < attempts && conversions < maxConversions; attempt++) {
-            conversions += attemptFullRayEnvironmentalInteraction(level, sourcePos, randomDirection(random), strength, range, random, debugRays, maxConversions - conversions);
+            conversions += attemptFullRayEnvironmentalInteraction(level, sourcePos, sourceCenter, randomDirection(random), strength, range, random, debugRays, maxConversions - conversions);
         }
 
         debugRays.send(level);
@@ -289,15 +298,23 @@ public final class RadiationUtil {
     }
 
     private static int attemptFullRayEnvironmentalInteraction(ServerLevel level, BlockPos sourcePos, Vec3 direction, double strength, int range, RandomSource random, DebugRayCollector debugRays, int remainingConversions) {
+        return attemptFullRayEnvironmentalInteraction(level, sourcePos, Vec3.atCenterOf(sourcePos), direction, strength, range, random, debugRays, remainingConversions);
+    }
+
+    private static int attemptFullRayEnvironmentalInteraction(ServerLevel level, BlockPos sourcePos, Vec3 sourceCenter, Vec3 direction, double strength, int range, RandomSource random, DebugRayCollector debugRays, int remainingConversions) {
         Vec3 normalizedDirection = direction.lengthSqr() < 1.0E-6D ? direction : direction.normalize();
-        BlockPos rayTargetPos = BlockPos.containing(Vec3.atCenterOf(sourcePos).add(normalizedDirection.scale(range)));
-        RayInteractionResult result = traceEnvironmentalRay(level, sourcePos, normalizedDirection, strength, range, random, remainingConversions);
+        BlockPos rayTargetPos = BlockPos.containing(sourceCenter.add(normalizedDirection.scale(range)));
+        RayInteractionResult result = traceEnvironmentalRay(level, sourcePos, sourceCenter, normalizedDirection, strength, range, random, remainingConversions);
         debugRays.record(rayTargetPos, result.end, result.lastChance, result.blocked, true, result.conversions > 0, result.convertibleHits, result.conversions);
         return result.conversions;
     }
 
     private static RayInteractionResult traceEnvironmentalRay(ServerLevel level, BlockPos sourcePos, Vec3 direction, double strength, int range, RandomSource random, int remainingConversions) {
-        Vec3 start = Vec3.atCenterOf(sourcePos);
+        return traceEnvironmentalRay(level, sourcePos, Vec3.atCenterOf(sourcePos), direction, strength, range, random, remainingConversions);
+    }
+
+    private static RayInteractionResult traceEnvironmentalRay(ServerLevel level, BlockPos sourcePos, Vec3 sourceCenter, Vec3 direction, double strength, int range, RandomSource random, int remainingConversions) {
+        Vec3 start = sourceCenter;
         if (direction.lengthSqr() < 1.0E-6D) {
             return new RayInteractionResult(start, false, 0.0D, 0, 0);
         }
@@ -327,7 +344,7 @@ public final class RadiationUtil {
             BlockState conversionState = getEnvironmentalRadiationConversion(currentState);
             if (conversionState != null) {
                 convertibleHits++;
-                lastChance = interactionChance(sourcePos, currentPos, strength, range) * rayMultiplier;
+                lastChance = interactionChance(sourceCenter, currentPos, strength, range) * rayMultiplier;
                 if (conversions < remainingConversions && lastChance > 0.0D && random.nextDouble() < lastChance) {
                     if (applyEnvironmentalRadiationConversion(level, currentPos, currentState, Block.UPDATE_CLIENTS)) {
                         conversions++;
@@ -363,6 +380,10 @@ public final class RadiationUtil {
         if (state.getFluidState().is(Fluids.WATER)) {
             return 0.85D;
         }
+        OptionalDouble customTransmission = RadiationBlockProfiles.getCustomTransmission(state);
+        if (customTransmission.isPresent()) {
+            return customTransmission.getAsDouble();
+        }
         if (state.is(BlockTags.LOGS)) {
             return 0.90D;
         }
@@ -372,10 +393,6 @@ public final class RadiationUtil {
         if (state.is(Blocks.IRON_BLOCK)) {
             return 0.50D;
         }
-        if (state.is(ModBlocks.URANIUM_BLOCK.get()) || state.is(ModBlocks.URANIUM_ORE.get())
-                || state.is(ModBlocks.DEEPSLATE_URANIUM_ORE.get()) || state.is(ModBlocks.CORIUM_BLOCK.get())) {
-            return 0.90D;
-        }
         if (!state.isSolidRender(level, pos)) {
             return 1.0D;
         }
@@ -383,7 +400,11 @@ public final class RadiationUtil {
     }
 
     private static double interactionChance(BlockPos sourcePos, BlockPos targetPos, double strength, int range) {
-        double distance = distanceBetweenCenters(sourcePos, targetPos);
+        return interactionChance(Vec3.atCenterOf(sourcePos), targetPos, strength, range);
+    }
+
+    private static double interactionChance(Vec3 sourceCenter, BlockPos targetPos, double strength, int range) {
+        double distance = sourceCenter.distanceTo(Vec3.atCenterOf(targetPos));
         double closeness = Mth.clamp(1.0D - distance / range, 0.0D, 1.0D);
         return Mth.clamp(BASE_ENVIRONMENT_INTERACTION_CHANCE * ENVIRONMENT_INTERACTION_CHANCE_MULTIPLIER * strengthFactor(strength) * closeness * closeness, 0.0D, 1.0D);
     }
@@ -465,6 +486,10 @@ public final class RadiationUtil {
 
         private static DebugRayCollector create(ServerLevel level, BlockPos sourcePos, double strength, int range) {
             Vec3 sourceCenter = Vec3.atCenterOf(sourcePos);
+            return create(level, sourcePos, sourceCenter, strength, range);
+        }
+
+        private static DebugRayCollector create(ServerLevel level, BlockPos sourcePos, Vec3 sourceCenter, double strength, int range) {
             return new DebugRayCollector(sourceCenter, sourcePos, strength, range, RadiationDebugRays.hasNearbyEnabledPlayers(level, sourceCenter));
         }
 

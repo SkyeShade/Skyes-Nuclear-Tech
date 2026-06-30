@@ -9,6 +9,7 @@ public class RadiationExposureData {
     private long lastSicknessUpdateTick;
     private long lastSymptomTick;
     private long lastDebugOverlayTick;
+    private long lastCarriedEnvironmentalRayTick;
 
     public double getCurrentEnvironmentalExposureMillisievertsPerSecond() {
         return currentEnvironmentalExposureMillisievertsPerSecond;
@@ -72,5 +73,13 @@ public class RadiationExposureData {
 
     public void setLastDebugOverlayTick(long lastDebugOverlayTick) {
         this.lastDebugOverlayTick = lastDebugOverlayTick;
+    }
+
+    public long getLastCarriedEnvironmentalRayTick() {
+        return lastCarriedEnvironmentalRayTick;
+    }
+
+    public void setLastCarriedEnvironmentalRayTick(long lastCarriedEnvironmentalRayTick) {
+        this.lastCarriedEnvironmentalRayTick = lastCarriedEnvironmentalRayTick;
     }
 }

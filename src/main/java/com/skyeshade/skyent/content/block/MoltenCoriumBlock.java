@@ -3,7 +3,7 @@ package com.skyeshade.skyent.content.block;
 import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.radiation.RadioactiveSource;
 import com.skyeshade.skyent.content.radiation.RadioactiveSourceRegistry;
-import com.skyeshade.skyent.content.radiation.RadiationConstants;
+import com.skyeshade.skyent.content.radiation.RadiationBlockProfiles;
 import com.skyeshade.skyent.content.radiation.RadiationUtil;
 import com.skyeshade.skyent.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
@@ -72,8 +72,8 @@ public class MoltenCoriumBlock extends LiquidBlock implements RadioactiveSource 
         RadiationUtil.applyFullEnvironmentalRadiation(
                 level,
                 pos,
-                RadiationConstants.CORIUM_BLOCK_RADIATION_STRENGTH,
-                RadiationConstants.CORIUM_BLOCK_RADIATION_RANGE,
+                RadiationBlockProfiles.getRadiationStrength(ModBlocks.MOLTEN_CORIUM_BLOCK.get()),
+                RadiationBlockProfiles.getEnvironmentalRange(ModBlocks.MOLTEN_CORIUM_BLOCK.get()),
                 RADIATION_ATTEMPTS_PER_TICK,
                 MAX_RADIATION_CONVERSIONS_PER_TICK,
                 random
@@ -135,16 +135,16 @@ public class MoltenCoriumBlock extends LiquidBlock implements RadioactiveSource 
 
     @Override
     public double getRadiationStrength() {
-        return RadiationConstants.CORIUM_BLOCK_RADIATION_STRENGTH;
+        return RadiationBlockProfiles.getRadiationStrength(this);
     }
 
     @Override
     public int getEnvironmentalRadiationRange() {
-        return RadiationConstants.CORIUM_BLOCK_RADIATION_RANGE;
+        return RadiationBlockProfiles.getEnvironmentalRange(this);
     }
 
     @Override
     public int getEntityRadiationRange() {
-        return RadiationConstants.CORIUM_BLOCK_ENTITY_RADIATION_RANGE;
+        return RadiationBlockProfiles.getEntityRange(this);
     }
 }

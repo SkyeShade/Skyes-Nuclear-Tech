@@ -2,7 +2,7 @@ package com.skyeshade.skyent.content.block;
 
 import com.mojang.serialization.MapCodec;
 import com.skyeshade.skyent.content.blockentity.CoriumBlockEntity;
-import com.skyeshade.skyent.content.radiation.RadiationConstants;
+import com.skyeshade.skyent.content.radiation.RadiationBlockProfiles;
 import com.skyeshade.skyent.content.radiation.RadioactiveSourceRegistry;
 import com.skyeshade.skyent.content.radiation.RadioactiveSource;
 import com.skyeshade.skyent.registry.ModBlockEntities;
@@ -73,16 +73,16 @@ public class CoriumBlock extends BaseEntityBlock implements RadioactiveSource {
 
     @Override
     public double getRadiationStrength() {
-        return RadiationConstants.CORIUM_BLOCK_RADIATION_STRENGTH;
+        return RadiationBlockProfiles.getRadiationStrength(this);
     }
 
     @Override
     public int getEnvironmentalRadiationRange() {
-        return RadiationConstants.CORIUM_BLOCK_RADIATION_RANGE;
+        return RadiationBlockProfiles.getEnvironmentalRange(this);
     }
 
     @Override
     public int getEntityRadiationRange() {
-        return RadiationConstants.CORIUM_BLOCK_ENTITY_RADIATION_RANGE;
+        return RadiationBlockProfiles.getEntityRange(this);
     }
 }

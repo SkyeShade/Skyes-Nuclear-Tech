@@ -43,8 +43,14 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.DEEPSLATE_TITANIUM_ORE.get());
                         output.accept(ModItems.ALUMINUM_ORE.get());
                         output.accept(ModItems.DEEPSLATE_ALUMINUM_ORE.get());
+                        output.accept(ModItems.ALUMINUM_BLOCK.get());
+                        output.accept(ModItems.TITANIUM_BLOCK.get());
                         output.accept(ModItems.TUNGSTEN_ORE.get());
                         output.accept(ModItems.DEEPSLATE_TUNGSTEN_ORE.get());
+                        output.accept(ModItems.TUNGSTEN_BLOCK.get());
+                        output.accept(ModItems.STEEL_BLOCK.get());
+                        output.accept(ModItems.LEAD_ORE.get());
+                        output.accept(ModItems.LEAD_BLOCK.get());
                         output.accept(ModItems.URANIUM_ORE.get());
                         output.accept(ModItems.DEEPSLATE_URANIUM_ORE.get());
                         output.accept(ModItems.URANIUM_BLOCK.get());
@@ -55,10 +61,12 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.RAW_TITANIUM.get());
                         output.accept(ModItems.RAW_TUNGSTEN.get());
                         output.accept(ModItems.RAW_ALUMINUM.get());
+                        output.accept(ModItems.RAW_LEAD.get());
                         output.accept(ModItems.RAW_URANIUM.get());
                         output.accept(ModItems.TITANIUM_INGOT.get());
                         output.accept(ModItems.TUNGSTEN_INGOT.get());
                         output.accept(ModItems.ALUMINUM_INGOT.get());
+                        output.accept(ModItems.LEAD_INGOT.get());
                         output.accept(ModItems.URANIUM_INGOT.get());
                         output.accept(ModItems.IRON_LIGHT_PLATING.get());
                         output.accept(ModItems.IRON_MEDIUM_PLATING.get());

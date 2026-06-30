@@ -18,7 +18,6 @@ import com.skyeshade.skyent.content.block.RadioactiveBlock;
 import com.skyeshade.skyent.content.block.SiltBlock;
 import com.skyeshade.skyent.content.block.UraniumBlock;
 import com.skyeshade.skyent.content.radiation.EnvironmentalRadiationMode;
-import com.skyeshade.skyent.content.radiation.RadiationConstants;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.neoforged.bus.api.IEventBus;
@@ -114,6 +113,20 @@ public final class ModBlocks {
             BlockBehaviour.Properties.ofFullCopy(Blocks.DEEPSLATE_IRON_ORE)
     );
 
+    public static final DeferredBlock<?> ALUMINUM_BLOCK = BLOCKS.registerSimpleBlock(
+            "aluminum_block",
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(4.5F, 8.0F)
+                    .requiresCorrectToolForDrops()
+    );
+
+    public static final DeferredBlock<?> TITANIUM_BLOCK = BLOCKS.registerSimpleBlock(
+            "titanium_block",
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(7.0F, 12.0F)
+                    .requiresCorrectToolForDrops()
+    );
+
     public static final DeferredBlock<?> TUNGSTEN_ORE = BLOCKS.registerSimpleBlock(
             "tungsten_ore",
             BlockBehaviour.Properties.ofFullCopy(Blocks.GOLD_ORE)
@@ -124,27 +137,39 @@ public final class ModBlocks {
             BlockBehaviour.Properties.ofFullCopy(Blocks.DEEPSLATE_GOLD_ORE)
     );
 
+    public static final DeferredBlock<?> TUNGSTEN_BLOCK = BLOCKS.registerSimpleBlock(
+            "tungsten_block",
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(8.0F, 12.0F)
+                    .requiresCorrectToolForDrops()
+    );
+
+    public static final DeferredBlock<?> STEEL_BLOCK = BLOCKS.registerSimpleBlock(
+            "steel_block",
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(6.0F, 10.0F)
+                    .requiresCorrectToolForDrops()
+    );
+
+    public static final DeferredBlock<?> LEAD_ORE = BLOCKS.registerSimpleBlock(
+            "lead_ore",
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_ORE)
+    );
+
+    public static final DeferredBlock<?> LEAD_BLOCK = BLOCKS.registerSimpleBlock(
+            "lead_block",
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+    );
+
     public static final DeferredBlock<RadioactiveBlock> URANIUM_ORE = BLOCKS.registerBlock(
             "uranium_ore",
-            properties -> new RadioactiveBlock(
-                    properties,
-                    RadiationConstants.URANIUM_ORE_RADIATION_STRENGTH,
-                    RadiationConstants.URANIUM_ORE_RADIATION_RANGE,
-                    RadiationConstants.URANIUM_ORE_ENTITY_RADIATION_RANGE,
-                    EnvironmentalRadiationMode.FULL_RAY
-            ),
+            properties -> new RadioactiveBlock(properties, EnvironmentalRadiationMode.FULL_RAY),
             BlockBehaviour.Properties.ofFullCopy(Blocks.GOLD_ORE)
     );
 
     public static final DeferredBlock<RadioactiveBlock> DEEPSLATE_URANIUM_ORE = BLOCKS.registerBlock(
             "deepslate_uranium_ore",
-            properties -> new RadioactiveBlock(
-                    properties,
-                    RadiationConstants.URANIUM_ORE_RADIATION_STRENGTH,
-                    RadiationConstants.URANIUM_ORE_RADIATION_RANGE,
-                    RadiationConstants.URANIUM_ORE_ENTITY_RADIATION_RANGE,
-                    EnvironmentalRadiationMode.FULL_RAY
-            ),
+            properties -> new RadioactiveBlock(properties, EnvironmentalRadiationMode.FULL_RAY),
             BlockBehaviour.Properties.ofFullCopy(Blocks.DEEPSLATE_GOLD_ORE)
     );
 

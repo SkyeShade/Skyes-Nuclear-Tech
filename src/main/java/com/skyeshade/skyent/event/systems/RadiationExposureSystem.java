@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.event.systems;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
+import com.skyeshade.skyent.content.radiation.CarriedRadiationUtil;
 import com.skyeshade.skyent.content.radiation.ModDamageSources;
 import com.skyeshade.skyent.content.radiation.RadiationExposureData;
 import com.skyeshade.skyent.content.radiation.RadiationExposureUtil;
@@ -58,11 +59,6 @@ public final class RadiationExposureSystem {
     private RadiationExposureSystem() {
     }
 
-    public static void onPlayerTick(PlayerTickEvent.Post event) {
-        if (event.getEntity() instanceof ServerPlayer player) {
-            tickPlayer(player);
-        }
-    }
 
     public static void tickPlayer(ServerPlayer player) {
         if (!(player.level() instanceof ServerLevel level)) {
@@ -79,10 +75,12 @@ public final class RadiationExposureSystem {
         RadiationExposureUtil.ExposureScanResult scan = RadiationExposureUtil.scanEnvironmentalExposure(
                 level,
                 samplePos,
-                RadiationExposureUtil.DEFAULT_PLAYER_SCAN_RADIUS
+                RadiationExposureUtil.DEFAULT_PLAYER_SCAN_RADIUS,
+                player
         );
         double exposure = scan.exposureMillisievertsPerSecond();
         double inventoryExposure = RadiationItemValues.calculateInventoryRadiation(player);
+        emitCarriedEnvironmentalRadiation(level, player, data, gameTime);
         data.setCurrentEnvironmentalExposureMillisievertsPerSecond(exposure);
         data.setCurrentInventoryExposureMillisievertsPerSecond(inventoryExposure);
         data.setCurrentTotalExposureMillisievertsPerSecond(exposure + inventoryExposure);
@@ -113,10 +111,12 @@ public final class RadiationExposureSystem {
         RadiationExposureUtil.ExposureScanResult scan = RadiationExposureUtil.scanEnvironmentalExposure(
                 level,
                 samplePos,
-                RadiationExposureUtil.DEFAULT_PLAYER_SCAN_RADIUS
+                RadiationExposureUtil.DEFAULT_PLAYER_SCAN_RADIUS,
+                entity
         );
         double environmentalExposure = scan.exposureMillisievertsPerSecond();
         double inventoryExposure = RadiationItemValues.calculateInventoryRadiation(entity);
+        emitCarriedEnvironmentalRadiation(level, entity, data, gameTime);
         data.setCurrentEnvironmentalExposureMillisievertsPerSecond(environmentalExposure);
         data.setCurrentInventoryExposureMillisievertsPerSecond(inventoryExposure);
         data.setCurrentTotalExposureMillisievertsPerSecond(environmentalExposure + inventoryExposure);
@@ -269,6 +269,16 @@ public final class RadiationExposureSystem {
             entity.hurtTime = 0;
             entity.hurt(ModDamageSources.radiation(level), 1.0E9F);
         }
+    }
+
+    private static void emitCarriedEnvironmentalRadiation(ServerLevel level, LivingEntity entity, RadiationExposureData data, long gameTime) {
+        if (gameTime - data.getLastCarriedEnvironmentalRayTick() < 20L) {
+            return;
+        }
+
+        data.setLastCarriedEnvironmentalRayTick(gameTime);
+        double strength = CarriedRadiationUtil.carriedRadiationStrength(entity);
+        CarriedRadiationUtil.emitEnvironmentalRays(level, entity, strength);
     }
 
     private static boolean isRadiationImmune(LivingEntity entity) {

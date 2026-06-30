@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.content.radiation;
 
 import com.skyeshade.skyent.registry.ModItems;
+import com.skyeshade.skyent.registry.ModBlocks;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -17,7 +18,7 @@ public final class RadiationItemValues {
             return 0.0D;
         }
         if (stack.is(ModItems.URANIUM_ORE.get()) || stack.is(ModItems.DEEPSLATE_URANIUM_ORE.get())) {
-            return RadiationConstants.URANIUM_ORE_RADIATION_STRENGTH;
+            return RadiationBlockProfiles.getRadiationStrength(ModBlocks.URANIUM_ORE.get());
         }
         if (stack.is(ModItems.RAW_URANIUM.get())) {
             return RAW_URANIUM_RADIATION_STRENGTH;
@@ -26,10 +27,10 @@ public final class RadiationItemValues {
             return URANIUM_INGOT_RADIATION_STRENGTH;
         }
         if (stack.is(ModItems.URANIUM_BLOCK.get())) {
-            return RadiationConstants.URANIUM_BLOCK_RADIATION_STRENGTH;
+            return RadiationBlockProfiles.getRadiationStrength(ModBlocks.URANIUM_BLOCK.get());
         }
         if (stack.is(ModItems.CORIUM_BLOCK.get())) {
-            return RadiationConstants.CORIUM_BLOCK_RADIATION_STRENGTH;
+            return RadiationBlockProfiles.getRadiationStrength(ModBlocks.CORIUM_BLOCK.get());
         }
         return 0.0D;
     }

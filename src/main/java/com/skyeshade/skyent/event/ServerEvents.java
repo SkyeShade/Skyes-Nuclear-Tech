@@ -5,6 +5,7 @@ import com.skyeshade.skyent.event.systems.BootstrapSystem;
 import com.skyeshade.skyent.event.systems.RadiationDebugSystem;
 import com.skyeshade.skyent.event.systems.RadiationExposureSystem;
 import com.skyeshade.skyent.event.systems.RadiationSourceTickSystem;
+import com.skyeshade.skyent.event.systems.ToxicitySystem;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
@@ -57,12 +58,14 @@ public final class ServerEvents {
 
         for (var player : event.getServer().getPlayerList().getPlayers()) {
             RadiationExposureSystem.tickPlayer(player);
+            ToxicitySystem.tickLivingEntity(player);
         }
     }
 
     public static void onEntityTick(EntityTickEvent.Post event) {
         if (event.getEntity() instanceof LivingEntity entity && !(entity instanceof ServerPlayer)) {
             RadiationExposureSystem.tickLivingEntity(entity);
+            ToxicitySystem.tickLivingEntity(entity);
         }
     }
 
