@@ -1,5 +1,6 @@
 package com.skyeshade.skyent.event;
 
+import com.skyeshade.skyent.client.debug.RadiationDebugOverlayClient;
 import com.skyeshade.skyent.client.debug.RadiationRayDebugClient;
 import com.skyeshade.skyent.client.item.GeigerCounterClientState;
 import com.skyeshade.skyent.client.item.GeigerCounterSoundManager;
@@ -17,6 +18,7 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
+import net.neoforged.neoforge.client.event.RenderGuiEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 
@@ -29,6 +31,7 @@ public final class ClientEvents {
         modEventBus.addListener(ClientEvents::onRegisterMenuScreens);
         modEventBus.addListener(ClientEvents::onRegisterRenderers);
         NeoForge.EVENT_BUS.addListener(ClientEvents::onClientTick);
+        NeoForge.EVENT_BUS.addListener(ClientEvents::onRenderGui);
         NeoForge.EVENT_BUS.addListener(ClientEvents::onRenderLevel);
     }
 
@@ -56,5 +59,9 @@ public final class ClientEvents {
 
     public static void onRenderLevel(RenderLevelStageEvent event) {
         RadiationRayDebugClient.onRenderLevel(event);
+    }
+
+    public static void onRenderGui(RenderGuiEvent.Post event) {
+        RadiationDebugOverlayClient.onRenderGui(event);
     }
 }

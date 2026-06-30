@@ -49,6 +49,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.DEEPSLATE_URANIUM_ORE.get());
                         output.accept(ModItems.URANIUM_BLOCK.get());
                         output.accept(ModItems.CORIUM_BLOCK.get());
+                        output.accept(ModItems.MOLTEN_CORIUM_BUCKET.get());
                         output.accept(ModItems.LV_CONNECTOR.get());
                         output.accept(ModItems.STEEL_INGOT.get());
                         output.accept(ModItems.RAW_TITANIUM.get());

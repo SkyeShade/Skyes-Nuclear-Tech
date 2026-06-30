@@ -105,6 +105,10 @@ public final class RadioactiveSourceRegistry extends SavedData {
         return nearbySources;
     }
 
+    public List<BlockPos> copyAllSources() {
+        return new ArrayList<>(positions);
+    }
+
     public int size() {
         return positions.size();
     }

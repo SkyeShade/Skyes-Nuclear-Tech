@@ -16,8 +16,12 @@ public final class ClientPayloadHandlers {
         context.enqueueWork(() -> addClientRadiationRays(payload));
     }
 
+    public static void handleRadiationDebugOverlay(RadiationDebugOverlayPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> updateRadiationDebugOverlay(payload));
+    }
+
     public static void handleGeigerExposure(GeigerExposurePayload payload, IPayloadContext context) {
-        context.enqueueWork(() -> setClientGeigerExposure(payload.exposureMillisievertsPerSecond()));
+        context.enqueueWork(() -> setClientGeigerExposure(payload.exposureMillisievertsPerSecond(), payload.radiationSickness()));
     }
 
     private static void setClientRadiationRays(boolean enabled) {
@@ -46,7 +50,20 @@ public final class ClientPayloadHandlers {
         }
     }
 
-    private static void setClientGeigerExposure(double exposureMillisievertsPerSecond) {
+    private static void updateRadiationDebugOverlay(RadiationDebugOverlayPayload payload) {
+        if (FMLEnvironment.dist != Dist.CLIENT) {
+            return;
+        }
+
+        try {
+            Class<?> overlay = Class.forName("com.skyeshade.skyent.client.debug.RadiationDebugOverlayClient");
+            overlay.getMethod("handlePayload", RadiationDebugOverlayPayload.class).invoke(null, payload);
+        } catch (ReflectiveOperationException exception) {
+            throw new IllegalStateException("Unable to update client radiation debug overlay", exception);
+        }
+    }
+
+    private static void setClientGeigerExposure(double exposureMillisievertsPerSecond, double radiationSickness) {
         if (FMLEnvironment.dist != Dist.CLIENT) {
             return;
         }
@@ -54,6 +71,7 @@ public final class ClientPayloadHandlers {
         try {
             Class<?> geigerState = Class.forName("com.skyeshade.skyent.client.item.GeigerCounterClientState");
             geigerState.getMethod("setExposureMillisievertsPerSecond", double.class).invoke(null, exposureMillisievertsPerSecond);
+            geigerState.getMethod("setRadiationSickness", double.class).invoke(null, radiationSickness);
         } catch (ReflectiveOperationException exception) {
             throw new IllegalStateException("Unable to update client Geiger exposure state", exception);
         }

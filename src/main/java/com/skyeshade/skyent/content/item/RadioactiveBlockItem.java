@@ -1,8 +1,6 @@
 package com.skyeshade.skyent.content.item;
 
-import com.skyeshade.skyent.content.radiation.RadioactiveSource;
 import java.util.List;
-import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -17,20 +15,6 @@ public class RadioactiveBlockItem extends BlockItem {
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
-        if (getBlock() instanceof RadioactiveSource radioactiveSource) {
-            tooltipComponents.add(Component.translatable("tooltip.skyent.radioactive").withStyle(ChatFormatting.YELLOW));
-            tooltipComponents.add(Component.translatable(
-                    "tooltip.skyent.radiation_strength",
-                    formatRadiation(radioactiveSource.getRadiationStrength())
-            ).withStyle(ChatFormatting.YELLOW));
-        }
-    }
-
-    private static String formatRadiation(double value) {
-        if (value == Math.rint(value)) {
-            return Integer.toString((int) value);
-        }
-
-        return Double.toString(value);
+        RadioactiveTooltip.append(stack, tooltipComponents);
     }
 }

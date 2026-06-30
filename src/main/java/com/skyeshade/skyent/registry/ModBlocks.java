@@ -12,6 +12,7 @@ import com.skyeshade.skyent.content.block.ElectricFurnaceBlock;
 import com.skyeshade.skyent.content.block.LVConverterBlock;
 import com.skyeshade.skyent.content.block.LVConnectorBlock;
 import com.skyeshade.skyent.content.block.LVElectricPumpBlock;
+import com.skyeshade.skyent.content.block.MoltenCoriumBlock;
 import com.skyeshade.skyent.content.block.RadioactiveBlock;
 import com.skyeshade.skyent.content.block.SiltBlock;
 import com.skyeshade.skyent.content.block.UraniumBlock;
@@ -156,6 +157,16 @@ public final class ModBlocks {
             "corium_block",
             CoriumBlock::new,
             BlockBehaviour.Properties.ofFullCopy(Blocks.OBSIDIAN)
+    );
+
+    public static final DeferredBlock<MoltenCoriumBlock> MOLTEN_CORIUM_BLOCK = BLOCKS.register(
+            "molten_corium_block",
+            () -> new MoltenCoriumBlock(
+                    ModFluids.MOLTEN_CORIUM.get(),
+                    BlockBehaviour.Properties.ofFullCopy(Blocks.LAVA)
+                            .lightLevel(state -> 15)
+                            .randomTicks()
+            )
     );
 
     public static final DeferredBlock<LVConnectorBlock> LV_CONNECTOR = BLOCKS.registerBlock(

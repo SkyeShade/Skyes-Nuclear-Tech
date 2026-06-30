@@ -8,7 +8,7 @@ public final class RadiationConstants {
     public static final int URANIUM_ORE_RADIATION_RANGE = 3;
     public static final int URANIUM_ORE_ENTITY_RADIATION_RANGE = 40;
     public static final double CORIUM_BLOCK_RADIATION_STRENGTH = 25_000.0D;
-    public static final int CORIUM_BLOCK_RADIATION_RANGE = 24;
+    public static final int CORIUM_BLOCK_RADIATION_RANGE = 48;
     public static final int CORIUM_BLOCK_ENTITY_RADIATION_RANGE = 180;
 
     private RadiationConstants() {

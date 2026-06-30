@@ -59,6 +59,7 @@
   "item.skyent.industrial_hydraulic": "Industrial Hydraulic",
   "item.skyent.heavy_hydraulic": "Heavy Hydraulic",
   "item.skyent.geiger_counter": "Geiger Counter",
+  "item.skyent.molten_corium_bucket": "Molten Corium Bucket",
   "item.skyent.titanium_sword": "Titanium Sword",
   "item.skyent.titanium_pickaxe": "Titanium Pickaxe",
   "item.skyent.titanium_axe": "Titanium Axe",
@@ -83,5 +84,9 @@
   "tooltip.skyent.lv_fe_converter.line1": "Converts FE into LV RJ.",
   "tooltip.skyent.radioactive": "[Radioactive]",
   "tooltip.skyent.radiation_strength": "Radiation: %s mSv/s",
+  "tooltip.skyent.radiation_strength_each": "Radiation: %s mSv/s",
+  "tooltip.skyent.stack_radiation_strength": "Stack radiation: %s mSv/s",
+  "death.attack.radiation": "%1$s died from radiation poisoning",
+  "death.attack.radiation.player": "%1$s died from radiation poisoning while fighting %2$s",
   "itemGroup.skyent.skyent_tab": "Skye's Nuclear Tech"
 }

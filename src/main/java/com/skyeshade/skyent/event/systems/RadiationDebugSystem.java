@@ -48,6 +48,11 @@ public final class RadiationDebugSystem {
         ServerPlayer player = source.getPlayerOrException();
         RadiationExposureSystem.setDebugOverlayEnabled(player, enabled);
         player.sendSystemMessage(Component.literal(enabled ? "Radiation debug overlay enabled" : "Radiation debug overlay disabled"));
+        if (enabled) {
+            RadiationExposureSystem.sendDebugOverlayEnabled(player);
+        } else {
+            RadiationExposureSystem.sendDebugOverlayDisabled(player);
+        }
         return Command.SINGLE_SUCCESS;
     }
 }

@@ -5,13 +5,16 @@ import com.skyeshade.skyent.content.energy.LVWireType;
 import com.skyeshade.skyent.content.item.GeigerCounterItem;
 import com.skyeshade.skyent.content.item.LVWireDrumItem;
 import com.skyeshade.skyent.content.item.RadioactiveBlockItem;
+import com.skyeshade.skyent.content.item.RadioactiveItem;
 import com.skyeshade.skyent.content.item.SkyentToolTier;
 import com.skyeshade.skyent.content.item.TooltipBlockItem;
 import com.skyeshade.skyent.content.item.UraniumBlockItem;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.HoeItem;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.PickaxeItem;
 import net.minecraft.world.item.ShovelItem;
 import net.minecraft.world.item.SwordItem;
@@ -167,6 +170,11 @@ public final class ModItems {
             () -> new RadioactiveBlockItem(ModBlocks.CORIUM_BLOCK.get(), new Item.Properties())
     );
 
+    public static final DeferredItem<BucketItem> MOLTEN_CORIUM_BUCKET = ITEMS.register(
+            "molten_corium_bucket",
+            () -> new BucketItem(ModFluids.MOLTEN_CORIUM.get(), new Item.Properties().craftRemainder(Items.BUCKET).stacksTo(1))
+    );
+
     public static final DeferredItem<BlockItem> LV_CONNECTOR = ITEMS.registerSimpleBlockItem(
             ModBlocks.LV_CONNECTOR,
             new Item.Properties()
@@ -180,11 +188,17 @@ public final class ModItems {
     public static final DeferredItem<Item> RAW_TITANIUM = simpleItem("raw_titanium");
     public static final DeferredItem<Item> RAW_TUNGSTEN = simpleItem("raw_tungsten");
     public static final DeferredItem<Item> RAW_ALUMINUM = simpleItem("raw_aluminum");
-    public static final DeferredItem<Item> RAW_URANIUM = simpleItem("raw_uranium");
+    public static final DeferredItem<RadioactiveItem> RAW_URANIUM = ITEMS.register(
+            "raw_uranium",
+            () -> new RadioactiveItem(new Item.Properties())
+    );
     public static final DeferredItem<Item> TITANIUM_INGOT = simpleItem("titanium_ingot");
     public static final DeferredItem<Item> TUNGSTEN_INGOT = simpleItem("tungsten_ingot");
     public static final DeferredItem<Item> ALUMINUM_INGOT = simpleItem("aluminum_ingot");
-    public static final DeferredItem<Item> URANIUM_INGOT = simpleItem("uranium_ingot");
+    public static final DeferredItem<RadioactiveItem> URANIUM_INGOT = ITEMS.register(
+            "uranium_ingot",
+            () -> new RadioactiveItem(new Item.Properties())
+    );
     public static final DeferredItem<Item> IRON_LIGHT_PLATING = simpleItem("iron_light_plating");
     public static final DeferredItem<Item> IRON_MEDIUM_PLATING = simpleItem("iron_medium_plating");
     public static final DeferredItem<Item> IRON_HEAVY_PLATING = simpleItem("iron_heavy_plating");

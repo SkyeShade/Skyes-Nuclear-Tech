@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Set;
 
 public final class RadiationExposureUtil {
-    public static final double DEFAULT_PLAYER_SCAN_RADIUS = 64.0D;
+    public static final double DEFAULT_PLAYER_SCAN_RADIUS = 128.0D;
     public static final int MAX_SOURCES_PROCESSED = 256;
     private static final double EXPOSURE_RAY_STEP = 0.5D;
     private static final double MIN_TRANSMISSION = 0.001D;

@@ -3,6 +3,7 @@ package com.skyeshade.skyent.client.item;
 public final class GeigerCounterClientState {
     private static double targetExposureMillisievertsPerSecond;
     private static double displayedExposureMillisievertsPerSecond;
+    private static double radiationSickness;
     private static float targetNeedleValue;
     private static float displayedNeedleValue;
 
@@ -19,8 +20,16 @@ public final class GeigerCounterClientState {
         targetExposureMillisievertsPerSecond = Math.max(0.0D, exposureMillisievertsPerSecond);
     }
 
+    public static void setRadiationSickness(double radiationSickness) {
+        GeigerCounterClientState.radiationSickness = Math.max(0.0D, radiationSickness);
+    }
+
     public static float getNeedleValue() {
         return displayedNeedleValue;
+    }
+
+    public static double getRadiationSickness() {
+        return radiationSickness;
     }
 
     public static double getDisplayedExposureMillisievertsPerSecond() {

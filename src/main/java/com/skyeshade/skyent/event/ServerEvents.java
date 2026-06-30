@@ -1,12 +1,21 @@
 package com.skyeshade.skyent.event;
 
+import com.skyeshade.skyent.content.radiation.ModDamageSources;
 import com.skyeshade.skyent.event.systems.BootstrapSystem;
 import com.skyeshade.skyent.event.systems.RadiationDebugSystem;
 import com.skyeshade.skyent.event.systems.RadiationExposureSystem;
+import com.skyeshade.skyent.event.systems.RadiationSourceTickSystem;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
+import net.neoforged.neoforge.event.tick.EntityTickEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 public final class ServerEvents {
     private ServerEvents() {
@@ -16,7 +25,10 @@ public final class ServerEvents {
         NeoForge.EVENT_BUS.addListener(ServerEvents::onServerStarting);
         NeoForge.EVENT_BUS.addListener(ServerEvents::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(ServerEvents::onPlayerLoggedOut);
-        NeoForge.EVENT_BUS.addListener(RadiationExposureSystem::onPlayerTick);
+        NeoForge.EVENT_BUS.addListener(ServerEvents::onPlayerClone);
+        NeoForge.EVENT_BUS.addListener(ServerEvents::onLivingIncomingDamage);
+        NeoForge.EVENT_BUS.addListener(ServerEvents::onEntityTick);
+        NeoForge.EVENT_BUS.addListener(ServerEvents::onServerTick);
     }
 
     public static void onServerStarting(ServerStartingEvent event) {
@@ -30,5 +42,37 @@ public final class ServerEvents {
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         RadiationDebugSystem.onPlayerLoggedOut(event);
         RadiationExposureSystem.onPlayerLoggedOut(event);
+    }
+
+    public static void onPlayerClone(PlayerEvent.Clone event) {
+        RadiationExposureSystem.onPlayerClone(event);
+    }
+
+    public static void onServerTick(ServerTickEvent.Post event) {
+        if (event.getServer().getTickCount() % RadiationSourceTickSystem.MOLTEN_CORIUM_REGISTRY_TICK_INTERVAL == 0) {
+            for (ServerLevel level : event.getServer().getAllLevels()) {
+                RadiationSourceTickSystem.tick(level);
+            }
+        }
+
+        for (var player : event.getServer().getPlayerList().getPlayers()) {
+            RadiationExposureSystem.tickPlayer(player);
+        }
+    }
+
+    public static void onEntityTick(EntityTickEvent.Post event) {
+        if (event.getEntity() instanceof LivingEntity entity && !(entity instanceof ServerPlayer)) {
+            RadiationExposureSystem.tickLivingEntity(entity);
+        }
+    }
+
+    public static void onLivingIncomingDamage(LivingIncomingDamageEvent event) {
+        if (!ModDamageSources.isRadiation(event.getSource())) {
+            return;
+        }
+
+        if (event.getEntity() instanceof Player player && (player.isCreative() || player.isSpectator())) {
+            event.setCanceled(true);
+        }
     }
 }
