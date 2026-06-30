@@ -6,6 +6,7 @@ import com.skyeshade.skyent.content.blockentity.BrickBlastFurnaceBlockEntity;
 import com.skyeshade.skyent.content.blockentity.CombustionGeneratorBlockEntity;
 import com.skyeshade.skyent.content.blockentity.CoriumBlockEntity;
 import com.skyeshade.skyent.content.blockentity.ElectricFurnaceBlockEntity;
+import com.skyeshade.skyent.content.blockentity.GeigerCounterPlacedBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVFEConverterBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVElectricPumpBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVRJConverterBlockEntity;
@@ -74,6 +75,12 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("corium_block", () -> BlockEntityType.Builder.of(
                     CoriumBlockEntity::new,
                     ModBlocks.CORIUM_BLOCK.get()
+            ).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<GeigerCounterPlacedBlockEntity>> GEIGER_COUNTER_PLACED =
+            BLOCK_ENTITIES.register("geiger_counter_placed", () -> BlockEntityType.Builder.of(
+                    GeigerCounterPlacedBlockEntity::new,
+                    ModBlocks.GEIGER_COUNTER_PLACED.get()
             ).build(null));
 
     private ModBlockEntities() {

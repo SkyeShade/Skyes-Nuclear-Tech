@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import com.skyeshade.skyent.content.item.GeigerNeedleUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -31,8 +32,6 @@ public final class GeigerCounterNeedleRenderer {
     private static final float DEBUG_SWEEP_MIN_ANGLE = -90.0F;
     private static final float DEBUG_SWEEP_MAX_ANGLE = 90.0F;
     private static final float DEBUG_SWEEP_SPEED = 0.08F;
-    private static final float NEEDLE_SAFE_ANGLE_DEGREES = 90.0F;
-    private static final float NEEDLE_HOT_ANGLE_DEGREES = -90.0F;
 
     // Temporary tuning constants for aligning the overlay to the Blockbench handheld model.
     private static final boolean RENDER_FIRST_PERSON = true;
@@ -71,8 +70,7 @@ public final class GeigerCounterNeedleRenderer {
     private static final float NEEDLE_SCALE = 1.0F;
     private static final float NEEDLE_LENGTH = 0.12F;
     private static final float NEEDLE_WIDTH = 0.012F;
-    private static final float NEEDLE_MIN_ANGLE = -60.0F;
-    private static final float NEEDLE_MAX_ANGLE = 60.0F;
+
 
     private GeigerCounterNeedleRenderer() {
     }
@@ -120,11 +118,9 @@ public final class GeigerCounterNeedleRenderer {
         }
 
         float gauge = GeigerCounterClientState.getNeedleValue();
-        float angle = Mth.lerp(Mth.clamp(gauge, 0.0F, 1.0F), NEEDLE_SAFE_ANGLE_DEGREES, NEEDLE_HOT_ANGLE_DEGREES);
         Minecraft minecraft = Minecraft.getInstance();
         float ticks = minecraft.player == null ? 0.0F : minecraft.player.tickCount;
-        float jitter = Mth.sin(ticks * 1.37F) * Mth.clamp(gauge * 1.25F, 0.005F, 0.08F) * 20.0F;
-        return angle + jitter;
+        return GeigerNeedleUtil.valueToRenderedNeedleDegrees(gauge, ticks);
     }
 
     private static void applyHandheldModelOverlayTransform(PoseStack poseStack, ItemDisplayContext displayContext) {

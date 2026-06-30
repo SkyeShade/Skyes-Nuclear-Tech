@@ -4,6 +4,8 @@ import com.skyeshade.skyent.client.debug.RadiationDebugOverlayClient;
 import com.skyeshade.skyent.client.debug.RadiationRayDebugClient;
 import com.skyeshade.skyent.client.item.GeigerCounterClientState;
 import com.skyeshade.skyent.client.item.GeigerCounterSoundManager;
+import com.skyeshade.skyent.client.item.PlacedGeigerCounterSoundManager;
+import com.skyeshade.skyent.client.renderer.blockentity.GeigerCounterPlacedRenderer;
 import com.skyeshade.skyent.client.renderer.LVConnectorRenderer;
 import com.skyeshade.skyent.client.renderer.LVElectricPumpRenderer;
 import com.skyeshade.skyent.client.screen.BrickBlastFurnaceScreen;
@@ -49,11 +51,13 @@ public final class ClientEvents {
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerBlockEntityRenderer(ModBlockEntities.LV_CONNECTOR.get(), LVConnectorRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.LV_ELECTRIC_PUMP.get(), LVElectricPumpRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.GEIGER_COUNTER_PLACED.get(), GeigerCounterPlacedRenderer::new);
     }
 
     public static void onClientTick(ClientTickEvent.Post event) {
         GeigerCounterClientState.clientTick();
         GeigerCounterSoundManager.clientTick();
+        PlacedGeigerCounterSoundManager.clientTick();
         RadiationRayDebugClient.onClientTick(event);
     }
 

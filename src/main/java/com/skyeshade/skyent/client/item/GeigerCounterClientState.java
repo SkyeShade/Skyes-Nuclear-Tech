@@ -1,5 +1,7 @@
 package com.skyeshade.skyent.client.item;
 
+import com.skyeshade.skyent.content.item.GeigerNeedleUtil;
+
 public final class GeigerCounterClientState {
     private static double targetExposureMillisievertsPerSecond;
     private static double displayedExposureMillisievertsPerSecond;
@@ -12,7 +14,7 @@ public final class GeigerCounterClientState {
 
     public static void clientTick() {
         displayedExposureMillisievertsPerSecond += (targetExposureMillisievertsPerSecond - displayedExposureMillisievertsPerSecond) * 0.15D;
-        targetNeedleValue = exposureToNeedleValue(displayedExposureMillisievertsPerSecond);
+        targetNeedleValue = GeigerNeedleUtil.exposureToNeedleValue(displayedExposureMillisievertsPerSecond);
         displayedNeedleValue += (targetNeedleValue - displayedNeedleValue) * 0.15F;
     }
 
@@ -36,25 +38,4 @@ public final class GeigerCounterClientState {
         return displayedExposureMillisievertsPerSecond;
     }
 
-    private static float exposureToNeedleValue(double exposure) {
-        if (exposure <= 0.0D) {
-            return 0.0F;
-        }
-
-        if (exposure < 5.0D) {
-            return (float) (0.28D * (Math.log10(1.0D + exposure) / Math.log10(1.0D + 5.0D)));
-        }
-
-        if (exposure < 100.0D) {
-            double t = Math.log10(exposure / 5.0D) / Math.log10(100.0D / 5.0D);
-            return (float) (0.28D + t * 0.44D);
-        }
-
-        if (exposure < 500.0D) {
-            double t = Math.log10(exposure / 100.0D) / Math.log10(500.0D / 100.0D);
-            return (float) (0.72D + t * 0.28D);
-        }
-
-        return 1.0F;
-    }
 }

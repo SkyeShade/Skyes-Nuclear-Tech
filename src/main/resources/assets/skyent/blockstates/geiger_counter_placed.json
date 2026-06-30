@@ -1,0 +1,100 @@
+{
+  "variants": {
+    "attached_face=up,facing=north": {
+      "model": "skyent:block/geiger_counter_placed",
+      "y": 0
+    },
+    "attached_face=up,facing=east": {
+      "model": "skyent:block/geiger_counter_placed",
+      "y": 90
+    },
+    "attached_face=up,facing=south": {
+      "model": "skyent:block/geiger_counter_placed",
+      "y": 180
+    },
+    "attached_face=up,facing=west": {
+      "model": "skyent:block/geiger_counter_placed",
+      "y": 270
+    },
+    "attached_face=north,facing=north": {
+      "model": "skyent:block/geiger_counter_placed",
+      "x": 270,
+      "y": 180
+    },
+    "attached_face=north,facing=east": {
+      "model": "skyent:block/geiger_counter_placed",
+      "x": 270,
+      "y": 180
+    },
+    "attached_face=north,facing=south": {
+      "model": "skyent:block/geiger_counter_placed",
+      "x": 270,
+      "y": 180
+    },
+    "attached_face=north,facing=west": {
+      "model": "skyent:block/geiger_counter_placed",
+      "x": 270,
+      "y": 180
+    },
+    "attached_face=south,facing=north": {
+      "model": "skyent:block/geiger_counter_placed",
+      "x": 270,
+      "y": 0
+    },
+    "attached_face=south,facing=east": {
+      "model": "skyent:block/geiger_counter_placed",
+      "x": 270,
+      "y": 0
+    },
+    "attached_face=south,facing=south": {
+      "model": "skyent:block/geiger_counter_placed",
+      "x": 270,
+      "y": 0
+    },
+    "attached_face=south,facing=west": {
+      "model": "skyent:block/geiger_counter_placed",
+      "x": 270,
+      "y": 0
+    },
+    "attached_face=east,facing=north": {
+      "model": "skyent:block/geiger_counter_placed",
+      "x": 270,
+      "y": 270
+    },
+    "attached_face=east,facing=east": {
+      "model": "skyent:block/geiger_counter_placed",
+      "x": 270,
+      "y": 270
+    },
+    "attached_face=east,facing=south": {
+      "model": "skyent:block/geiger_counter_placed",
+      "x": 270,
+      "y": 270
+    },
+    "attached_face=east,facing=west": {
+      "model": "skyent:block/geiger_counter_placed",
+      "x": 270,
+      "y": 270
+    },
+    "attached_face=west,facing=north": {
+      "model": "skyent:block/geiger_counter_placed",
+      "x": 270,
+      "y": 90
+    },
+    "attached_face=west,facing=east": {
+      "model": "skyent:block/geiger_counter_placed",
+      "x": 270,
+      "y": 90
+    },
+    "attached_face=west,facing=south": {
+      "model": "skyent:block/geiger_counter_placed",
+      "x": 270,
+      "y": 90
+    },
+    "attached_face=west,facing=west": {
+      "model": "skyent:block/geiger_counter_placed",
+      "x": 270,
+      "y": 90
+    }
+  }
+}

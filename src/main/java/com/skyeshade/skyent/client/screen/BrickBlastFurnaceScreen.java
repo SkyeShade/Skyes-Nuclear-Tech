@@ -1,24 +1,18 @@
 package com.skyeshade.skyent.client.screen;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.menu.BrickBlastFurnaceMenu;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.client.renderer.texture.TextureAtlas;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.level.material.Fluids;
-import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
 
 public class BrickBlastFurnaceScreen extends AbstractContainerScreen<BrickBlastFurnaceMenu> {
     private static final int GUI_WIDTH = 176;
     private static final int GUI_HEIGHT = 166;
-    private static final int FLUID_TEXTURE_SIZE = 16;
     private static final int TITLE_Y = 5;
     private static final int TITLE_COLOR = 0x404040;
     public static final int GUI_TEXTURE_WIDTH = 256;
@@ -91,30 +85,17 @@ public class BrickBlastFurnaceScreen extends AbstractContainerScreen<BrickBlastF
 
         int maxFuelHeat = Math.max(1, menu.getMaxFuelHeat());
         int drawHeight = getFuelGaugeDrawHeight(fuelHeat, maxFuelHeat);
-        int drawY = getFuelGaugeDrawY(drawHeight);
-        IClientFluidTypeExtensions extensions = IClientFluidTypeExtensions.of(Fluids.LAVA);
-        TextureAtlasSprite sprite = Minecraft.getInstance()
-                .getTextureAtlas(TextureAtlas.LOCATION_BLOCKS)
-                .apply(extensions.getStillTexture());
-        int tint = extensions.getTintColor();
-        float red = ((tint >> 16) & 0xFF) / 255.0F;
-        float green = ((tint >> 8) & 0xFF) / 255.0F;
-        float blue = (tint & 0xFF) / 255.0F;
-        float alpha = ((tint >> 24) & 0xFF) / 255.0F;
-        if (alpha <= 0.0F) {
-            alpha = 1.0F;
-        }
 
-        RenderSystem.setShaderColor(red, green, blue, alpha);
-        tileFluidSpriteBottomAnchored(
+        FluidGaugeRenderer.renderMaskedTiledFluid(
                 guiGraphics,
-                sprite,
+                Fluids.LAVA,
+                drawHeight,
+                FUEL_FILL_HEIGHT,
                 leftPos + FUEL_FILL_X,
-                topPos + drawY,
+                topPos + FUEL_FILL_Y,
                 FUEL_FILL_WIDTH,
-                drawHeight
+                FUEL_FILL_HEIGHT
         );
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
     }
 
     private static int getFuelGaugeDrawHeight(int fuelHeat, int maxFuelHeat) {
@@ -128,10 +109,6 @@ public class BrickBlastFurnaceScreen extends AbstractContainerScreen<BrickBlastF
         }
 
         return 0;
-    }
-
-    private static int getFuelGaugeDrawY(int drawHeight) {
-        return FUEL_FILL_Y + FUEL_FILL_HEIGHT - drawHeight;
     }
 
     private void renderFuelGaugeOverlay(GuiGraphics guiGraphics) {
@@ -190,27 +167,4 @@ public class BrickBlastFurnaceScreen extends AbstractContainerScreen<BrickBlastF
         );
     }
 
-    private void tileFluidSpriteBottomAnchored(GuiGraphics guiGraphics, TextureAtlasSprite sprite, int x, int y, int width, int height) {
-        int atlasWidth = Math.round(sprite.contents().width() / (sprite.getU1() - sprite.getU0()));
-        int atlasHeight = Math.round(sprite.contents().height() / (sprite.getV1() - sprite.getV0()));
-
-        for (int tileBottom = height; tileBottom > 0; tileBottom -= FLUID_TEXTURE_SIZE) {
-            int tileHeight = Math.min(FLUID_TEXTURE_SIZE, tileBottom);
-            int tileY = tileBottom - tileHeight;
-            for (int tileX = 0; tileX < width; tileX += FLUID_TEXTURE_SIZE) {
-                int tileWidth = Math.min(FLUID_TEXTURE_SIZE, width - tileX);
-                guiGraphics.blit(
-                        sprite.atlasLocation(),
-                        x + tileX,
-                        y + tileY,
-                        sprite.getX(),
-                        sprite.getY() + FLUID_TEXTURE_SIZE - tileHeight,
-                        tileWidth,
-                        tileHeight,
-                        atlasWidth,
-                        atlasHeight
-                );
-            }
-        }
-    }
 }

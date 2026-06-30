@@ -9,6 +9,7 @@ import com.skyeshade.skyent.content.block.DeadGrassBlock;
 import com.skyeshade.skyent.content.block.DeadLeavesBlock;
 import com.skyeshade.skyent.content.block.DeadPlantBlock;
 import com.skyeshade.skyent.content.block.ElectricFurnaceBlock;
+import com.skyeshade.skyent.content.block.GeigerCounterPlacedBlock;
 import com.skyeshade.skyent.content.block.LVConverterBlock;
 import com.skyeshade.skyent.content.block.LVConnectorBlock;
 import com.skyeshade.skyent.content.block.LVElectricPumpBlock;
@@ -157,6 +158,12 @@ public final class ModBlocks {
             "corium_block",
             CoriumBlock::new,
             BlockBehaviour.Properties.ofFullCopy(Blocks.OBSIDIAN)
+    );
+
+    public static final DeferredBlock<GeigerCounterPlacedBlock> GEIGER_COUNTER_PLACED = BLOCKS.registerBlock(
+            "geiger_counter_placed",
+            GeigerCounterPlacedBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.LEVER).noOcclusion()
     );
 
     public static final DeferredBlock<MoltenCoriumBlock> MOLTEN_CORIUM_BLOCK = BLOCKS.register(
