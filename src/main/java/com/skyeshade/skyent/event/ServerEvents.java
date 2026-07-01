@@ -2,6 +2,7 @@ package com.skyeshade.skyent.event;
 
 import com.skyeshade.skyent.content.radiation.ModDamageSources;
 import com.skyeshade.skyent.event.systems.BootstrapSystem;
+import com.skyeshade.skyent.event.systems.HotItemSystem;
 import com.skyeshade.skyent.event.systems.RadiationDebugSystem;
 import com.skyeshade.skyent.event.systems.RadiationExposureSystem;
 import com.skyeshade.skyent.event.systems.RadiationSourceTickSystem;
@@ -9,6 +10,7 @@ import com.skyeshade.skyent.event.systems.ToxicitySystem;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
@@ -59,6 +61,7 @@ public final class ServerEvents {
         for (var player : event.getServer().getPlayerList().getPlayers()) {
             RadiationExposureSystem.tickPlayer(player);
             ToxicitySystem.tickLivingEntity(player);
+            HotItemSystem.tickLivingEntity(player);
         }
     }
 
@@ -66,6 +69,9 @@ public final class ServerEvents {
         if (event.getEntity() instanceof LivingEntity entity && !(entity instanceof ServerPlayer)) {
             RadiationExposureSystem.tickLivingEntity(entity);
             ToxicitySystem.tickLivingEntity(entity);
+            HotItemSystem.tickLivingEntity(entity);
+        } else if (event.getEntity() instanceof ItemEntity itemEntity) {
+            HotItemSystem.tickItemEntity(itemEntity);
         }
     }
 

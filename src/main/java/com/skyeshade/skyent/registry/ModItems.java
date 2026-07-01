@@ -12,6 +12,7 @@ import com.skyeshade.skyent.content.item.TooltipBlockItem;
 import com.skyeshade.skyent.content.item.ToxicBlockItem;
 import com.skyeshade.skyent.content.item.ToxicItem;
 import com.skyeshade.skyent.content.item.UraniumBlockItem;
+import com.skyeshade.skyent.content.item.WrenchItem;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.BucketItem;
@@ -40,6 +41,11 @@ public final class ModItems {
 
     public static final DeferredItem<BlockItem> BRICK_BLAST_FURNACE = ITEMS.registerSimpleBlockItem(
             ModBlocks.BRICK_BLAST_FURNACE,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> COAL_FORGE = ITEMS.registerSimpleBlockItem(
+            ModBlocks.COAL_FORGE,
             new Item.Properties()
     );
 
@@ -245,9 +251,16 @@ public final class ModItems {
             "uranium_ingot",
             () -> new RadioactiveItem(new Item.Properties())
     );
-    public static final DeferredItem<Item> IRON_LIGHT_PLATING = simpleItem("iron_light_plating");
-    public static final DeferredItem<Item> IRON_MEDIUM_PLATING = simpleItem("iron_medium_plating");
-    public static final DeferredItem<Item> IRON_HEAVY_PLATING = simpleItem("iron_heavy_plating");
+    public static final DeferredItem<Item> IRON_PLATE = simpleItem("iron_plate");
+    public static final DeferredItem<Item> STEEL_PLATE = simpleItem("steel_plate");
+    public static final DeferredItem<Item> GOLD_PLATE = simpleItem("gold_plate");
+    public static final DeferredItem<Item> ALUMINUM_PLATE = simpleItem("aluminum_plate");
+    public static final DeferredItem<Item> TITANIUM_PLATE = simpleItem("titanium_plate");
+    public static final DeferredItem<Item> COPPER_PLATE = simpleItem("copper_plate");
+    public static final DeferredItem<ToxicItem> LEAD_PLATE = ITEMS.register(
+            "lead_plate",
+            () -> new ToxicItem(new Item.Properties())
+    );
     public static final DeferredItem<Item> LIGHT_ELECTRIC_MOTOR = simpleItem("light_electric_motor");
     public static final DeferredItem<Item> MEDIUM_ELECTRIC_MOTOR = simpleItem("medium_electric_motor");
     public static final DeferredItem<Item> INDUSTRIAL_ELECTRIC_MOTOR = simpleItem("industrial_electric_motor");
@@ -257,6 +270,10 @@ public final class ModItems {
     public static final DeferredItem<Item> INDUSTRIAL_HYDRAULIC = simpleItem("industrial_hydraulic");
     public static final DeferredItem<Item> HEAVY_HYDRAULIC = simpleItem("heavy_hydraulic");
     public static final DeferredItem<Item> SUPERHEAVY_ELECTRIC_MOTOR = simpleItem("superheavy_electric_motor");
+    public static final DeferredItem<WrenchItem> WRENCH = ITEMS.register(
+            "wrench",
+            () -> new WrenchItem(new Item.Properties().stacksTo(1))
+    );
     public static final DeferredItem<GeigerCounterItem> GEIGER_COUNTER = ITEMS.register(
             "geiger_counter",
             () -> new GeigerCounterItem(new Item.Properties())

@@ -3,6 +3,7 @@ package com.skyeshade.skyent.registry;
 import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.block.BasicFluidDuctBlock;
 import com.skyeshade.skyent.content.block.BrickBlastFurnaceBlock;
+import com.skyeshade.skyent.content.block.CoalForgeBlock;
 import com.skyeshade.skyent.content.block.CombustionGeneratorBlock;
 import com.skyeshade.skyent.content.block.CoriumBlock;
 import com.skyeshade.skyent.content.block.DeadGrassBlock;
@@ -44,6 +45,15 @@ public final class ModBlocks {
             "brick_blast_furnace",
             BrickBlastFurnaceBlock::new,
             BlockBehaviour.Properties.ofFullCopy(Blocks.BLAST_FURNACE)
+    );
+
+    public static final DeferredBlock<CoalForgeBlock> COAL_FORGE = BLOCKS.registerBlock(
+            "coal_forge",
+            CoalForgeBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.BRICKS)
+                    .strength(3.5F, 6.0F)
+                    .noOcclusion()
+                    .lightLevel(state -> state.hasProperty(CoalForgeBlock.LIT) && state.getValue(CoalForgeBlock.LIT) ? 12 : 0)
     );
 
     public static final DeferredBlock<LVElectricPumpBlock> LV_ELECTRIC_PUMP = BLOCKS.registerBlock(

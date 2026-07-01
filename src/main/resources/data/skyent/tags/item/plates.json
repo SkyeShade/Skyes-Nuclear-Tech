@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    "skyent:iron_plate",
+    "skyent:steel_plate",
+    "skyent:gold_plate",
+    "skyent:aluminum_plate",
+    "skyent:titanium_plate",
+    "skyent:copper_plate",
+    "skyent:lead_plate"
+  ]
+}

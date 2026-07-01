@@ -2,5 +2,13 @@
   "parent": "minecraft:item/generated",
   "textures": {
     "layer0": "skyent:item/tungsten_ingot"
-  }
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "skyent:hot": 1.0
+      },
+      "model": "skyent:item/hot_ingot"
+    }
+  ]
 }

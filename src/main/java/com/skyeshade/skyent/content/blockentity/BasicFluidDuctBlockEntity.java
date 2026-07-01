@@ -2,6 +2,7 @@ package com.skyeshade.skyent.content.blockentity;
 
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import com.skyeshade.skyent.registry.ModBlocks;
+import com.skyeshade.skyent.content.block.BasicFluidDuctBlock;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -71,6 +72,9 @@ public class BasicFluidDuctBlockEntity extends BlockEntity {
         if (!(level instanceof ServerLevel serverLevel) || resource.isEmpty()) {
             return 0;
         }
+        if (side != null && !BasicFluidDuctBlock.canUseSide(getBlockState(), side)) {
+            return 0;
+        }
 
         BlockPos excludedNeighbor = side == null ? null : worldPosition.relative(side);
         Set<BlockPos> network = collectNetwork(serverLevel, worldPosition);
@@ -103,7 +107,9 @@ public class BasicFluidDuctBlockEntity extends BlockEntity {
 
             for (Direction direction : Direction.values()) {
                 BlockPos neighbor = pos.relative(direction);
-                if (!network.contains(neighbor) && level.getBlockState(neighbor).is(ModBlocks.BASIC_FLUID_DUCT.get())) {
+                BlockState state = level.getBlockState(pos);
+                BlockState neighborState = level.getBlockState(neighbor);
+                if (!network.contains(neighbor) && BasicFluidDuctBlock.canConnectDucts(state, direction, neighborState)) {
                     queue.add(neighbor);
                 }
             }
@@ -115,7 +121,12 @@ public class BasicFluidDuctBlockEntity extends BlockEntity {
     private static List<Endpoint> collectEndpoints(ServerLevel level, Set<BlockPos> network, @Nullable BlockPos excludedNeighbor) {
         List<Endpoint> endpoints = new ArrayList<>();
         for (BlockPos ductPos : network) {
+            BlockState ductState = level.getBlockState(ductPos);
             for (Direction direction : Direction.values()) {
+                if (!BasicFluidDuctBlock.canUseSide(ductState, direction)) {
+                    continue;
+                }
+
                 BlockPos neighborPos = ductPos.relative(direction);
                 if (network.contains(neighborPos) || neighborPos.equals(excludedNeighbor)) {
                     continue;

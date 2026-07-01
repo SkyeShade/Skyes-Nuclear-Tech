@@ -23,6 +23,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.COMBUSTION_GENERATOR.get());
                         output.accept(ModItems.ELECTRIC_FURNACE.get());
                         output.accept(ModItems.BRICK_BLAST_FURNACE.get());
+                        output.accept(ModItems.COAL_FORGE.get());
                         output.accept(ModItems.LV_ELECTRIC_PUMP.get());
                         output.accept(ModItems.LV_STEAM_TURBINE.get());
                         output.accept(ModItems.BASIC_FLUID_DUCT.get());
@@ -69,9 +70,13 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.ALUMINUM_INGOT.get());
                         output.accept(ModItems.LEAD_INGOT.get());
                         output.accept(ModItems.URANIUM_INGOT.get());
-                        output.accept(ModItems.IRON_LIGHT_PLATING.get());
-                        output.accept(ModItems.IRON_MEDIUM_PLATING.get());
-                        output.accept(ModItems.IRON_HEAVY_PLATING.get());
+                        output.accept(ModItems.IRON_PLATE.get());
+                        output.accept(ModItems.STEEL_PLATE.get());
+                        output.accept(ModItems.GOLD_PLATE.get());
+                        output.accept(ModItems.ALUMINUM_PLATE.get());
+                        output.accept(ModItems.TITANIUM_PLATE.get());
+                        output.accept(ModItems.COPPER_PLATE.get());
+                        output.accept(ModItems.LEAD_PLATE.get());
                         output.accept(ModItems.LIGHT_ELECTRIC_MOTOR.get());
                         output.accept(ModItems.MEDIUM_ELECTRIC_MOTOR.get());
                         output.accept(ModItems.INDUSTRIAL_ELECTRIC_MOTOR.get());
@@ -81,6 +86,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.MEDIUM_HYDRAULIC.get());
                         output.accept(ModItems.INDUSTRIAL_HYDRAULIC.get());
                         output.accept(ModItems.HEAVY_HYDRAULIC.get());
+                        output.accept(ModItems.WRENCH.get());
                         output.accept(ModItems.GEIGER_COUNTER.get());
                         output.accept(ModItems.TITANIUM_SWORD.get());
                         output.accept(ModItems.TITANIUM_PICKAXE.get());

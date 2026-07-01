@@ -1,20 +1,21 @@
 {
-  "textures": {
-    "particle": "skyent:block/fluid_duct_arm",
-    "arm": "skyent:block/fluid_duct_arm"
-  },
-  "elements": [
-    {
-      "from": [5, 11, 5],
-      "to": [11, 16, 11],
-      "faces": {
-        "up": { "uv": [0, 0, 16, 16], "texture": "#arm" },
-        "north": { "uv": [0, 0, 16, 16], "texture": "#arm" },
-        "south": { "uv": [0, 0, 16, 16], "texture": "#arm" },
-        "west": { "uv": [0, 0, 16, 16], "texture": "#arm" },
-        "east": { "uv": [0, 0, 16, 16], "texture": "#arm" }
-      }
-    }
-  ]
+	"format_version": "1.21.11",
+	"credit": "Made with Blockbench",
+	"textures": {
+		"particle": "skyent:block/fluid_duct",
+		"arm": "skyent:block/fluid_duct"
+	},
+	"elements": [
+		{
+			"from": [5, 11, 5],
+			"to": [11, 16, 11],
+			"faces": {
+				"north": {"uv": [0, 6, 6, 11], "texture": "#arm"},
+				"east": {"uv": [0, 6, 6, 11], "texture": "#arm"},
+				"south": {"uv": [0, 6, 6, 11], "texture": "#arm"},
+				"west": {"uv": [0, 6, 6, 11], "texture": "#arm"},
+				"up": {"uv": [0, 0, 6, 6], "texture": "#arm"}
+			}
+		}
+	]
 }
-

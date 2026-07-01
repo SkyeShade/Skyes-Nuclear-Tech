@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "BIB",
+    "B B",
+    "BBB"
+  ],
+  "key": {
+    "B": {
+      "item": "minecraft:bricks"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    }
+  },
+  "result": {
+    "id": "skyent:coal_forge"
+  }
+}

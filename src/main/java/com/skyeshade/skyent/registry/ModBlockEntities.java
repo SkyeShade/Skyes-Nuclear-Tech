@@ -3,6 +3,7 @@ package com.skyeshade.skyent.registry;
 import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.blockentity.BasicFluidDuctBlockEntity;
 import com.skyeshade.skyent.content.blockentity.BrickBlastFurnaceBlockEntity;
+import com.skyeshade.skyent.content.blockentity.CoalForgeBlockEntity;
 import com.skyeshade.skyent.content.blockentity.CombustionGeneratorBlockEntity;
 import com.skyeshade.skyent.content.blockentity.CoriumBlockEntity;
 import com.skyeshade.skyent.content.blockentity.ElectricFurnaceBlockEntity;
@@ -40,6 +41,12 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("brick_blast_furnace", () -> BlockEntityType.Builder.of(
                     BrickBlastFurnaceBlockEntity::new,
                     ModBlocks.BRICK_BLAST_FURNACE.get()
+            ).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CoalForgeBlockEntity>> COAL_FORGE =
+            BLOCK_ENTITIES.register("coal_forge", () -> BlockEntityType.Builder.of(
+                    CoalForgeBlockEntity::new,
+                    ModBlocks.COAL_FORGE.get()
             ).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<LVElectricPumpBlockEntity>> LV_ELECTRIC_PUMP =

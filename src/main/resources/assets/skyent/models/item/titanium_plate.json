@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "skyent:item/iron_medium_plating"
+    "layer0": "skyent:item/titanium_plate"
   }
 }

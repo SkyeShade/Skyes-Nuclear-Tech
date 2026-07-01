@@ -1,0 +1,7 @@
+{
+  "parent": "skyent:block/coal_forge_coal_1",
+  "textures": {
+    "4": "skyent:block/coal_forge_coal_lit",
+    "particle": "skyent:block/coal_forge_coal_lit"
+  }
+}
