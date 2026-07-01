@@ -24,6 +24,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.ELECTRIC_FURNACE.get());
                         output.accept(ModItems.BRICK_BLAST_FURNACE.get());
                         output.accept(ModItems.LV_ELECTRIC_PUMP.get());
+                        output.accept(ModItems.LV_STEAM_TURBINE.get());
                         output.accept(ModItems.BASIC_FLUID_DUCT.get());
                         output.accept(ModItems.SILT.get());
                         output.accept(ModItems.DEAD_GRASS.get());

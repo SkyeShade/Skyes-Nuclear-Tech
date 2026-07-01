@@ -2,6 +2,7 @@ package com.skyeshade.skyent.registry;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.fluid.MoltenCoriumFluid;
+import com.skyeshade.skyent.content.fluid.SteamFluid;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.material.Fluid;
 import net.neoforged.bus.api.IEventBus;
@@ -22,6 +23,16 @@ public final class ModFluids {
     public static final DeferredHolder<Fluid, MoltenCoriumFluid.Flowing> FLOWING_MOLTEN_CORIUM = FLUIDS.register(
             "flowing_molten_corium",
             MoltenCoriumFluid.Flowing::new
+    );
+
+    public static final DeferredHolder<Fluid, SteamFluid.Source> STEAM = FLUIDS.register(
+            "steam",
+            SteamFluid.Source::new
+    );
+
+    public static final DeferredHolder<Fluid, SteamFluid.Flowing> FLOWING_STEAM = FLUIDS.register(
+            "flowing_steam",
+            SteamFluid.Flowing::new
     );
 
     private ModFluids() {

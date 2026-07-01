@@ -57,6 +57,40 @@ public final class ModFluidTypes {
             }
     );
 
+    public static final DeferredHolder<FluidType, FluidType> STEAM = FLUID_TYPES.register(
+            "steam",
+            () -> new FluidType(FluidType.Properties.create()
+                    .density(-100)
+                    .viscosity(100)
+                    .temperature(373)
+                    .canSwim(false)
+                    .canDrown(false)
+                    .supportsBoating(false)) {
+                @Override
+                public void initializeClient(Consumer<IClientFluidTypeExtensions> consumer) {
+                    consumer.accept(new IClientFluidTypeExtensions() {
+                        private static final ResourceLocation STILL = ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "block/fluid/steam_still");
+                        private static final ResourceLocation FLOW = ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "block/fluid/steam_flow");
+
+                        @Override
+                        public ResourceLocation getStillTexture() {
+                            return STILL;
+                        }
+
+                        @Override
+                        public ResourceLocation getFlowingTexture() {
+                            return FLOW;
+                        }
+
+                        @Override
+                        public int getTintColor() {
+                            return 0xFFFFFFFF;
+                        }
+                    });
+                }
+            }
+    );
+
     private ModFluidTypes() {
     }
 

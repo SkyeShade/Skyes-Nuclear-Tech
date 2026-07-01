@@ -547,12 +547,12 @@ public class LVElectricPumpBlockEntity extends BlockEntity implements MenuProvid
 
         @Override
         public boolean isFluidValid(int tank, FluidStack stack) {
-            return fluidTank.isFluidValid(tank, stack);
+            return false;
         }
 
         @Override
         public int fill(FluidStack resource, FluidAction action) {
-            return fluidTank.fill(resource, action);
+            return 0;
         }
 
         @Override

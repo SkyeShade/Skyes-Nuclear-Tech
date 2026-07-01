@@ -1,8 +1,8 @@
 package com.skyeshade.skyent.event.systems;
 
-import com.skyeshade.skyent.content.blockentity.CombustionGeneratorBlockEntity;
 import com.skyeshade.skyent.content.blockentity.ElectricFurnaceBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVElectricPumpBlockEntity;
+import com.skyeshade.skyent.content.blockentity.LVSteamTurbineBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVRJConverterBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVConnectorBlockEntity;
 import com.skyeshade.skyent.content.energy.CopperWireConstants;
@@ -191,24 +191,7 @@ public final class LVElectricalNetworkSystem {
     private static void collectAttachedEndpoints(ServerLevel level, BlockPos connectorPos, List<Producer> producers, List<Consumer> consumers) {
         for (Direction direction : Direction.values()) {
             BlockEntity blockEntity = level.getBlockEntity(connectorPos.relative(direction));
-            if (blockEntity instanceof CombustionGeneratorBlockEntity generator) {
-                producers.add(new Producer(connectorPos, new NetworkProducer() {
-                    @Override
-                    public int availableOutputRJ() {
-                        return generator.getStoredRJ();
-                    }
-
-                    @Override
-                    public int maxOutputRJPerTick() {
-                        return generator.getMaxOutputRJPerTick();
-                    }
-
-                    @Override
-                    public int extractRJ(int amount, boolean simulate) {
-                        return generator.extractRJ(amount, simulate);
-                    }
-                }));
-            } else if (blockEntity instanceof ElectricFurnaceBlockEntity furnace) {
+            if (blockEntity instanceof ElectricFurnaceBlockEntity furnace) {
                 consumers.add(new Consumer(connectorPos, new NetworkConsumer() {
                     @Override
                     public int availableRJCapacity() {
@@ -242,6 +225,23 @@ public final class LVElectricalNetworkSystem {
                     @Override
                     public int receiveRJ(int amount, boolean simulate) {
                         return converter.receiveRJ(amount, simulate);
+                    }
+                }));
+            } else if (blockEntity instanceof LVSteamTurbineBlockEntity turbine) {
+                producers.add(new Producer(connectorPos, new NetworkProducer() {
+                    @Override
+                    public int availableOutputRJ() {
+                        return turbine.getStoredRJ();
+                    }
+
+                    @Override
+                    public int maxOutputRJPerTick() {
+                        return turbine.getMaxOutputRJPerTick();
+                    }
+
+                    @Override
+                    public int extractRJ(int amount, boolean simulate) {
+                        return turbine.extractRJ(amount, simulate);
                     }
                 }));
             }

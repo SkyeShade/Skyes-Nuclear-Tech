@@ -48,6 +48,11 @@ public final class ModItems {
             new Item.Properties()
     );
 
+    public static final DeferredItem<BlockItem> LV_STEAM_TURBINE = ITEMS.registerSimpleBlockItem(
+            ModBlocks.LV_STEAM_TURBINE,
+            new Item.Properties()
+    );
+
     public static final DeferredItem<BlockItem> BASIC_FLUID_DUCT = ITEMS.registerSimpleBlockItem(
             ModBlocks.BASIC_FLUID_DUCT,
             new Item.Properties()

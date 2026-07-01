@@ -13,6 +13,7 @@ import com.skyeshade.skyent.content.block.GeigerCounterPlacedBlock;
 import com.skyeshade.skyent.content.block.LVConverterBlock;
 import com.skyeshade.skyent.content.block.LVConnectorBlock;
 import com.skyeshade.skyent.content.block.LVElectricPumpBlock;
+import com.skyeshade.skyent.content.block.LVSteamTurbineBlock;
 import com.skyeshade.skyent.content.block.MoltenCoriumBlock;
 import com.skyeshade.skyent.content.block.RadioactiveBlock;
 import com.skyeshade.skyent.content.block.SiltBlock;
@@ -48,6 +49,12 @@ public final class ModBlocks {
     public static final DeferredBlock<LVElectricPumpBlock> LV_ELECTRIC_PUMP = BLOCKS.registerBlock(
             "lv_electric_pump",
             LVElectricPumpBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+    );
+
+    public static final DeferredBlock<LVSteamTurbineBlock> LV_STEAM_TURBINE = BLOCKS.registerBlock(
+            "lv_steam_turbine",
+            LVSteamTurbineBlock::new,
             BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
     );
 

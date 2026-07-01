@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "skyent:block/lv_steam_turbine_sides",
+    "down": "skyent:block/lv_steam_turbine_sides",
+    "up": "skyent:block/lv_steam_turbine_top",
+    "north": "skyent:block/lv_steam_turbine",
+    "south": "skyent:block/lv_steam_turbine_sides",
+    "east": "skyent:block/lv_steam_turbine_sides",
+    "west": "skyent:block/lv_steam_turbine_sides"
+  }
+}

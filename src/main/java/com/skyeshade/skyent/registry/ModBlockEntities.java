@@ -9,6 +9,7 @@ import com.skyeshade.skyent.content.blockentity.ElectricFurnaceBlockEntity;
 import com.skyeshade.skyent.content.blockentity.GeigerCounterPlacedBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVFEConverterBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVElectricPumpBlockEntity;
+import com.skyeshade.skyent.content.blockentity.LVSteamTurbineBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVRJConverterBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVConnectorBlockEntity;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -45,6 +46,12 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("lv_electric_pump", () -> BlockEntityType.Builder.of(
                     LVElectricPumpBlockEntity::new,
                     ModBlocks.LV_ELECTRIC_PUMP.get()
+            ).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<LVSteamTurbineBlockEntity>> LV_STEAM_TURBINE =
+            BLOCK_ENTITIES.register("lv_steam_turbine", () -> BlockEntityType.Builder.of(
+                    LVSteamTurbineBlockEntity::new,
+                    ModBlocks.LV_STEAM_TURBINE.get()
             ).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<BasicFluidDuctBlockEntity>> BASIC_FLUID_DUCT =

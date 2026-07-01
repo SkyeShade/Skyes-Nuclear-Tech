@@ -12,6 +12,7 @@ import com.skyeshade.skyent.client.screen.BrickBlastFurnaceScreen;
 import com.skyeshade.skyent.client.screen.CombustionGeneratorScreen;
 import com.skyeshade.skyent.client.screen.ElectricFurnaceScreen;
 import com.skyeshade.skyent.client.screen.LVElectricPumpScreen;
+import com.skyeshade.skyent.client.screen.LVSteamTurbineScreen;
 import com.skyeshade.skyent.event.systems.BootstrapSystem;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import com.skyeshade.skyent.registry.ModMenus;
@@ -46,6 +47,7 @@ public final class ClientEvents {
         event.register(ModMenus.ELECTRIC_FURNACE.get(), ElectricFurnaceScreen::new);
         event.register(ModMenus.BRICK_BLAST_FURNACE.get(), BrickBlastFurnaceScreen::new);
         event.register(ModMenus.LV_ELECTRIC_PUMP.get(), LVElectricPumpScreen::new);
+        event.register(ModMenus.LV_STEAM_TURBINE.get(), LVSteamTurbineScreen::new);
     }
 
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {

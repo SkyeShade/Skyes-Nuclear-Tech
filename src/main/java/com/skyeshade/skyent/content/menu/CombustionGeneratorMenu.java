@@ -7,8 +7,8 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
@@ -17,19 +17,23 @@ import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.items.SlotItemHandler;
 
 public class CombustionGeneratorMenu extends AbstractContainerMenu {
-    public static final int WATER_INPUT_SLOT_X = 6;
+    public static final int WATER_INPUT_SLOT_X = 29;
     public static final int WATER_INPUT_SLOT_Y = 9;
-    public static final int EMPTY_CONTAINER_SLOT_X = 6;
+    public static final int EMPTY_CONTAINER_SLOT_X = 29;
     public static final int EMPTY_CONTAINER_SLOT_Y = 41;
     public static final int FUEL_SLOT_X = 80;
-    public static final int FUEL_SLOT_Y = 35;
+    public static final int FUEL_SLOT_Y = 41;
+    public static final int STEAM_CONTAINER_INPUT_SLOT_X = 131;
+    public static final int STEAM_CONTAINER_INPUT_SLOT_Y = 9;
+    public static final int STEAM_CONTAINER_OUTPUT_SLOT_X = 131;
+    public static final int STEAM_CONTAINER_OUTPUT_SLOT_Y = 41;
     private static final int PLAYER_INVENTORY_X = 8;
     private static final int PLAYER_INVENTORY_Y = 84;
     private static final int HOTBAR_Y = 142;
     private static final int SLOT_SIZE = 18;
     private static final int PLAYER_INVENTORY_ROWS = 3;
     private static final int PLAYER_INVENTORY_COLUMNS = 9;
-    private static final int MACHINE_SLOT_COUNT = 3;
+    private static final int MACHINE_SLOT_COUNT = 5;
     private static final int PLAYER_INVENTORY_SLOT_COUNT = 27;
     private static final int DATA_COUNT = 7;
 
@@ -48,24 +52,18 @@ public class CombustionGeneratorMenu extends AbstractContainerMenu {
         addSlot(new WaterInputSlot(blockEntity.getInventory(), CombustionGeneratorBlockEntity.WATER_INPUT_SLOT, WATER_INPUT_SLOT_X, WATER_INPUT_SLOT_Y));
         addSlot(new OutputSlot(blockEntity.getInventory(), CombustionGeneratorBlockEntity.EMPTY_CONTAINER_SLOT, EMPTY_CONTAINER_SLOT_X, EMPTY_CONTAINER_SLOT_Y));
         addSlot(new FuelSlot(blockEntity.getInventory(), CombustionGeneratorBlockEntity.FUEL_SLOT, FUEL_SLOT_X, FUEL_SLOT_Y));
+        addSlot(new FillableContainerSlot(blockEntity.getInventory(), CombustionGeneratorBlockEntity.STEAM_CONTAINER_INPUT_SLOT, STEAM_CONTAINER_INPUT_SLOT_X, STEAM_CONTAINER_INPUT_SLOT_Y));
+        addSlot(new OutputSlot(blockEntity.getInventory(), CombustionGeneratorBlockEntity.STEAM_CONTAINER_OUTPUT_SLOT, STEAM_CONTAINER_OUTPUT_SLOT_X, STEAM_CONTAINER_OUTPUT_SLOT_Y));
         addPlayerInventory(playerInventory);
         addDataSlots(data);
     }
 
-    public int getEnergyStoredRJ() {
-        return (data.get(1) << 16) | data.get(0);
-    }
-
-    public int getMaxEnergyStoredRJ() {
-        return CombustionGeneratorBlockEntity.ENERGY_CAPACITY_RJ;
-    }
-
     public int getBurnTime() {
-        return data.get(2);
+        return data.get(0);
     }
 
     public int getBurnTimeTotal() {
-        return data.get(3);
+        return data.get(1);
     }
 
     public boolean isBurning() {
@@ -73,15 +71,23 @@ public class CombustionGeneratorMenu extends AbstractContainerMenu {
     }
 
     public int getWaterAmount() {
-        return data.get(4);
+        return data.get(2);
     }
 
     public int getWaterCapacity() {
+        return data.get(3);
+    }
+
+    public int getSteamAmount() {
+        return data.get(4);
+    }
+
+    public int getSteamCapacity() {
         return data.get(5);
     }
 
-    public int getCurrentGenerationRate() {
-        return data.get(6);
+    public double getTemperatureC() {
+        return data.get(6) / 100.0D;
     }
 
     @Override
@@ -104,6 +110,10 @@ public class CombustionGeneratorMenu extends AbstractContainerMenu {
                 }
             } else if (CombustionGeneratorBlockEntity.isWaterContainer(stack)) {
                 if (!moveItemStackTo(stack, CombustionGeneratorBlockEntity.WATER_INPUT_SLOT, CombustionGeneratorBlockEntity.WATER_INPUT_SLOT + 1, false)) {
+                    return ItemStack.EMPTY;
+                }
+            } else if (CombustionGeneratorBlockEntity.isFillableFluidContainer(stack)) {
+                if (!moveItemStackTo(stack, CombustionGeneratorBlockEntity.STEAM_CONTAINER_INPUT_SLOT, CombustionGeneratorBlockEntity.STEAM_CONTAINER_INPUT_SLOT + 1, false)) {
                     return ItemStack.EMPTY;
                 }
             } else if (CombustionGeneratorBlockEntity.isFuel(stack)) {
@@ -147,8 +157,8 @@ public class CombustionGeneratorMenu extends AbstractContainerMenu {
 
     private static CombustionGeneratorBlockEntity getBlockEntity(Inventory playerInventory, RegistryFriendlyByteBuf extraData) {
         BlockEntity blockEntity = playerInventory.player.level().getBlockEntity(extraData.readBlockPos());
-        if (blockEntity instanceof CombustionGeneratorBlockEntity generator) {
-            return generator;
+        if (blockEntity instanceof CombustionGeneratorBlockEntity boiler) {
+            return boiler;
         }
 
         throw new IllegalStateException("Expected combustion generator block entity");
@@ -162,6 +172,17 @@ public class CombustionGeneratorMenu extends AbstractContainerMenu {
         @Override
         public boolean mayPlace(ItemStack stack) {
             return CombustionGeneratorBlockEntity.isWaterContainer(stack);
+        }
+    }
+
+    private static final class FillableContainerSlot extends SlotItemHandler {
+        private FillableContainerSlot(ItemStackHandler itemHandler, int index, int xPosition, int yPosition) {
+            super(itemHandler, index, xPosition, yPosition);
+        }
+
+        @Override
+        public boolean mayPlace(ItemStack stack) {
+            return CombustionGeneratorBlockEntity.isFillableFluidContainer(stack);
         }
     }
 

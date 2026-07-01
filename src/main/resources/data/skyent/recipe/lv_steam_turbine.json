@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "SCS",
+    "CMC",
+    "SCS"
+  ],
+  "key": {
+    "S": {
+      "item": "skyent:steel_ingot"
+    },
+    "C": {
+      "item": "minecraft:copper_ingot"
+    },
+    "M": {
+      "item": "skyent:light_electric_motor"
+    }
+  },
+  "result": {
+    "id": "skyent:lv_steam_turbine"
+  }
+}
