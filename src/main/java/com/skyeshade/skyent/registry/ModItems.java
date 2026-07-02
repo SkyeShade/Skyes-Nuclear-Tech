@@ -6,13 +6,14 @@ import com.skyeshade.skyent.content.item.GeigerCounterItem;
 import com.skyeshade.skyent.content.item.LVWireDrumItem;
 import com.skyeshade.skyent.content.item.RadioactiveBlockItem;
 import com.skyeshade.skyent.content.item.RadioactiveItem;
+import com.skyeshade.skyent.content.item.RadioactiveToxicItem;
 import com.skyeshade.skyent.content.item.ShieldingBlockItem;
 import com.skyeshade.skyent.content.item.SkyentToolTier;
 import com.skyeshade.skyent.content.item.SteelFluidBarrelItem;
 import com.skyeshade.skyent.content.item.TooltipBlockItem;
 import com.skyeshade.skyent.content.item.ToxicBlockItem;
 import com.skyeshade.skyent.content.item.ToxicItem;
-import com.skyeshade.skyent.content.item.TungstenReachersItem;
+import com.skyeshade.skyent.content.item.SteelTongsItem;
 import com.skyeshade.skyent.content.item.UraniumBlockItem;
 import com.skyeshade.skyent.content.item.WrenchItem;
 import net.minecraft.world.item.AxeItem;
@@ -48,6 +49,11 @@ public final class ModItems {
 
     public static final DeferredItem<BlockItem> COAL_FORGE = ITEMS.registerSimpleBlockItem(
             ModBlocks.COAL_FORGE,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> FIRE_BRICKS = ITEMS.registerSimpleBlockItem(
+            ModBlocks.FIRE_BRICKS,
             new Item.Properties()
     );
 
@@ -272,6 +278,27 @@ public final class ModItems {
             "lead_plate",
             () -> new ToxicItem(new Item.Properties())
     );
+    public static final DeferredItem<Item> IRON_POWDER = simpleItem("iron_powder");
+    public static final DeferredItem<Item> GOLD_POWDER = simpleItem("gold_powder");
+    public static final DeferredItem<ToxicItem> LEAD_POWDER = ITEMS.register(
+            "lead_powder",
+            () -> new ToxicItem(new Item.Properties())
+    );
+    public static final DeferredItem<Item> TUNGSTEN_POWDER = simpleItem("tungsten_powder");
+    public static final DeferredItem<Item> STEEL_POWDER = simpleItem("steel_powder");
+    public static final DeferredItem<RadioactiveToxicItem> URANIUM_POWDER = ITEMS.register(
+            "uranium_powder",
+            () -> new RadioactiveToxicItem(new Item.Properties())
+    );
+    public static final DeferredItem<Item> COPPER_POWDER = simpleItem("copper_powder");
+    public static final DeferredItem<Item> TITANIUM_POWDER = simpleItem("titanium_powder");
+    public static final DeferredItem<Item> ALUMINUM_POWDER = simpleItem("aluminum_powder");
+    public static final DeferredItem<Item> FIRE_CLAY = simpleItem("fire_clay");
+    public static final DeferredItem<Item> FIRE_BRICK = simpleItem("fire_brick");
+    public static final DeferredItem<Item> IRON_BOLT = simpleItem("iron_bolt");
+    public static final DeferredItem<Item> COPPER_BOLT = simpleItem("copper_bolt");
+    public static final DeferredItem<Item> STEEL_BOLT = simpleItem("steel_bolt");
+    public static final DeferredItem<Item> TUNGSTEN_BOLT = simpleItem("tungsten_bolt");
     public static final DeferredItem<Item> LIGHT_ELECTRIC_MOTOR = simpleItem("light_electric_motor");
     public static final DeferredItem<Item> MEDIUM_ELECTRIC_MOTOR = simpleItem("medium_electric_motor");
     public static final DeferredItem<Item> INDUSTRIAL_ELECTRIC_MOTOR = simpleItem("industrial_electric_motor");
@@ -289,9 +316,9 @@ public final class ModItems {
             "forging_hammer",
             new Item.Properties().stacksTo(1)
     );
-    public static final DeferredItem<TungstenReachersItem> TUNGSTEN_REACHERS = ITEMS.register(
-            "tungsten_reachers",
-            () -> new TungstenReachersItem(new Item.Properties().stacksTo(1))
+    public static final DeferredItem<SteelTongsItem> STEEL_TONGS = ITEMS.register(
+            "steel_tongs",
+            () -> new SteelTongsItem(new Item.Properties().stacksTo(1))
     );
     public static final DeferredItem<Item> HOT_PLATE_FORGING_STAGE_1 = simpleItem("hot_plate_forging_stage_1");
     public static final DeferredItem<Item> HOT_PLATE_FORGING_STAGE_2 = simpleItem("hot_plate_forging_stage_2");

@@ -2,6 +2,7 @@ package com.skyeshade.skyent.mixin.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.skyeshade.skyent.client.item.GeigerCounterNeedleRenderer;
+import com.skyeshade.skyent.client.item.SteelTongsHeldItemRenderer;
 import com.skyeshade.skyent.registry.ModItems;
 import net.minecraft.client.renderer.ItemInHandRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -26,10 +27,12 @@ public abstract class MixinItemInHandRenderer {
             int packedLight,
             CallbackInfo ci
     ) {
-        if (!stack.is(ModItems.GEIGER_COUNTER.get())) {
-            return;
+        if (stack.is(ModItems.GEIGER_COUNTER.get())) {
+            GeigerCounterNeedleRenderer.renderNeedle(poseStack, buffer, packedLight, displayContext, leftHand);
         }
 
-        GeigerCounterNeedleRenderer.renderNeedle(poseStack, buffer, packedLight, displayContext, leftHand);
+        if (stack.is(ModItems.STEEL_TONGS.get())) {
+            SteelTongsHeldItemRenderer.renderHeldItem(entity, stack, displayContext, leftHand, poseStack, buffer, packedLight);
+        }
     }
 }

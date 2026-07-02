@@ -21,7 +21,7 @@ public final class CarriedRadiationUtil {
     }
 
     public static double carriedRadiationStrength(LivingEntity entity) {
-        return RadiationItemValues.calculateInventoryRadiation(entity);
+        return RadiationItemValues.calculateInventoryEmissionStrength(entity);
     }
 
     public static int carriedRadiationRange(double strength) {

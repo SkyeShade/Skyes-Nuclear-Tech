@@ -5,6 +5,9 @@ license="${mod_license}"
 [[mixins]]
 config="skyent.client.mixins.json"
 
+[[mixins]]
+config="skyent.mixins.json"
+
 [[mods]]
 modId="${mod_id}"
 version="${mod_version}"

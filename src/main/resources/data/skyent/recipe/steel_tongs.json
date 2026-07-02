@@ -2,19 +2,22 @@
   "type": "minecraft:crafting_shaped",
   "category": "equipment",
   "pattern": [
-    "T T",
-    " S ",
-    " S "
+    "P P",
+    "BSB",
+    "S S"
   ],
   "key": {
-    "T": {
-      "item": "skyent:tungsten_ingot"
+    "P": {
+      "item": "skyent:steel_plate"
+    },
+    "B": {
+      "item": "skyent:iron_bolt"
     },
     "S": {
       "item": "skyent:steel_ingot"
     }
   },
   "result": {
-    "id": "skyent:tungsten_reachers"
+    "id": "skyent:steel_tongs"
   }
 }

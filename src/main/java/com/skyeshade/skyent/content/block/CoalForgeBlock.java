@@ -3,6 +3,7 @@ package com.skyeshade.skyent.content.block;
 import com.mojang.serialization.MapCodec;
 import com.skyeshade.skyent.content.blockentity.CoalForgeBlockEntity;
 import com.skyeshade.skyent.content.item.HotItemUtil;
+import com.skyeshade.skyent.content.item.SteelTongsItem;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
@@ -102,6 +103,10 @@ public class CoalForgeBlock extends BaseEntityBlock {
                 return lightForge(stack, state, level, pos, player, hand, forge);
             }
 
+            if (SteelTongsItem.isTongs(stack)) {
+                return useSteelTongs(stack, level, pos, player, hand, forge);
+            }
+
             if (forge.hasForgeableOutput()) {
                 return extractForgeableOutput(level, pos, player, forge);
             }
@@ -128,7 +133,18 @@ public class CoalForgeBlock extends BaseEntityBlock {
             return InteractionResult.SUCCESS;
         }
 
-        ItemStack removed = forge.hasForgeableOutput() ? forge.removeForgeableOutput() : forge.removeLastIngot();
+        int extractionSlot = forge.findExtractionSlot();
+        if (extractionSlot < 0) {
+            return InteractionResult.PASS;
+        }
+
+        ItemStack forgeStack = forge.getIngotStack(extractionSlot);
+        int amount = HotItemUtil.isForgeReady(forgeStack) ? 1 : forgeStack.getCount();
+        if (tryExtractIntoPreferredTongs(level, pos, player, forge, extractionSlot, amount)) {
+            return InteractionResult.CONSUME;
+        }
+
+        ItemStack removed = forge.extractIngot(extractionSlot, amount);
         if (removed.isEmpty()) {
             return InteractionResult.PASS;
         }
@@ -228,7 +244,7 @@ public class CoalForgeBlock extends BaseEntityBlock {
             if (!player.getAbilities().instabuild) {
                 stack.shrink(1);
             }
-            level.playSound(null, forge.getBlockPos(), SoundEvents.WOOL_PLACE, SoundSource.BLOCKS, 0.8F, 0.65F);
+            level.playSound(null, forge.getBlockPos(), SoundEvents.BASALT_PLACE, SoundSource.BLOCKS, 0.8F, 0.65F);
         }
         return ItemInteractionResult.sidedSuccess(level.isClientSide);
     }
@@ -242,7 +258,7 @@ public class CoalForgeBlock extends BaseEntityBlock {
         if (!level.isClientSide) {
             boolean removed = bedType == CoalForgeBedType.COAL ? forge.removeCoalLayer() : forge.removeAshLayer();
             if (removed) {
-                level.playSound(null, pos, bedType == CoalForgeBedType.COAL ? SoundEvents.GRAVEL_BREAK : SoundEvents.SAND_BREAK, SoundSource.BLOCKS, 0.8F, 1.1F);
+                level.playSound(null, pos, bedType == CoalForgeBedType.COAL ? SoundEvents.BASALT_BREAK : SoundEvents.SAND_BREAK, SoundSource.BLOCKS, 0.8F, 1.1F);
                 if (!player.getAbilities().instabuild) {
                     stack.hurtAndBreak(1, player, LivingEntity.getSlotForHand(hand));
                 }
@@ -269,7 +285,16 @@ public class CoalForgeBlock extends BaseEntityBlock {
 
     private static ItemInteractionResult extractForgeableOutput(Level level, BlockPos pos, Player player, CoalForgeBlockEntity forge) {
         if (!level.isClientSide) {
-            ItemStack removed = forge.removeForgeableOutput();
+            int extractionSlot = forge.findForgeableSlot();
+            if (extractionSlot < 0) {
+                return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            }
+
+            if (tryExtractIntoPreferredTongs(level, pos, player, forge, extractionSlot, 1)) {
+                return ItemInteractionResult.SUCCESS;
+            }
+
+            ItemStack removed = forge.extractIngot(extractionSlot, 1);
             if (!removed.isEmpty()) {
                 giveOrDrop(level, pos, player, removed);
                 level.playSound(null, pos, SoundEvents.ITEM_FRAME_REMOVE_ITEM, SoundSource.BLOCKS, 0.7F, 1.0F);
@@ -277,6 +302,96 @@ public class CoalForgeBlock extends BaseEntityBlock {
         }
 
         return ItemInteractionResult.sidedSuccess(level.isClientSide);
+    }
+
+    private static ItemInteractionResult useSteelTongs(ItemStack tongs, Level level, BlockPos pos, Player player, InteractionHand hand, CoalForgeBlockEntity forge) {
+        int extractionSlot = forge.findExtractionSlot();
+        if (extractionSlot >= 0) {
+            ItemStack forgeStack = forge.getIngotStack(extractionSlot);
+            if (forgeStack.isEmpty()) {
+                return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            }
+
+            if (!level.isClientSide) {
+                if (!tryExtractIntoPreferredTongs(level, pos, player, forge, extractionSlot, forgeStack.getCount())) {
+                    ItemStack removed = forge.extractIngot(extractionSlot, forgeStack.getCount());
+                    if (!removed.isEmpty()) {
+                        giveOrDrop(level, pos, player, removed);
+                        level.playSound(null, pos, SoundEvents.ITEM_FRAME_REMOVE_ITEM, SoundSource.BLOCKS, 0.7F, 1.0F);
+                    }
+                }
+            }
+
+            return ItemInteractionResult.sidedSuccess(level.isClientSide);
+        }
+
+        if (!SteelTongsItem.hasHeldStack(tongs)) {
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
+
+        ItemStack held = SteelTongsItem.getHeldStack(tongs, level.registryAccess());
+        if (held.isEmpty() || !HotItemUtil.isForgeableIngot(held)) {
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
+
+        if (!level.isClientSide && forge.insertSingleIngotStack(held)) {
+            held.shrink(1);
+            SteelTongsItem.setHeldStack(tongs, held, level.registryAccess());
+            player.setItemInHand(hand, tongs);
+            level.playSound(null, pos, SoundEvents.ITEM_FRAME_ADD_ITEM, SoundSource.BLOCKS, 0.7F, 1.0F);
+        }
+        return ItemInteractionResult.sidedSuccess(level.isClientSide);
+    }
+
+    private static boolean tryExtractIntoPreferredTongs(Level level, BlockPos pos, Player player, CoalForgeBlockEntity forge, int forgeSlot, int amount) {
+        ItemStack forgeStack = forge.getIngotStack(forgeSlot);
+        if (forgeStack.isEmpty() || amount <= 0) {
+            return false;
+        }
+
+        ItemStack incoming = forgeStack.copyWithCount(Math.min(amount, forgeStack.getCount()));
+        if (tryExtractIntoTongs(level, pos, player, forge, forgeSlot, InteractionHand.MAIN_HAND, incoming)) {
+            return true;
+        }
+        return tryExtractIntoTongs(level, pos, player, forge, forgeSlot, InteractionHand.OFF_HAND, incoming);
+    }
+
+    private static boolean tryExtractIntoTongs(Level level, BlockPos pos, Player player, CoalForgeBlockEntity forge, int forgeSlot, InteractionHand hand, ItemStack incoming) {
+        ItemStack tongs = player.getItemInHand(hand);
+        if (!SteelTongsItem.canAcceptHeldStack(tongs, incoming, level.registryAccess())) {
+            return false;
+        }
+
+        int moved = getTongsInsertionAmount(tongs, incoming, level);
+        if (moved <= 0) {
+            return false;
+        }
+
+        ItemStack removed = forge.extractIngot(forgeSlot, moved);
+        if (removed.isEmpty()) {
+            return false;
+        }
+
+        ItemStack remainder = SteelTongsItem.insertIntoTongs(tongs, removed, level.registryAccess());
+        if (!remainder.isEmpty()) {
+            giveOrDrop(level, pos, player, remainder);
+        }
+        player.setItemInHand(hand, tongs);
+        player.getInventory().setChanged();
+        level.playSound(null, pos, SoundEvents.ITEM_FRAME_REMOVE_ITEM, SoundSource.BLOCKS, 0.7F, 1.0F);
+        return true;
+    }
+
+    private static int getTongsInsertionAmount(ItemStack tongs, ItemStack incoming, Level level) {
+        if (!SteelTongsItem.canAcceptHeldStack(tongs, incoming, level.registryAccess())) {
+            return 0;
+        }
+
+        ItemStack held = SteelTongsItem.getHeldStack(tongs, level.registryAccess());
+        if (held.isEmpty()) {
+            return incoming.getCount();
+        }
+        return Math.min(incoming.getCount(), held.getMaxStackSize() - held.getCount());
     }
 
     private static ItemInteractionResult insertIngot(ItemStack stack, Level level, Player player, CoalForgeBlockEntity forge) {

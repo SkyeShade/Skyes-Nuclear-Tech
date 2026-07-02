@@ -25,6 +25,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.ELECTRIC_FURNACE.get());
                         output.accept(ModItems.BRICK_BLAST_FURNACE.get());
                         output.accept(ModItems.COAL_FORGE.get());
+                        output.accept(ModItems.FIRE_BRICKS.get());
                         output.accept(ModItems.FORGING_ANVIL.get());
                         output.accept(ModItems.LV_ELECTRIC_PUMP.get());
                         output.accept(ModItems.LV_STEAM_TURBINE.get());
@@ -81,6 +82,21 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.TITANIUM_PLATE.get());
                         output.accept(ModItems.COPPER_PLATE.get());
                         output.accept(ModItems.LEAD_PLATE.get());
+                        output.accept(ModItems.IRON_POWDER.get());
+                        output.accept(ModItems.GOLD_POWDER.get());
+                        output.accept(ModItems.LEAD_POWDER.get());
+                        output.accept(ModItems.TUNGSTEN_POWDER.get());
+                        output.accept(ModItems.STEEL_POWDER.get());
+                        output.accept(ModItems.URANIUM_POWDER.get());
+                        output.accept(ModItems.COPPER_POWDER.get());
+                        output.accept(ModItems.TITANIUM_POWDER.get());
+                        output.accept(ModItems.ALUMINUM_POWDER.get());
+                        output.accept(ModItems.FIRE_CLAY.get());
+                        output.accept(ModItems.FIRE_BRICK.get());
+                        output.accept(ModItems.IRON_BOLT.get());
+                        output.accept(ModItems.COPPER_BOLT.get());
+                        output.accept(ModItems.STEEL_BOLT.get());
+                        output.accept(ModItems.TUNGSTEN_BOLT.get());
                         output.accept(ModItems.LIGHT_ELECTRIC_MOTOR.get());
                         output.accept(ModItems.MEDIUM_ELECTRIC_MOTOR.get());
                         output.accept(ModItems.INDUSTRIAL_ELECTRIC_MOTOR.get());
@@ -92,7 +108,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.HEAVY_HYDRAULIC.get());
                         output.accept(ModItems.WRENCH.get());
                         output.accept(ModItems.FORGING_HAMMER.get());
-                        output.accept(ModItems.TUNGSTEN_REACHERS.get());
+                        output.accept(ModItems.STEEL_TONGS.get());
                         output.accept(ModItems.GEIGER_COUNTER.get());
                         output.accept(ModItems.TITANIUM_SWORD.get());
                         output.accept(ModItems.TITANIUM_PICKAXE.get());

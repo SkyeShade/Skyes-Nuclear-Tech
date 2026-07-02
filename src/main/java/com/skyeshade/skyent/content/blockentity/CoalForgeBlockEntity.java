@@ -179,6 +179,50 @@ public class CoalForgeBlockEntity extends BlockEntity {
         return ItemStack.EMPTY;
     }
 
+    public int findExtractionSlot() {
+        int forgeableSlot = findForgeableSlot();
+        if (forgeableSlot >= 0) {
+            return forgeableSlot;
+        }
+
+        for (int slot = ingots.getSlots() - 1; slot >= 0; slot--) {
+            if (!ingots.getStackInSlot(slot).isEmpty()) {
+                return slot;
+            }
+        }
+        return -1;
+    }
+
+    public ItemStack getIngotStack(int slot) {
+        return slot >= 0 && slot < ingots.getSlots() ? ingots.getStackInSlot(slot) : ItemStack.EMPTY;
+    }
+
+    public ItemStack extractIngot(int slot, int amount) {
+        if (slot < 0 || slot >= ingots.getSlots() || amount <= 0) {
+            return ItemStack.EMPTY;
+        }
+
+        ItemStack extracted = ingots.extractItem(slot, amount, false);
+        if (!extracted.isEmpty()) {
+            setChangedAndSync();
+        }
+        return extracted;
+    }
+
+    public boolean insertSingleIngotStack(ItemStack stack) {
+        if (stack.isEmpty() || !HotItemUtil.isForgeableIngot(stack)) {
+            return false;
+        }
+
+        for (int slot = 0; slot < ingots.getSlots(); slot++) {
+            if (ingots.getStackInSlot(slot).isEmpty()) {
+                ingots.setStackInSlot(slot, stack.copyWithCount(1));
+                return true;
+            }
+        }
+        return false;
+    }
+
     public int findForgeableSlot() {
         for (int slot = 0; slot < ingots.getSlots(); slot++) {
             ItemStack stack = ingots.getStackInSlot(slot);

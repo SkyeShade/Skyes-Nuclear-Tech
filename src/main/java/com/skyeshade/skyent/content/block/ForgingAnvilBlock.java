@@ -95,12 +95,12 @@ public class ForgingAnvilBlock extends BaseEntityBlock {
 
         if (stack.is(ModItems.FORGING_HAMMER.get()) && hand == InteractionHand.MAIN_HAND && !anvil.hasInput()) {
             ItemStack offhandStack = player.getOffhandItem();
-            if (ForgingAnvilRecipes.isForgeablePlateInput(offhandStack)) {
+            if (ForgingAnvilRecipes.isAnvilInput(offhandStack)) {
                 return placeInput(level, pos, player, anvil, offhandStack);
             }
         }
 
-        if (!anvil.hasInput() && ForgingAnvilRecipes.isForgeablePlateInput(stack)) {
+        if (!anvil.hasInput() && ForgingAnvilRecipes.isAnvilInput(stack)) {
             return placeInput(level, pos, player, anvil, stack);
         }
 
@@ -164,6 +164,31 @@ public class ForgingAnvilBlock extends BaseEntityBlock {
 
     private static ItemInteractionResult strike(Level level, BlockPos pos, Player player, ForgingAnvilBlockEntity anvil) {
         ItemStack input = anvil.getInput();
+        ItemStack powderOutput = ForgingAnvilRecipes.getPowderOutput(input).orElse(ItemStack.EMPTY);
+        if (!powderOutput.isEmpty()) {
+            if (!level.isClientSide) {
+                anvil.setFinishedOutput(powderOutput);
+                if (level instanceof ServerLevel serverLevel) {
+                    serverLevel.sendParticles(ParticleTypes.CRIT, pos.getX() + 0.5D, pos.getY() + 1.05D, pos.getZ() + 0.5D, 4, 0.18D, 0.05D, 0.18D, 0.02D);
+                }
+                level.playSound(null, pos, SoundEvents.ANVIL_PLACE, SoundSource.BLOCKS, 0.75F, 1.35F);
+            }
+            return ItemInteractionResult.sidedSuccess(level.isClientSide);
+        }
+
+        ItemStack coldBoltOutput = ForgingAnvilRecipes.getColdBoltOutput(input).orElse(ItemStack.EMPTY);
+        if (!coldBoltOutput.isEmpty() && !HotItemUtil.isForgeReady(input)) {
+            if (!level.isClientSide) {
+                HotItemUtil.clearTemperature(coldBoltOutput);
+                anvil.setFinishedOutput(coldBoltOutput);
+                if (level instanceof ServerLevel serverLevel) {
+                    serverLevel.sendParticles(ParticleTypes.CRIT, pos.getX() + 0.5D, pos.getY() + 1.05D, pos.getZ() + 0.5D, 4, 0.18D, 0.05D, 0.18D, 0.02D);
+                }
+                level.playSound(null, pos, SoundEvents.ANVIL_PLACE, SoundSource.BLOCKS, 0.75F, 1.35F);
+            }
+            return ItemInteractionResult.sidedSuccess(level.isClientSide);
+        }
+
         if (!ForgingAnvilRecipes.isForgeablePlateInput(input) || !HotItemUtil.isForgeReady(input)) {
             if (!level.isClientSide) {
                 player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.skyent.too_cold_to_forge"), true);
@@ -189,7 +214,9 @@ public class ForgingAnvilBlock extends BaseEntityBlock {
     }
 
     private static ItemInteractionResult placeInput(Level level, BlockPos pos, Player player, ForgingAnvilBlockEntity anvil, ItemStack stack) {
-        if (!HotItemUtil.isForgeReady(stack)) {
+        if (ForgingAnvilRecipes.isForgeablePlateInput(stack)
+                && !ForgingAnvilRecipes.isColdBoltInput(stack)
+                && !HotItemUtil.isForgeReady(stack)) {
             if (!level.isClientSide) {
                 player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.skyent.too_cold_to_forge"), true);
             }

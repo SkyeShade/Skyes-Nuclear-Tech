@@ -2,8 +2,8 @@ package com.skyeshade.skyent.content.radiation;
 
 import com.skyeshade.skyent.registry.ModItems;
 import com.skyeshade.skyent.registry.ModBlocks;
-import com.skyeshade.skyent.content.item.TungstenReachersUtil;
-import net.minecraft.world.InteractionHand;
+import com.skyeshade.skyent.content.item.SteelTongsItem;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -11,6 +11,7 @@ import net.minecraft.world.item.ItemStack;
 public final class RadiationItemValues {
     public static final double RAW_URANIUM_RADIATION_STRENGTH = 1.0D;
     public static final double URANIUM_INGOT_RADIATION_STRENGTH = 5.0D;
+    public static final double URANIUM_POWDER_RADIATION_STRENGTH = 10.0D;
 
     private RadiationItemValues() {
     }
@@ -28,6 +29,9 @@ public final class RadiationItemValues {
         if (stack.is(ModItems.URANIUM_INGOT.get())) {
             return URANIUM_INGOT_RADIATION_STRENGTH;
         }
+        if (stack.is(ModItems.URANIUM_POWDER.get())) {
+            return URANIUM_POWDER_RADIATION_STRENGTH;
+        }
         if (stack.is(ModItems.URANIUM_BLOCK.get())) {
             return RadiationBlockProfiles.getRadiationStrength(ModBlocks.URANIUM_BLOCK.get());
         }
@@ -42,35 +46,77 @@ public final class RadiationItemValues {
     }
 
     public static double calculateInventoryRadiation(LivingEntity entity) {
+        return calculateInventorySelfDose(entity);
+    }
+
+    public static double calculateInventorySelfDose(LivingEntity entity) {
         if (entity instanceof Player player) {
             double radiation = 0.0D;
-            int selectedSlot = player.getInventory().selected;
-            for (int slot = 0; slot < player.getInventory().items.size(); slot++) {
-                double stackRadiation = getStackRadiation(player.getInventory().items.get(slot));
-                radiation += slot == selectedSlot
-                        ? effectiveHandRadiation(player, InteractionHand.MAIN_HAND, stackRadiation)
-                        : stackRadiation;
+            for (ItemStack stack : player.getInventory().items) {
+                radiation += getStackSelfDose(stack, player.registryAccess());
             }
             for (ItemStack stack : player.getInventory().armor) {
-                radiation += getStackRadiation(stack);
+                radiation += getStackSelfDose(stack, player.registryAccess());
             }
-            radiation += effectiveHandRadiation(player, InteractionHand.OFF_HAND, getStackRadiation(player.getOffhandItem()));
+            for (ItemStack stack : player.getInventory().offhand) {
+                radiation += getStackSelfDose(stack, player.registryAccess());
+            }
             return radiation;
         }
 
-        double radiation = effectiveHandRadiation(entity, InteractionHand.MAIN_HAND, getStackRadiation(entity.getMainHandItem()))
-                + effectiveHandRadiation(entity, InteractionHand.OFF_HAND, getStackRadiation(entity.getOffhandItem()));
+        double radiation = getStackSelfDose(entity.getMainHandItem(), entity.registryAccess())
+                + getStackSelfDose(entity.getOffhandItem(), entity.registryAccess());
         for (ItemStack stack : entity.getArmorSlots()) {
-            radiation += getStackRadiation(stack);
+            radiation += getStackSelfDose(stack, entity.registryAccess());
         }
         return radiation;
     }
 
-    private static double effectiveHandRadiation(LivingEntity entity, InteractionHand hand, double radiation) {
-        if (radiation <= 0.0D || !TungstenReachersUtil.isOppositeHandProtected(entity, hand)) {
+    public static double calculateInventoryEmissionStrength(LivingEntity entity) {
+        if (entity instanceof Player player) {
+            double radiation = 0.0D;
+            for (ItemStack stack : player.getInventory().items) {
+                radiation += getStackEmissionStrength(stack, player.registryAccess());
+            }
+            for (ItemStack stack : player.getInventory().armor) {
+                radiation += getStackEmissionStrength(stack, player.registryAccess());
+            }
+            for (ItemStack stack : player.getInventory().offhand) {
+                radiation += getStackEmissionStrength(stack, player.registryAccess());
+            }
             return radiation;
         }
-        return TungstenReachersUtil.reduceOppositeHandRadiation(radiation);
+
+        double radiation = getStackEmissionStrength(entity.getMainHandItem(), entity.registryAccess())
+                + getStackEmissionStrength(entity.getOffhandItem(), entity.registryAccess());
+        for (ItemStack stack : entity.getArmorSlots()) {
+            radiation += getStackEmissionStrength(stack, entity.registryAccess());
+        }
+        return radiation;
+    }
+
+    private static double getStackSelfDose(ItemStack stack, HolderLookup.Provider registries) {
+        double radiation = getStackRadiation(stack);
+        if (SteelTongsItem.isTongs(stack)) {
+            double heldRadiation = getStackRadiation(SteelTongsItem.getHeldStack(stack, registries));
+            radiation += reduceTongsHeldRadiation(heldRadiation);
+        }
+        return radiation;
+    }
+
+    private static double getStackEmissionStrength(ItemStack stack, HolderLookup.Provider registries) {
+        double radiation = getStackRadiation(stack);
+        if (SteelTongsItem.isTongs(stack)) {
+            radiation += getStackRadiation(SteelTongsItem.getHeldStack(stack, registries));
+        }
+        return radiation;
+    }
+
+    private static double reduceTongsHeldRadiation(double rawDose) {
+        if (rawDose <= 0.0D) {
+            return 0.0D;
+        }
+        return Math.sqrt(rawDose);
     }
 
     public static String formatRadiation(double value) {

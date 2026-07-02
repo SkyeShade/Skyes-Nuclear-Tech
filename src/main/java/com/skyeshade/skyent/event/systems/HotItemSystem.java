@@ -1,7 +1,7 @@
 package com.skyeshade.skyent.event.systems;
 
 import com.skyeshade.skyent.content.item.HotItemUtil;
-import com.skyeshade.skyent.content.item.TungstenReachersUtil;
+import com.skyeshade.skyent.content.item.SteelTongsItem;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -18,7 +18,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 
 public final class HotItemSystem {
-    private static final int TICK_INTERVAL = 20;
+    private static final int INVENTORY_COOLING_INTERVAL_TICKS = 20;
+    private static final int HOT_ITEM_BURN_INTERVAL_TICKS = 10;
     private static final double INVENTORY_PARTIAL_COOLING_PER_SECOND = 50.0D;
     private static final double STEAM_TEMPERATURE_C = 100.0D;
     private static final float HOT_ITEM_BURN_DAMAGE = 1.0F;
@@ -39,28 +40,15 @@ public final class HotItemSystem {
             }
         }
 
-        if (entity.tickCount % TICK_INTERVAL != 0) {
+        if (entity.tickCount % INVENTORY_COOLING_INTERVAL_TICKS == 0) {
+            coolCarriedHotItems(entity);
+        }
+
+        if (entity.tickCount % HOT_ITEM_BURN_INTERVAL_TICKS != 0) {
             return;
         }
 
-        boolean carriesBurningHotItem = false;
-        if (entity instanceof Player player) {
-            int selectedSlot = player.getInventory().selected;
-            for (int slot = 0; slot < player.getInventory().items.size(); slot++) {
-                ItemStack stack = player.getInventory().items.get(slot);
-                carriesBurningHotItem |= tickInventoryStack(stack, true, slot == selectedSlot
-                        && !TungstenReachersUtil.isOppositeHandProtected(player, InteractionHand.MAIN_HAND));
-            }
-            carriesBurningHotItem |= tickInventoryStack(player.getOffhandItem(), true,
-                    !TungstenReachersUtil.isOppositeHandProtected(player, InteractionHand.OFF_HAND));
-            carriesBurningHotItem |= tickInventoryStacks(player.getInventory().armor, true);
-        } else {
-            carriesBurningHotItem |= tickHeldStack(entity, InteractionHand.MAIN_HAND);
-            carriesBurningHotItem |= tickHeldStack(entity, InteractionHand.OFF_HAND);
-            carriesBurningHotItem |= tickInventoryStacks(entity.getArmorSlots(), true);
-        }
-
-        if (carriesBurningHotItem && canBurn(entity)) {
+        if (carriesBurningHotItem(entity) && canBurn(entity)) {
             entity.hurt(entity.level().damageSources().onFire(), HOT_ITEM_BURN_DAMAGE);
         }
     }
@@ -90,28 +78,57 @@ public final class HotItemSystem {
         return true;
     }
 
-    private static boolean tickInventoryStacks(Iterable<ItemStack> stacks, boolean coolPartialHeat) {
-        boolean carriesBurningHotItem = false;
+    private static void coolCarriedHotItems(LivingEntity entity) {
+        if (entity instanceof Player player) {
+            coolInventoryStacks(player.getInventory().items);
+            coolInventoryStacks(player.getInventory().armor);
+            coolInventoryStacks(player.getInventory().offhand);
+            return;
+        }
+
+        coolInventoryStackIfNeeded(entity.getMainHandItem());
+        coolInventoryStackIfNeeded(entity.getOffhandItem());
+        coolInventoryStacks(entity.getArmorSlots());
+    }
+
+    private static void coolInventoryStacks(Iterable<ItemStack> stacks) {
         for (ItemStack stack : stacks) {
-            carriesBurningHotItem |= tickInventoryStack(stack, coolPartialHeat, true);
+            coolInventoryStackIfNeeded(stack);
         }
-        return carriesBurningHotItem;
     }
 
-    private static boolean tickHeldStack(LivingEntity entity, InteractionHand hand) {
-        return tickInventoryStack(entity.getItemInHand(hand), true, !TungstenReachersUtil.isOppositeHandProtected(entity, hand));
+    private static void coolInventoryStackIfNeeded(ItemStack stack) {
+        if (SteelTongsItem.isTongs(stack) || !HotItemUtil.hasTemperature(stack)) {
+            return;
+        }
+        coolInventoryStack(stack);
     }
 
-    private static boolean tickInventoryStack(ItemStack stack, boolean coolPartialHeat, boolean canBurnCarrier) {
-        if (!HotItemUtil.hasTemperature(stack)) {
-            return false;
+    private static boolean carriesBurningHotItem(LivingEntity entity) {
+        if (entity instanceof Player player) {
+            return containsBurningHotItem(player.getInventory().items)
+                    || containsBurningHotItem(player.getInventory().armor)
+                    || containsBurningHotItem(player.getInventory().offhand);
         }
 
-        if (coolPartialHeat) {
-            coolInventoryStack(stack);
-        }
+        return isBurningHotItem(entity.getMainHandItem())
+                || isBurningHotItem(entity.getOffhandItem())
+                || containsBurningHotItem(entity.getArmorSlots());
+    }
 
-        return canBurnCarrier && HotItemUtil.hasTemperature(stack) && HotItemUtil.getTemperature(stack) > STEAM_TEMPERATURE_C;
+    private static boolean containsBurningHotItem(Iterable<ItemStack> stacks) {
+        for (ItemStack stack : stacks) {
+            if (isBurningHotItem(stack)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isBurningHotItem(ItemStack stack) {
+        return !SteelTongsItem.isTongs(stack)
+                && HotItemUtil.hasTemperature(stack)
+                && HotItemUtil.getTemperature(stack) > STEAM_TEMPERATURE_C;
     }
 
     private static void coolInventoryStack(ItemStack stack) {

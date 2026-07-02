@@ -10,6 +10,8 @@ public final class ToxicItemValues {
     public static final double RAW_LEAD_TOXICITY = 0.05D;
     public static final double LEAD_INGOT_TOXICITY = 1.0D;
     public static final double LEAD_PLATE_TOXICITY = 1.0D;
+    public static final double LEAD_POWDER_TOXICITY = 2.0D;
+    public static final double URANIUM_POWDER_TOXICITY = 2.0D;
     public static final double LEAD_BLOCK_TOXICITY = 10.0D;
 
     private ToxicItemValues() {
@@ -30,6 +32,12 @@ public final class ToxicItemValues {
         }
         if (stack.is(ModItems.LEAD_PLATE.get())) {
             return LEAD_PLATE_TOXICITY;
+        }
+        if (stack.is(ModItems.LEAD_POWDER.get())) {
+            return LEAD_POWDER_TOXICITY;
+        }
+        if (stack.is(ModItems.URANIUM_POWDER.get())) {
+            return URANIUM_POWDER_TOXICITY;
         }
         if (stack.is(ModItems.LEAD_BLOCK.get())) {
             return LEAD_BLOCK_TOXICITY;

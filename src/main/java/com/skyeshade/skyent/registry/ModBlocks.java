@@ -57,6 +57,13 @@ public final class ModBlocks {
                     .lightLevel(state -> state.hasProperty(CoalForgeBlock.LIT) && state.getValue(CoalForgeBlock.LIT) ? 12 : 0)
     );
 
+    public static final DeferredBlock<?> FIRE_BRICKS = BLOCKS.registerSimpleBlock(
+            "fire_bricks",
+            BlockBehaviour.Properties.ofFullCopy(Blocks.BRICKS)
+                    .strength(3.5F, 6.0F)
+                    .requiresCorrectToolForDrops()
+    );
+
     public static final DeferredBlock<ForgingAnvilBlock> FORGING_ANVIL = BLOCKS.registerBlock(
             "forging_anvil",
             ForgingAnvilBlock::new,

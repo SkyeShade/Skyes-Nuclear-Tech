@@ -57,7 +57,7 @@ public class ForgingAnvilBlockEntity extends BlockEntity {
     }
 
     public void setFinishedOutput(ItemStack stack) {
-        input = stack.copyWithCount(1);
+        input = stack.copy();
         strikes = 3;
         finished = true;
         setChangedAndSync();

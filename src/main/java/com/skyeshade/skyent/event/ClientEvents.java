@@ -7,6 +7,7 @@ import com.skyeshade.skyent.client.item.GeigerCounterClientState;
 import com.skyeshade.skyent.client.item.GeigerCounterSoundManager;
 import com.skyeshade.skyent.client.item.PlacedGeigerCounterSoundManager;
 import com.skyeshade.skyent.client.item.SteelFluidBarrelFluidDecorator;
+import com.skyeshade.skyent.client.item.SteelTongsHeldItemDecorator;
 import com.skyeshade.skyent.client.renderer.blockentity.CoalForgeRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.ForgingAnvilRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.GeigerCounterPlacedRenderer;
@@ -75,6 +76,7 @@ public final class ClientEvents {
 
     public static void onRegisterItemDecorations(RegisterItemDecorationsEvent event) {
         event.register(ModItems.STEEL_FLUID_BARREL.get(), new SteelFluidBarrelFluidDecorator());
+        event.register(ModItems.STEEL_TONGS.get(), new SteelTongsHeldItemDecorator());
     }
 
     public static void onClientTick(ClientTickEvent.Post event) {

@@ -3,15 +3,18 @@
   "category": "misc",
   "pattern": [
     "BBB",
-    " S ",
+    " T ",
     "SBS"
   ],
   "key": {
     "S": {
-      "item": "skyent:steel_ingot"
+      "item": "minecraft:iron_ingot"
     },
     "B": {
-      "item": "skyent:steel_block"
+      "item": "minecraft:iron_block"
+    },
+    "T": {
+      "item": "skyent:tungsten_ingot"
     }
   },
   "result": {
