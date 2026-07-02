@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "SAS",
+    "S S",
+    "SAS"
+  ],
+  "key": {
+    "S": {
+      "item": "skyent:steel_plate"
+    },
+    "A": {
+      "item": "skyent:aluminum_plate"
+    }
+  },
+  "result": {
+    "id": "skyent:steel_fluid_barrel",
+    "count": 1
+  }
+}

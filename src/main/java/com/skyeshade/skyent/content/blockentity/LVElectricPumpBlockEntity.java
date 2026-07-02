@@ -3,17 +3,21 @@ package com.skyeshade.skyent.content.blockentity;
 import com.skyeshade.skyent.content.energy.ElectricalTier;
 import com.skyeshade.skyent.content.energy.RJEnergyInfo;
 import com.skyeshade.skyent.content.energy.RJStorage;
+import com.skyeshade.skyent.content.fluid.SafeFluidItemUtil;
+import com.skyeshade.skyent.content.item.SteelFluidBarrelItem;
 import com.skyeshade.skyent.content.menu.LVElectricPumpMenu;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Predicate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.Containers;
 import net.minecraft.world.MenuProvider;
@@ -29,9 +33,7 @@ import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
 import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.fluids.FluidActionResult;
 import net.neoforged.neoforge.fluids.FluidStack;
-import net.neoforged.neoforge.fluids.FluidUtil;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
 import net.neoforged.neoforge.items.IItemHandler;
@@ -70,24 +72,37 @@ public class LVElectricPumpBlockEntity extends BlockEntity implements MenuProvid
     private static final int DATA_FLUID_ID_LOW = 9;
     private static final int DATA_FLUID_ID_HIGH = 10;
     private static final int DATA_ACTIVE = 11;
-    private static final int DATA_COUNT = 12;
+    private static final int DATA_CONTAINER_REVISION = 12;
+    private static final int DATA_COUNT = 13;
 
     private int currentEnergyUsage;
     private boolean active;
+    private int containerRevision;
+    private final Set<ServerPlayer> viewers = new HashSet<>();
 
     private final ItemStackHandler inventory = new ItemStackHandler(INVENTORY_SLOT_COUNT) {
         @Override
         public boolean isItemValid(int slot, ItemStack stack) {
             return switch (slot) {
                 case DUMP_INPUT_SLOT -> isFilledFluidContainer(stack);
-                case FILL_INPUT_SLOT -> isFillableFluidContainer(stack);
+                case FILL_INPUT_SLOT -> canFillContainerFromTank(stack);
                 default -> false;
             };
         }
 
         @Override
         protected void onContentsChanged(int slot) {
+            containerRevision++;
             setChanged();
+        }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return switch (slot) {
+                case DUMP_INPUT_SLOT -> 16;
+                case DUMP_OUTPUT_SLOT, FILL_INPUT_SLOT, FILL_OUTPUT_SLOT -> 16;
+                default -> super.getSlotLimit(slot);
+            };
         }
     };
 
@@ -127,6 +142,7 @@ public class LVElectricPumpBlockEntity extends BlockEntity implements MenuProvid
                 case DATA_FLUID_ID_LOW -> low(fluidId);
                 case DATA_FLUID_ID_HIGH -> high(fluidId);
                 case DATA_ACTIVE -> active ? 1 : 0;
+                case DATA_CONTAINER_REVISION -> containerRevision;
                 default -> 0;
             };
         }
@@ -138,6 +154,7 @@ public class LVElectricPumpBlockEntity extends BlockEntity implements MenuProvid
                 case DATA_ENERGY_HIGH -> rjStorage.setStoredRJ(combine(data.get(DATA_ENERGY_LOW), value));
                 case DATA_CURRENT_ENERGY_USAGE -> currentEnergyUsage = value;
                 case DATA_ACTIVE -> active = value != 0;
+                case DATA_CONTAINER_REVISION -> containerRevision = value;
                 default -> {
                 }
             }
@@ -183,11 +200,34 @@ public class LVElectricPumpBlockEntity extends BlockEntity implements MenuProvid
     }
 
     public static boolean isFilledFluidContainer(ItemStack stack) {
-        return FluidUtil.getFluidContained(stack).filter(fluid -> !fluid.isEmpty()).isPresent();
+        if (SteelFluidBarrelItem.isSteelFluidBarrel(stack)) {
+            return stack.getCount() == 1
+                    ? SafeFluidItemUtil.containsAnyFluid(stack)
+                    : SteelFluidBarrelItem.isFullBarrel(stack);
+        }
+        if (stack.getCount() > 1) {
+            return false;
+        }
+        return SafeFluidItemUtil.containsAnyFluid(stack);
     }
 
     public static boolean isFillableFluidContainer(ItemStack stack) {
-        return !stack.isEmpty() && FluidUtil.getFluidHandler(stack).isPresent() && FluidUtil.getFluidContained(stack).orElse(FluidStack.EMPTY).isEmpty();
+        return SafeFluidItemUtil.isEmptyFluidContainer(stack);
+    }
+
+    public boolean canFillContainerFromTank(ItemStack stack) {
+        if (fluidTank.getFluidAmount() <= 0) {
+            return false;
+        }
+        if (SteelFluidBarrelItem.isSteelFluidBarrel(stack)) {
+            return stack.getCount() == 1
+                    ? SafeFluidItemUtil.canAcceptFluidForSlot(stack, fluidTank.getFluid().getFluid())
+                    : SteelFluidBarrelItem.isEmptyBarrel(stack);
+        }
+        if (stack.getCount() > 1) {
+            return false;
+        }
+        return SafeFluidItemUtil.canAcceptFluidForSlot(stack, fluidTank.getFluid().getFluid());
     }
 
     private boolean tryDumpContainer() {
@@ -196,45 +236,142 @@ public class LVElectricPumpBlockEntity extends BlockEntity implements MenuProvid
             return false;
         }
 
-        FluidStack contained = FluidUtil.getFluidContained(input).orElse(FluidStack.EMPTY);
-        if (contained.isEmpty() || !canAcceptFluid(contained) || contained.getAmount() > fluidTank.getSpace()) {
+        if (tryDrainStackedSteelBarrel(DUMP_INPUT_SLOT, DUMP_OUTPUT_SLOT, fluidTank, stack -> !stack.isEmpty() && canAcceptFluid(stack))) {
+            return true;
+        }
+        if (SteelFluidBarrelItem.isSteelFluidBarrel(input) && input.getCount() > 1) {
             return false;
         }
 
-        FluidActionResult simulated = FluidUtil.tryEmptyContainer(input, fluidTank, contained.getAmount(), null, false);
-        if (!simulated.isSuccess() || !canPlaceOutput(DUMP_OUTPUT_SLOT, simulated.getResult())) {
+        SafeFluidItemUtil.TransferResult result = SafeFluidItemUtil.drainContainerIntoTank(
+                input,
+                fluidTank,
+                stack -> !stack.isEmpty() && canAcceptFluid(stack),
+                fluidTank.getSpace()
+        );
+        if (!result.transferred()) {
             return false;
         }
 
-        FluidActionResult result = FluidUtil.tryEmptyContainer(input, fluidTank, contained.getAmount(), null, true);
-        if (!result.isSuccess()) {
+        ItemStack container = result.container();
+        if (SafeFluidItemUtil.isEmptyFluidContainer(container) && canPlaceOutput(DUMP_OUTPUT_SLOT, container)) {
+            forceSetItemSlot(DUMP_INPUT_SLOT, ItemStack.EMPTY);
+            placeOutput(DUMP_OUTPUT_SLOT, container);
+        } else {
+            forceSetItemSlot(DUMP_INPUT_SLOT, container);
+        }
+        return true;
+    }
+
+    private boolean tryDrainStackedSteelBarrel(int inputSlot, int outputSlot, IFluidHandler targetTank, Predicate<FluidStack> acceptedFluid) {
+        ItemStack input = inventory.getStackInSlot(inputSlot);
+        if (!SteelFluidBarrelItem.isSteelFluidBarrel(input) || input.getCount() <= 1) {
             return false;
         }
 
-        input.shrink(1);
-        placeOutput(DUMP_OUTPUT_SLOT, result.getResult());
+        FluidStack fluid = SteelFluidBarrelItem.getContainedFluid(input);
+        if (!SteelFluidBarrelItem.isFullBarrel(input) || !acceptedFluid.test(fluid)) {
+            return false;
+        }
+
+        FluidStack fullFluid = fluid.copy();
+        fullFluid.setAmount(SteelFluidBarrelItem.CAPACITY_MB);
+        if (targetTank.fill(fullFluid, IFluidHandler.FluidAction.SIMULATE) != SteelFluidBarrelItem.CAPACITY_MB) {
+            return false;
+        }
+
+        ItemStack emptyBarrel = SteelFluidBarrelItem.createEmptyBarrel(1);
+        if (!canPlaceOutput(outputSlot, emptyBarrel)) {
+            return false;
+        }
+
+        int filled = targetTank.fill(fullFluid, IFluidHandler.FluidAction.EXECUTE);
+        if (filled != SteelFluidBarrelItem.CAPACITY_MB) {
+            return false;
+        }
+
+        ItemStack remaining = input.copy();
+        remaining.shrink(1);
+        forceSetItemSlot(inputSlot, remaining);
+        placeOutput(outputSlot, emptyBarrel);
         return true;
     }
 
     private boolean tryFillContainer() {
         ItemStack input = inventory.getStackInSlot(FILL_INPUT_SLOT);
         if (input.isEmpty() || fluidTank.getFluidAmount() <= 0) {
+            if (!input.isEmpty()) {
+                SafeFluidItemUtil.debugFill("pump fill skipped: slot={} item={} tankFluid={} tankAmount={}",
+                        FILL_INPUT_SLOT, input.getItem(), fluidTank.getFluid().getFluid(), fluidTank.getFluidAmount());
+            }
             return false;
         }
 
-        FluidStack available = fluidTank.getFluid().copy();
-        FluidActionResult simulated = FluidUtil.tryFillContainer(input, fluidTank, available.getAmount(), null, false);
-        if (!simulated.isSuccess() || !canPlaceOutput(FILL_OUTPUT_SLOT, simulated.getResult())) {
+        if (tryFillStackedSteelBarrel(FILL_INPUT_SLOT, FILL_OUTPUT_SLOT, fluidTank, copyWithAmount(fluidTank.getFluid(), SteelFluidBarrelItem.CAPACITY_MB))) {
+            return true;
+        }
+        if (SteelFluidBarrelItem.isSteelFluidBarrel(input) && input.getCount() > 1) {
             return false;
         }
 
-        FluidActionResult result = FluidUtil.tryFillContainer(input, fluidTank, available.getAmount(), null, true);
-        if (!result.isSuccess()) {
+        SafeFluidItemUtil.debugFill("pump fill attempting: slot={} item={} tankFluid={} tankAmount={}",
+                FILL_INPUT_SLOT, input.getItem(), fluidTank.getFluid().getFluid(), fluidTank.getFluidAmount());
+        FluidStack fluid = copyWithAmount(fluidTank.getFluid(), 1);
+        SafeFluidItemUtil.TransferResult result = SafeFluidItemUtil.fillContainerFromTank(
+                input,
+                fluidTank,
+                stack -> !stack.isEmpty() && stack.is(fluid.getFluid()),
+                fluidTank.getFluidAmount()
+        );
+        if (!result.transferred()) {
+            SafeFluidItemUtil.debugFill("pump fill failed: slot={} item={} tankFluid={} tankAmount={}",
+                    FILL_INPUT_SLOT, input.getItem(), fluidTank.getFluid().getFluid(), fluidTank.getFluidAmount());
             return false;
         }
 
-        input.shrink(1);
-        placeOutput(FILL_OUTPUT_SLOT, result.getResult());
+        ItemStack container = result.container();
+        SafeFluidItemUtil.debugFill("pump fill transferred: slot={} resultItem={} tankFluid={} tankAmount={}",
+                FILL_INPUT_SLOT, container.getItem(), fluidTank.getFluid().getFluid(), fluidTank.getFluidAmount());
+        if (SafeFluidItemUtil.isFluidContainerFull(container, fluid) && canPlaceOutput(FILL_OUTPUT_SLOT, container)) {
+            forceSetItemSlot(FILL_INPUT_SLOT, ItemStack.EMPTY);
+            placeOutput(FILL_OUTPUT_SLOT, container);
+        } else {
+            forceSetItemSlot(FILL_INPUT_SLOT, container);
+        }
+        return true;
+    }
+
+    private boolean tryFillStackedSteelBarrel(int inputSlot, int outputSlot, IFluidHandler sourceTank, FluidStack fullFluid) {
+        ItemStack input = inventory.getStackInSlot(inputSlot);
+        if (!SteelFluidBarrelItem.isSteelFluidBarrel(input) || input.getCount() <= 1) {
+            return false;
+        }
+        if (!SteelFluidBarrelItem.isEmptyBarrel(input)) {
+            return false;
+        }
+
+        FluidStack simulatedDrain = sourceTank.drain(fullFluid, IFluidHandler.FluidAction.SIMULATE);
+        if (simulatedDrain.getAmount() < SteelFluidBarrelItem.CAPACITY_MB) {
+            return false;
+        }
+
+        ItemStack fullBarrel = SteelFluidBarrelItem.createFilledBarrel(fullFluid, 1);
+        if (!canPlaceOutput(outputSlot, fullBarrel)) {
+            return false;
+        }
+
+        FluidStack drained = sourceTank.drain(fullFluid, IFluidHandler.FluidAction.EXECUTE);
+        if (drained.getAmount() != SteelFluidBarrelItem.CAPACITY_MB) {
+            if (!drained.isEmpty()) {
+                sourceTank.fill(drained, IFluidHandler.FluidAction.EXECUTE);
+            }
+            return false;
+        }
+
+        ItemStack remaining = input.copy();
+        remaining.shrink(1);
+        forceSetItemSlot(inputSlot, remaining);
+        placeOutput(outputSlot, fullBarrel);
         return true;
     }
 
@@ -358,10 +495,31 @@ public class LVElectricPumpBlockEntity extends BlockEntity implements MenuProvid
 
         ItemStack output = inventory.getStackInSlot(slot);
         if (output.isEmpty()) {
-            inventory.setStackInSlot(slot, result.copy());
+            forceSetItemSlot(slot, result);
         } else {
-            output.grow(result.getCount());
-            inventory.setStackInSlot(slot, output);
+            ItemStack merged = output.copy();
+            merged.grow(result.getCount());
+            forceSetItemSlot(slot, merged);
+        }
+    }
+
+    private void forceSetItemSlot(int slot, ItemStack stack) {
+        inventory.setStackInSlot(slot, ItemStack.EMPTY);
+        if (!stack.isEmpty()) {
+            inventory.setStackInSlot(slot, stack.copy());
+        }
+        containerRevision++;
+        setChanged();
+        syncContainerSlotToViewers(slot, stack);
+    }
+
+    private void syncContainerSlotToViewers(int handlerSlot, ItemStack stack) {
+        for (ServerPlayer viewer : Set.copyOf(viewers)) {
+            if (viewer.containerMenu instanceof LVElectricPumpMenu menu && menu.getBlockEntity() == this) {
+                menu.syncHandlerSlot(viewer, handlerSlot, stack);
+            } else {
+                viewers.remove(viewer);
+            }
         }
     }
 
@@ -412,6 +570,18 @@ public class LVElectricPumpBlockEntity extends BlockEntity implements MenuProvid
 
     public ContainerData getData() {
         return data;
+    }
+
+    public void addViewer(Player player) {
+        if (player instanceof ServerPlayer serverPlayer) {
+            viewers.add(serverPlayer);
+        }
+    }
+
+    public void removeViewer(Player player) {
+        if (player instanceof ServerPlayer serverPlayer) {
+            viewers.remove(serverPlayer);
+        }
     }
 
     public FluidStack getFluidInTank() {
@@ -504,7 +674,7 @@ public class LVElectricPumpBlockEntity extends BlockEntity implements MenuProvid
             if (isFilledFluidContainer(stack)) {
                 return inventory.insertItem(DUMP_INPUT_SLOT, stack, simulate);
             }
-            if (isFillableFluidContainer(stack)) {
+            if (canFillContainerFromTank(stack)) {
                 return inventory.insertItem(FILL_INPUT_SLOT, stack, simulate);
             }
             return stack;

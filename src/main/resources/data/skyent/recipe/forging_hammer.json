@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "tools",
+  "pattern": [
+    "SSS",
+    "STS",
+    " T "
+  ],
+  "key": {
+    "S": {
+      "item": "skyent:steel_ingot"
+    },
+    "T": {
+      "item": "minecraft:stick"
+    }
+  },
+  "result": {
+    "id": "skyent:forging_hammer"
+  }
+}

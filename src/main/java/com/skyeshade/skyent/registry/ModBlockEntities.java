@@ -7,6 +7,7 @@ import com.skyeshade.skyent.content.blockentity.CoalForgeBlockEntity;
 import com.skyeshade.skyent.content.blockentity.CombustionGeneratorBlockEntity;
 import com.skyeshade.skyent.content.blockentity.CoriumBlockEntity;
 import com.skyeshade.skyent.content.blockentity.ElectricFurnaceBlockEntity;
+import com.skyeshade.skyent.content.blockentity.ForgingAnvilBlockEntity;
 import com.skyeshade.skyent.content.blockentity.GeigerCounterPlacedBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVFEConverterBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVElectricPumpBlockEntity;
@@ -47,6 +48,12 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("coal_forge", () -> BlockEntityType.Builder.of(
                     CoalForgeBlockEntity::new,
                     ModBlocks.COAL_FORGE.get()
+            ).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ForgingAnvilBlockEntity>> FORGING_ANVIL =
+            BLOCK_ENTITIES.register("forging_anvil", () -> BlockEntityType.Builder.of(
+                    ForgingAnvilBlockEntity::new,
+                    ModBlocks.FORGING_ANVIL.get()
             ).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<LVElectricPumpBlockEntity>> LV_ELECTRIC_PUMP =

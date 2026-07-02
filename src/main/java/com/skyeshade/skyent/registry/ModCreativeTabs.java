@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.registry;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
+import com.skyeshade.skyent.content.item.SteelFluidBarrelVariants;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
@@ -24,6 +25,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.ELECTRIC_FURNACE.get());
                         output.accept(ModItems.BRICK_BLAST_FURNACE.get());
                         output.accept(ModItems.COAL_FORGE.get());
+                        output.accept(ModItems.FORGING_ANVIL.get());
                         output.accept(ModItems.LV_ELECTRIC_PUMP.get());
                         output.accept(ModItems.LV_STEAM_TURBINE.get());
                         output.accept(ModItems.BASIC_FLUID_DUCT.get());
@@ -58,6 +60,8 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.URANIUM_BLOCK.get());
                         output.accept(ModItems.CORIUM_BLOCK.get());
                         output.accept(ModItems.MOLTEN_CORIUM_BUCKET.get());
+                        output.accept(ModItems.STEEL_FLUID_BARREL.get());
+                        addSteelFluidBarrelVariants(output);
                         output.accept(ModItems.LV_CONNECTOR.get());
                         output.accept(ModItems.STEEL_INGOT.get());
                         output.accept(ModItems.RAW_TITANIUM.get());
@@ -87,6 +91,8 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.INDUSTRIAL_HYDRAULIC.get());
                         output.accept(ModItems.HEAVY_HYDRAULIC.get());
                         output.accept(ModItems.WRENCH.get());
+                        output.accept(ModItems.FORGING_HAMMER.get());
+                        output.accept(ModItems.TUNGSTEN_REACHERS.get());
                         output.accept(ModItems.GEIGER_COUNTER.get());
                         output.accept(ModItems.TITANIUM_SWORD.get());
                         output.accept(ModItems.TITANIUM_PICKAXE.get());
@@ -111,5 +117,9 @@ public final class ModCreativeTabs {
 
     public static void register(IEventBus modEventBus) {
         CREATIVE_TABS.register(modEventBus);
+    }
+
+    private static void addSteelFluidBarrelVariants(CreativeModeTab.Output output) {
+        SteelFluidBarrelVariants.createFilledVariants().forEach(output::accept);
     }
 }

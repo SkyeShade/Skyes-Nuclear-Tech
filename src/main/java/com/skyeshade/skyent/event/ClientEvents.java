@@ -6,7 +6,9 @@ import com.skyeshade.skyent.client.debug.RadiationRayDebugClient;
 import com.skyeshade.skyent.client.item.GeigerCounterClientState;
 import com.skyeshade.skyent.client.item.GeigerCounterSoundManager;
 import com.skyeshade.skyent.client.item.PlacedGeigerCounterSoundManager;
+import com.skyeshade.skyent.client.item.SteelFluidBarrelFluidDecorator;
 import com.skyeshade.skyent.client.renderer.blockentity.CoalForgeRenderer;
+import com.skyeshade.skyent.client.renderer.blockentity.ForgingAnvilRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.GeigerCounterPlacedRenderer;
 import com.skyeshade.skyent.client.renderer.LVConnectorRenderer;
 import com.skyeshade.skyent.client.renderer.LVElectricPumpRenderer;
@@ -28,6 +30,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.event.RegisterItemDecorationsEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
@@ -42,6 +45,7 @@ public final class ClientEvents {
         modEventBus.addListener(ClientEvents::onClientSetup);
         modEventBus.addListener(ClientEvents::onRegisterMenuScreens);
         modEventBus.addListener(ClientEvents::onRegisterRenderers);
+        modEventBus.addListener(ClientEvents::onRegisterItemDecorations);
         NeoForge.EVENT_BUS.addListener(ClientEvents::onClientTick);
         NeoForge.EVENT_BUS.addListener(ClientEvents::onRenderGui);
         NeoForge.EVENT_BUS.addListener(ClientEvents::onRenderLevel);
@@ -66,6 +70,11 @@ public final class ClientEvents {
         event.registerBlockEntityRenderer(ModBlockEntities.LV_ELECTRIC_PUMP.get(), LVElectricPumpRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.GEIGER_COUNTER_PLACED.get(), GeigerCounterPlacedRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.COAL_FORGE.get(), CoalForgeRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.FORGING_ANVIL.get(), ForgingAnvilRenderer::new);
+    }
+
+    public static void onRegisterItemDecorations(RegisterItemDecorationsEvent event) {
+        event.register(ModItems.STEEL_FLUID_BARREL.get(), new SteelFluidBarrelFluidDecorator());
     }
 
     public static void onClientTick(ClientTickEvent.Post event) {

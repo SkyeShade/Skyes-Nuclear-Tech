@@ -4,13 +4,19 @@ import com.skyeshade.skyent.content.block.LVSteamTurbineBlock;
 import com.skyeshade.skyent.content.energy.ElectricalTier;
 import com.skyeshade.skyent.content.energy.RJEnergyInfo;
 import com.skyeshade.skyent.content.energy.RJStorage;
+import com.skyeshade.skyent.content.fluid.SafeFluidItemUtil;
+import com.skyeshade.skyent.content.item.SteelFluidBarrelItem;
 import com.skyeshade.skyent.content.menu.LVSteamTurbineMenu;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import com.skyeshade.skyent.registry.ModFluids;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.Predicate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.Containers;
 import net.minecraft.world.MenuProvider;
@@ -23,9 +29,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.fluids.FluidActionResult;
 import net.neoforged.neoforge.fluids.FluidStack;
-import net.neoforged.neoforge.fluids.FluidUtil;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
 import net.neoforged.neoforge.items.IItemHandler;
@@ -58,11 +62,14 @@ public class LVSteamTurbineBlockEntity extends BlockEntity implements MenuProvid
     private static final int DATA_MAX_RPM = 7;
     private static final int DATA_CURRENT_OUTPUT = 8;
     private static final int DATA_CURRENT_STEAM_USAGE = 9;
-    private static final int DATA_COUNT = 10;
+    private static final int DATA_CONTAINER_REVISION = 10;
+    private static final int DATA_COUNT = 11;
 
     private double rpm;
     private int currentOutput;
     private int currentSteamUsage;
+    private int containerRevision;
+    private final Set<ServerPlayer> viewers = new HashSet<>();
 
     private final ItemStackHandler inventory = new ItemStackHandler(INVENTORY_SLOT_COUNT) {
         @Override
@@ -72,7 +79,16 @@ public class LVSteamTurbineBlockEntity extends BlockEntity implements MenuProvid
 
         @Override
         protected void onContentsChanged(int slot) {
+            containerRevision++;
             setChanged();
+        }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return switch (slot) {
+                case STEAM_INPUT_SLOT, EMPTY_CONTAINER_SLOT -> 16;
+                default -> super.getSlotLimit(slot);
+            };
         }
     };
 
@@ -102,6 +118,7 @@ public class LVSteamTurbineBlockEntity extends BlockEntity implements MenuProvid
                 case DATA_MAX_RPM -> Mth.floor(MAX_RPM);
                 case DATA_CURRENT_OUTPUT -> currentOutput;
                 case DATA_CURRENT_STEAM_USAGE -> currentSteamUsage;
+                case DATA_CONTAINER_REVISION -> containerRevision;
                 default -> 0;
             };
         }
@@ -114,6 +131,7 @@ public class LVSteamTurbineBlockEntity extends BlockEntity implements MenuProvid
                 case DATA_RPM -> rpm = value;
                 case DATA_CURRENT_OUTPUT -> currentOutput = value;
                 case DATA_CURRENT_STEAM_USAGE -> currentSteamUsage = value;
+                case DATA_CONTAINER_REVISION -> containerRevision = value;
                 default -> {
                 }
             }
@@ -172,7 +190,16 @@ public class LVSteamTurbineBlockEntity extends BlockEntity implements MenuProvid
     }
 
     public static boolean isSteamContainer(ItemStack stack) {
-        return FluidUtil.getFluidContained(stack).filter(fluid -> fluid.is(ModFluids.STEAM.get())).isPresent();
+        if (SteelFluidBarrelItem.isSteelFluidBarrel(stack)) {
+            FluidStack fluid = SteelFluidBarrelItem.getContainedFluid(stack);
+            return stack.getCount() == 1
+                    ? SafeFluidItemUtil.containsSteam(stack)
+                    : SteelFluidBarrelItem.isFullBarrel(stack) && fluid.is(ModFluids.STEAM.get());
+        }
+        if (stack.getCount() > 1) {
+            return false;
+        }
+        return SafeFluidItemUtil.containsSteam(stack);
     }
 
     private boolean tryDrainSteamContainer() {
@@ -181,23 +208,64 @@ public class LVSteamTurbineBlockEntity extends BlockEntity implements MenuProvid
             return false;
         }
 
-        FluidStack contained = FluidUtil.getFluidContained(input).orElse(FluidStack.EMPTY);
-        if (contained.isEmpty() || !contained.is(ModFluids.STEAM.get()) || contained.getAmount() > steamTank.getSpace()) {
+        if (tryDrainStackedSteelBarrel(STEAM_INPUT_SLOT, EMPTY_CONTAINER_SLOT, steamTank, stack -> !stack.isEmpty() && stack.is(ModFluids.STEAM.get()))) {
+            return true;
+        }
+        if (SteelFluidBarrelItem.isSteelFluidBarrel(input) && input.getCount() > 1) {
             return false;
         }
 
-        FluidActionResult simulated = FluidUtil.tryEmptyContainer(input, steamTank, contained.getAmount(), null, false);
-        if (!simulated.isSuccess() || !canPlaceOutput(simulated.getResult())) {
+        SafeFluidItemUtil.TransferResult result = SafeFluidItemUtil.drainContainerIntoTank(
+                input,
+                steamTank,
+                stack -> !stack.isEmpty() && stack.is(ModFluids.STEAM.get()),
+                steamTank.getSpace()
+        );
+        if (!result.transferred()) {
             return false;
         }
 
-        FluidActionResult result = FluidUtil.tryEmptyContainer(input, steamTank, contained.getAmount(), null, true);
-        if (!result.isSuccess()) {
+        ItemStack container = result.container();
+        if (SafeFluidItemUtil.isEmptyFluidContainer(container) && canPlaceOutput(container)) {
+            forceSetItemSlot(STEAM_INPUT_SLOT, ItemStack.EMPTY);
+            placeOutput(container);
+        } else {
+            forceSetItemSlot(STEAM_INPUT_SLOT, container);
+        }
+        return true;
+    }
+
+    private boolean tryDrainStackedSteelBarrel(int inputSlot, int outputSlot, IFluidHandler targetTank, Predicate<FluidStack> acceptedFluid) {
+        ItemStack input = inventory.getStackInSlot(inputSlot);
+        if (!SteelFluidBarrelItem.isSteelFluidBarrel(input) || input.getCount() <= 1) {
             return false;
         }
 
-        input.shrink(1);
-        placeOutput(result.getResult());
+        FluidStack fluid = SteelFluidBarrelItem.getContainedFluid(input);
+        if (!SteelFluidBarrelItem.isFullBarrel(input) || !acceptedFluid.test(fluid)) {
+            return false;
+        }
+
+        FluidStack fullFluid = fluid.copy();
+        fullFluid.setAmount(SteelFluidBarrelItem.CAPACITY_MB);
+        if (targetTank.fill(fullFluid, IFluidHandler.FluidAction.SIMULATE) != SteelFluidBarrelItem.CAPACITY_MB) {
+            return false;
+        }
+
+        ItemStack emptyBarrel = SteelFluidBarrelItem.createEmptyBarrel(1);
+        if (!canPlaceOutput(emptyBarrel)) {
+            return false;
+        }
+
+        int filled = targetTank.fill(fullFluid, IFluidHandler.FluidAction.EXECUTE);
+        if (filled != SteelFluidBarrelItem.CAPACITY_MB) {
+            return false;
+        }
+
+        ItemStack remaining = input.copy();
+        remaining.shrink(1);
+        forceSetItemSlot(inputSlot, remaining);
+        placeOutput(emptyBarrel);
         return true;
     }
 
@@ -217,10 +285,31 @@ public class LVSteamTurbineBlockEntity extends BlockEntity implements MenuProvid
 
         ItemStack output = inventory.getStackInSlot(EMPTY_CONTAINER_SLOT);
         if (output.isEmpty()) {
-            inventory.setStackInSlot(EMPTY_CONTAINER_SLOT, result.copy());
+            forceSetItemSlot(EMPTY_CONTAINER_SLOT, result);
         } else {
-            output.grow(result.getCount());
-            inventory.setStackInSlot(EMPTY_CONTAINER_SLOT, output);
+            ItemStack merged = output.copy();
+            merged.grow(result.getCount());
+            forceSetItemSlot(EMPTY_CONTAINER_SLOT, merged);
+        }
+    }
+
+    private void forceSetItemSlot(int slot, ItemStack stack) {
+        inventory.setStackInSlot(slot, ItemStack.EMPTY);
+        if (!stack.isEmpty()) {
+            inventory.setStackInSlot(slot, stack.copy());
+        }
+        containerRevision++;
+        setChanged();
+        syncContainerSlotToViewers(slot, stack);
+    }
+
+    private void syncContainerSlotToViewers(int handlerSlot, ItemStack stack) {
+        for (ServerPlayer viewer : Set.copyOf(viewers)) {
+            if (viewer.containerMenu instanceof LVSteamTurbineMenu menu && menu.getBlockEntity() == this) {
+                menu.syncHandlerSlot(viewer, handlerSlot, stack);
+            } else {
+                viewers.remove(viewer);
+            }
         }
     }
 
@@ -258,6 +347,18 @@ public class LVSteamTurbineBlockEntity extends BlockEntity implements MenuProvid
 
     public ContainerData getData() {
         return data;
+    }
+
+    public void addViewer(Player player) {
+        if (player instanceof ServerPlayer serverPlayer) {
+            viewers.add(serverPlayer);
+        }
+    }
+
+    public void removeViewer(Player player) {
+        if (player instanceof ServerPlayer serverPlayer) {
+            viewers.remove(serverPlayer);
+        }
     }
 
     public int getRedstoneSignal() {

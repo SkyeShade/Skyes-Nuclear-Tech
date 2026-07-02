@@ -2,6 +2,8 @@ package com.skyeshade.skyent.content.radiation;
 
 import com.skyeshade.skyent.registry.ModItems;
 import com.skyeshade.skyent.registry.ModBlocks;
+import com.skyeshade.skyent.content.item.TungstenReachersUtil;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -42,23 +44,33 @@ public final class RadiationItemValues {
     public static double calculateInventoryRadiation(LivingEntity entity) {
         if (entity instanceof Player player) {
             double radiation = 0.0D;
-            for (ItemStack stack : player.getInventory().items) {
-                radiation += getStackRadiation(stack);
+            int selectedSlot = player.getInventory().selected;
+            for (int slot = 0; slot < player.getInventory().items.size(); slot++) {
+                double stackRadiation = getStackRadiation(player.getInventory().items.get(slot));
+                radiation += slot == selectedSlot
+                        ? effectiveHandRadiation(player, InteractionHand.MAIN_HAND, stackRadiation)
+                        : stackRadiation;
             }
             for (ItemStack stack : player.getInventory().armor) {
                 radiation += getStackRadiation(stack);
             }
-            for (ItemStack stack : player.getInventory().offhand) {
-                radiation += getStackRadiation(stack);
-            }
+            radiation += effectiveHandRadiation(player, InteractionHand.OFF_HAND, getStackRadiation(player.getOffhandItem()));
             return radiation;
         }
 
-        double radiation = getStackRadiation(entity.getMainHandItem()) + getStackRadiation(entity.getOffhandItem());
+        double radiation = effectiveHandRadiation(entity, InteractionHand.MAIN_HAND, getStackRadiation(entity.getMainHandItem()))
+                + effectiveHandRadiation(entity, InteractionHand.OFF_HAND, getStackRadiation(entity.getOffhandItem()));
         for (ItemStack stack : entity.getArmorSlots()) {
             radiation += getStackRadiation(stack);
         }
         return radiation;
+    }
+
+    private static double effectiveHandRadiation(LivingEntity entity, InteractionHand hand, double radiation) {
+        if (radiation <= 0.0D || !TungstenReachersUtil.isOppositeHandProtected(entity, hand)) {
+            return radiation;
+        }
+        return TungstenReachersUtil.reduceOppositeHandRadiation(radiation);
     }
 
     public static String formatRadiation(double value) {

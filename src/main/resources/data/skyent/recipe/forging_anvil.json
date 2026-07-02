@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "BBB",
+    " S ",
+    "SBS"
+  ],
+  "key": {
+    "S": {
+      "item": "skyent:steel_ingot"
+    },
+    "B": {
+      "item": "skyent:steel_block"
+    }
+  },
+  "result": {
+    "id": "skyent:forging_anvil"
+  }
+}

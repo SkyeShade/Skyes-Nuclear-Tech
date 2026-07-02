@@ -1,9 +1,12 @@
 package com.skyeshade.skyent.content.menu;
 
 import com.skyeshade.skyent.content.blockentity.LVSteamTurbineBlockEntity;
+import com.skyeshade.skyent.content.item.SteelFluidBarrelItem;
 import com.skyeshade.skyent.registry.ModBlocks;
 import com.skyeshade.skyent.registry.ModMenus;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -29,7 +32,7 @@ public class LVSteamTurbineMenu extends AbstractContainerMenu {
     private static final int PLAYER_INVENTORY_COLUMNS = 9;
     private static final int MACHINE_SLOT_COUNT = 2;
     private static final int PLAYER_INVENTORY_SLOT_COUNT = 27;
-    private static final int DATA_COUNT = 10;
+    private static final int DATA_COUNT = 11;
 
     private final LVSteamTurbineBlockEntity blockEntity;
     private final ContainerData data;
@@ -42,6 +45,7 @@ public class LVSteamTurbineMenu extends AbstractContainerMenu {
         super(ModMenus.LV_STEAM_TURBINE.get(), containerId);
         this.blockEntity = blockEntity;
         this.data = data;
+        blockEntity.addViewer(playerInventory.player);
 
         addSlot(new SteamInputSlot(blockEntity.getInventory(), LVSteamTurbineBlockEntity.STEAM_INPUT_SLOT, STEAM_INPUT_SLOT_X, STEAM_INPUT_SLOT_Y));
         addSlot(new OutputSlot(blockEntity.getInventory(), LVSteamTurbineBlockEntity.EMPTY_CONTAINER_SLOT, EMPTY_CONTAINER_SLOT_X, EMPTY_CONTAINER_SLOT_Y));
@@ -84,6 +88,25 @@ public class LVSteamTurbineMenu extends AbstractContainerMenu {
     @Override
     public boolean stillValid(Player player) {
         return stillValid(ContainerLevelAccess.create(blockEntity.getLevel(), blockEntity.getBlockPos()), player, ModBlocks.LV_STEAM_TURBINE.get());
+    }
+
+    @Override
+    public void removed(Player player) {
+        super.removed(player);
+        blockEntity.removeViewer(player);
+    }
+
+    public LVSteamTurbineBlockEntity getBlockEntity() {
+        return blockEntity;
+    }
+
+    public void syncHandlerSlot(ServerPlayer player, int handlerSlot, ItemStack stack) {
+        int menuSlot = menuSlotForHandlerSlot(handlerSlot);
+        player.connection.send(new ClientboundContainerSetSlotPacket(containerId, incrementStateId(), menuSlot, stack.copy()));
+    }
+
+    public static int menuSlotForHandlerSlot(int handlerSlot) {
+        return handlerSlot;
     }
 
     @Override
@@ -155,6 +178,16 @@ public class LVSteamTurbineMenu extends AbstractContainerMenu {
         @Override
         public boolean mayPlace(ItemStack stack) {
             return LVSteamTurbineBlockEntity.isSteamContainer(stack);
+        }
+
+        @Override
+        public int getMaxStackSize() {
+            return 16;
+        }
+
+        @Override
+        public int getMaxStackSize(ItemStack stack) {
+            return SteelFluidBarrelItem.isFullBarrel(stack) && LVSteamTurbineBlockEntity.isSteamContainer(stack) ? 16 : 1;
         }
     }
 

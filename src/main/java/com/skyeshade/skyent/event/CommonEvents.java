@@ -1,12 +1,14 @@
 package com.skyeshade.skyent.event;
 
 import com.skyeshade.skyent.event.systems.BootstrapSystem;
+import com.skyeshade.skyent.content.fluid.SteelFluidBarrelFluidHandler;
 import com.skyeshade.skyent.network.ClientPayloadHandlers;
 import com.skyeshade.skyent.network.GeigerExposurePayload;
 import com.skyeshade.skyent.network.RadiationDebugOverlayPayload;
 import com.skyeshade.skyent.network.RadiationRayBatchPayload;
 import com.skyeshade.skyent.network.RadiationRaysDebugPayload;
 import com.skyeshade.skyent.registry.ModBlockEntities;
+import com.skyeshade.skyent.registry.ModItems;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.bus.api.IEventBus;
@@ -92,6 +94,12 @@ public final class CommonEvents {
                 Capabilities.EnergyStorage.BLOCK,
                 ModBlockEntities.LV_FE_CONVERTER.get(),
                 (converter, side) -> converter.getFEInput()
+        );
+
+        event.registerItem(
+                Capabilities.FluidHandler.ITEM,
+                (stack, context) -> new SteelFluidBarrelFluidHandler(stack),
+                ModItems.STEEL_FLUID_BARREL.get()
         );
     }
 

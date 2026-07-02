@@ -10,6 +10,7 @@ import com.skyeshade.skyent.content.block.DeadGrassBlock;
 import com.skyeshade.skyent.content.block.DeadLeavesBlock;
 import com.skyeshade.skyent.content.block.DeadPlantBlock;
 import com.skyeshade.skyent.content.block.ElectricFurnaceBlock;
+import com.skyeshade.skyent.content.block.ForgingAnvilBlock;
 import com.skyeshade.skyent.content.block.GeigerCounterPlacedBlock;
 import com.skyeshade.skyent.content.block.LVConverterBlock;
 import com.skyeshade.skyent.content.block.LVConnectorBlock;
@@ -54,6 +55,15 @@ public final class ModBlocks {
                     .strength(3.5F, 6.0F)
                     .noOcclusion()
                     .lightLevel(state -> state.hasProperty(CoalForgeBlock.LIT) && state.getValue(CoalForgeBlock.LIT) ? 12 : 0)
+    );
+
+    public static final DeferredBlock<ForgingAnvilBlock> FORGING_ANVIL = BLOCKS.registerBlock(
+            "forging_anvil",
+            ForgingAnvilBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 12.0F)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
     );
 
     public static final DeferredBlock<LVElectricPumpBlock> LV_ELECTRIC_PUMP = BLOCKS.registerBlock(

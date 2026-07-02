@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.event.systems;
 
 import com.skyeshade.skyent.content.item.HotItemUtil;
+import com.skyeshade.skyent.content.item.TungstenReachersUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -44,11 +45,18 @@ public final class HotItemSystem {
 
         boolean carriesBurningHotItem = false;
         if (entity instanceof Player player) {
-            carriesBurningHotItem |= tickInventoryStacks(player.getInventory().items, true);
-            carriesBurningHotItem |= tickInventoryStacks(player.getInventory().offhand, true);
+            int selectedSlot = player.getInventory().selected;
+            for (int slot = 0; slot < player.getInventory().items.size(); slot++) {
+                ItemStack stack = player.getInventory().items.get(slot);
+                carriesBurningHotItem |= tickInventoryStack(stack, true, slot == selectedSlot
+                        && !TungstenReachersUtil.isOppositeHandProtected(player, InteractionHand.MAIN_HAND));
+            }
+            carriesBurningHotItem |= tickInventoryStack(player.getOffhandItem(), true,
+                    !TungstenReachersUtil.isOppositeHandProtected(player, InteractionHand.OFF_HAND));
             carriesBurningHotItem |= tickInventoryStacks(player.getInventory().armor, true);
         } else {
-            carriesBurningHotItem |= tickInventoryStacks(entity.getHandSlots(), true);
+            carriesBurningHotItem |= tickHeldStack(entity, InteractionHand.MAIN_HAND);
+            carriesBurningHotItem |= tickHeldStack(entity, InteractionHand.OFF_HAND);
             carriesBurningHotItem |= tickInventoryStacks(entity.getArmorSlots(), true);
         }
 
@@ -85,19 +93,25 @@ public final class HotItemSystem {
     private static boolean tickInventoryStacks(Iterable<ItemStack> stacks, boolean coolPartialHeat) {
         boolean carriesBurningHotItem = false;
         for (ItemStack stack : stacks) {
-            if (!HotItemUtil.hasTemperature(stack)) {
-                continue;
-            }
-
-            if (coolPartialHeat) {
-                coolInventoryStack(stack);
-            }
-
-            if (HotItemUtil.hasTemperature(stack) && HotItemUtil.getTemperature(stack) > STEAM_TEMPERATURE_C) {
-                carriesBurningHotItem = true;
-            }
+            carriesBurningHotItem |= tickInventoryStack(stack, coolPartialHeat, true);
         }
         return carriesBurningHotItem;
+    }
+
+    private static boolean tickHeldStack(LivingEntity entity, InteractionHand hand) {
+        return tickInventoryStack(entity.getItemInHand(hand), true, !TungstenReachersUtil.isOppositeHandProtected(entity, hand));
+    }
+
+    private static boolean tickInventoryStack(ItemStack stack, boolean coolPartialHeat, boolean canBurnCarrier) {
+        if (!HotItemUtil.hasTemperature(stack)) {
+            return false;
+        }
+
+        if (coolPartialHeat) {
+            coolInventoryStack(stack);
+        }
+
+        return canBurnCarrier && HotItemUtil.hasTemperature(stack) && HotItemUtil.getTemperature(stack) > STEAM_TEMPERATURE_C;
     }
 
     private static void coolInventoryStack(ItemStack stack) {

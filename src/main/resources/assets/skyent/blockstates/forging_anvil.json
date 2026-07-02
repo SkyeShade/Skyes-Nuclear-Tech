@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "skyent:block/forging_anvil"
+    },
+    "facing=east": {
+      "model": "skyent:block/forging_anvil",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "skyent:block/forging_anvil",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "skyent:block/forging_anvil",
+      "y": 270
+    }
+  }
+}

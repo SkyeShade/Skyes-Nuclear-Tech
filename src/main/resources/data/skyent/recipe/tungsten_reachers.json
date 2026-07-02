@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "T T",
+    " S ",
+    " S "
+  ],
+  "key": {
+    "T": {
+      "item": "skyent:tungsten_ingot"
+    },
+    "S": {
+      "item": "skyent:steel_ingot"
+    }
+  },
+  "result": {
+    "id": "skyent:tungsten_reachers"
+  }
+}

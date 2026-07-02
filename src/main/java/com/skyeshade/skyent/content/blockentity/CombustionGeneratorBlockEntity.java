@@ -1,15 +1,21 @@
 package com.skyeshade.skyent.content.blockentity;
 
 import com.skyeshade.skyent.content.block.CombustionGeneratorBlock;
+import com.skyeshade.skyent.content.fluid.SafeFluidItemUtil;
+import com.skyeshade.skyent.content.item.SteelFluidBarrelItem;
 import com.skyeshade.skyent.content.menu.CombustionGeneratorMenu;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import com.skyeshade.skyent.registry.ModFluids;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.Predicate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.Containers;
 import net.minecraft.world.MenuProvider;
@@ -26,9 +32,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluids;
 import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.fluids.FluidActionResult;
 import net.neoforged.neoforge.fluids.FluidStack;
-import net.neoforged.neoforge.fluids.FluidUtil;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
 import net.neoforged.neoforge.items.IItemHandler;
@@ -36,8 +40,8 @@ import net.neoforged.neoforge.items.ItemStackHandler;
 import org.jetbrains.annotations.Nullable;
 
 public class CombustionGeneratorBlockEntity extends BlockEntity implements MenuProvider {
-    public static final int INPUT_TANK_CAPACITY_MB = 8_000;
-    public static final int OUTPUT_TANK_CAPACITY_MB = 8_000;
+    public static final int INPUT_TANK_CAPACITY_MB = 16_000;
+    public static final int OUTPUT_TANK_CAPACITY_MB = 16_000;
     public static final double MIN_TEMPERATURE_C = 21.0D;
     public static final double BOILING_TEMPERATURE_C = 100.0D;
     public static final double MAX_TEMPERATURE_C = 512.0D;
@@ -65,13 +69,16 @@ public class CombustionGeneratorBlockEntity extends BlockEntity implements MenuP
     private static final int DATA_STEAM_AMOUNT = 4;
     private static final int DATA_STEAM_CAPACITY = 5;
     private static final int DATA_TEMPERATURE_CENTI = 6;
-    private static final int DATA_COUNT = 7;
+    private static final int DATA_CONTAINER_REVISION = 7;
+    private static final int DATA_COUNT = 8;
 
     private int burnTime;
     private int burnTimeTotal;
     private double temperatureC = MIN_TEMPERATURE_C;
     private double waterProductionAccumulator;
     private int dryTicks;
+    private int containerRevision;
+    private final Set<ServerPlayer> viewers = new HashSet<>();
 
     private final ItemStackHandler inventory = new ItemStackHandler(INVENTORY_SLOT_COUNT) {
         @Override
@@ -86,7 +93,17 @@ public class CombustionGeneratorBlockEntity extends BlockEntity implements MenuP
 
         @Override
         protected void onContentsChanged(int slot) {
+            containerRevision++;
             setChanged();
+        }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return switch (slot) {
+                case WATER_INPUT_SLOT -> 16;
+                case EMPTY_CONTAINER_SLOT, STEAM_CONTAINER_INPUT_SLOT, STEAM_CONTAINER_OUTPUT_SLOT -> 16;
+                default -> super.getSlotLimit(slot);
+            };
         }
     };
 
@@ -116,6 +133,7 @@ public class CombustionGeneratorBlockEntity extends BlockEntity implements MenuP
                 case DATA_STEAM_AMOUNT -> steamTank.getFluidAmount();
                 case DATA_STEAM_CAPACITY -> steamTank.getCapacity();
                 case DATA_TEMPERATURE_CENTI -> Mth.floor(temperatureC * 100.0D);
+                case DATA_CONTAINER_REVISION -> containerRevision;
                 default -> 0;
             };
         }
@@ -128,6 +146,7 @@ public class CombustionGeneratorBlockEntity extends BlockEntity implements MenuP
                 case DATA_WATER_AMOUNT -> waterTank.setFluid(value > 0 ? new FluidStack(Fluids.WATER, value) : FluidStack.EMPTY);
                 case DATA_STEAM_AMOUNT -> steamTank.setFluid(value > 0 ? new FluidStack(ModFluids.STEAM.get(), value) : FluidStack.EMPTY);
                 case DATA_TEMPERATURE_CENTI -> temperatureC = value / 100.0D;
+                case DATA_CONTAINER_REVISION -> containerRevision = value;
                 default -> {
                 }
             }
@@ -198,7 +217,16 @@ public class CombustionGeneratorBlockEntity extends BlockEntity implements MenuP
     }
 
     public static boolean isWaterContainer(ItemStack stack) {
-        return FluidUtil.getFluidContained(stack).filter(fluid -> fluid.is(Fluids.WATER)).isPresent();
+        if (SteelFluidBarrelItem.isSteelFluidBarrel(stack)) {
+            FluidStack fluid = SteelFluidBarrelItem.getContainedFluid(stack);
+            return stack.getCount() == 1
+                    ? SafeFluidItemUtil.containsWater(stack)
+                    : SteelFluidBarrelItem.isFullBarrel(stack) && fluid.is(Fluids.WATER);
+        }
+        if (stack.getCount() > 1) {
+            return false;
+        }
+        return SafeFluidItemUtil.containsWater(stack);
     }
 
     private static boolean isValidBoilerInput(FluidStack stack) {
@@ -210,9 +238,15 @@ public class CombustionGeneratorBlockEntity extends BlockEntity implements MenuP
     }
 
     public static boolean isFillableFluidContainer(ItemStack stack) {
-        return !stack.isEmpty()
-                && FluidUtil.getFluidHandler(stack).isPresent()
-                && FluidUtil.getFluidContained(stack).orElse(FluidStack.EMPTY).isEmpty();
+        if (SteelFluidBarrelItem.isSteelFluidBarrel(stack)) {
+            return stack.getCount() == 1
+                    ? SafeFluidItemUtil.canAcceptFluidForSlot(stack, ModFluids.STEAM.get())
+                    : SteelFluidBarrelItem.isEmptyBarrel(stack);
+        }
+        if (stack.getCount() > 1) {
+            return false;
+        }
+        return SafeFluidItemUtil.canAcceptFluidForSlot(stack, ModFluids.STEAM.get());
     }
 
     private static int getBurnTime(ItemStack stack) {
@@ -268,44 +302,142 @@ public class CombustionGeneratorBlockEntity extends BlockEntity implements MenuP
             return false;
         }
 
-        FluidStack contained = FluidUtil.getFluidContained(input).orElse(FluidStack.EMPTY);
-        if (contained.isEmpty() || !contained.is(Fluids.WATER) || contained.getAmount() > waterTank.getSpace()) {
+        if (tryDrainStackedSteelBarrel(WATER_INPUT_SLOT, EMPTY_CONTAINER_SLOT, waterFillHandler, stack -> !stack.isEmpty() && stack.is(Fluids.WATER))) {
+            return true;
+        }
+        if (SteelFluidBarrelItem.isSteelFluidBarrel(input) && input.getCount() > 1) {
             return false;
         }
 
-        FluidActionResult simulated = FluidUtil.tryEmptyContainer(input, waterFillHandler, contained.getAmount(), null, false);
-        if (!simulated.isSuccess() || !canPlaceOutput(EMPTY_CONTAINER_SLOT, simulated.getResult())) {
+        SafeFluidItemUtil.TransferResult result = SafeFluidItemUtil.drainContainerIntoTank(
+                input,
+                waterFillHandler,
+                stack -> !stack.isEmpty() && stack.is(Fluids.WATER),
+                waterTank.getSpace()
+        );
+        if (!result.transferred()) {
             return false;
         }
 
-        FluidActionResult result = FluidUtil.tryEmptyContainer(input, waterFillHandler, contained.getAmount(), null, true);
-        if (!result.isSuccess()) {
+        ItemStack container = result.container();
+        if (SafeFluidItemUtil.isEmptyFluidContainer(container) && canPlaceOutput(EMPTY_CONTAINER_SLOT, container)) {
+            forceSetItemSlot(WATER_INPUT_SLOT, ItemStack.EMPTY);
+            placeOutput(EMPTY_CONTAINER_SLOT, container);
+        } else {
+            forceSetItemSlot(WATER_INPUT_SLOT, container);
+        }
+        return true;
+    }
+
+    private boolean tryDrainStackedSteelBarrel(int inputSlot, int outputSlot, IFluidHandler targetTank, Predicate<FluidStack> acceptedFluid) {
+        ItemStack input = inventory.getStackInSlot(inputSlot);
+        if (!SteelFluidBarrelItem.isSteelFluidBarrel(input) || input.getCount() <= 1) {
             return false;
         }
 
-        input.shrink(1);
-        placeOutput(EMPTY_CONTAINER_SLOT, result.getResult());
+        FluidStack fluid = SteelFluidBarrelItem.getContainedFluid(input);
+        if (!SteelFluidBarrelItem.isFullBarrel(input) || !acceptedFluid.test(fluid)) {
+            return false;
+        }
+
+        FluidStack fullFluid = fluid.copy();
+        fullFluid.setAmount(SteelFluidBarrelItem.CAPACITY_MB);
+        if (targetTank.fill(fullFluid, IFluidHandler.FluidAction.SIMULATE) != SteelFluidBarrelItem.CAPACITY_MB) {
+            return false;
+        }
+
+        ItemStack emptyBarrel = SteelFluidBarrelItem.createEmptyBarrel(1);
+        if (!canPlaceOutput(outputSlot, emptyBarrel)) {
+            return false;
+        }
+
+        int filled = targetTank.fill(fullFluid, IFluidHandler.FluidAction.EXECUTE);
+        if (filled != SteelFluidBarrelItem.CAPACITY_MB) {
+            return false;
+        }
+
+        ItemStack remaining = input.copy();
+        remaining.shrink(1);
+        forceSetItemSlot(inputSlot, remaining);
+        placeOutput(outputSlot, emptyBarrel);
         return true;
     }
 
     private boolean tryFillSteamContainer() {
         ItemStack input = inventory.getStackInSlot(STEAM_CONTAINER_INPUT_SLOT);
         if (input.isEmpty() || steamTank.getFluidAmount() <= 0) {
+            if (!input.isEmpty()) {
+                SafeFluidItemUtil.debugFill("boiler steam fill skipped: slot={} item={} steamAmount={}",
+                        STEAM_CONTAINER_INPUT_SLOT, input.getItem(), steamTank.getFluidAmount());
+            }
             return false;
         }
 
-        FluidActionResult simulated = FluidUtil.tryFillContainer(input, steamTank, steamTank.getFluidAmount(), null, false);
-        if (!simulated.isSuccess() || !canPlaceOutput(STEAM_CONTAINER_OUTPUT_SLOT, simulated.getResult())) {
+        if (tryFillStackedSteelBarrel(STEAM_CONTAINER_INPUT_SLOT, STEAM_CONTAINER_OUTPUT_SLOT, steamTank, new FluidStack(ModFluids.STEAM.get(), SteelFluidBarrelItem.CAPACITY_MB))) {
+            return true;
+        }
+        if (SteelFluidBarrelItem.isSteelFluidBarrel(input) && input.getCount() > 1) {
             return false;
         }
 
-        FluidActionResult result = FluidUtil.tryFillContainer(input, steamTank, steamTank.getFluidAmount(), null, true);
-        if (!result.isSuccess()) {
+        SafeFluidItemUtil.debugFill("boiler steam fill attempting: slot={} item={} steamAmount={}",
+                STEAM_CONTAINER_INPUT_SLOT, input.getItem(), steamTank.getFluidAmount());
+        FluidStack steam = new FluidStack(ModFluids.STEAM.get(), 1);
+        SafeFluidItemUtil.TransferResult result = SafeFluidItemUtil.fillContainerFromTank(
+                input,
+                steamTank,
+                stack -> !stack.isEmpty() && stack.is(ModFluids.STEAM.get()),
+                steamTank.getFluidAmount()
+        );
+        if (!result.transferred()) {
+            SafeFluidItemUtil.debugFill("boiler steam fill failed: slot={} item={} steamAmount={}",
+                    STEAM_CONTAINER_INPUT_SLOT, input.getItem(), steamTank.getFluidAmount());
             return false;
         }
 
-        input.shrink(1);
-        placeOutput(STEAM_CONTAINER_OUTPUT_SLOT, result.getResult());
+        ItemStack container = result.container();
+        SafeFluidItemUtil.debugFill("boiler steam fill transferred: slot={} resultItem={} steamAmount={}",
+                STEAM_CONTAINER_INPUT_SLOT, container.getItem(), steamTank.getFluidAmount());
+        if (SafeFluidItemUtil.isFluidContainerFull(container, steam) && canPlaceOutput(STEAM_CONTAINER_OUTPUT_SLOT, container)) {
+            forceSetItemSlot(STEAM_CONTAINER_INPUT_SLOT, ItemStack.EMPTY);
+            placeOutput(STEAM_CONTAINER_OUTPUT_SLOT, container);
+        } else {
+            forceSetItemSlot(STEAM_CONTAINER_INPUT_SLOT, container);
+        }
+        return true;
+    }
+
+    private boolean tryFillStackedSteelBarrel(int inputSlot, int outputSlot, IFluidHandler sourceTank, FluidStack fullFluid) {
+        ItemStack input = inventory.getStackInSlot(inputSlot);
+        if (!SteelFluidBarrelItem.isSteelFluidBarrel(input) || input.getCount() <= 1) {
+            return false;
+        }
+        if (!SteelFluidBarrelItem.isEmptyBarrel(input)) {
+            return false;
+        }
+
+        FluidStack simulatedDrain = sourceTank.drain(fullFluid, IFluidHandler.FluidAction.SIMULATE);
+        if (simulatedDrain.getAmount() < SteelFluidBarrelItem.CAPACITY_MB) {
+            return false;
+        }
+
+        ItemStack fullBarrel = SteelFluidBarrelItem.createFilledBarrel(fullFluid, 1);
+        if (!canPlaceOutput(outputSlot, fullBarrel)) {
+            return false;
+        }
+
+        FluidStack drained = sourceTank.drain(fullFluid, IFluidHandler.FluidAction.EXECUTE);
+        if (drained.getAmount() != SteelFluidBarrelItem.CAPACITY_MB) {
+            if (!drained.isEmpty()) {
+                sourceTank.fill(drained, IFluidHandler.FluidAction.EXECUTE);
+            }
+            return false;
+        }
+
+        ItemStack remaining = input.copy();
+        remaining.shrink(1);
+        forceSetItemSlot(inputSlot, remaining);
+        placeOutput(outputSlot, fullBarrel);
         return true;
     }
 
@@ -384,10 +516,31 @@ public class CombustionGeneratorBlockEntity extends BlockEntity implements MenuP
 
         ItemStack output = inventory.getStackInSlot(slot);
         if (output.isEmpty()) {
-            inventory.setStackInSlot(slot, result.copy());
+            forceSetItemSlot(slot, result);
         } else {
-            output.grow(result.getCount());
-            inventory.setStackInSlot(slot, output);
+            ItemStack merged = output.copy();
+            merged.grow(result.getCount());
+            forceSetItemSlot(slot, merged);
+        }
+    }
+
+    private void forceSetItemSlot(int slot, ItemStack stack) {
+        inventory.setStackInSlot(slot, ItemStack.EMPTY);
+        if (!stack.isEmpty()) {
+            inventory.setStackInSlot(slot, stack.copy());
+        }
+        containerRevision++;
+        setChanged();
+        syncContainerSlotToViewers(slot, stack);
+    }
+
+    private void syncContainerSlotToViewers(int handlerSlot, ItemStack stack) {
+        for (ServerPlayer viewer : Set.copyOf(viewers)) {
+            if (viewer.containerMenu instanceof CombustionGeneratorMenu menu && menu.getBlockEntity() == this) {
+                menu.syncHandlerSlot(viewer, handlerSlot, stack);
+            } else {
+                viewers.remove(viewer);
+            }
         }
     }
 
@@ -439,6 +592,18 @@ public class CombustionGeneratorBlockEntity extends BlockEntity implements MenuP
 
     public ContainerData getData() {
         return data;
+    }
+
+    public void addViewer(Player player) {
+        if (player instanceof ServerPlayer serverPlayer) {
+            viewers.add(serverPlayer);
+        }
+    }
+
+    public void removeViewer(Player player) {
+        if (player instanceof ServerPlayer serverPlayer) {
+            viewers.remove(serverPlayer);
+        }
     }
 
     public int getWaterAmount() {

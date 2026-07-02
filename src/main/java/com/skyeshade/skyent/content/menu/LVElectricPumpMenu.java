@@ -1,10 +1,13 @@
 package com.skyeshade.skyent.content.menu;
 
 import com.skyeshade.skyent.content.blockentity.LVElectricPumpBlockEntity;
+import com.skyeshade.skyent.content.item.SteelFluidBarrelItem;
 import com.skyeshade.skyent.registry.ModBlocks;
 import com.skyeshade.skyent.registry.ModMenus;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -37,7 +40,7 @@ public class LVElectricPumpMenu extends AbstractContainerMenu {
     private static final int PLAYER_INVENTORY_COLUMNS = 9;
     private static final int MACHINE_SLOT_COUNT = 4;
     private static final int PLAYER_INVENTORY_SLOT_COUNT = 27;
-    private static final int DATA_COUNT = 12;
+    private static final int DATA_COUNT = 13;
 
     private final LVElectricPumpBlockEntity blockEntity;
     private final ContainerData data;
@@ -50,6 +53,7 @@ public class LVElectricPumpMenu extends AbstractContainerMenu {
         super(ModMenus.LV_ELECTRIC_PUMP.get(), containerId);
         this.blockEntity = blockEntity;
         this.data = data;
+        blockEntity.addViewer(playerInventory.player);
 
         addSlot(new DumpInputSlot(blockEntity, blockEntity.getInventory(), LVElectricPumpBlockEntity.DUMP_INPUT_SLOT, DUMP_INPUT_SLOT_X, DUMP_INPUT_SLOT_Y));
         addSlot(new OutputSlot(blockEntity.getInventory(), LVElectricPumpBlockEntity.DUMP_OUTPUT_SLOT, DUMP_OUTPUT_SLOT_X, DUMP_OUTPUT_SLOT_Y));
@@ -94,6 +98,25 @@ public class LVElectricPumpMenu extends AbstractContainerMenu {
     }
 
     @Override
+    public void removed(Player player) {
+        super.removed(player);
+        blockEntity.removeViewer(player);
+    }
+
+    public LVElectricPumpBlockEntity getBlockEntity() {
+        return blockEntity;
+    }
+
+    public void syncHandlerSlot(ServerPlayer player, int handlerSlot, ItemStack stack) {
+        int menuSlot = menuSlotForHandlerSlot(handlerSlot);
+        player.connection.send(new ClientboundContainerSetSlotPacket(containerId, incrementStateId(), menuSlot, stack.copy()));
+    }
+
+    public static int menuSlotForHandlerSlot(int handlerSlot) {
+        return handlerSlot;
+    }
+
+    @Override
     public ItemStack quickMoveStack(Player player, int index) {
         ItemStack result = ItemStack.EMPTY;
         Slot slot = slots.get(index);
@@ -106,12 +129,12 @@ public class LVElectricPumpMenu extends AbstractContainerMenu {
                 if (!moveItemStackTo(stack, MACHINE_SLOT_COUNT, slots.size(), true)) {
                     return ItemStack.EMPTY;
                 }
-            } else if (LVElectricPumpBlockEntity.isFilledFluidContainer(stack)) {
-                if (!moveItemStackTo(stack, LVElectricPumpBlockEntity.DUMP_INPUT_SLOT, LVElectricPumpBlockEntity.DUMP_INPUT_SLOT + 1, false)) {
+            } else if (blockEntity.canFillContainerFromTank(stack)) {
+                if (!moveItemStackTo(stack, LVElectricPumpBlockEntity.FILL_INPUT_SLOT, LVElectricPumpBlockEntity.FILL_INPUT_SLOT + 1, false)) {
                     return ItemStack.EMPTY;
                 }
-            } else if (LVElectricPumpBlockEntity.isFillableFluidContainer(stack)) {
-                if (!moveItemStackTo(stack, LVElectricPumpBlockEntity.FILL_INPUT_SLOT, LVElectricPumpBlockEntity.FILL_INPUT_SLOT + 1, false)) {
+            } else if (LVElectricPumpBlockEntity.isFilledFluidContainer(stack)) {
+                if (!moveItemStackTo(stack, LVElectricPumpBlockEntity.DUMP_INPUT_SLOT, LVElectricPumpBlockEntity.DUMP_INPUT_SLOT + 1, false)) {
                     return ItemStack.EMPTY;
                 }
             } else if (index < MACHINE_SLOT_COUNT + PLAYER_INVENTORY_SLOT_COUNT) {
@@ -174,6 +197,16 @@ public class LVElectricPumpMenu extends AbstractContainerMenu {
         public boolean mayPlace(ItemStack stack) {
             return blockEntity.getInventory().isItemValid(getSlotIndex(), stack);
         }
+
+        @Override
+        public int getMaxStackSize() {
+            return 16;
+        }
+
+        @Override
+        public int getMaxStackSize(ItemStack stack) {
+            return SteelFluidBarrelItem.isFullBarrel(stack) && LVElectricPumpBlockEntity.isFilledFluidContainer(stack) ? 16 : 1;
+        }
     }
 
     private static final class FillInputSlot extends SlotItemHandler {
@@ -187,6 +220,16 @@ public class LVElectricPumpMenu extends AbstractContainerMenu {
         @Override
         public boolean mayPlace(ItemStack stack) {
             return blockEntity.getInventory().isItemValid(getSlotIndex(), stack);
+        }
+
+        @Override
+        public int getMaxStackSize() {
+            return 16;
+        }
+
+        @Override
+        public int getMaxStackSize(ItemStack stack) {
+            return SteelFluidBarrelItem.isEmptyBarrel(stack) ? 16 : 1;
         }
     }
 

@@ -1,9 +1,12 @@
 package com.skyeshade.skyent.content.menu;
 
 import com.skyeshade.skyent.content.blockentity.CombustionGeneratorBlockEntity;
+import com.skyeshade.skyent.content.item.SteelFluidBarrelItem;
 import com.skyeshade.skyent.registry.ModBlocks;
 import com.skyeshade.skyent.registry.ModMenus;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -35,7 +38,7 @@ public class CombustionGeneratorMenu extends AbstractContainerMenu {
     private static final int PLAYER_INVENTORY_COLUMNS = 9;
     private static final int MACHINE_SLOT_COUNT = 5;
     private static final int PLAYER_INVENTORY_SLOT_COUNT = 27;
-    private static final int DATA_COUNT = 7;
+    private static final int DATA_COUNT = 8;
 
     private final CombustionGeneratorBlockEntity blockEntity;
     private final ContainerData data;
@@ -48,6 +51,7 @@ public class CombustionGeneratorMenu extends AbstractContainerMenu {
         super(ModMenus.COMBUSTION_GENERATOR.get(), containerId);
         this.blockEntity = blockEntity;
         this.data = data;
+        blockEntity.addViewer(playerInventory.player);
 
         addSlot(new WaterInputSlot(blockEntity.getInventory(), CombustionGeneratorBlockEntity.WATER_INPUT_SLOT, WATER_INPUT_SLOT_X, WATER_INPUT_SLOT_Y));
         addSlot(new OutputSlot(blockEntity.getInventory(), CombustionGeneratorBlockEntity.EMPTY_CONTAINER_SLOT, EMPTY_CONTAINER_SLOT_X, EMPTY_CONTAINER_SLOT_Y));
@@ -93,6 +97,25 @@ public class CombustionGeneratorMenu extends AbstractContainerMenu {
     @Override
     public boolean stillValid(Player player) {
         return stillValid(ContainerLevelAccess.create(blockEntity.getLevel(), blockEntity.getBlockPos()), player, ModBlocks.COMBUSTION_GENERATOR.get());
+    }
+
+    @Override
+    public void removed(Player player) {
+        super.removed(player);
+        blockEntity.removeViewer(player);
+    }
+
+    public CombustionGeneratorBlockEntity getBlockEntity() {
+        return blockEntity;
+    }
+
+    public void syncHandlerSlot(ServerPlayer player, int handlerSlot, ItemStack stack) {
+        int menuSlot = menuSlotForHandlerSlot(handlerSlot);
+        player.connection.send(new ClientboundContainerSetSlotPacket(containerId, incrementStateId(), menuSlot, stack.copy()));
+    }
+
+    public static int menuSlotForHandlerSlot(int handlerSlot) {
+        return handlerSlot;
     }
 
     @Override
@@ -173,6 +196,16 @@ public class CombustionGeneratorMenu extends AbstractContainerMenu {
         public boolean mayPlace(ItemStack stack) {
             return CombustionGeneratorBlockEntity.isWaterContainer(stack);
         }
+
+        @Override
+        public int getMaxStackSize() {
+            return 16;
+        }
+
+        @Override
+        public int getMaxStackSize(ItemStack stack) {
+            return SteelFluidBarrelItem.isFullBarrel(stack) && CombustionGeneratorBlockEntity.isWaterContainer(stack) ? 16 : 1;
+        }
     }
 
     private static final class FillableContainerSlot extends SlotItemHandler {
@@ -183,6 +216,16 @@ public class CombustionGeneratorMenu extends AbstractContainerMenu {
         @Override
         public boolean mayPlace(ItemStack stack) {
             return CombustionGeneratorBlockEntity.isFillableFluidContainer(stack);
+        }
+
+        @Override
+        public int getMaxStackSize() {
+            return 16;
+        }
+
+        @Override
+        public int getMaxStackSize(ItemStack stack) {
+            return SteelFluidBarrelItem.isEmptyBarrel(stack) ? 16 : 1;
         }
     }
 

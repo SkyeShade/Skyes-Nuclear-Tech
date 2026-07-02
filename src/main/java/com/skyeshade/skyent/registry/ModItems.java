@@ -8,9 +8,11 @@ import com.skyeshade.skyent.content.item.RadioactiveBlockItem;
 import com.skyeshade.skyent.content.item.RadioactiveItem;
 import com.skyeshade.skyent.content.item.ShieldingBlockItem;
 import com.skyeshade.skyent.content.item.SkyentToolTier;
+import com.skyeshade.skyent.content.item.SteelFluidBarrelItem;
 import com.skyeshade.skyent.content.item.TooltipBlockItem;
 import com.skyeshade.skyent.content.item.ToxicBlockItem;
 import com.skyeshade.skyent.content.item.ToxicItem;
+import com.skyeshade.skyent.content.item.TungstenReachersItem;
 import com.skyeshade.skyent.content.item.UraniumBlockItem;
 import com.skyeshade.skyent.content.item.WrenchItem;
 import net.minecraft.world.item.AxeItem;
@@ -46,6 +48,11 @@ public final class ModItems {
 
     public static final DeferredItem<BlockItem> COAL_FORGE = ITEMS.registerSimpleBlockItem(
             ModBlocks.COAL_FORGE,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> FORGING_ANVIL = ITEMS.registerSimpleBlockItem(
+            ModBlocks.FORGING_ANVIL,
             new Item.Properties()
     );
 
@@ -218,6 +225,10 @@ public final class ModItems {
             "molten_corium_bucket",
             () -> new BucketItem(ModFluids.MOLTEN_CORIUM.get(), new Item.Properties().craftRemainder(Items.BUCKET).stacksTo(1))
     );
+    public static final DeferredItem<SteelFluidBarrelItem> STEEL_FLUID_BARREL = ITEMS.register(
+            "steel_fluid_barrel",
+            () -> new SteelFluidBarrelItem(new Item.Properties().stacksTo(16))
+    );
 
     public static final DeferredItem<BlockItem> LV_CONNECTOR = ITEMS.registerSimpleBlockItem(
             ModBlocks.LV_CONNECTOR,
@@ -274,6 +285,16 @@ public final class ModItems {
             "wrench",
             () -> new WrenchItem(new Item.Properties().stacksTo(1))
     );
+    public static final DeferredItem<Item> FORGING_HAMMER = ITEMS.registerSimpleItem(
+            "forging_hammer",
+            new Item.Properties().stacksTo(1)
+    );
+    public static final DeferredItem<TungstenReachersItem> TUNGSTEN_REACHERS = ITEMS.register(
+            "tungsten_reachers",
+            () -> new TungstenReachersItem(new Item.Properties().stacksTo(1))
+    );
+    public static final DeferredItem<Item> HOT_PLATE_FORGING_STAGE_1 = simpleItem("hot_plate_forging_stage_1");
+    public static final DeferredItem<Item> HOT_PLATE_FORGING_STAGE_2 = simpleItem("hot_plate_forging_stage_2");
     public static final DeferredItem<GeigerCounterItem> GEIGER_COUNTER = ITEMS.register(
             "geiger_counter",
             () -> new GeigerCounterItem(new Item.Properties())
