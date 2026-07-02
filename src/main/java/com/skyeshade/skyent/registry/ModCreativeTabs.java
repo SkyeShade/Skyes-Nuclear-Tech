@@ -27,6 +27,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.COAL_FORGE.get());
                         output.accept(ModItems.FIRE_BRICKS.get());
                         output.accept(ModItems.FORGING_ANVIL.get());
+                        output.accept(ModItems.STEAM_FORGE_HAMMER.get());
                         output.accept(ModItems.LV_ELECTRIC_PUMP.get());
                         output.accept(ModItems.LV_STEAM_TURBINE.get());
                         output.accept(ModItems.BASIC_FLUID_DUCT.get());

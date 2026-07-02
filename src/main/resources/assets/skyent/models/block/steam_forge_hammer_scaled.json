@@ -1,0 +1,8 @@
+{
+  "loader": "skyent:scaled_block_model",
+  "base": {
+    "parent": "skyent:block/steam_forge_hammer"
+  },
+  "scale": 2.0,
+  "origin": [8, 0, 8]
+}

@@ -62,6 +62,11 @@ public final class ModItems {
             new Item.Properties()
     );
 
+    public static final DeferredItem<BlockItem> STEAM_FORGE_HAMMER = ITEMS.registerSimpleBlockItem(
+            ModBlocks.STEAM_FORGE_HAMMER,
+            new Item.Properties()
+    );
+
     public static final DeferredItem<BlockItem> LV_ELECTRIC_PUMP = ITEMS.registerSimpleBlockItem(
             ModBlocks.LV_ELECTRIC_PUMP,
             new Item.Properties()

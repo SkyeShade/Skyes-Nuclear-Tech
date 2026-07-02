@@ -19,6 +19,8 @@ import com.skyeshade.skyent.content.block.LVSteamTurbineBlock;
 import com.skyeshade.skyent.content.block.MoltenCoriumBlock;
 import com.skyeshade.skyent.content.block.RadioactiveBlock;
 import com.skyeshade.skyent.content.block.SiltBlock;
+import com.skyeshade.skyent.content.block.SteamForgeHammerBlock;
+import com.skyeshade.skyent.content.block.SteamForgeHammerPartBlock;
 import com.skyeshade.skyent.content.block.UraniumBlock;
 import com.skyeshade.skyent.content.radiation.EnvironmentalRadiationMode;
 import net.minecraft.world.level.block.Blocks;
@@ -67,6 +69,24 @@ public final class ModBlocks {
     public static final DeferredBlock<ForgingAnvilBlock> FORGING_ANVIL = BLOCKS.registerBlock(
             "forging_anvil",
             ForgingAnvilBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 12.0F)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
+    );
+
+    public static final DeferredBlock<SteamForgeHammerBlock> STEAM_FORGE_HAMMER = BLOCKS.registerBlock(
+            "steam_forge_hammer",
+            SteamForgeHammerBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 12.0F)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
+    );
+
+    public static final DeferredBlock<SteamForgeHammerPartBlock> STEAM_FORGE_HAMMER_PART = BLOCKS.registerBlock(
+            "steam_forge_hammer_part",
+            SteamForgeHammerPartBlock::new,
             BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
                     .strength(5.0F, 12.0F)
                     .requiresCorrectToolForDrops()

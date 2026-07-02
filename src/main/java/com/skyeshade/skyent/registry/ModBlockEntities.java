@@ -14,6 +14,7 @@ import com.skyeshade.skyent.content.blockentity.LVElectricPumpBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVSteamTurbineBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVRJConverterBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVConnectorBlockEntity;
+import com.skyeshade.skyent.content.blockentity.SteamForgeHammerBlockEntity;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.bus.api.IEventBus;
@@ -54,6 +55,12 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("forging_anvil", () -> BlockEntityType.Builder.of(
                     ForgingAnvilBlockEntity::new,
                     ModBlocks.FORGING_ANVIL.get()
+            ).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<SteamForgeHammerBlockEntity>> STEAM_FORGE_HAMMER =
+            BLOCK_ENTITIES.register("steam_forge_hammer", () -> BlockEntityType.Builder.of(
+                    SteamForgeHammerBlockEntity::new,
+                    ModBlocks.STEAM_FORGE_HAMMER.get()
             ).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<LVElectricPumpBlockEntity>> LV_ELECTRIC_PUMP =

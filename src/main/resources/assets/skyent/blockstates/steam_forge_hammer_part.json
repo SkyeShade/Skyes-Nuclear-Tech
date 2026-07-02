@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "facing=north,part_y=1": { "model": "minecraft:block/air" },
+    "facing=east,part_y=1": { "model": "minecraft:block/air" },
+    "facing=south,part_y=1": { "model": "minecraft:block/air" },
+    "facing=west,part_y=1": { "model": "minecraft:block/air" },
+    "facing=north,part_y=2": { "model": "minecraft:block/air" },
+    "facing=east,part_y=2": { "model": "minecraft:block/air" },
+    "facing=south,part_y=2": { "model": "minecraft:block/air" },
+    "facing=west,part_y=2": { "model": "minecraft:block/air" }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "skyent:block/steam_forge_hammer_scaled"
+    },
+    "facing=east": {
+      "model": "skyent:block/steam_forge_hammer_scaled",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "skyent:block/steam_forge_hammer_scaled",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "skyent:block/steam_forge_hammer_scaled",
+      "y": 270
+    }
+  }
+}

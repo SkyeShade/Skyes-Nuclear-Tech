@@ -8,9 +8,11 @@ import com.skyeshade.skyent.client.item.GeigerCounterSoundManager;
 import com.skyeshade.skyent.client.item.PlacedGeigerCounterSoundManager;
 import com.skyeshade.skyent.client.item.SteelFluidBarrelFluidDecorator;
 import com.skyeshade.skyent.client.item.SteelTongsHeldItemDecorator;
+import com.skyeshade.skyent.client.model.ScaledBlockModel;
 import com.skyeshade.skyent.client.renderer.blockentity.CoalForgeRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.ForgingAnvilRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.GeigerCounterPlacedRenderer;
+import com.skyeshade.skyent.client.renderer.blockentity.SteamForgeHammerRenderer;
 import com.skyeshade.skyent.client.renderer.LVConnectorRenderer;
 import com.skyeshade.skyent.client.renderer.LVElectricPumpRenderer;
 import com.skyeshade.skyent.content.item.HotItemUtil;
@@ -31,6 +33,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.event.ModelEvent;
 import net.neoforged.neoforge.client.event.RegisterItemDecorationsEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
@@ -46,6 +49,8 @@ public final class ClientEvents {
         modEventBus.addListener(ClientEvents::onClientSetup);
         modEventBus.addListener(ClientEvents::onRegisterMenuScreens);
         modEventBus.addListener(ClientEvents::onRegisterRenderers);
+        modEventBus.addListener(ClientEvents::onRegisterAdditionalModels);
+        modEventBus.addListener(ClientEvents::onRegisterGeometryLoaders);
         modEventBus.addListener(ClientEvents::onRegisterItemDecorations);
         NeoForge.EVENT_BUS.addListener(ClientEvents::onClientTick);
         NeoForge.EVENT_BUS.addListener(ClientEvents::onRenderGui);
@@ -72,6 +77,15 @@ public final class ClientEvents {
         event.registerBlockEntityRenderer(ModBlockEntities.GEIGER_COUNTER_PLACED.get(), GeigerCounterPlacedRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.COAL_FORGE.get(), CoalForgeRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.FORGING_ANVIL.get(), ForgingAnvilRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.STEAM_FORGE_HAMMER.get(), SteamForgeHammerRenderer::new);
+    }
+
+    public static void onRegisterAdditionalModels(ModelEvent.RegisterAdditional event) {
+        event.register(SteamForgeHammerRenderer.PISTON_MODEL);
+    }
+
+    public static void onRegisterGeometryLoaders(ModelEvent.RegisterGeometryLoaders event) {
+        event.register(ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "scaled_block_model"), ScaledBlockModel.Loader.INSTANCE);
     }
 
     public static void onRegisterItemDecorations(RegisterItemDecorationsEvent event) {
