@@ -1,16 +1,19 @@
 package com.skyeshade.skyent.event.systems;
 
+import com.skyeshade.skyent.network.PlayLocalSoundPayload;
 import com.skyeshade.skyent.registry.ModItems;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 
 public final class CraftingSoundSystem {
@@ -56,6 +59,10 @@ public final class CraftingSoundSystem {
     }
 
     private static void playCraftSound(Player player, Map<UUID, Long> lastSoundTick, SoundEvent sound, float volume, float pitch) {
+        if (!(player instanceof ServerPlayer serverPlayer)) {
+            return;
+        }
+
         long gameTime = player.level().getGameTime();
         UUID playerId = player.getUUID();
         Long lastTick = lastSoundTick.get(playerId);
@@ -64,6 +71,6 @@ public final class CraftingSoundSystem {
         }
 
         lastSoundTick.put(playerId, gameTime);
-        player.level().playSound(null, player.blockPosition(), sound, SoundSource.PLAYERS, volume, pitch);
+        PacketDistributor.sendToPlayer(serverPlayer, new PlayLocalSoundPayload(BuiltInRegistries.SOUND_EVENT.getKey(sound), volume, pitch));
     }
 }

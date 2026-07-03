@@ -24,6 +24,10 @@ public final class ClientPayloadHandlers {
         context.enqueueWork(() -> setClientGeigerExposure(payload.exposureMillisievertsPerSecond(), payload.radiationSickness()));
     }
 
+    public static void handlePlayLocalSound(PlayLocalSoundPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> playLocalSound(payload));
+    }
+
     private static void setClientRadiationRays(boolean enabled) {
         if (FMLEnvironment.dist != Dist.CLIENT) {
             return;
@@ -74,6 +78,19 @@ public final class ClientPayloadHandlers {
             geigerState.getMethod("setRadiationSickness", double.class).invoke(null, radiationSickness);
         } catch (ReflectiveOperationException exception) {
             throw new IllegalStateException("Unable to update client Geiger exposure state", exception);
+        }
+    }
+
+    private static void playLocalSound(PlayLocalSoundPayload payload) {
+        if (FMLEnvironment.dist != Dist.CLIENT) {
+            return;
+        }
+
+        try {
+            Class<?> localSound = Class.forName("com.skyeshade.skyent.client.sound.LocalSoundClient");
+            localSound.getMethod("handlePayload", PlayLocalSoundPayload.class).invoke(null, payload);
+        } catch (ReflectiveOperationException exception) {
+            throw new IllegalStateException("Unable to play local client sound", exception);
         }
     }
 }

@@ -6,6 +6,7 @@ import com.skyeshade.skyent.content.block.SteamForgeHammerPartBlock;
 import com.skyeshade.skyent.content.fluid.SteelFluidBarrelFluidHandler;
 import com.skyeshade.skyent.network.ClientPayloadHandlers;
 import com.skyeshade.skyent.network.GeigerExposurePayload;
+import com.skyeshade.skyent.network.PlayLocalSoundPayload;
 import com.skyeshade.skyent.network.RadiationDebugOverlayPayload;
 import com.skyeshade.skyent.network.RadiationRayBatchPayload;
 import com.skyeshade.skyent.network.RadiationRaysDebugPayload;
@@ -150,6 +151,11 @@ public final class CommonEvents {
                         RadiationDebugOverlayPayload.TYPE,
                         RadiationDebugOverlayPayload.STREAM_CODEC,
                         ClientPayloadHandlers::handleRadiationDebugOverlay
+                )
+                .playToClient(
+                        PlayLocalSoundPayload.TYPE,
+                        PlayLocalSoundPayload.STREAM_CODEC,
+                        ClientPayloadHandlers::handlePlayLocalSound
                 );
     }
 }
