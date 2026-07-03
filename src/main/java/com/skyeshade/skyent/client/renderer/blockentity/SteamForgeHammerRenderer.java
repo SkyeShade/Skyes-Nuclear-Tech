@@ -16,6 +16,8 @@ import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemDisplayContext;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 
@@ -27,6 +29,13 @@ public class SteamForgeHammerRenderer implements BlockEntityRenderer<SteamForgeH
     private static final float PISTON_OFFSET_X = 0.0F;
     private static final float PISTON_OFFSET_Y = 0.0F;
     private static final float PISTON_OFFSET_Z = 0.0F;
+    private static final float WORK_ITEM_X = 0.5F;
+    private static final float WORK_ITEM_Y = 1.01F;
+    private static final float WORK_ITEM_Z = 0.25F;
+    private static final float WORK_ITEM_SCALE = 1.00F;
+    private static final float WORK_ITEM_ROT_X = -90.0F;
+    private static final float WORK_ITEM_ROT_Y = 0.0F;
+    private static final float WORK_ITEM_ROT_Z = 180.0F;
 
     public SteamForgeHammerRenderer(BlockEntityRendererProvider.Context context) {
     }
@@ -44,10 +53,17 @@ public class SteamForgeHammerRenderer implements BlockEntityRenderer<SteamForgeH
         poseStack.scale(PISTON_SCALE, PISTON_SCALE, PISTON_SCALE);
         poseStack.translate(-0.5D + PISTON_OFFSET_X, PISTON_OFFSET_Y, -0.5D + PISTON_OFFSET_Z);
 
-        // Future piston animation can apply an extra local Y offset here.
+        float pistonOffset = hammer.getPistonOffset(partialTick);
+        poseStack.pushPose();
+        // This translation happens after the 2x model scale, so divide to keep
+        // the final visible travel at exactly one block.
+        poseStack.translate(0.0D, -pistonOffset / PISTON_SCALE, 0.0D);
         renderModel(PISTON_MODEL, state, poseStack, bufferSource, packedLight);
+        poseStack.popPose();
 
         poseStack.popPose();
+
+        renderWorkItem(hammer, facing, poseStack, bufferSource, packedLight, packedOverlay);
     }
 
     private static void renderModel(ModelResourceLocation modelLocation, BlockState state, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight) {
@@ -65,5 +81,39 @@ public class SteamForgeHammerRenderer implements BlockEntityRenderer<SteamForgeH
             case WEST -> 90.0F;
             default -> 0.0F;
         };
+    }
+
+    private static void renderWorkItem(SteamForgeHammerBlockEntity hammer, Direction facing, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
+        ItemStack workStack = hammer.shouldRenderPlateForgeStages()
+                ? ForgeStageRenderUtil.getSteamHammerPlateForgeRenderStack(
+                hammer.getWorkStack(),
+                hammer.getStrikesDone(),
+                hammer.isFinished()
+        )
+                : hammer.getWorkStack();
+        if (workStack.isEmpty()) {
+            return;
+        }
+
+        poseStack.pushPose();
+        // Work item constants are block-local coordinates; rotate around the master center.
+        poseStack.translate(0.5F, 0.0F, 0.5F);
+        poseStack.mulPose(Axis.YP.rotationDegrees(yRotationForFacing(facing)));
+        poseStack.translate(WORK_ITEM_X - 0.5F, WORK_ITEM_Y, WORK_ITEM_Z - 0.5F);
+        poseStack.mulPose(Axis.XP.rotationDegrees(WORK_ITEM_ROT_X));
+        poseStack.mulPose(Axis.YP.rotationDegrees(WORK_ITEM_ROT_Y));
+        poseStack.mulPose(Axis.ZP.rotationDegrees(WORK_ITEM_ROT_Z));
+        poseStack.scale(WORK_ITEM_SCALE, WORK_ITEM_SCALE, WORK_ITEM_SCALE);
+        Minecraft.getInstance().getItemRenderer().renderStatic(
+                workStack,
+                ItemDisplayContext.GROUND,
+                packedLight,
+                packedOverlay,
+                poseStack,
+                bufferSource,
+                hammer.getLevel(),
+                0
+        );
+        poseStack.popPose();
     }
 }

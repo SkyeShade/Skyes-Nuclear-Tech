@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "TTT",
+    "TBT",
+    "TTT"
+  ],
+  "key": {
+    "T": {
+      "item": "skyent:titanium_plate"
+    },
+    "B": {
+      "item": "skyent:steel_bearing"
+    }
+  },
+  "result": {
+    "id": "skyent:titanium_turbine_blade"
+  }
+}

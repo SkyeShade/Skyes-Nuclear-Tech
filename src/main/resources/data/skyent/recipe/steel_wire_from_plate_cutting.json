@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "skyent:steel_plate"
+    },
+    {
+      "item": "skyent:wire_cutters"
+    }
+  ],
+  "result": {
+    "id": "skyent:steel_wire",
+    "count": 2
+  }
+}

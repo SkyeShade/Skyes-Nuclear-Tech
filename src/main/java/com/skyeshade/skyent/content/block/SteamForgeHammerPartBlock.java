@@ -58,7 +58,7 @@ public class SteamForgeHammerPartBlock extends Block {
     @Override
     public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
         if (!level.isClientSide) {
-            BlockPos masterPos = getMasterPos(pos, state);
+            BlockPos masterPos = SteamForgeHammerBlock.getMasterPos(state, pos);
             if (level.getBlockState(masterPos).is(ModBlocks.STEAM_FORGE_HAMMER.get())) {
                 SteamForgeHammerBlock.removeWholeMachine(level, masterPos, !player.isCreative(), player);
             } else {
@@ -70,14 +70,14 @@ public class SteamForgeHammerPartBlock extends Block {
 
     @Override
     protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
-        if (!level.isClientSide && !level.getBlockState(getMasterPos(pos, state)).is(ModBlocks.STEAM_FORGE_HAMMER.get())) {
+        if (!level.isClientSide && !level.getBlockState(SteamForgeHammerBlock.getMasterPos(state, pos)).is(ModBlocks.STEAM_FORGE_HAMMER.get())) {
             level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
         }
     }
 
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
-        BlockPos masterPos = getMasterPos(pos, state);
+        BlockPos masterPos = SteamForgeHammerBlock.getMasterPos(state, pos);
         return level.getBlockState(masterPos).is(ModBlocks.STEAM_FORGE_HAMMER.get()) ? InteractionResult.SUCCESS : InteractionResult.PASS;
     }
 
@@ -109,10 +109,6 @@ public class SteamForgeHammerPartBlock extends Block {
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(FACING, PART_Y);
-    }
-
-    private static BlockPos getMasterPos(BlockPos pos, BlockState state) {
-        return pos.below(state.getValue(PART_Y));
     }
 
     private static VoxelShape[] shapesByFacing(VoxelShape northShape) {

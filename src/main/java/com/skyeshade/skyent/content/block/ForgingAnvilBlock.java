@@ -18,6 +18,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
@@ -43,7 +44,9 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 public class ForgingAnvilBlock extends BaseEntityBlock {
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     public static final MapCodec<ForgingAnvilBlock> CODEC = simpleCodec(ForgingAnvilBlock::new);
-    private static final int REQUIRED_STRIKES = 3;
+    private static final int MANUAL_PLATE_REQUIRED_HITS = 6;
+    private static final int MANUAL_STAGE_1_HIT = 2;
+    private static final int MANUAL_STAGE_2_HIT = 4;
     private static final VoxelShape SHAPE_NORTH = createShape(Direction.NORTH);
     private static final VoxelShape SHAPE_SOUTH = createShape(Direction.SOUTH);
     private static final VoxelShape SHAPE_WEST = createShape(Direction.WEST);
@@ -90,7 +93,7 @@ public class ForgingAnvilBlock extends BaseEntityBlock {
         }
 
         if (stack.is(ModItems.FORGING_HAMMER.get()) && anvil.hasInput()) {
-            return strike(level, pos, player, anvil);
+            return strike(level, pos, player, hand, anvil);
         }
 
         if (stack.is(ModItems.FORGING_HAMMER.get()) && hand == InteractionHand.MAIN_HAND && !anvil.hasInput()) {
@@ -162,12 +165,13 @@ public class ForgingAnvilBlock extends BaseEntityBlock {
         builder.add(FACING);
     }
 
-    private static ItemInteractionResult strike(Level level, BlockPos pos, Player player, ForgingAnvilBlockEntity anvil) {
+    private static ItemInteractionResult strike(Level level, BlockPos pos, Player player, InteractionHand hand, ForgingAnvilBlockEntity anvil) {
         ItemStack input = anvil.getInput();
         ItemStack powderOutput = ForgingAnvilRecipes.getPowderOutput(input).orElse(ItemStack.EMPTY);
         if (!powderOutput.isEmpty()) {
             if (!level.isClientSide) {
                 anvil.setFinishedOutput(powderOutput);
+                damageHammer(player, hand);
                 if (level instanceof ServerLevel serverLevel) {
                     serverLevel.sendParticles(ParticleTypes.CRIT, pos.getX() + 0.5D, pos.getY() + 1.05D, pos.getZ() + 0.5D, 4, 0.18D, 0.05D, 0.18D, 0.02D);
                 }
@@ -181,6 +185,7 @@ public class ForgingAnvilBlock extends BaseEntityBlock {
             if (!level.isClientSide) {
                 HotItemUtil.clearTemperature(coldBoltOutput);
                 anvil.setFinishedOutput(coldBoltOutput);
+                damageHammer(player, hand);
                 if (level instanceof ServerLevel serverLevel) {
                     serverLevel.sendParticles(ParticleTypes.CRIT, pos.getX() + 0.5D, pos.getY() + 1.05D, pos.getZ() + 0.5D, 4, 0.18D, 0.05D, 0.18D, 0.02D);
                 }
@@ -198,10 +203,11 @@ public class ForgingAnvilBlock extends BaseEntityBlock {
 
         if (!level.isClientSide) {
             int strikes = anvil.incrementStrikes();
+            damageHammer(player, hand);
             if (level instanceof ServerLevel serverLevel) {
                 serverLevel.sendParticles(ParticleTypes.CRIT, pos.getX() + 0.5D, pos.getY() + 1.05D, pos.getZ() + 0.5D, 4, 0.18D, 0.05D, 0.18D, 0.02D);
             }
-            if (strikes >= REQUIRED_STRIKES) {
+            if (strikes >= MANUAL_PLATE_REQUIRED_HITS) {
                 ItemStack output = ForgingAnvilRecipes.getPlateOutput(input).orElse(ItemStack.EMPTY);
                 HotItemUtil.clearTemperature(output);
                 anvil.setFinishedOutput(output);
@@ -211,6 +217,13 @@ public class ForgingAnvilBlock extends BaseEntityBlock {
             }
         }
         return ItemInteractionResult.sidedSuccess(level.isClientSide);
+    }
+
+    private static void damageHammer(Player player, InteractionHand hand) {
+        ItemStack hammer = player.getItemInHand(hand);
+        if (hammer.is(ModItems.FORGING_HAMMER.get())) {
+            hammer.hurtAndBreak(1, player, LivingEntity.getSlotForHand(hand));
+        }
     }
 
     private static ItemInteractionResult placeInput(Level level, BlockPos pos, Player player, ForgingAnvilBlockEntity anvil, ItemStack stack) {

@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " B ",
+    "SCS"
+  ],
+  "key": {
+    "B": {
+      "item": "skyent:iron_bolt"
+    },
+    "S": {
+      "item": "skyent:steel_ingot"
+    },
+    "C": {
+      "item": "minecraft:copper_ingot"
+    }
+  },
+  "result": {
+    "id": "skyent:lv_connector",
+    "count": 2
+  }
+}

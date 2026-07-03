@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "SWS",
+    "WIW",
+    "SWS"
+  ],
+  "key": {
+    "S": {
+      "item": "skyent:steel_plate"
+    },
+    "W": {
+      "item": "skyent:copper_wire"
+    },
+    "I": {
+      "item": "skyent:iron_bolt"
+    }
+  },
+  "result": {
+    "id": "skyent:electric_motor"
+  }
+}

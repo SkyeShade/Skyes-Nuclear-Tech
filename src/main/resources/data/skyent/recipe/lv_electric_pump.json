@@ -2,25 +2,25 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "pattern": [
-    "SCS",
-    "MBB",
-    "SCS"
+    "PMP",
+    "MBM",
+    "PTP"
   ],
   "key": {
-    "S": {
-      "item": "skyent:steel_ingot"
-    },
-    "C": {
-      "item": "skyent:copper_plate"
+    "P": {
+      "item": "skyent:steel_plate"
     },
     "M": {
       "item": "skyent:electric_motor"
     },
     "B": {
+      "item": "skyent:steel_fluid_barrel"
+    },
+    "T": {
       "item": "skyent:titanium_turbine_blade"
     }
   },
   "result": {
-    "id": "skyent:lv_steam_turbine"
+    "id": "skyent:lv_electric_pump"
   }
 }

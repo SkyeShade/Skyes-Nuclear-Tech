@@ -4,7 +4,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import com.skyeshade.skyent.content.block.ForgingAnvilBlock;
 import com.skyeshade.skyent.content.blockentity.ForgingAnvilBlockEntity;
-import com.skyeshade.skyent.registry.ModItems;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
@@ -60,14 +59,7 @@ public class ForgingAnvilRenderer implements BlockEntityRenderer<ForgingAnvilBlo
         if (!anvil.hasInput()) {
             return ItemStack.EMPTY;
         }
-        if (anvil.isFinished()) {
-            return anvil.getInput();
-        }
-        return switch (anvil.getStrikes()) {
-            case 1 -> new ItemStack(ModItems.HOT_PLATE_FORGING_STAGE_1.get());
-            case 2 -> new ItemStack(ModItems.HOT_PLATE_FORGING_STAGE_2.get());
-            default -> anvil.getInput();
-        };
+        return ForgeStageRenderUtil.getManualPlateForgeRenderStack(anvil.getInput(), anvil.getStrikes(), anvil.isFinished());
     }
 
     private static Direction getFacing(BlockState state) {

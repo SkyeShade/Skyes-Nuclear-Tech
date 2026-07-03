@@ -2,6 +2,7 @@ package com.skyeshade.skyent.event;
 
 import com.skyeshade.skyent.content.radiation.ModDamageSources;
 import com.skyeshade.skyent.event.systems.BootstrapSystem;
+import com.skyeshade.skyent.event.systems.CraftingSoundSystem;
 import com.skyeshade.skyent.event.systems.HotItemSystem;
 import com.skyeshade.skyent.event.systems.RadiationDebugSystem;
 import com.skyeshade.skyent.event.systems.RadiationExposureSystem;
@@ -29,6 +30,7 @@ public final class ServerEvents {
         NeoForge.EVENT_BUS.addListener(ServerEvents::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(ServerEvents::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(ServerEvents::onPlayerClone);
+        NeoForge.EVENT_BUS.addListener(ServerEvents::onItemCrafted);
         NeoForge.EVENT_BUS.addListener(ServerEvents::onLivingIncomingDamage);
         NeoForge.EVENT_BUS.addListener(ServerEvents::onEntityTick);
         NeoForge.EVENT_BUS.addListener(ServerEvents::onServerTick);
@@ -49,6 +51,10 @@ public final class ServerEvents {
 
     public static void onPlayerClone(PlayerEvent.Clone event) {
         RadiationExposureSystem.onPlayerClone(event);
+    }
+
+    public static void onItemCrafted(PlayerEvent.ItemCraftedEvent event) {
+        CraftingSoundSystem.onItemCrafted(event);
     }
 
     public static void onServerTick(ServerTickEvent.Post event) {

@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "SAS"
+  ],
+  "key": {
+    "S": {
+      "item": "skyent:steel_plate"
+    },
+    "A": {
+      "item": "skyent:aluminum_plate"
+    }
+  },
+  "result": {
+    "id": "skyent:basic_fluid_duct",
+    "count": 8
+  }
+}

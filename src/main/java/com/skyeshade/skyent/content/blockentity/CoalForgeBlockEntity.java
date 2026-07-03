@@ -23,7 +23,7 @@ public class CoalForgeBlockEntity extends BlockEntity {
     public static final int INGOT_SLOT_COUNT = 4;
     public static final int COAL_LAYER_BURN_TICKS = 2400;
     public static final int CHARCOAL_LAYER_BURN_TICKS = 2000;
-    public static final double MAX_TEMPERATURE_C = 1100.0D;
+    public static final double MAX_TEMPERATURE_C = 1200.0D;
     private static final double INGOT_HEAT_PER_TICK_C = 1.2D;
 
     private int burnTicksRemaining;

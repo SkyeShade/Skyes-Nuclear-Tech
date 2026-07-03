@@ -2,6 +2,7 @@ package com.skyeshade.skyent.registry;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.energy.LVWireType;
+import com.skyeshade.skyent.content.item.ForgingHammerItem;
 import com.skyeshade.skyent.content.item.GeigerCounterItem;
 import com.skyeshade.skyent.content.item.LVWireDrumItem;
 import com.skyeshade.skyent.content.item.RadioactiveBlockItem;
@@ -15,6 +16,7 @@ import com.skyeshade.skyent.content.item.ToxicBlockItem;
 import com.skyeshade.skyent.content.item.ToxicItem;
 import com.skyeshade.skyent.content.item.SteelTongsItem;
 import com.skyeshade.skyent.content.item.UraniumBlockItem;
+import com.skyeshade.skyent.content.item.WireCuttersItem;
 import com.skyeshade.skyent.content.item.WrenchItem;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.BlockItem;
@@ -304,22 +306,23 @@ public final class ModItems {
     public static final DeferredItem<Item> COPPER_BOLT = simpleItem("copper_bolt");
     public static final DeferredItem<Item> STEEL_BOLT = simpleItem("steel_bolt");
     public static final DeferredItem<Item> TUNGSTEN_BOLT = simpleItem("tungsten_bolt");
-    public static final DeferredItem<Item> LIGHT_ELECTRIC_MOTOR = simpleItem("light_electric_motor");
-    public static final DeferredItem<Item> MEDIUM_ELECTRIC_MOTOR = simpleItem("medium_electric_motor");
-    public static final DeferredItem<Item> INDUSTRIAL_ELECTRIC_MOTOR = simpleItem("industrial_electric_motor");
-    public static final DeferredItem<Item> HEAVY_ELECTRIC_MOTOR = simpleItem("heavy_electric_motor");
-    public static final DeferredItem<Item> LIGHT_HYDRAULIC = simpleItem("light_hydraulic");
-    public static final DeferredItem<Item> MEDIUM_HYDRAULIC = simpleItem("medium_hydraulic");
-    public static final DeferredItem<Item> INDUSTRIAL_HYDRAULIC = simpleItem("industrial_hydraulic");
-    public static final DeferredItem<Item> HEAVY_HYDRAULIC = simpleItem("heavy_hydraulic");
-    public static final DeferredItem<Item> SUPERHEAVY_ELECTRIC_MOTOR = simpleItem("superheavy_electric_motor");
+    public static final DeferredItem<Item> COPPER_WIRE = simpleItem("copper_wire");
+    public static final DeferredItem<Item> STEEL_WIRE = simpleItem("steel_wire");
+    public static final DeferredItem<Item> STEEL_BEARING = simpleItem("steel_bearing");
+    public static final DeferredItem<Item> TITANIUM_TURBINE_BLADE = simpleItem("titanium_turbine_blade");
+    public static final DeferredItem<Item> ELECTRIC_MOTOR = simpleItem("electric_motor");
+    public static final DeferredItem<Item> HYDRAULIC_COMPONENT = simpleItem("hydraulic_component");
+    public static final DeferredItem<WireCuttersItem> WIRE_CUTTERS = ITEMS.register(
+            "wire_cutters",
+            () -> new WireCuttersItem(new Item.Properties().durability(341))
+    );
     public static final DeferredItem<WrenchItem> WRENCH = ITEMS.register(
             "wrench",
             () -> new WrenchItem(new Item.Properties().stacksTo(1))
     );
-    public static final DeferredItem<Item> FORGING_HAMMER = ITEMS.registerSimpleItem(
+    public static final DeferredItem<ForgingHammerItem> FORGING_HAMMER = ITEMS.register(
             "forging_hammer",
-            new Item.Properties().stacksTo(1)
+            () -> new ForgingHammerItem(new Item.Properties().durability(341))
     );
     public static final DeferredItem<SteelTongsItem> STEEL_TONGS = ITEMS.register(
             "steel_tongs",

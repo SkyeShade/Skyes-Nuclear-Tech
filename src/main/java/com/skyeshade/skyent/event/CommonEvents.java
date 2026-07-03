@@ -1,6 +1,8 @@
 package com.skyeshade.skyent.event;
 
 import com.skyeshade.skyent.event.systems.BootstrapSystem;
+import com.skyeshade.skyent.content.block.SteamForgeHammerBlock;
+import com.skyeshade.skyent.content.block.SteamForgeHammerPartBlock;
 import com.skyeshade.skyent.content.fluid.SteelFluidBarrelFluidHandler;
 import com.skyeshade.skyent.network.ClientPayloadHandlers;
 import com.skyeshade.skyent.network.GeigerExposurePayload;
@@ -8,7 +10,9 @@ import com.skyeshade.skyent.network.RadiationDebugOverlayPayload;
 import com.skyeshade.skyent.network.RadiationRayBatchPayload;
 import com.skyeshade.skyent.network.RadiationRaysDebugPayload;
 import com.skyeshade.skyent.registry.ModBlockEntities;
+import com.skyeshade.skyent.registry.ModBlocks;
 import com.skyeshade.skyent.registry.ModItems;
+import net.minecraft.core.Direction;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.bus.api.IEventBus;
@@ -82,6 +86,28 @@ public final class CommonEvents {
                 Capabilities.FluidHandler.BLOCK,
                 ModBlockEntities.BASIC_FLUID_DUCT.get(),
                 (duct, side) -> duct.getFluidHandler(side)
+        );
+
+        event.registerBlockEntity(
+                Capabilities.FluidHandler.BLOCK,
+                ModBlockEntities.STEAM_FORGE_HAMMER.get(),
+                (hammer, side) -> hammer.getAutomationFluidHandler()
+        );
+
+        event.registerBlock(
+                Capabilities.FluidHandler.BLOCK,
+                (level, pos, state, blockEntity, side) -> {
+                    Direction facing = state.getValue(SteamForgeHammerPartBlock.FACING);
+                    Direction back = facing.getOpposite();
+                    if (side != null && side != back) {
+                        return null;
+                    }
+
+                    return SteamForgeHammerBlock.getMasterBlockEntity(level, state, pos)
+                            .map(hammer -> hammer.getAutomationFluidHandler())
+                            .orElse(null);
+                },
+                ModBlocks.STEAM_FORGE_HAMMER_PART.get()
         );
 
         event.registerBlockEntity(

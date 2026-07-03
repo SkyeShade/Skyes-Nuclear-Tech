@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "PBP",
+    "PBP",
+    "PFP"
+  ],
+  "key": {
+    "P": {
+      "item": "skyent:steel_plate"
+    },
+    "B": {
+      "item": "skyent:steel_fluid_barrel"
+    },
+    "F": {
+      "item": "minecraft:furnace"
+    }
+  },
+  "result": {
+    "id": "skyent:combustion_generator"
+  }
+}

@@ -4,7 +4,8 @@
   "package": "com.skyeshade.skyent.mixin.client",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "MixinItemInHandRenderer"
+    "MixinItemInHandRenderer",
+    "MixinMultiPlayerGameMode"
   ],
   "injectors": {
     "defaultRequire": 1

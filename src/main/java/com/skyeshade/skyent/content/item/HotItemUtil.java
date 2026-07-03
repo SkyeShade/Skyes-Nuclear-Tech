@@ -68,31 +68,31 @@ public final class HotItemUtil {
 
     public static double getForgingTemperature(ItemStack stack) {
         if (stack.is(ModItems.LEAD_INGOT.get())) {
-            return 150.0D;
+            return 25.0D;
         }
         if (stack.is(ModItems.ALUMINUM_INGOT.get())) {
-            return 450.0D;
+            return 400.0D;
         }
         if (stack.is(Items.GOLD_INGOT)) {
-            return 500.0D;
-        }
-        if (stack.is(Items.COPPER_INGOT)) {
             return 650.0D;
         }
-        if (stack.is(ModItems.URANIUM_INGOT.get())) {
+        if (stack.is(Items.COPPER_INGOT)) {
             return 800.0D;
         }
+        if (stack.is(ModItems.URANIUM_INGOT.get())) {
+            return 600.0D;
+        }
         if (stack.is(Items.IRON_INGOT)) {
-            return 900.0D;
+            return 1200.0D;
         }
         if (stack.is(ModItems.STEEL_INGOT.get())) {
             return 1100.0D;
         }
         if (stack.is(ModItems.TITANIUM_INGOT.get())) {
-            return 1400.0D;
+            return 950.0D;
         }
         if (stack.is(ModItems.TUNGSTEN_INGOT.get())) {
-            return 2500.0D;
+            return 1600.0D;
         }
         return Double.POSITIVE_INFINITY;
     }

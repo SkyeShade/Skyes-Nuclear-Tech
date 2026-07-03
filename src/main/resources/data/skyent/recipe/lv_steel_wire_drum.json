@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "WWW",
+    "WSW",
+    "WWW"
+  ],
+  "key": {
+    "W": {
+      "item": "skyent:steel_wire"
+    },
+    "S": {
+      "item": "skyent:steel_ingot"
+    }
+  },
+  "result": {
+    "id": "skyent:lv_steel_wire_drum"
+  }
+}
