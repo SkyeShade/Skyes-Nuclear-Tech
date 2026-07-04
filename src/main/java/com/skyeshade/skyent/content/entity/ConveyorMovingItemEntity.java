@@ -32,7 +32,7 @@ public class ConveyorMovingItemEntity extends Entity {
     public static final double MERGE_SPACING_DISTANCE_FROM_CENTER = 0.55D;
     public static final int MERGE_SPACING_TICKS = 12;
     public static final double ITEM_SPACING_DISTANCE = STRAIGHT_ITEM_SPACING;
-    private static final double ITEM_SPACING_SEARCH_RADIUS = 0.75D;
+    public static final double ITEM_SPACING_SEARCH_RADIUS = 0.75D;
     private static final EntityDataAccessor<ItemStack> DATA_ITEM = SynchedEntityData.defineId(
             ConveyorMovingItemEntity.class,
             EntityDataSerializers.ITEM_STACK
@@ -84,11 +84,22 @@ public class ConveyorMovingItemEntity extends Entity {
 
     private void tickServerMovement() {
         BeltContext belt = findCurrentBelt();
+
+        if (belt == null && lastBeltPos != null) {
+            belt = beltAt(lastBeltPos);
+            if (belt != null) {
+                tryHandleOutput(belt, true);
+                tickMergeSpacing();
+                return;
+            }
+        }
+
         if (belt == null || !belt.surface().canItemStay(level(), belt.pos(), position())) {
             dropAsNormalItem(position(), Vec3.ZERO);
             discard();
             return;
         }
+
         updateBeltTracking(belt);
 
         if (isBlocked()) {
@@ -104,8 +115,15 @@ public class ConveyorMovingItemEntity extends Entity {
         }
 
         Vec3 next = belt.surface().getTravelLocation(level(), belt.pos(), position(), BELT_ITEM_SPEED);
+
+        if (wouldReachOutputEdge(belt, next) && shouldPreHandleOutput(belt)) {
+            setPos(clampedFrontPosition(belt));
+            tryHandleOutput(belt, true);
+            tickMergeSpacing();
+            return;
+        }
+
         if (isItemAheadTooClose(belt, next)) {
-            setPos(belt.surface().getClosestSnappingPosition(level(), belt.pos(), position()));
             tickMergeSpacing();
             return;
         }
@@ -113,6 +131,26 @@ public class ConveyorMovingItemEntity extends Entity {
         setBlocked(false);
         setPos(next.x, next.y, next.z);
         tickMergeSpacing();
+    }
+    private boolean shouldPreHandleOutput(BeltContext belt) {
+        BlockPos outputPos = belt.pos().relative(belt.facing());
+        BlockState outputState = level().getBlockState(outputPos);
+
+
+        if (outputState.getBlock() instanceof ConveyorBeltSurface) {
+            return false;
+        }
+
+
+        return true;
+    }
+    private boolean wouldReachOutputEdge(BeltContext belt, Vec3 pos) {
+        Vec3 center = belt.pos().getCenter();
+        double forwardDistance =
+                (pos.x - center.x) * belt.facing().getStepX()
+                        + (pos.z - center.z) * belt.facing().getStepZ();
+
+        return forwardDistance >= OUTPUT_EDGE_DISTANCE;
     }
 
     private void tickClientVisualMovement() {
@@ -126,9 +164,20 @@ public class ConveyorMovingItemEntity extends Entity {
             tickMergeSpacing();
             return;
         }
+
+        // Client may track merge spacing for visuals/spacing, but must match server rules.
         updateBeltTracking(belt);
 
         Vec3 next = belt.surface().getTravelLocation(level(), belt.pos(), position(), BELT_ITEM_SPEED);
+
+        // Client should also respect terminal outputs, but never insert/drop/discard.
+        if (wouldReachOutputEdge(belt, next) && shouldPreHandleOutput(belt)) {
+            setPos(clampedFrontPosition(belt));
+            tickMergeSpacing();
+            return;
+        }
+
+        // Client-side spacing prediction is needed so items do not visually pile up.
         if (isItemAheadTooClose(belt, next)) {
             tickMergeSpacing();
             return;

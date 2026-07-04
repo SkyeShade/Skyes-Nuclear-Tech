@@ -14,6 +14,7 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
@@ -26,6 +27,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -34,6 +36,9 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 
 public class BasicConveyorBeltBlock extends BaseEntityBlock implements ConveyorBeltSurface {
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
+    public static final BooleanProperty BACK_CONNECTED = BooleanProperty.create("back_connected");
+    public static final BooleanProperty LEFT_CONNECTED = BooleanProperty.create("left_connected");
+    public static final BooleanProperty RIGHT_CONNECTED = BooleanProperty.create("right_connected");
     public static final MapCodec<BasicConveyorBeltBlock> CODEC = simpleCodec(BasicConveyorBeltBlock::new);
     public static final double BELT_ITEM_Y = 5.0D / 16.0D;
     public static final double ITEM_CENTER_PULL = 4.0D;
@@ -41,7 +46,11 @@ public class BasicConveyorBeltBlock extends BaseEntityBlock implements ConveyorB
 
     public BasicConveyorBeltBlock(BlockBehaviour.Properties properties) {
         super(properties);
-        registerDefaultState(stateDefinition.any().setValue(FACING, Direction.NORTH));
+        registerDefaultState(stateDefinition.any()
+                .setValue(FACING, Direction.NORTH)
+                .setValue(BACK_CONNECTED, false)
+                .setValue(LEFT_CONNECTED, false)
+                .setValue(RIGHT_CONNECTED, false));
     }
 
     @Override
@@ -51,7 +60,8 @@ public class BasicConveyorBeltBlock extends BaseEntityBlock implements ConveyorB
 
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
-        return defaultBlockState().setValue(FACING, context.getHorizontalDirection());
+        BlockState state = defaultBlockState().setValue(FACING, context.getHorizontalDirection());
+        return updateConnections(state, context.getLevel(), context.getClickedPos());
     }
 
     @Override
@@ -95,6 +105,20 @@ public class BasicConveyorBeltBlock extends BaseEntityBlock implements ConveyorB
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> blockEntityType) {
         return null;
+    }
+
+    @Override
+    protected BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
+        return updateConnections(state, level, pos);
+    }
+
+    @Override
+    protected void neighborChanged(BlockState state, Level level, BlockPos pos, Block block, BlockPos fromPos, boolean isMoving) {
+        BlockState updatedState = updateConnections(state, level, pos);
+        if (!updatedState.equals(state)) {
+            level.setBlock(pos, updatedState, Block.UPDATE_CLIENTS);
+        }
+        super.neighborChanged(state, level, pos, block, fromPos, isMoving);
     }
 
     @Override
@@ -142,6 +166,25 @@ public class BasicConveyorBeltBlock extends BaseEntityBlock implements ConveyorB
         return level.getEntitiesOfClass(ConveyorMovingItemEntity.class, searchBox, movingItem -> !movingItem.isRemoved()).isEmpty();
     }
 
+    private BlockState updateConnections(BlockState state, LevelAccessor level, BlockPos pos) {
+        Direction facing = state.getValue(FACING);
+        Direction back = facing.getOpposite();
+        Direction left = facing.getCounterClockWise();
+        Direction right = facing.getClockWise();
+
+        return state
+                .setValue(BACK_CONNECTED, isFeedingConveyor(level, pos.relative(back), facing))
+                .setValue(LEFT_CONNECTED, isFeedingConveyor(level, pos.relative(left), right))
+                .setValue(RIGHT_CONNECTED, isFeedingConveyor(level, pos.relative(right), left));
+    }
+
+    private static boolean isFeedingConveyor(LevelAccessor level, BlockPos neighborPos, Direction requiredFacing) {
+        BlockState neighborState = level.getBlockState(neighborPos);
+        return neighborState.getBlock() instanceof ConveyorBeltSurface
+                && neighborState.hasProperty(FACING)
+                && neighborState.getValue(FACING) == requiredFacing;
+    }
+
     @Override
     protected BlockState rotate(BlockState state, Rotation rotation) {
         return state.setValue(FACING, rotation.rotate(state.getValue(FACING)));
@@ -154,6 +197,6 @@ public class BasicConveyorBeltBlock extends BaseEntityBlock implements ConveyorB
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING);
+        builder.add(FACING, BACK_CONNECTED, LEFT_CONNECTED, RIGHT_CONNECTED);
     }
 }

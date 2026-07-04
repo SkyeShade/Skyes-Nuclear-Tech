@@ -1,8 +1,39 @@
 {
   "variants": {
-    "facing=north": { "model": "skyent:block/conveyor_belt", "y": 0 },
-    "facing=east": { "model": "skyent:block/conveyor_belt", "y": 90 },
-    "facing=south": { "model": "skyent:block/conveyor_belt", "y": 180 },
-    "facing=west": { "model": "skyent:block/conveyor_belt", "y": 270 }
+    "back_connected=false,facing=north,left_connected=false,right_connected=false": { "model": "skyent:block/conveyor_belt", "y": 0 },
+    "back_connected=true,facing=north,left_connected=false,right_connected=false": { "model": "skyent:block/conveyor_belt", "y": 0 },
+    "back_connected=false,facing=north,left_connected=false,right_connected=true": { "model": "skyent:block/conveyor_belt_corner", "y": 0 },
+    "back_connected=false,facing=north,left_connected=true,right_connected=false": { "model": "skyent:block/conveyor_belt_corner_inverted", "y": 0 },
+    "back_connected=true,facing=north,left_connected=true,right_connected=false": { "model": "skyent:block/conveyor_belt_back_side_inverted", "y": 0 },
+    "back_connected=true,facing=north,left_connected=false,right_connected=true": { "model": "skyent:block/conveyor_belt_back_side", "y": 0 },
+    "back_connected=false,facing=north,left_connected=true,right_connected=true": { "model": "skyent:block/conveyor_belt_sides", "y": 0 },
+    "back_connected=true,facing=north,left_connected=true,right_connected=true": { "model": "skyent:block/conveyor_belt_quad", "y": 0 },
+
+    "back_connected=false,facing=east,left_connected=false,right_connected=false": { "model": "skyent:block/conveyor_belt", "y": 90 },
+    "back_connected=true,facing=east,left_connected=false,right_connected=false": { "model": "skyent:block/conveyor_belt", "y": 90 },
+    "back_connected=false,facing=east,left_connected=false,right_connected=true": { "model": "skyent:block/conveyor_belt_corner", "y": 90 },
+    "back_connected=false,facing=east,left_connected=true,right_connected=false": { "model": "skyent:block/conveyor_belt_corner_inverted", "y": 90 },
+    "back_connected=true,facing=east,left_connected=true,right_connected=false": { "model": "skyent:block/conveyor_belt_back_side_inverted", "y": 90 },
+    "back_connected=true,facing=east,left_connected=false,right_connected=true": { "model": "skyent:block/conveyor_belt_back_side", "y": 90 },
+    "back_connected=false,facing=east,left_connected=true,right_connected=true": { "model": "skyent:block/conveyor_belt_sides", "y": 90 },
+    "back_connected=true,facing=east,left_connected=true,right_connected=true": { "model": "skyent:block/conveyor_belt_quad", "y": 90 },
+
+    "back_connected=false,facing=south,left_connected=false,right_connected=false": { "model": "skyent:block/conveyor_belt", "y": 180 },
+    "back_connected=true,facing=south,left_connected=false,right_connected=false": { "model": "skyent:block/conveyor_belt", "y": 180 },
+    "back_connected=false,facing=south,left_connected=false,right_connected=true": { "model": "skyent:block/conveyor_belt_corner", "y": 180 },
+    "back_connected=false,facing=south,left_connected=true,right_connected=false": { "model": "skyent:block/conveyor_belt_corner_inverted", "y": 180 },
+    "back_connected=true,facing=south,left_connected=true,right_connected=false": { "model": "skyent:block/conveyor_belt_back_side_inverted", "y": 180 },
+    "back_connected=true,facing=south,left_connected=false,right_connected=true": { "model": "skyent:block/conveyor_belt_back_side", "y": 180 },
+    "back_connected=false,facing=south,left_connected=true,right_connected=true": { "model": "skyent:block/conveyor_belt_sides", "y": 180 },
+    "back_connected=true,facing=south,left_connected=true,right_connected=true": { "model": "skyent:block/conveyor_belt_quad", "y": 180 },
+
+    "back_connected=false,facing=west,left_connected=false,right_connected=false": { "model": "skyent:block/conveyor_belt", "y": 270 },
+    "back_connected=true,facing=west,left_connected=false,right_connected=false": { "model": "skyent:block/conveyor_belt", "y": 270 },
+    "back_connected=false,facing=west,left_connected=false,right_connected=true": { "model": "skyent:block/conveyor_belt_corner", "y": 270 },
+    "back_connected=false,facing=west,left_connected=true,right_connected=false": { "model": "skyent:block/conveyor_belt_corner_inverted", "y": 270 },
+    "back_connected=true,facing=west,left_connected=true,right_connected=false": { "model": "skyent:block/conveyor_belt_back_side_inverted", "y": 270 },
+    "back_connected=true,facing=west,left_connected=false,right_connected=true": { "model": "skyent:block/conveyor_belt_back_side", "y": 270 },
+    "back_connected=false,facing=west,left_connected=true,right_connected=true": { "model": "skyent:block/conveyor_belt_sides", "y": 270 },
+    "back_connected=true,facing=west,left_connected=true,right_connected=true": { "model": "skyent:block/conveyor_belt_quad", "y": 270 }
   }
 }
