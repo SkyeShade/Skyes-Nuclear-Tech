@@ -40,8 +40,13 @@ public class LVSteamTurbineBlockEntity extends BlockEntity implements MenuProvid
     public static final int STEAM_CAPACITY_MB = 8_000;
     public static final int ENERGY_CAPACITY_RJ = 32_000;
     public static final ElectricalTier OUTPUT_TIER = ElectricalTier.LV;
-    public static final double MAX_OUTPUT_CURRENT_AMPS = 1.0D;
-    public static final int MAX_OUTPUT_RJ_PER_TICK = 32;
+    public static final int OUTPUT_VOLTAGE = OUTPUT_TIER.voltage();
+    public static final double GENERATED_CURRENT_AMPS = 1.0D;
+    public static final double MAX_OUTPUT_CURRENT_AMPS = 2.0D;
+    // Turbine generation remains 1 amp LV = 32 RJ/t.
+    public static final int GENERATED_RJ_PER_TICK = (int) Math.round(OUTPUT_VOLTAGE * GENERATED_CURRENT_AMPS);
+    // Output/export is allowed to burst up to 2 amps LV = 64 RJ/t from the internal buffer.
+    public static final int MAX_OUTPUT_RJ_PER_TICK = (int) Math.round(OUTPUT_VOLTAGE * MAX_OUTPUT_CURRENT_AMPS);
     public static final double MAX_RPM = 1_000.0D;
     public static final double RPM_RAMP_UP_PER_TICK = 2.0D;
     public static final double RPM_RAMP_DOWN_PER_TICK = 8.0D;
@@ -171,7 +176,7 @@ public class LVSteamTurbineBlockEntity extends BlockEntity implements MenuProvid
         }
 
         if (turbine.rpm > 0.0D && turbine.rjStorage.getAvailableRJCapacity() > 0) {
-            int generated = Math.max(1, Mth.floor(MAX_OUTPUT_RJ_PER_TICK * (turbine.rpm / MAX_RPM)));
+            int generated = Math.max(1, Mth.floor(GENERATED_RJ_PER_TICK * (turbine.rpm / MAX_RPM)));
             turbine.currentOutput = turbine.rjStorage.receiveRJ(generated, false);
             changed |= turbine.currentOutput > 0;
         }
@@ -333,6 +338,7 @@ public class LVSteamTurbineBlockEntity extends BlockEntity implements MenuProvid
         return rjStorage.getStoredRJ();
     }
 
+    @Override
     public int getMaxOutputRJPerTick() {
         return MAX_OUTPUT_RJ_PER_TICK;
     }

@@ -166,19 +166,19 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
             return;
         }
 
-        // Client may track merge spacing for visuals/spacing, but must match server rules.
+
         updateBeltTracking(belt);
 
         Vec3 next = belt.surface().getTravelLocation(level(), belt.pos(), position(), BELT_ITEM_SPEED);
 
-        // Client should also respect terminal outputs, but never insert/drop/discard.
+
         if (wouldReachOutputEdge(belt, next) && shouldPreHandleOutput(belt)) {
             setPos(clampedFrontPosition(belt));
             tickMergeSpacing();
             return;
         }
 
-        // Client-side spacing prediction is needed so items do not visually pile up.
+
         if (isItemAheadTooClose(belt, next)) {
             tickMergeSpacing();
             return;

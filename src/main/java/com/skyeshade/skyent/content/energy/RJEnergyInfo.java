@@ -13,6 +13,10 @@ public interface RJEnergyInfo {
         return 0;
     }
 
+    default int getMaxOutputRJPerTick() {
+        return 0;
+    }
+
     default String getVoltageTierName() {
         return "";
     }

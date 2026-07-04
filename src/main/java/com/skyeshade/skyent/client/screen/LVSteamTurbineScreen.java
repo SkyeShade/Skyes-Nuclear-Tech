@@ -5,7 +5,9 @@ import com.skyeshade.skyent.content.blockentity.LVSteamTurbineBlockEntity;
 import com.skyeshade.skyent.content.energy.EnergyUnits;
 import com.skyeshade.skyent.content.menu.LVSteamTurbineMenu;
 import com.skyeshade.skyent.registry.ModFluids;
+import java.text.NumberFormat;
 import java.util.List;
+import java.util.Locale;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -45,6 +47,7 @@ public class LVSteamTurbineScreen extends AbstractContainerScreen<LVSteamTurbine
     private static final int RPM_GAUGE_OVERLAY_HEIGHT = 24;
     private static final int RPM_GAUGE_FILL_U = 187;
     private static final int RPM_GAUGE_FILL_V = 66;
+    private static final NumberFormat NUMBER_FORMAT = NumberFormat.getIntegerInstance(Locale.US);
     private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(
             SkyesNuclearTech.MOD_ID,
             "textures/gui/lv_steam_turbine.png"
@@ -163,11 +166,15 @@ public class LVSteamTurbineScreen extends AbstractContainerScreen<LVSteamTurbine
 
     private List<Component> energyTooltip() {
         return List.of(
-                Component.literal(menu.getEnergyStoredRJ() + " / " + menu.getMaxEnergyStoredRJ() + " " + EnergyUnits.UNIT).withStyle(ChatFormatting.RED),
-                Component.literal("Output: " + menu.getCurrentOutput() + " " + EnergyUnits.UNIT_PER_TICK).withStyle(ChatFormatting.RED),
-                Component.literal("Tier: " + LVSteamTurbineBlockEntity.OUTPUT_TIER.displayName()).withStyle(ChatFormatting.RED),
-                Component.literal("Max output: " + LVSteamTurbineBlockEntity.MAX_OUTPUT_CURRENT_AMPS + " A").withStyle(ChatFormatting.RED)
+                Component.literal("Energy: " + format(menu.getEnergyStoredRJ()) + " / " + format(menu.getMaxEnergyStoredRJ()) + " " + EnergyUnits.UNIT).withStyle(ChatFormatting.RED),
+                Component.literal("Generating: " + format(menu.getCurrentOutput()) + " " + EnergyUnits.UNIT_PER_TICK).withStyle(ChatFormatting.RED),
+                Component.literal("Max Export: " + format(LVSteamTurbineBlockEntity.MAX_OUTPUT_RJ_PER_TICK) + " " + EnergyUnits.UNIT_PER_TICK).withStyle(ChatFormatting.RED),
+                Component.literal("Voltage: " + LVSteamTurbineBlockEntity.OUTPUT_VOLTAGE + " V " + LVSteamTurbineBlockEntity.OUTPUT_TIER.name()).withStyle(ChatFormatting.RED)
         );
+    }
+
+    private static String format(int value) {
+        return NUMBER_FORMAT.format(value);
     }
 
     private List<Component> rpmTooltip() {

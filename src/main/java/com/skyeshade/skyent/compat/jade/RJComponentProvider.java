@@ -35,6 +35,7 @@ public enum RJComponentProvider implements IBlockComponentProvider, IServerDataP
     private static final String DATA_CAPACITY_RJ = "SkyentCapacityRJ";
     private static final String DATA_GENERATION_RJ_PER_TICK = "SkyentGenerationRJPerTick";
     private static final String DATA_USAGE_RJ_PER_TICK = "SkyentUsageRJPerTick";
+    private static final String DATA_MAX_OUTPUT_RJ_PER_TICK = "SkyentMaxOutputRJPerTick";
     private static final String DATA_VOLTAGE_TIER = "SkyentVoltageTier";
     private static final String DATA_BLOCK_ENTITY_CLASS = "SkyentBlockEntityClass";
     private static final NumberFormat NUMBER_FORMAT = NumberFormat.getIntegerInstance(Locale.US);
@@ -75,6 +76,7 @@ public enum RJComponentProvider implements IBlockComponentProvider, IServerDataP
         data.putInt(DATA_CAPACITY_RJ, capacityRJ);
         data.putInt(DATA_GENERATION_RJ_PER_TICK, energyInfo.getCurrentGenerationRJPerTick());
         data.putInt(DATA_USAGE_RJ_PER_TICK, energyInfo.getCurrentUsageRJPerTick());
+        data.putInt(DATA_MAX_OUTPUT_RJ_PER_TICK, energyInfo.getMaxOutputRJPerTick());
         data.putString(DATA_VOLTAGE_TIER, energyInfo.getVoltageTierName());
         data.putString(DATA_BLOCK_ENTITY_CLASS, blockEntityClassName);
     }
@@ -102,7 +104,12 @@ public enum RJComponentProvider implements IBlockComponentProvider, IServerDataP
 
         int generation = data.getInt(DATA_GENERATION_RJ_PER_TICK);
         if (generation > 0) {
-            tooltip.add(Component.literal("Output: " + format(generation) + " " + EnergyUnits.UNIT_PER_TICK));
+            tooltip.add(Component.literal("Generating: " + format(generation) + " " + EnergyUnits.UNIT_PER_TICK));
+        }
+
+        int maxOutput = data.getInt(DATA_MAX_OUTPUT_RJ_PER_TICK);
+        if (maxOutput > 0) {
+            tooltip.add(Component.literal("Max Export: " + format(maxOutput) + " " + EnergyUnits.UNIT_PER_TICK));
         }
 
         int usage = data.getInt(DATA_USAGE_RJ_PER_TICK);
