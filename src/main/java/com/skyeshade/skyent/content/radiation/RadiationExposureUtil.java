@@ -3,7 +3,9 @@ package com.skyeshade.skyent.content.radiation;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -40,6 +42,7 @@ public final class RadiationExposureUtil {
         SourceScanResult sourceScan = findRadioactiveSources(level, entityPos, scanRadius, registry);
         List<SourceCandidate> sources = sourceScan.sources();
         sources.addAll(findCarriedRadiationSources(level, entityPos, scanRadius, excludedEntity));
+        sources.addAll(findRadioactiveCarrierEntitySources(level, entityPos, scanRadius));
         int foundSources = sources.size();
         int contributingSources = 0;
         double nearestSourceDistance = Double.NaN;
@@ -134,6 +137,45 @@ public final class RadiationExposureUtil {
             }
 
             Vec3 sourceCenter = carrier.position().add(0.0D, carrier.getBbHeight() * 0.5D, 0.0D);
+            double distance = sourceCenter.distanceTo(entityPos);
+            if (distance > scanRadius) {
+                continue;
+            }
+
+            double baseContribution = 0.0D;
+            if (distance <= range) {
+                double clampedDistance = Math.max(1.0D, distance);
+                baseContribution = strength / (clampedDistance * clampedDistance);
+            }
+
+            sources.add(new SourceCandidate(null, sourceCenter, distance, baseContribution, null));
+        }
+
+        return sources;
+    }
+
+    private static List<SourceCandidate> findRadioactiveCarrierEntitySources(ServerLevel level, Vec3 entityPos, double scanRadius) {
+        double queryRadius = Math.min(scanRadius, CarriedRadiationUtil.MAX_CARRIED_RADIATION_RANGE);
+        if (queryRadius <= 0.0D) {
+            return List.of();
+        }
+
+        AABB searchBox = new AABB(entityPos, entityPos).inflate(queryRadius);
+        List<SourceCandidate> sources = new ArrayList<>();
+        for (Entity entity : level.getEntitiesOfClass(Entity.class, searchBox, candidate -> !candidate.isRemoved() && candidate instanceof RadioactiveCarrierEntity)) {
+            if (entity instanceof LivingEntity) {
+                continue;
+            }
+
+            RadioactiveCarrierEntity carrier = (RadioactiveCarrierEntity) entity;
+            ItemStack stack = carrier.skyent$getRadiationStack();
+            double strength = RadiationItemValues.getStackRadiation(stack);
+            int range = CarriedRadiationUtil.carriedRadiationRange(strength);
+            if (range <= 0) {
+                continue;
+            }
+
+            Vec3 sourceCenter = carrier.skyent$getRadiationPosition();
             double distance = sourceCenter.distanceTo(entityPos);
             if (distance > scanRadius) {
                 continue;

@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.content.entity;
 
 import com.skyeshade.skyent.content.conveyor.ConveyorBeltSurface;
+import com.skyeshade.skyent.content.radiation.RadioactiveCarrierEntity;
 import com.skyeshade.skyent.registry.ModEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -22,7 +23,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
-public class ConveyorMovingItemEntity extends Entity {
+public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarrierEntity {
     public static final double BELT_ITEM_SPEED = 0.062D;
     public static final double BELT_ITEM_Y = 5.0D / 16.0D;
     public static final double OUTPUT_EDGE_DISTANCE = 0.52D;
@@ -336,6 +337,16 @@ public class ConveyorMovingItemEntity extends Entity {
 
     public ItemStack getItemStack() {
         return entityData.get(DATA_ITEM);
+    }
+
+    @Override
+    public ItemStack skyent$getRadiationStack() {
+        return getItemStack();
+    }
+
+    @Override
+    public Vec3 skyent$getRadiationPosition() {
+        return position();
     }
 
     public void setItemStack(ItemStack stack) {
