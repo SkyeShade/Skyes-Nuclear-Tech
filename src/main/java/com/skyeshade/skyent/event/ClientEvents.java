@@ -13,6 +13,7 @@ import com.skyeshade.skyent.client.renderer.blockentity.CoalForgeRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.ForgingAnvilRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.GeigerCounterPlacedRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.SteamForgeHammerRenderer;
+import com.skyeshade.skyent.client.renderer.entity.ConveyorMovingItemRenderer;
 import com.skyeshade.skyent.client.renderer.LVConnectorRenderer;
 import com.skyeshade.skyent.client.renderer.LVElectricPumpRenderer;
 import com.skyeshade.skyent.client.sound.MachineSoundManager;
@@ -25,6 +26,7 @@ import com.skyeshade.skyent.client.screen.LVElectricPumpScreen;
 import com.skyeshade.skyent.client.screen.LVSteamTurbineScreen;
 import com.skyeshade.skyent.event.systems.BootstrapSystem;
 import com.skyeshade.skyent.registry.ModBlockEntities;
+import com.skyeshade.skyent.registry.ModEntities;
 import com.skyeshade.skyent.registry.ModItems;
 import com.skyeshade.skyent.registry.ModMenus;
 import net.minecraft.client.renderer.item.ItemProperties;
@@ -75,6 +77,7 @@ public final class ClientEvents {
     }
 
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
+        event.registerEntityRenderer(ModEntities.CONVEYOR_MOVING_ITEM.get(), ConveyorMovingItemRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.LV_CONNECTOR.get(), LVConnectorRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.LV_ELECTRIC_PUMP.get(), LVElectricPumpRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.GEIGER_COUNTER_PLACED.get(), GeigerCounterPlacedRenderer::new);

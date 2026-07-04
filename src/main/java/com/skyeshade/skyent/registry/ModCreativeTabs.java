@@ -32,6 +32,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.LV_ELECTRIC_PUMP.get());
                         output.accept(ModItems.LV_STEAM_TURBINE.get());
                         output.accept(ModItems.BASIC_FLUID_DUCT.get());
+                        output.accept(ModItems.BASIC_CONVEYOR_BELT.get());
                         output.accept(ModItems.SILT.get());
                         output.accept(ModItems.DEAD_GRASS.get());
                         output.accept(ModItems.DEAD_SHORT_GRASS.get());

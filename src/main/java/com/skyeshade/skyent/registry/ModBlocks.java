@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.registry;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
+import com.skyeshade.skyent.content.block.BasicConveyorBeltBlock;
 import com.skyeshade.skyent.content.block.BasicFluidDuctBlock;
 import com.skyeshade.skyent.content.block.BrickBlastFurnaceBlock;
 import com.skyeshade.skyent.content.block.CoalForgeBlock;
@@ -115,6 +116,13 @@ public final class ModBlocks {
     public static final DeferredBlock<BasicFluidDuctBlock> BASIC_FLUID_DUCT = BLOCKS.registerBlock(
             "basic_fluid_duct",
             BasicFluidDuctBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .noOcclusion()
+    );
+
+    public static final DeferredBlock<BasicConveyorBeltBlock> BASIC_CONVEYOR_BELT = BLOCKS.registerBlock(
+            "basic_conveyor_belt",
+            BasicConveyorBeltBlock::new,
             BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
                     .noOcclusion()
     );

@@ -14,7 +14,7 @@
       "item": "skyent:steel_block"
     },
     "P": {
-      "item": "minecraft:piston"
+      "item": "skyent:hydraulic_component"
     }
   },
   "result": {

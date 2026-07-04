@@ -7,6 +7,7 @@ import com.skyeshade.skyent.event.ServerEvents;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import com.skyeshade.skyent.registry.ModBlocks;
 import com.skyeshade.skyent.registry.ModCreativeTabs;
+import com.skyeshade.skyent.registry.ModEntities;
 import com.skyeshade.skyent.registry.ModFluids;
 import com.skyeshade.skyent.registry.ModFluidTypes;
 import com.skyeshade.skyent.registry.ModItems;
@@ -33,6 +34,7 @@ public final class SkyesNuclearTech {
         ModBlocks.register(modEventBus);
         ModItems.register(modEventBus);
         ModBlockEntities.register(modEventBus);
+        ModEntities.register(modEventBus);
         ModMenus.register(modEventBus);
         ModSounds.register(modEventBus);
         ModCreativeTabs.register(modEventBus);

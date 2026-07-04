@@ -96,6 +96,12 @@ public final class CommonEvents {
         );
 
         event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
+                ModBlockEntities.BASIC_CONVEYOR_BELT.get(),
+                (belt, side) -> belt.getItemHandler()
+        );
+
+        event.registerBlockEntity(
                 Capabilities.FluidHandler.BLOCK,
                 ModBlockEntities.STEAM_FORGE_HAMMER.get(),
                 (hammer, side) -> hammer.getAutomationFluidHandler()
