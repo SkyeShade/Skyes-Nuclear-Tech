@@ -38,5 +38,11 @@
     "sounds": [
       "skyent:geiger8"
     ]
+  },
+  "conveyor_loop": {
+    "sounds": [
+      "skyent:conveyor_loop"
+    ],
+    "subtitle": "subtitle.skyent.conveyor_loop"
   }
 }

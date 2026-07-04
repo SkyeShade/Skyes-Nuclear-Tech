@@ -2,6 +2,7 @@ package com.skyeshade.skyent.content.blockentity;
 
 import com.skyeshade.skyent.content.block.LVCrusherBlock;
 import com.skyeshade.skyent.content.energy.ElectricalTier;
+import com.skyeshade.skyent.content.energy.LVEnergyConstants;
 import com.skyeshade.skyent.content.energy.RJEnergyInfo;
 import com.skyeshade.skyent.content.energy.RJStorage;
 import com.skyeshade.skyent.content.item.LVCrusherRecipes;
@@ -36,6 +37,8 @@ public class LVCrusherBlockEntity extends BlockEntity implements MenuProvider, R
     public static final int MAX_PROGRESS = 300;
     public static final ElectricalTier REQUIRED_TIER = ElectricalTier.LV;
     public static final double RUNNING_CURRENT_AMPS = 1.0D;
+    public static final double MAX_INPUT_CURRENT_AMPS = LVEnergyConstants.LV_MACHINE_MAX_INPUT_CURRENT_AMPS;
+    public static final int MAX_INPUT_RJ_PER_TICK = LVEnergyConstants.LV_MACHINE_MAX_INPUT_RJ_PER_TICK;
     public static final int INPUT_SLOT = 0;
     public static final int OUTPUT_SLOT = 1;
     private static final int INVENTORY_SLOT_COUNT = 2;
@@ -199,11 +202,11 @@ public class LVCrusherBlockEntity extends BlockEntity implements MenuProvider, R
     }
 
     public int getAvailableRJCapacity() {
-        return rjStorage.getAvailableRJCapacity();
+        return Math.min(rjStorage.getAvailableRJCapacity(), MAX_INPUT_RJ_PER_TICK);
     }
 
     public int receiveRJ(int maxAmount, boolean simulate) {
-        int received = rjStorage.receiveRJ(maxAmount, simulate);
+        int received = rjStorage.receiveRJ(Math.min(maxAmount, MAX_INPUT_RJ_PER_TICK), simulate);
         if (received > 0 && !simulate) {
             setChanged();
         }

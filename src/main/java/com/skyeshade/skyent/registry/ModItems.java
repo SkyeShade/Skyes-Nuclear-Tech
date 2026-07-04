@@ -94,6 +94,11 @@ public final class ModItems {
             new Item.Properties()
     );
 
+    public static final DeferredItem<BlockItem> CONVEYOR_EXPORTER = ITEMS.registerSimpleBlockItem(
+            ModBlocks.CONVEYOR_EXPORTER,
+            new Item.Properties()
+    );
+
     public static final DeferredItem<BlockItem> SILT = ITEMS.registerSimpleBlockItem(
             ModBlocks.SILT,
             new Item.Properties()

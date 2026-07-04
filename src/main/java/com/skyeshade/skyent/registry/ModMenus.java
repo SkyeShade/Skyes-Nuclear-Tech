@@ -3,6 +3,7 @@ package com.skyeshade.skyent.registry;
 import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.menu.BrickBlastFurnaceMenu;
 import com.skyeshade.skyent.content.menu.CombustionGeneratorMenu;
+import com.skyeshade.skyent.content.menu.ConveyorExporterMenu;
 import com.skyeshade.skyent.content.menu.ElectricFurnaceMenu;
 import com.skyeshade.skyent.content.menu.LVCrusherMenu;
 import com.skyeshade.skyent.content.menu.LVElectricPumpMenu;
@@ -37,6 +38,9 @@ public final class ModMenus {
 
     public static final DeferredHolder<MenuType<?>, MenuType<LVSteamTurbineMenu>> LV_STEAM_TURBINE =
             MENUS.register("lv_steam_turbine", () -> IMenuTypeExtension.create(LVSteamTurbineMenu::new));
+
+    public static final DeferredHolder<MenuType<?>, MenuType<ConveyorExporterMenu>> CONVEYOR_EXPORTER =
+            MENUS.register("conveyor_exporter", () -> IMenuTypeExtension.create(ConveyorExporterMenu::new));
 
     private ModMenus() {
     }

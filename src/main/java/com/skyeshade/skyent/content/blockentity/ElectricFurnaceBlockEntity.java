@@ -2,11 +2,13 @@ package com.skyeshade.skyent.content.blockentity;
 
 import com.skyeshade.skyent.content.block.ElectricFurnaceBlock;
 import com.skyeshade.skyent.content.energy.ElectricalTier;
+import com.skyeshade.skyent.content.energy.LVEnergyConstants;
 import com.skyeshade.skyent.content.energy.RJEnergyInfo;
 import com.skyeshade.skyent.content.energy.RJStorage;
 import com.skyeshade.skyent.content.menu.ElectricFurnaceMenu;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -37,6 +39,8 @@ public class ElectricFurnaceBlockEntity extends BlockEntity implements MenuProvi
     public static final ElectricalTier REQUIRED_TIER = ElectricalTier.LV;
     public static final int REQUIRED_VOLTAGE = REQUIRED_TIER.voltage();
     public static final double RUNNING_CURRENT_AMPS = 0.5D;
+    public static final double MAX_INPUT_CURRENT_AMPS = LVEnergyConstants.LV_MACHINE_MAX_INPUT_CURRENT_AMPS;
+    public static final int MAX_INPUT_RJ_PER_TICK = LVEnergyConstants.LV_MACHINE_MAX_INPUT_RJ_PER_TICK;
     public static final int INPUT_SLOT = 0;
     public static final int OUTPUT_SLOT = 1;
     public static final int DEFAULT_COOK_TIME = 200;
@@ -200,16 +204,16 @@ public class ElectricFurnaceBlockEntity extends BlockEntity implements MenuProvi
         return inventory;
     }
 
-    public IItemHandler getAutomationItemHandler() {
+    public IItemHandler getAutomationItemHandler(@Nullable Direction side) {
         return automationItemHandler;
     }
 
     public int getAvailableRJCapacity() {
-        return rjStorage.getAvailableRJCapacity();
+        return Math.min(rjStorage.getAvailableRJCapacity(), MAX_INPUT_RJ_PER_TICK);
     }
 
     public int receiveRJ(int maxAmount, boolean simulate) {
-        int received = rjStorage.receiveRJ(maxAmount, simulate);
+        int received = rjStorage.receiveRJ(Math.min(maxAmount, MAX_INPUT_RJ_PER_TICK), simulate);
         if (received > 0 && !simulate) {
             setChanged();
         }

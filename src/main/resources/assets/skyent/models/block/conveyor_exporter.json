@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "skyent:block/conveyor_exporter_front",
+    "down": "skyent:block/conveyor_exporter_bottom",
+    "up": "skyent:block/conveyor_exporter_top",
+    "north": "skyent:block/conveyor_exporter_front",
+    "south": "skyent:block/conveyor_exporter_back",
+    "east": "skyent:block/conveyor_exporter_sides",
+    "west": "skyent:block/conveyor_exporter_sides"
+  }
+}

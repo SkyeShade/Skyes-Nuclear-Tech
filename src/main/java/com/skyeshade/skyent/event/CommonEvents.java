@@ -50,7 +50,7 @@ public final class CommonEvents {
         event.registerBlockEntity(
                 Capabilities.ItemHandler.BLOCK,
                 ModBlockEntities.ELECTRIC_FURNACE.get(),
-                (furnace, side) -> furnace.getAutomationItemHandler()
+                (furnace, side) -> furnace.getAutomationItemHandler(side)
         );
 
         event.registerBlockEntity(

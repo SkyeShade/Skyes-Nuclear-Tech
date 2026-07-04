@@ -6,6 +6,7 @@ import com.skyeshade.skyent.content.blockentity.BasicFluidDuctBlockEntity;
 import com.skyeshade.skyent.content.blockentity.BrickBlastFurnaceBlockEntity;
 import com.skyeshade.skyent.content.blockentity.CoalForgeBlockEntity;
 import com.skyeshade.skyent.content.blockentity.CombustionGeneratorBlockEntity;
+import com.skyeshade.skyent.content.blockentity.ConveyorExporterBlockEntity;
 import com.skyeshade.skyent.content.blockentity.CoriumBlockEntity;
 import com.skyeshade.skyent.content.blockentity.ElectricFurnaceBlockEntity;
 import com.skyeshade.skyent.content.blockentity.ForgingAnvilBlockEntity;
@@ -93,6 +94,12 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("basic_conveyor_belt", () -> BlockEntityType.Builder.of(
                     BasicConveyorBeltBlockEntity::new,
                     ModBlocks.BASIC_CONVEYOR_BELT.get()
+            ).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ConveyorExporterBlockEntity>> CONVEYOR_EXPORTER =
+            BLOCK_ENTITIES.register("conveyor_exporter", () -> BlockEntityType.Builder.of(
+                    ConveyorExporterBlockEntity::new,
+                    ModBlocks.CONVEYOR_EXPORTER.get()
             ).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<LVConnectorBlockEntity>> LV_CONNECTOR =

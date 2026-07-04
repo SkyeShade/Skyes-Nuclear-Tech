@@ -3,6 +3,7 @@ package com.skyeshade.skyent.content.block;
 import com.mojang.serialization.MapCodec;
 import com.skyeshade.skyent.content.blockentity.BasicConveyorBeltBlockEntity;
 import com.skyeshade.skyent.content.conveyor.ConveyorBeltSurface;
+import com.skyeshade.skyent.content.conveyor.ConveyorVisualFeeder;
 import com.skyeshade.skyent.content.entity.ConveyorMovingItemEntity;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import javax.annotation.Nullable;
@@ -180,6 +181,10 @@ public class BasicConveyorBeltBlock extends BaseEntityBlock implements ConveyorB
 
     private static boolean isFeedingConveyor(LevelAccessor level, BlockPos neighborPos, Direction requiredFacing) {
         BlockState neighborState = level.getBlockState(neighborPos);
+        if (neighborState.getBlock() instanceof ConveyorVisualFeeder feeder) {
+            return feeder.skyent$feedsConveyorToward(neighborState, requiredFacing);
+        }
+
         return neighborState.getBlock() instanceof ConveyorBeltSurface
                 && neighborState.hasProperty(FACING)
                 && neighborState.getValue(FACING) == requiredFacing;

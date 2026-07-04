@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "PSP",
+    "SFS",
+    "PCP"
+  ],
+  "key": {
+    "P": {
+      "item": "skyent:steel_plate"
+    },
+    "S": {
+      "item": "skyent:steel_wire"
+    },
+    "F": {
+      "item": "minecraft:furnace"
+    },
+    "C": {
+      "item": "skyent:copper_wire"
+    }
+  },
+  "result": {
+    "id": "skyent:electric_furnace"
+  }
+}

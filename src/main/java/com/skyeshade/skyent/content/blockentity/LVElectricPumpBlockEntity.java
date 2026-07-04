@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.content.blockentity;
 
 import com.skyeshade.skyent.content.energy.ElectricalTier;
+import com.skyeshade.skyent.content.energy.LVEnergyConstants;
 import com.skyeshade.skyent.content.energy.RJEnergyInfo;
 import com.skyeshade.skyent.content.energy.RJStorage;
 import com.skyeshade.skyent.content.fluid.SafeFluidItemUtil;
@@ -45,7 +46,8 @@ public class LVElectricPumpBlockEntity extends BlockEntity implements MenuProvid
     public static final int ENERGY_USAGE_RJ_PER_TICK = 16;
     public static final ElectricalTier REQUIRED_TIER = ElectricalTier.LV;
     public static final int REQUIRED_VOLTAGE = REQUIRED_TIER.voltage();
-    public static final double MAX_INPUT_AMPS = 2.0D;
+    public static final double MAX_INPUT_AMPS = LVEnergyConstants.LV_MACHINE_MAX_INPUT_CURRENT_AMPS;
+    public static final int MAX_INPUT_RJ_PER_TICK = LVEnergyConstants.LV_MACHINE_MAX_INPUT_RJ_PER_TICK;
     public static final int TANK_CAPACITY_MB = 40_000;
     public static final int PUMP_RATE_MB_PER_TICK = 50;
     public static final int FLUID_OUTPUT_MB_PER_TICK = 100;
@@ -536,11 +538,11 @@ public class LVElectricPumpBlockEntity extends BlockEntity implements MenuProvid
     }
 
     public int getAvailableRJCapacity() {
-        return rjStorage.getAvailableRJCapacity();
+        return Math.min(rjStorage.getAvailableRJCapacity(), MAX_INPUT_RJ_PER_TICK);
     }
 
     public int receiveRJ(int maxAmount, boolean simulate) {
-        int received = rjStorage.receiveRJ(maxAmount, simulate);
+        int received = rjStorage.receiveRJ(Math.min(maxAmount, MAX_INPUT_RJ_PER_TICK), simulate);
         if (received > 0 && !simulate) {
             setChanged();
         }
