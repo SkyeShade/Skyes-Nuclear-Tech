@@ -12,6 +12,7 @@ import com.skyeshade.skyent.content.block.DeadPlantBlock;
 import com.skyeshade.skyent.content.block.ElectricFurnaceBlock;
 import com.skyeshade.skyent.content.block.ForgingAnvilBlock;
 import com.skyeshade.skyent.content.block.GeigerCounterPlacedBlock;
+import com.skyeshade.skyent.content.block.LVCrusherBlock;
 import com.skyeshade.skyent.content.block.LVConverterBlock;
 import com.skyeshade.skyent.content.block.LVConnectorBlock;
 import com.skyeshade.skyent.content.block.LVElectricPumpBlock;
@@ -42,6 +43,12 @@ public final class ModBlocks {
             "electric_furnace",
             ElectricFurnaceBlock::new,
             BlockBehaviour.Properties.ofFullCopy(Blocks.FURNACE)
+    );
+
+    public static final DeferredBlock<LVCrusherBlock> LV_CRUSHER = BLOCKS.registerBlock(
+            "lv_crusher",
+            LVCrusherBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
     );
 
     public static final DeferredBlock<BrickBlastFurnaceBlock> BRICK_BLAST_FURNACE = BLOCKS.registerBlock(

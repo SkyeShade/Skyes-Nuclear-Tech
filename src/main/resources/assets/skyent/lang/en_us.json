@@ -1,6 +1,7 @@
 {
   "block.skyent.combustion_generator": "Solid Fuel Boiler",
   "block.skyent.electric_furnace": "Electric Furnace",
+  "block.skyent.lv_crusher": "LV Crusher",
   "block.skyent.brick_blast_furnace": "Brick Blast Furnace",
   "block.skyent.coal_forge": "Coal Forge",
   "block.skyent.fire_bricks": "Fire Bricks",
@@ -45,6 +46,7 @@
   "block.skyent.geiger_counter_placed": "Geiger Counter",
   "container.skyent.combustion_generator": "Solid Fuel Boiler",
   "container.skyent.electric_furnace": "Electric Furnace",
+  "container.skyent.lv_crusher": "LV Crusher",
   "container.skyent.brick_blast_furnace": "Brick Blast Furnace",
   "container.skyent.lv_electric_pump": "LV Electric Pump",
   "container.skyent.lv_steam_turbine": "LV Steam Turbine",

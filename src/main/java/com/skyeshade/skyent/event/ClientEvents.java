@@ -15,10 +15,12 @@ import com.skyeshade.skyent.client.renderer.blockentity.GeigerCounterPlacedRende
 import com.skyeshade.skyent.client.renderer.blockentity.SteamForgeHammerRenderer;
 import com.skyeshade.skyent.client.renderer.LVConnectorRenderer;
 import com.skyeshade.skyent.client.renderer.LVElectricPumpRenderer;
+import com.skyeshade.skyent.client.sound.MachineSoundManager;
 import com.skyeshade.skyent.content.item.HotItemUtil;
 import com.skyeshade.skyent.client.screen.BrickBlastFurnaceScreen;
 import com.skyeshade.skyent.client.screen.CombustionGeneratorScreen;
 import com.skyeshade.skyent.client.screen.ElectricFurnaceScreen;
+import com.skyeshade.skyent.client.screen.LVCrusherScreen;
 import com.skyeshade.skyent.client.screen.LVElectricPumpScreen;
 import com.skyeshade.skyent.client.screen.LVSteamTurbineScreen;
 import com.skyeshade.skyent.event.systems.BootstrapSystem;
@@ -66,6 +68,7 @@ public final class ClientEvents {
     public static void onRegisterMenuScreens(RegisterMenuScreensEvent event) {
         event.register(ModMenus.COMBUSTION_GENERATOR.get(), CombustionGeneratorScreen::new);
         event.register(ModMenus.ELECTRIC_FURNACE.get(), ElectricFurnaceScreen::new);
+        event.register(ModMenus.LV_CRUSHER.get(), LVCrusherScreen::new);
         event.register(ModMenus.BRICK_BLAST_FURNACE.get(), BrickBlastFurnaceScreen::new);
         event.register(ModMenus.LV_ELECTRIC_PUMP.get(), LVElectricPumpScreen::new);
         event.register(ModMenus.LV_STEAM_TURBINE.get(), LVSteamTurbineScreen::new);
@@ -97,6 +100,7 @@ public final class ClientEvents {
         GeigerCounterClientState.clientTick();
         GeigerCounterSoundManager.clientTick();
         PlacedGeigerCounterSoundManager.clientTick();
+        MachineSoundManager.tick();
         RadiationRayDebugClient.onClientTick(event);
     }
 

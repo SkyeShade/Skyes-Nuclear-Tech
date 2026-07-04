@@ -55,6 +55,12 @@ public final class CommonEvents {
 
         event.registerBlockEntity(
                 Capabilities.ItemHandler.BLOCK,
+                ModBlockEntities.LV_CRUSHER.get(),
+                (crusher, side) -> crusher.getAutomationItemHandler()
+        );
+
+        event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
                 ModBlockEntities.BRICK_BLAST_FURNACE.get(),
                 (furnace, side) -> furnace.getAutomationItemHandler(side)
         );

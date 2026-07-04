@@ -44,6 +44,11 @@ public final class ModItems {
             new Item.Properties()
     );
 
+    public static final DeferredItem<BlockItem> LV_CRUSHER = ITEMS.registerSimpleBlockItem(
+            ModBlocks.LV_CRUSHER,
+            new Item.Properties()
+    );
+
     public static final DeferredItem<BlockItem> BRICK_BLAST_FURNACE = ITEMS.registerSimpleBlockItem(
             ModBlocks.BRICK_BLAST_FURNACE,
             new Item.Properties()

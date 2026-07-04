@@ -9,6 +9,7 @@ import com.skyeshade.skyent.content.blockentity.CoriumBlockEntity;
 import com.skyeshade.skyent.content.blockentity.ElectricFurnaceBlockEntity;
 import com.skyeshade.skyent.content.blockentity.ForgingAnvilBlockEntity;
 import com.skyeshade.skyent.content.blockentity.GeigerCounterPlacedBlockEntity;
+import com.skyeshade.skyent.content.blockentity.LVCrusherBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVFEConverterBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVElectricPumpBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVSteamTurbineBlockEntity;
@@ -37,6 +38,12 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("electric_furnace", () -> BlockEntityType.Builder.of(
                     ElectricFurnaceBlockEntity::new,
                     ModBlocks.ELECTRIC_FURNACE.get()
+            ).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<LVCrusherBlockEntity>> LV_CRUSHER =
+            BLOCK_ENTITIES.register("lv_crusher", () -> BlockEntityType.Builder.of(
+                    LVCrusherBlockEntity::new,
+                    ModBlocks.LV_CRUSHER.get()
             ).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<BrickBlastFurnaceBlockEntity>> BRICK_BLAST_FURNACE =

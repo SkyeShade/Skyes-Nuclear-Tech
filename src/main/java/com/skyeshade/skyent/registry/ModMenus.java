@@ -4,6 +4,7 @@ import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.menu.BrickBlastFurnaceMenu;
 import com.skyeshade.skyent.content.menu.CombustionGeneratorMenu;
 import com.skyeshade.skyent.content.menu.ElectricFurnaceMenu;
+import com.skyeshade.skyent.content.menu.LVCrusherMenu;
 import com.skyeshade.skyent.content.menu.LVElectricPumpMenu;
 import com.skyeshade.skyent.content.menu.LVSteamTurbineMenu;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -24,6 +25,9 @@ public final class ModMenus {
 
     public static final DeferredHolder<MenuType<?>, MenuType<ElectricFurnaceMenu>> ELECTRIC_FURNACE =
             MENUS.register("electric_furnace", () -> IMenuTypeExtension.create(ElectricFurnaceMenu::new));
+
+    public static final DeferredHolder<MenuType<?>, MenuType<LVCrusherMenu>> LV_CRUSHER =
+            MENUS.register("lv_crusher", () -> IMenuTypeExtension.create(LVCrusherMenu::new));
 
     public static final DeferredHolder<MenuType<?>, MenuType<BrickBlastFurnaceMenu>> BRICK_BLAST_FURNACE =
             MENUS.register("brick_blast_furnace", () -> IMenuTypeExtension.create(BrickBlastFurnaceMenu::new));

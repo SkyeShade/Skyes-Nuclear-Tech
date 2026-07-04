@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "front": "skyent:block/lv_crusher_front",
+    "side": "skyent:block/lv_crusher_sides",
+    "top": "skyent:block/lv_crusher_top"
+  }
+}
