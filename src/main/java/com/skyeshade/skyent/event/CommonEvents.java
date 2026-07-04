@@ -98,7 +98,7 @@ public final class CommonEvents {
         event.registerBlockEntity(
                 Capabilities.ItemHandler.BLOCK,
                 ModBlockEntities.BASIC_CONVEYOR_BELT.get(),
-                (belt, side) -> belt.getItemHandler()
+                (belt, side) -> belt.getItemHandler(side)
         );
 
         event.registerBlockEntity(

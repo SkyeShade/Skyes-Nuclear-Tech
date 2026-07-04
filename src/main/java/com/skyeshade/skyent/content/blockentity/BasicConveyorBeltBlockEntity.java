@@ -3,6 +3,8 @@ package com.skyeshade.skyent.content.blockentity;
 import com.skyeshade.skyent.content.block.BasicConveyorBeltBlock;
 import com.skyeshade.skyent.content.entity.ConveyorMovingItemEntity;
 import com.skyeshade.skyent.registry.ModBlockEntities;
+import java.util.EnumMap;
+import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.ItemStack;
@@ -14,14 +16,20 @@ import net.neoforged.neoforge.items.IItemHandler;
 
 public class BasicConveyorBeltBlockEntity extends BlockEntity {
     private static final double INSERT_BACK_OFFSET = 0.45D;
-    private final IItemHandler itemHandler = new BeltItemHandler();
+    private static final double INSERT_SIDE_OFFSET = 0.45D;
+    private final IItemHandler nullSideItemHandler = new BeltItemHandler(null);
+    private final EnumMap<Direction, IItemHandler> sidedItemHandlers = new EnumMap<>(Direction.class);
 
     public BasicConveyorBeltBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.BASIC_CONVEYOR_BELT.get(), pos, blockState);
     }
 
-    public IItemHandler getItemHandler() {
-        return itemHandler;
+    public IItemHandler getItemHandler(@Nullable Direction side) {
+        if (side == null) {
+            return nullSideItemHandler;
+        }
+
+        return sidedItemHandlers.computeIfAbsent(side, BeltItemHandler::new);
     }
 
     private Direction getFacing() {
@@ -29,13 +37,23 @@ public class BasicConveyorBeltBlockEntity extends BlockEntity {
         return state.hasProperty(BasicConveyorBeltBlock.FACING) ? state.getValue(BasicConveyorBeltBlock.FACING) : Direction.NORTH;
     }
 
-    private Vec3 getInsertionPosition() {
-        Direction facing = getFacing();
-        return new Vec3(
-                worldPosition.getX() + 0.5D - facing.getStepX() * INSERT_BACK_OFFSET,
-                worldPosition.getY() + BasicConveyorBeltBlock.BELT_ITEM_Y,
-                worldPosition.getZ() + 0.5D - facing.getStepZ() * INSERT_BACK_OFFSET
-        );
+    private Vec3 getInsertionPosition(@Nullable Direction insertionSide) {
+        Direction beltFacing = getFacing();
+        Direction side = insertionSide == null ? beltFacing.getOpposite() : insertionSide;
+
+        double x = worldPosition.getX() + 0.5D;
+        double y = worldPosition.getY() + BasicConveyorBeltBlock.BELT_ITEM_Y;
+        double z = worldPosition.getZ() + 0.5D;
+
+        if (side == beltFacing.getOpposite()) {
+            x -= beltFacing.getStepX() * INSERT_BACK_OFFSET;
+            z -= beltFacing.getStepZ() * INSERT_BACK_OFFSET;
+        } else if (side == beltFacing.getClockWise() || side == beltFacing.getCounterClockWise()) {
+            x += side.getStepX() * INSERT_SIDE_OFFSET;
+            z += side.getStepZ() * INSERT_SIDE_OFFSET;
+        }
+
+        return new Vec3(x, y, z);
     }
 
     private boolean hasRoomAt(Vec3 position) {
@@ -47,12 +65,11 @@ public class BasicConveyorBeltBlockEntity extends BlockEntity {
         return level.getEntitiesOfClass(ConveyorMovingItemEntity.class, searchBox, entity -> !entity.isRemoved()).isEmpty();
     }
 
-    private boolean spawnMovingItem(ItemStack stack) {
+    private boolean spawnMovingItem(ItemStack stack, Vec3 position) {
         if (level == null || level.isClientSide || stack.isEmpty()) {
             return false;
         }
 
-        Vec3 position = getInsertionPosition();
         if (!hasRoomAt(position)) {
             return false;
         }
@@ -63,6 +80,13 @@ public class BasicConveyorBeltBlockEntity extends BlockEntity {
     }
 
     private final class BeltItemHandler implements IItemHandler {
+        @Nullable
+        private final Direction insertionSide;
+
+        private BeltItemHandler(@Nullable Direction insertionSide) {
+            this.insertionSide = insertionSide;
+        }
+
         @Override
         public int getSlots() {
             return 1;
@@ -78,13 +102,16 @@ public class BasicConveyorBeltBlockEntity extends BlockEntity {
             if (slot != 0 || stack.isEmpty()) {
                 return stack;
             }
+            if (insertionSide != null && insertionSide == getFacing()) {
+                return stack;
+            }
 
-            Vec3 position = getInsertionPosition();
+            Vec3 position = getInsertionPosition(insertionSide);
             if (!hasRoomAt(position)) {
                 return stack;
             }
 
-            if (!simulate && !spawnMovingItem(stack)) {
+            if (!simulate && !spawnMovingItem(stack, position)) {
                 return stack;
             }
             return ItemStack.EMPTY;
