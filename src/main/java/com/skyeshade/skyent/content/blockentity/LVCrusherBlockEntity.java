@@ -34,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
 public class LVCrusherBlockEntity extends BlockEntity implements MenuProvider, RJEnergyInfo {
     public static final int ENERGY_CAPACITY_RJ = 8_000;
     public static final int ENERGY_USAGE_RJ_PER_TICK = 32;
-    public static final int MAX_PROGRESS = 300;
+    public static final int MAX_PROGRESS = 400;
     public static final ElectricalTier REQUIRED_TIER = ElectricalTier.LV;
     public static final double RUNNING_CURRENT_AMPS = 1.0D;
     public static final double MAX_INPUT_CURRENT_AMPS = LVEnergyConstants.LV_MACHINE_MAX_INPUT_CURRENT_AMPS;
