@@ -7,11 +7,14 @@ import com.skyeshade.skyent.content.energy.RJEnergyInfo;
 import com.skyeshade.skyent.content.energy.RJStorage;
 import com.skyeshade.skyent.content.menu.ElectricFurnaceMenu;
 import com.skyeshade.skyent.registry.ModBlockEntities;
+import com.skyeshade.skyent.registry.ModSounds;
+import java.lang.reflect.Method;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.Containers;
 import net.minecraft.world.MenuProvider;
@@ -41,6 +44,8 @@ public class ElectricFurnaceBlockEntity extends BlockEntity implements MenuProvi
     public static final double RUNNING_CURRENT_AMPS = 0.5D;
     public static final double MAX_INPUT_CURRENT_AMPS = LVEnergyConstants.LV_MACHINE_MAX_INPUT_CURRENT_AMPS;
     public static final int MAX_INPUT_RJ_PER_TICK = LVEnergyConstants.LV_MACHINE_MAX_INPUT_RJ_PER_TICK;
+    private static final float ELECTRIC_FURNACE_LOOP_VOLUME = 0.6F;
+    private static final float ELECTRIC_FURNACE_LOOP_PITCH = 1.0F;
     public static final int INPUT_SLOT = 0;
     public static final int OUTPUT_SLOT = 1;
     public static final int DEFAULT_COOK_TIME = 200;
@@ -152,6 +157,14 @@ public class ElectricFurnaceBlockEntity extends BlockEntity implements MenuProvi
 
         if (changed) {
             setChanged(level, pos, state);
+        }
+    }
+
+    public static void clientTick(Level level, BlockPos pos, BlockState state, ElectricFurnaceBlockEntity furnace) {
+        if (state.getValue(ElectricFurnaceBlock.LIT)) {
+            startClientLoop(level, pos);
+        } else {
+            stopClientLoop(level, pos);
         }
     }
 
@@ -285,6 +298,54 @@ public class ElectricFurnaceBlockEntity extends BlockEntity implements MenuProvi
         cookProgress = tag.getInt("CookProgress");
         maxCookProgress = tag.contains("MaxCookProgress") ? tag.getInt("MaxCookProgress") : DEFAULT_COOK_TIME;
         inventory.deserializeNBT(registries, tag.getCompound("Inventory"));
+    }
+
+    @Override
+    public void setRemoved() {
+        if (level != null && level.isClientSide) {
+            stopClientLoop(level, worldPosition);
+        }
+        super.setRemoved();
+    }
+
+    private static void startClientLoop(Level level, BlockPos pos) {
+        invokeClientLoopMethod("startOrUpdateMachineLoop", level, pos);
+    }
+
+    private static void stopClientLoop(Level level, BlockPos pos) {
+        invokeClientLoopMethod("stopMachineLoop", level, pos);
+    }
+
+    private static void invokeClientLoopMethod(String methodName, Level level, BlockPos pos) {
+        if (!level.isClientSide) {
+            return;
+        }
+
+        try {
+            Class<?> clientLevelClass = Class.forName("net.minecraft.client.multiplayer.ClientLevel");
+            if (!clientLevelClass.isInstance(level)) {
+                return;
+            }
+
+            Class<?> managerClass = Class.forName("com.skyeshade.skyent.client.sound.MachineSoundManager");
+            if ("startOrUpdateMachineLoop".equals(methodName)) {
+                Method method = managerClass.getMethod(
+                        methodName,
+                        clientLevelClass,
+                        BlockPos.class,
+                        net.minecraft.sounds.SoundEvent.class,
+                        SoundSource.class,
+                        float.class,
+                        float.class
+                );
+                method.invoke(null, level, pos, ModSounds.ELECTRIC_FURNACE_LOOP.get(), SoundSource.BLOCKS, ELECTRIC_FURNACE_LOOP_VOLUME, ELECTRIC_FURNACE_LOOP_PITCH);
+            } else {
+                Method method = managerClass.getMethod(methodName, clientLevelClass, BlockPos.class, net.minecraft.sounds.SoundEvent.class);
+                method.invoke(null, level, pos, ModSounds.ELECTRIC_FURNACE_LOOP.get());
+            }
+        } catch (ReflectiveOperationException exception) {
+            throw new IllegalStateException("Unable to update Electric Furnace client loop sound", exception);
+        }
     }
 
     private final class AutomationItemHandler implements IItemHandler {

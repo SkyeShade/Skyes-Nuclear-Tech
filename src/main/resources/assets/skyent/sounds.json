@@ -44,5 +44,11 @@
       "skyent:conveyor_loop"
     ],
     "subtitle": "subtitle.skyent.conveyor_loop"
+  },
+  "electric_furnace_loop": {
+    "sounds": [
+      "skyent:electric_furnace"
+    ],
+    "subtitle": "subtitle.skyent.electric_furnace_loop"
   }
 }

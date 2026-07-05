@@ -1,5 +1,6 @@
 package com.skyeshade.skyent.client.sound;
 
+import com.skyeshade.skyent.content.block.ElectricFurnaceBlock;
 import com.skyeshade.skyent.content.block.LVCrusherBlock;
 import com.skyeshade.skyent.registry.ModBlocks;
 import java.util.HashMap;
@@ -121,6 +122,11 @@ public final class MachineSoundManager {
 
     private static boolean shouldContinue(ClientLevel level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
+        if (state.is(ModBlocks.ELECTRIC_FURNACE.get())) {
+            return state.hasProperty(ElectricFurnaceBlock.LIT)
+                    && state.getValue(ElectricFurnaceBlock.LIT);
+        }
+
         return state.is(ModBlocks.LV_CRUSHER.get())
                 && state.hasProperty(LVCrusherBlock.LIT)
                 && state.getValue(LVCrusherBlock.LIT);

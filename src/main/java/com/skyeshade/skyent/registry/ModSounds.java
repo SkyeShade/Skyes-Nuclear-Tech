@@ -23,6 +23,7 @@ public final class ModSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> GEIGER_7 = register("geiger7");
     public static final DeferredHolder<SoundEvent, SoundEvent> GEIGER_8 = register("geiger8");
     public static final DeferredHolder<SoundEvent, SoundEvent> CONVEYOR_LOOP = register("conveyor_loop");
+    public static final DeferredHolder<SoundEvent, SoundEvent> ELECTRIC_FURNACE_LOOP = register("electric_furnace_loop");
 
     private ModSounds() {
     }
