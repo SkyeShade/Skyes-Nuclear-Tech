@@ -5,6 +5,9 @@
   "compatibilityLevel": "JAVA_21",
   "client": [
     "MixinItemInHandRenderer",
+    "MixinLevelRenderer",
+    "MixinLightPipelineAwareModelBlockRenderer",
+    "MixinModelBlockRenderer",
     "MixinMultiPlayerGameMode"
   ],
   "injectors": {

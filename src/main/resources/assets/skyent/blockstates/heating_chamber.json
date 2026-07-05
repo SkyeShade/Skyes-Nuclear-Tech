@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "skyent:block/heating_chamber_scaled_north" },
+    "facing=east": { "model": "skyent:block/heating_chamber_scaled_east", "y": 90 },
+    "facing=south": { "model": "skyent:block/heating_chamber_scaled_south", "y": 180 },
+    "facing=west": { "model": "skyent:block/heating_chamber_scaled_west", "y": 270 }
+  }
+}

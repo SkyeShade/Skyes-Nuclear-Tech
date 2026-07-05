@@ -1,0 +1,15 @@
+{
+  "loader": "skyent:sliced_scaled_block_model",
+  "base": {
+    "parent": "skyent:block/heating_chamber"
+  },
+  "scale": 2.0,
+  "origin": [0, 0, 0],
+  "size": [2, 3, 2],
+  "slice_properties": ["part_x", "part_y", "part_z"],
+  "facing_property": "facing",
+  "ambient_occlusion": false,
+  "shared_lighting": "max",
+  "disable_diffuse_shading": true,
+  "force_uniform_light": true
+}

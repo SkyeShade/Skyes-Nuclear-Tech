@@ -9,9 +9,11 @@ import com.skyeshade.skyent.client.item.PlacedGeigerCounterSoundManager;
 import com.skyeshade.skyent.client.item.SteelFluidBarrelFluidDecorator;
 import com.skyeshade.skyent.client.item.SteelTongsHeldItemDecorator;
 import com.skyeshade.skyent.client.model.ScaledBlockModel;
+import com.skyeshade.skyent.client.model.SlicedScaledBlockModel;
 import com.skyeshade.skyent.client.renderer.blockentity.CoalForgeRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.ForgingAnvilRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.GeigerCounterPlacedRenderer;
+import com.skyeshade.skyent.client.renderer.blockentity.HeatingChamberRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.SteamForgeHammerRenderer;
 import com.skyeshade.skyent.client.renderer.entity.ConveyorMovingItemRenderer;
 import com.skyeshade.skyent.client.renderer.LVConnectorRenderer;
@@ -87,14 +89,17 @@ public final class ClientEvents {
         event.registerBlockEntityRenderer(ModBlockEntities.COAL_FORGE.get(), CoalForgeRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.FORGING_ANVIL.get(), ForgingAnvilRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.STEAM_FORGE_HAMMER.get(), SteamForgeHammerRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.HEATING_CHAMBER.get(), HeatingChamberRenderer::new);
     }
 
     public static void onRegisterAdditionalModels(ModelEvent.RegisterAdditional event) {
         event.register(SteamForgeHammerRenderer.PISTON_MODEL);
+        event.register(HeatingChamberRenderer.CHAMBER_MODEL);
     }
 
     public static void onRegisterGeometryLoaders(ModelEvent.RegisterGeometryLoaders event) {
         event.register(ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "scaled_block_model"), ScaledBlockModel.Loader.INSTANCE);
+        event.register(ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "sliced_scaled_block_model"), SlicedScaledBlockModel.Loader.INSTANCE);
     }
 
     public static void onRegisterItemDecorations(RegisterItemDecorationsEvent event) {

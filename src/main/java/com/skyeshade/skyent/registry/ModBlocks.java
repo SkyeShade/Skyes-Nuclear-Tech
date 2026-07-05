@@ -14,6 +14,8 @@ import com.skyeshade.skyent.content.block.DeadPlantBlock;
 import com.skyeshade.skyent.content.block.ElectricFurnaceBlock;
 import com.skyeshade.skyent.content.block.ForgingAnvilBlock;
 import com.skyeshade.skyent.content.block.GeigerCounterPlacedBlock;
+import com.skyeshade.skyent.content.block.HeatingChamberBlock;
+import com.skyeshade.skyent.content.block.HeatingChamberPartBlock;
 import com.skyeshade.skyent.content.block.LVCrusherBlock;
 import com.skyeshade.skyent.content.block.LVConverterBlock;
 import com.skyeshade.skyent.content.block.LVConnectorBlock;
@@ -100,6 +102,23 @@ public final class ModBlocks {
                     .strength(5.0F, 12.0F)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()
+    );
+
+    public static final DeferredBlock<HeatingChamberBlock> HEATING_CHAMBER = BLOCKS.registerBlock(
+            "heating_chamber",
+            HeatingChamberBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 12.0F)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
+    );
+
+    public static final DeferredBlock<HeatingChamberPartBlock> HEATING_CHAMBER_PART = BLOCKS.registerBlock(
+            "heating_chamber_part",
+            HeatingChamberPartBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 12.0F)
+                    .requiresCorrectToolForDrops()
     );
 
     public static final DeferredBlock<LVElectricPumpBlock> LV_ELECTRIC_PUMP = BLOCKS.registerBlock(

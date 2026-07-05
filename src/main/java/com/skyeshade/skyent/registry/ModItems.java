@@ -74,6 +74,11 @@ public final class ModItems {
             new Item.Properties()
     );
 
+    public static final DeferredItem<BlockItem> HEATING_CHAMBER = ITEMS.registerSimpleBlockItem(
+            ModBlocks.HEATING_CHAMBER,
+            new Item.Properties()
+    );
+
     public static final DeferredItem<BlockItem> LV_ELECTRIC_PUMP = ITEMS.registerSimpleBlockItem(
             ModBlocks.LV_ELECTRIC_PUMP,
             new Item.Properties()
