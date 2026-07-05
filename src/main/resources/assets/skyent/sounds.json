@@ -50,5 +50,11 @@
       "skyent:electric_furnace"
     ],
     "subtitle": "subtitle.skyent.electric_furnace_loop"
+  },
+  "heavy_moving_metal": {
+    "sounds": [
+      "skyent:heavy_moving_metal"
+    ],
+    "subtitle": "subtitle.skyent.heavy_moving_metal"
   }
 }

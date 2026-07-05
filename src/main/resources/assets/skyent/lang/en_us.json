@@ -147,6 +147,7 @@
   "tooltip.skyent.steel_tongs.environmental_emission": "Environmental Emission: %s mSv/s",
   "subtitle.skyent.conveyor_loop": "Conveyor belt hums",
   "subtitle.skyent.electric_furnace_loop": "Electric furnace hums",
+  "subtitle.skyent.heavy_moving_metal": "Heavy metal moves",
   "message.skyent.too_cold_to_forge": "Too cold to forge",
   "death.attack.radiation": "%1$s died from radiation poisoning",
   "death.attack.radiation.player": "%1$s died from radiation poisoning while fighting %2$s",

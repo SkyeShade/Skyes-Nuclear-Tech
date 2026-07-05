@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.event;
 
 import com.skyeshade.skyent.event.systems.BootstrapSystem;
+import com.skyeshade.skyent.content.block.HeatingChamberPartBlock;
 import com.skyeshade.skyent.content.block.SteamForgeHammerBlock;
 import com.skyeshade.skyent.content.block.SteamForgeHammerPartBlock;
 import com.skyeshade.skyent.content.fluid.SteelFluidBarrelFluidHandler;
@@ -99,6 +100,12 @@ public final class CommonEvents {
                 Capabilities.ItemHandler.BLOCK,
                 ModBlockEntities.BASIC_CONVEYOR_BELT.get(),
                 (belt, side) -> belt.getItemHandler(side)
+        );
+
+        event.registerBlock(
+                Capabilities.ItemHandler.BLOCK,
+                (level, pos, state, blockEntity, side) -> HeatingChamberPartBlock.getItemHandler(level, pos, state, side),
+                ModBlocks.HEATING_CHAMBER_PART.get()
         );
 
         event.registerBlockEntity(

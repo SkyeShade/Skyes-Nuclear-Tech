@@ -2,6 +2,7 @@ package com.skyeshade.skyent.client.renderer.entity;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
+import com.skyeshade.skyent.content.conveyor.ConveyorRenderConstants;
 import com.skyeshade.skyent.content.entity.ConveyorMovingItemEntity;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderer;
@@ -16,7 +17,6 @@ import net.minecraft.world.item.ItemStack;
 
 public class ConveyorMovingItemRenderer extends EntityRenderer<ConveyorMovingItemEntity> {
     private static final float ITEM_RENDER_SCALE = 0.50F;
-    private static final float ITEM_RENDER_Y_OFFSET = 0.0F;
     private static final float ITEM_RENDER_X_OFFSET = 0.0F;
     private static final float ITEM_RENDER_Z_OFFSET = 0.0F;
     private static final float ITEM_ROT_X = 90.0F;
@@ -37,7 +37,7 @@ public class ConveyorMovingItemRenderer extends EntityRenderer<ConveyorMovingIte
         }
 
         poseStack.pushPose();
-        poseStack.translate(ITEM_RENDER_X_OFFSET, ITEM_RENDER_Y_OFFSET + (stack.getItem() instanceof BlockItem ? 0.08F : 0.0F), ITEM_RENDER_Z_OFFSET);
+        poseStack.translate(ITEM_RENDER_X_OFFSET, ConveyorRenderConstants.ITEM_RENDER_Y_OFFSET + (stack.getItem() instanceof BlockItem ? 0.08F : 0.0F), ITEM_RENDER_Z_OFFSET);
         if (!(stack.getItem() instanceof BlockItem)) {
             poseStack.mulPose(Axis.XP.rotationDegrees(ITEM_ROT_X));
         }

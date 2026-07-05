@@ -1,8 +1,11 @@
 package com.skyeshade.skyent.content.entity;
 
 import com.skyeshade.skyent.content.conveyor.ConveyorBeltSurface;
+import com.skyeshade.skyent.content.conveyor.ConveyorGateSurface;
+import com.skyeshade.skyent.content.conveyor.ConveyorTravelDirectionProvider;
 import com.skyeshade.skyent.content.radiation.RadioactiveCarrierEntity;
 import com.skyeshade.skyent.registry.ModEntities;
+import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -22,14 +25,14 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.capabilities.Capabilities;
 
 public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarrierEntity {
     public static final double BELT_ITEM_SPEED = 0.062D;
-    public static final double BELT_ITEM_Y = 5.0D / 16.0D;
     public static final double OUTPUT_EDGE_DISTANCE = 0.52D;
     public static final double BLOCKED_EDGE_DISTANCE = 0.42D;
-    public static final double STRAIGHT_ITEM_SPACING = 0.28D;
-    public static final double MERGE_ITEM_SPACING = 0.28D;
+    public static final double STRAIGHT_ITEM_SPACING = 0.42D;
+    public static final double MERGE_ITEM_SPACING = 0.46D;
     public static final double MERGE_SPACING_DISTANCE_FROM_CENTER = 0.55D;
     public static final int MERGE_SPACING_TICKS = 12;
     public static final double ITEM_SPACING_DISTANCE = STRAIGHT_ITEM_SPACING;
@@ -41,6 +44,7 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
     private BlockPos lastBeltPos;
     private Direction lastBeltFacing;
     private int mergeSpacingTicks;
+    private int spacingSuppressionTicks;
     private static final EntityDataAccessor<Boolean> DATA_BLOCKED = SynchedEntityData.defineId(
             ConveyorMovingItemEntity.class,
             EntityDataSerializers.BOOLEAN
@@ -104,8 +108,17 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
         updateBeltTracking(belt);
 
         if (isBlocked()) {
-            setPos(clampedFrontPosition(belt));
+            if (!canMoveOnBelt(belt)) {
+                tickMergeSpacing();
+                return;
+            }
+            setPos(blockedPosition(belt));
             tryHandleOutput(belt, true);
+            tickMergeSpacing();
+            return;
+        }
+
+        if (!canMoveOnBelt(belt)) {
             tickMergeSpacing();
             return;
         }
@@ -118,7 +131,7 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
         Vec3 next = belt.surface().getTravelLocation(level(), belt.pos(), position(), BELT_ITEM_SPEED);
 
         if (wouldReachOutputEdge(belt, next) && shouldPreHandleOutput(belt)) {
-            setPos(clampedFrontPosition(belt));
+            setPos(canOutputFromBelt(belt) ? clampedFrontPosition(belt) : blockedPosition(belt));
             tryHandleOutput(belt, true);
             tickMergeSpacing();
             return;
@@ -134,6 +147,10 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
         tickMergeSpacing();
     }
     private boolean shouldPreHandleOutput(BeltContext belt) {
+        if (!canOutputFromBelt(belt)) {
+            return true;
+        }
+
         BlockPos outputPos = belt.pos().relative(belt.facing());
         BlockState outputState = level().getBlockState(outputPos);
 
@@ -169,6 +186,11 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
 
         updateBeltTracking(belt);
 
+        if (!canMoveOnBelt(belt)) {
+            tickMergeSpacing();
+            return;
+        }
+
         Vec3 next = belt.surface().getTravelLocation(level(), belt.pos(), position(), BELT_ITEM_SPEED);
 
 
@@ -197,11 +219,22 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
             return false;
         }
 
+        if (!canOutputFromBelt(belt)) {
+            setBlocked(true);
+            setPos(blockedPosition(belt));
+            return true;
+        }
+
         BlockPos outputPos = belt.pos().relative(belt.facing());
         BlockState outputState = level().getBlockState(outputPos);
         if (outputState.getBlock() instanceof ConveyorBeltSurface) {
-            if (outputState.hasProperty(com.skyeshade.skyent.content.block.BasicConveyorBeltBlock.FACING)
-                    && outputState.getValue(com.skyeshade.skyent.content.block.BasicConveyorBeltBlock.FACING) == belt.facing().getOpposite()) {
+            Direction outputFacing = getConveyorTravelDirection(outputState, outputPos);
+            if (outputFacing == belt.facing().getOpposite()) {
+                setBlocked(true);
+                setPos(clampedFrontPosition(belt));
+                return true;
+            }
+            if (!canEnterOutputBelt(outputState, outputPos, belt.facing().getOpposite())) {
                 setBlocked(true);
                 setPos(clampedFrontPosition(belt));
                 return true;
@@ -211,7 +244,7 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
         }
 
         var handler = level().getCapability(
-                net.neoforged.neoforge.capabilities.Capabilities.ItemHandler.BLOCK,
+                Capabilities.ItemHandler.BLOCK,
                 outputPos,
                 belt.facing().getOpposite()
         );
@@ -241,6 +274,23 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
         return true;
     }
 
+    private boolean canMoveOnBelt(BeltContext belt) {
+        BlockState state = level().getBlockState(belt.pos());
+        return !(belt.surface() instanceof ConveyorGateSurface gate)
+                || gate.skyent$canConveyorItemMove(level(), belt.pos(), state, this);
+    }
+
+    private boolean canOutputFromBelt(BeltContext belt) {
+        BlockState state = level().getBlockState(belt.pos());
+        return !(belt.surface() instanceof ConveyorGateSurface gate)
+                || gate.skyent$canConveyorItemOutput(level(), belt.pos(), state, this, belt.facing());
+    }
+
+    private boolean canEnterOutputBelt(BlockState outputState, BlockPos outputPos, Direction fromDirection) {
+        return !(outputState.getBlock() instanceof ConveyorGateSurface gate)
+                || gate.skyent$canConveyorItemEnter(level(), outputPos, outputState, fromDirection);
+    }
+
     private Vec3 clampedFrontPosition(BeltContext belt) {
         Vec3 snap = belt.surface().getClosestSnappingPosition(level(), belt.pos(), position());
         Vec3 center = belt.pos().getCenter();
@@ -251,9 +301,27 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
         );
     }
 
+    private Vec3 blockedPosition(BeltContext belt) {
+        BlockState state = level().getBlockState(belt.pos());
+        if (belt.surface() instanceof ConveyorGateSurface gate) {
+            Vec3 holdPosition = gate.skyent$getConveyorHoldPosition(level(), belt.pos(), state, this, belt.facing());
+            if (holdPosition != null) {
+                return holdPosition;
+            }
+        }
+        return clampedFrontPosition(belt);
+    }
+
     private boolean isItemAheadTooClose(BeltContext belt, Vec3 nextPosition) {
+        if (spacingSuppressionTicks > 0) {
+            return false;
+        }
+
         AABB searchBox = getBoundingBox().inflate(ITEM_SPACING_SEARCH_RADIUS);
         for (ConveyorMovingItemEntity other : level().getEntitiesOfClass(ConveyorMovingItemEntity.class, searchBox, entity -> entity != this && !entity.isRemoved())) {
+            if (other.spacingSuppressionTicks > 0) {
+                continue;
+            }
             double requiredSpacing = Math.max(getCurrentSpacingDistance(), other.getCurrentSpacingDistance());
             if (isUsingMergeSpacing() || other.isUsingMergeSpacing()) {
                 double dx = other.getX() - nextPosition.x;
@@ -284,6 +352,9 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
     private void tickMergeSpacing() {
         if (mergeSpacingTicks > 0) {
             mergeSpacingTicks--;
+        }
+        if (spacingSuppressionTicks > 0) {
+            spacingSuppressionTicks--;
         }
     }
 
@@ -321,10 +392,22 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
         if (!(state.getBlock() instanceof ConveyorBeltSurface surface)) {
             return null;
         }
-        if (!state.hasProperty(com.skyeshade.skyent.content.block.BasicConveyorBeltBlock.FACING)) {
+        Direction facing = getConveyorTravelDirection(state, pos);
+        if (facing == null) {
             return null;
         }
-        return new BeltContext(pos, surface, state.getValue(com.skyeshade.skyent.content.block.BasicConveyorBeltBlock.FACING));
+        return new BeltContext(pos, surface, facing);
+    }
+
+    @Nullable
+    private Direction getConveyorTravelDirection(BlockState state, BlockPos pos) {
+        if (state.getBlock() instanceof ConveyorTravelDirectionProvider provider) {
+            return provider.skyent$getConveyorTravelDirection(level(), pos, state);
+        }
+        if (state.hasProperty(com.skyeshade.skyent.content.block.BasicConveyorBeltBlock.FACING)) {
+            return state.getValue(com.skyeshade.skyent.content.block.BasicConveyorBeltBlock.FACING);
+        }
+        return null;
     }
 
     private static ItemStack insertIntoHandler(net.neoforged.neoforge.items.IItemHandler handler, ItemStack stack) {
@@ -361,6 +444,10 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
         entityData.set(DATA_BLOCKED, blocked);
     }
 
+    public void suppressSpacingFor(int ticks) {
+        spacingSuppressionTicks = Math.max(spacingSuppressionTicks, ticks);
+    }
+
     public void dropAsNormalItem(Vec3 position, Vec3 velocity) {
         if (level().isClientSide || getItemStack().isEmpty()) {
             return;
@@ -377,6 +464,7 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
         setItemStack(ItemStack.parseOptional(level().registryAccess(), compound.getCompound("Item")));
         setBlocked(compound.getBoolean("Blocked"));
         mergeSpacingTicks = compound.getInt("MergeSpacingTicks");
+        spacingSuppressionTicks = compound.getInt("SpacingSuppressionTicks");
         if (compound.contains("LastBeltX")) {
             lastBeltPos = new BlockPos(compound.getInt("LastBeltX"), compound.getInt("LastBeltY"), compound.getInt("LastBeltZ"));
         }
@@ -393,6 +481,7 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
         }
         compound.putBoolean("Blocked", isBlocked());
         compound.putInt("MergeSpacingTicks", mergeSpacingTicks);
+        compound.putInt("SpacingSuppressionTicks", spacingSuppressionTicks);
         if (lastBeltPos != null) {
             compound.putInt("LastBeltX", lastBeltPos.getX());
             compound.putInt("LastBeltY", lastBeltPos.getY());

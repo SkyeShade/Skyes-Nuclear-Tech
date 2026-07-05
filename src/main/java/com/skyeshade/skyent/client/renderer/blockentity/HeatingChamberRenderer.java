@@ -26,11 +26,6 @@ public class HeatingChamberRenderer implements BlockEntityRenderer<HeatingChambe
     );
 
     private static final float CHAMBER_SCALE = 2.0F;
-    private static final int CYCLE_TICKS = 160;
-    private static final int MOVE_DOWN_TICKS = 20;
-    private static final int HOLD_DOWN_UNTIL_TICK = 80;
-    private static final int MOVE_UP_UNTIL_TICK = 100;
-    private static final float MAX_TRAVEL_BLOCKS = 10.0F / 16.0F;
 
     public HeatingChamberRenderer(BlockEntityRendererProvider.Context context) {
     }
@@ -49,7 +44,7 @@ public class HeatingChamberRenderer implements BlockEntityRenderer<HeatingChambe
         poseStack.scale(CHAMBER_SCALE, CHAMBER_SCALE, CHAMBER_SCALE);
         rotateForFacing(facing, poseStack);
 
-        float offset = getChamberOffset(chamber.getLevel().getGameTime(), partialTick);
+        float offset = chamber.getChamberTravelBlocks(partialTick);
         // The model is rendered at 2x scale, so divide the local translation to
         // keep the final visible travel at exactly 10 Minecraft pixels.
         poseStack.translate(0.0D, -offset / CHAMBER_SCALE, 0.0D);
@@ -84,25 +79,6 @@ public class HeatingChamberRenderer implements BlockEntityRenderer<HeatingChambe
             case WEST -> 90.0F;
             default -> 0.0F;
         };
-    }
-
-    private static float getChamberOffset(long gameTime, float partialTick) {
-        float time = (gameTime + partialTick) % CYCLE_TICKS;
-        if (time < MOVE_DOWN_TICKS) {
-            return MAX_TRAVEL_BLOCKS * smoothStep(time / MOVE_DOWN_TICKS);
-        }
-        if (time < HOLD_DOWN_UNTIL_TICK) {
-            return MAX_TRAVEL_BLOCKS;
-        }
-        if (time < MOVE_UP_UNTIL_TICK) {
-            return MAX_TRAVEL_BLOCKS * (1.0F - smoothStep((time - HOLD_DOWN_UNTIL_TICK) / MOVE_DOWN_TICKS));
-        }
-        return 0.0F;
-    }
-
-    private static float smoothStep(float value) {
-        float clamped = Math.clamp(value, 0.0F, 1.0F);
-        return clamped * clamped * (3.0F - 2.0F * clamped);
     }
 
     private static float renderBrightnessScale() {

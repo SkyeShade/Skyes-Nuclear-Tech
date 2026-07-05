@@ -61,7 +61,7 @@ public class HeatingChamberBlock extends BaseEntityBlock {
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> blockEntityType) {
         return level.isClientSide
                 ? createTickerHelper(blockEntityType, ModBlockEntities.HEATING_CHAMBER.get(), HeatingChamberBlockEntity::clientTick)
-                : null;
+                : createTickerHelper(blockEntityType, ModBlockEntities.HEATING_CHAMBER.get(), HeatingChamberBlockEntity::serverTick);
     }
 
     @Nullable
@@ -200,6 +200,9 @@ public class HeatingChamberBlock extends BaseEntityBlock {
             BlockState state = level.getBlockState(masterPos);
             Direction facing = state.hasProperty(FACING) ? state.getValue(FACING) : Direction.NORTH;
             spawnDestroyParticles(level, masterPos, facing);
+            if (level.getBlockEntity(masterPos) instanceof HeatingChamberBlockEntity blockEntity) {
+                blockEntity.dropInternalConveyorItems();
+            }
             removeParts(level, masterPos, facing);
             if (level.getBlockState(masterPos).is(ModBlocks.HEATING_CHAMBER.get())) {
                 level.setBlock(masterPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
@@ -248,6 +251,21 @@ public class HeatingChamberBlock extends BaseEntityBlock {
 
     public static BlockPos localToWorld(BlockPos origin, Direction facing, int x, int y, int z) {
         return origin.offset(rotateLocalOffset(new BlockPos(x, y, z), facing));
+    }
+
+    public static boolean isInternalConveyorLocalPos(BlockPos local) {
+        return local.getX() == 0 && local.getY() == 1 && (local.getZ() == 0 || local.getZ() == 1);
+    }
+
+    public static BlockPos[] getInternalConveyorWorldPositions(Direction facing, BlockPos controllerPos) {
+        return new BlockPos[] {
+                localToWorld(controllerPos, facing, 0, 1, 1),
+                localToWorld(controllerPos, facing, 0, 1, 0)
+        };
+    }
+
+    public static Direction getInternalConveyorDirection(Direction machineFacing) {
+        return machineFacing;
     }
 
     public static void requestSharedLightUpdate(Level level, BlockPos masterPos) {

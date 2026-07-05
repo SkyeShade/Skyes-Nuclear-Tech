@@ -2,6 +2,7 @@ package com.skyeshade.skyent.client.sound;
 
 import com.skyeshade.skyent.content.block.ElectricFurnaceBlock;
 import com.skyeshade.skyent.content.block.LVCrusherBlock;
+import com.skyeshade.skyent.content.blockentity.HeatingChamberBlockEntity;
 import com.skyeshade.skyent.registry.ModBlocks;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -125,6 +126,10 @@ public final class MachineSoundManager {
         if (state.is(ModBlocks.ELECTRIC_FURNACE.get())) {
             return state.hasProperty(ElectricFurnaceBlock.LIT)
                     && state.getValue(ElectricFurnaceBlock.LIT);
+        }
+        if (state.is(ModBlocks.HEATING_CHAMBER.get())) {
+            return level.getBlockEntity(pos) instanceof HeatingChamberBlockEntity chamber
+                    && chamber.isHeating();
         }
 
         return state.is(ModBlocks.LV_CRUSHER.get())

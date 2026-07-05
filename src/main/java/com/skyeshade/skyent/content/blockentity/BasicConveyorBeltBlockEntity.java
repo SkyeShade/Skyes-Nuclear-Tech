@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.content.blockentity;
 
 import com.skyeshade.skyent.content.block.BasicConveyorBeltBlock;
+import com.skyeshade.skyent.content.conveyor.ConveyorLogicConstants;
 import com.skyeshade.skyent.content.entity.ConveyorMovingItemEntity;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import java.util.EnumMap;
@@ -42,7 +43,7 @@ public class BasicConveyorBeltBlockEntity extends BlockEntity {
         Direction side = insertionSide == null ? beltFacing.getOpposite() : insertionSide;
 
         double x = worldPosition.getX() + 0.5D;
-        double y = worldPosition.getY() + BasicConveyorBeltBlock.BELT_ITEM_Y;
+        double y = worldPosition.getY() + ConveyorLogicConstants.ITEM_PATH_Y_OFFSET;
         double z = worldPosition.getZ() + 0.5D;
 
         if (side == beltFacing.getOpposite()) {

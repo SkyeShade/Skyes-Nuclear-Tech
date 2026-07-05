@@ -3,6 +3,7 @@ package com.skyeshade.skyent.content.block;
 import com.mojang.serialization.MapCodec;
 import com.skyeshade.skyent.content.blockentity.BasicConveyorBeltBlockEntity;
 import com.skyeshade.skyent.content.conveyor.ConveyorBeltSurface;
+import com.skyeshade.skyent.content.conveyor.ConveyorLogicConstants;
 import com.skyeshade.skyent.content.conveyor.ConveyorVisualFeeder;
 import com.skyeshade.skyent.content.entity.ConveyorMovingItemEntity;
 import com.skyeshade.skyent.registry.ModBlockEntities;
@@ -41,7 +42,6 @@ public class BasicConveyorBeltBlock extends BaseEntityBlock implements ConveyorB
     public static final BooleanProperty LEFT_CONNECTED = BooleanProperty.create("left_connected");
     public static final BooleanProperty RIGHT_CONNECTED = BooleanProperty.create("right_connected");
     public static final MapCodec<BasicConveyorBeltBlock> CODEC = simpleCodec(BasicConveyorBeltBlock::new);
-    public static final double BELT_ITEM_Y = 5.0D / 16.0D;
     public static final double ITEM_CENTER_PULL = 4.0D;
     private static final VoxelShape SHAPE = Block.box(0.0D, 0.0D, 0.0D, 16.0D, 4.0D, 16.0D);
 
@@ -144,7 +144,7 @@ public class BasicConveyorBeltBlock extends BaseEntityBlock implements ConveyorB
     public Vec3 getClosestSnappingPosition(Level level, BlockPos pos, Vec3 itemPos) {
         Direction direction = getTravelDirection(level.getBlockState(pos));
         double x = pos.getX() + 0.5D;
-        double y = pos.getY() + BELT_ITEM_Y;
+        double y = pos.getY() + ConveyorLogicConstants.ITEM_PATH_Y_OFFSET;
         double z = pos.getZ() + 0.5D;
 
         if (direction.getAxis() == Direction.Axis.X) {
