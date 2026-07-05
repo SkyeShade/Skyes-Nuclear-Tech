@@ -10,6 +10,7 @@ import com.skyeshade.skyent.client.item.SteelFluidBarrelFluidDecorator;
 import com.skyeshade.skyent.client.item.SteelTongsHeldItemDecorator;
 import com.skyeshade.skyent.client.model.ScaledBlockModel;
 import com.skyeshade.skyent.client.model.SlicedScaledBlockModel;
+import com.skyeshade.skyent.client.particle.StreakParticle;
 import com.skyeshade.skyent.client.renderer.blockentity.CoalForgeRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.ForgingAnvilRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.GeigerCounterPlacedRenderer;
@@ -33,6 +34,7 @@ import com.skyeshade.skyent.registry.ModBlockEntities;
 import com.skyeshade.skyent.registry.ModEntities;
 import com.skyeshade.skyent.registry.ModItems;
 import com.skyeshade.skyent.registry.ModMenus;
+import com.skyeshade.skyent.registry.ModParticles;
 import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
@@ -44,6 +46,7 @@ import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.ModelEvent;
 import net.neoforged.neoforge.client.event.RegisterItemDecorationsEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
+import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
@@ -60,6 +63,7 @@ public final class ClientEvents {
         modEventBus.addListener(ClientEvents::onRegisterAdditionalModels);
         modEventBus.addListener(ClientEvents::onRegisterGeometryLoaders);
         modEventBus.addListener(ClientEvents::onRegisterItemDecorations);
+        modEventBus.addListener(ClientEvents::onRegisterParticleProviders);
         NeoForge.EVENT_BUS.addListener(ClientEvents::onClientTick);
         NeoForge.EVENT_BUS.addListener(ClientEvents::onRenderGui);
         NeoForge.EVENT_BUS.addListener(ClientEvents::onRenderLevel);
@@ -105,6 +109,10 @@ public final class ClientEvents {
     public static void onRegisterItemDecorations(RegisterItemDecorationsEvent event) {
         event.register(ModItems.STEEL_FLUID_BARREL.get(), new SteelFluidBarrelFluidDecorator());
         event.register(ModItems.STEEL_TONGS.get(), new SteelTongsHeldItemDecorator());
+    }
+
+    public static void onRegisterParticleProviders(RegisterParticleProvidersEvent event) {
+        event.registerSpriteSet(ModParticles.SPARK_STREAK.get(), StreakParticle.Factory::new);
     }
 
     public static void onClientTick(ClientTickEvent.Post event) {

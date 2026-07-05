@@ -5,8 +5,10 @@ import com.skyeshade.skyent.client.model.SkyentModelData;
 import com.skyeshade.skyent.client.render.HeatingChamberLightRefreshTracker;
 import com.skyeshade.skyent.client.render.HeatingChamberLighting;
 import com.skyeshade.skyent.content.block.HeatingChamberBlock;
+import com.skyeshade.skyent.content.conveyor.ConveyorLogicConstants;
 import com.skyeshade.skyent.content.entity.ConveyorMovingItemEntity;
 import com.skyeshade.skyent.content.item.HotItemUtil;
+import com.skyeshade.skyent.content.particle.StreakParticleOptions;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import com.skyeshade.skyent.registry.ModSounds;
 import java.lang.reflect.Method;
@@ -18,6 +20,7 @@ import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.sounds.SoundSource;
@@ -50,6 +53,8 @@ public class HeatingChamberBlockEntity extends BlockEntity {
     private static final float HEATING_LOOP_PITCH = 0.85F;
     private static final double CAPTURE_FORWARD_DISTANCE = 0.08D;
     private static final int RELEASE_SPACING_SUPPRESSION_TICKS = 40;
+    private static final int HEATING_SPARK_INTERVAL = 3;
+    private static final int OPENING_SMOKE_WINDOW_TICKS = 8;
 
     private HeatingState heatingState = HeatingState.IDLE_INTAKE;
     private final Set<UUID> insideItemIds = new HashSet<>();
@@ -105,6 +110,7 @@ public class HeatingChamberBlockEntity extends BlockEntity {
         }
         chamber.tickClientAnimationState();
         chamber.tickClientHeatingLoop();
+        chamber.tickClientParticles();
         chamber.lightCheckTicks++;
         if (chamber.lightCheckTicks >= LIGHT_CHECK_INTERVAL_TICKS) {
             chamber.lightCheckTicks = 0;
@@ -333,6 +339,97 @@ public class HeatingChamberBlockEntity extends BlockEntity {
         }
     }
 
+    private void tickClientParticles() {
+        if (level == null || !level.isClientSide) {
+            return;
+        }
+
+        Direction facing = getBlockState().hasProperty(HeatingChamberBlock.FACING)
+                ? getBlockState().getValue(HeatingChamberBlock.FACING)
+                : Direction.NORTH;
+
+        if (heatingState == HeatingState.HEATING) {
+            if (stateTicks % HEATING_SPARK_INTERVAL == 0) {
+                spawnHeatingSparks(facing, 1 + level.random.nextInt(3));
+            }
+        } else if (heatingState == HeatingState.OPENING && stateTicks <= OPENING_SMOKE_WINDOW_TICKS) {
+            spawnHeatingSmoke(facing, stateTicks <= 1 ? 10 : 5);
+        }
+    }
+
+    private void spawnHeatingSmoke(Direction facing, int count) {
+        for (int i = 0; i < count; i++) {
+            Vec3 local = new Vec3(
+                    0.25D + level.random.nextDouble() * 0.65D,
+                    1.0D + ConveyorLogicConstants.ITEM_PATH_Y_OFFSET + 0.18D + level.random.nextDouble() * 0.45D,
+                    0.3D + level.random.nextDouble() * 1.4D
+            );
+            Vec3 world = localToWorld(local, facing);
+            Vec3 localDirection = randomHeatEjectionDirectionLocal();
+            Vec3 smokeLocalDirection = new Vec3(localDirection.x, localDirection.y * 0.25D, localDirection.z).normalize();
+            Vec3 worldDirection = rotateLocalVec(smokeLocalDirection, facing).normalize();
+            Vec3 worldVelocity = worldDirection
+                    .scale(randomBetween(0.01D, 0.035D))
+                    .add(0.0D, randomBetween(0.015D, 0.04D), 0.0D);
+            level.addParticle(
+                    level.random.nextBoolean() ? ParticleTypes.SMOKE : ParticleTypes.CAMPFIRE_COSY_SMOKE,
+                    world.x,
+                    world.y,
+                    world.z,
+                    worldVelocity.x,
+                    worldVelocity.y,
+                    worldVelocity.z
+            );
+        }
+    }
+
+    private void spawnHeatingSparks(Direction facing, int count) {
+        for (int i = 0; i < count; i++) {
+            Vec3 local = new Vec3(
+                    0.25D + level.random.nextDouble() * 0.65D,
+                    1.0D + ConveyorLogicConstants.ITEM_PATH_Y_OFFSET + 0.1D + level.random.nextDouble() * 0.25D,
+                    0.35D + level.random.nextDouble() * 1.3D
+            );
+            Vec3 world = localToWorld(local, facing);
+            Vec3 localDirection = randomHeatEjectionDirectionLocal();
+            Vec3 worldDirection = rotateLocalVec(localDirection, facing).normalize();
+            double speed = 0.03D + level.random.nextDouble() * 0.09D;
+            StreakParticleOptions options = new StreakParticleOptions(
+                    worldDirection,
+                    0.55F + level.random.nextFloat() * 0.3F,
+                    0.125F + level.random.nextFloat() * 0.025F,
+                    6 + level.random.nextInt(9),
+                    1.0F,
+                    0.74F + level.random.nextFloat() * 0.2F,
+                    0.16F,
+                    0.85F + level.random.nextFloat() * 0.15F,
+                    0.85F,
+                    0.16F,
+                    0.03F,
+                    level.random.nextFloat() * 360.0F,
+                    0.85F,
+                    0.02F + level.random.nextFloat() * 0.04F
+            );
+            level.addParticle(options, world.x, world.y, world.z, worldDirection.x * speed, worldDirection.y * speed, worldDirection.z * speed);
+        }
+    }
+
+    private Vec3 randomHeatEjectionDirectionLocal() {
+        Vec3 localDirection;
+        do {
+            localDirection = new Vec3(
+                    randomBetween(-1.0D, 0.6D),
+                    randomBetween(-0.9D, -0.2D),
+                    randomBetween(-1.0D, 1.0D)
+            ).normalize();
+        } while (localDirection.x > 0.35D);
+        return localDirection;
+    }
+
+    private double randomBetween(double min, double max) {
+        return min + level.random.nextDouble() * (max - min);
+    }
+
     private void updateInsideTracking() {
         if (level == null) {
             return;
@@ -481,6 +578,21 @@ public class HeatingChamberBlockEntity extends BlockEntity {
         }
         double count = positions.size();
         return new Vec3(x / count, y / count, z / count);
+    }
+
+    private Vec3 localToWorld(Vec3 local, Direction facing) {
+        Vec3 rotated = rotateLocalVec(local, facing);
+        return new Vec3(worldPosition.getX() + rotated.x, worldPosition.getY() + rotated.y, worldPosition.getZ() + rotated.z);
+    }
+
+    private static Vec3 rotateLocalVec(Vec3 local, Direction facing) {
+        return switch (facing) {
+            case NORTH -> local;
+            case EAST -> new Vec3(-local.z, local.y, local.x);
+            case SOUTH -> new Vec3(-local.x, local.y, -local.z);
+            case WEST -> new Vec3(local.z, local.y, -local.x);
+            default -> local;
+        };
     }
 
     private BlockPos getHoldingBlockPos() {
