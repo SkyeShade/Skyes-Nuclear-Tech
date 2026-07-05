@@ -13,7 +13,9 @@ public final class HeatingChamberLighting {
     private static final int SIZE_X = 2;
     private static final int SIZE_Y = 3;
     private static final int SIZE_Z = 2;
-    public static final int SHARED_LIGHT_REDUCTION = 2;
+    public static final int SHARED_LIGHT_REDUCTION = 0;
+    public static final float RENDER_BRIGHTNESS_MULTIPLIER = 0.5F;
+    public static final float RENDER_BRIGHTNESS_FLOOR = 0.3F;
 
     private HeatingChamberLighting() {
     }

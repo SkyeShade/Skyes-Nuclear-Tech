@@ -17,5 +17,7 @@
   "debug_force_white_fullbright": false,
   "bake_static_fullbright": false,
   "runtime_shared_light": true,
-  "shared_light_reduction": 3
+  "shared_light_reduction": 0,
+  "render_brightness_multiplier": 0.8,
+  "render_brightness_floor": 0.3
 }

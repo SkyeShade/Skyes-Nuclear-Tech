@@ -57,7 +57,7 @@ public class HeatingChamberRenderer implements BlockEntityRenderer<HeatingChambe
                 HeatingChamberLighting.computeControllerPackedLight(chamber.getLevel(), chamber.getBlockPos()),
                 HeatingChamberLighting.SHARED_LIGHT_REDUCTION
         );
-        renderModel(CHAMBER_MODEL, state, poseStack, bufferSource, sharedLight);
+        renderModel(CHAMBER_MODEL, state, poseStack, bufferSource, sharedLight, renderBrightnessScale());
         poseStack.popPose();
     }
 
@@ -105,11 +105,17 @@ public class HeatingChamberRenderer implements BlockEntityRenderer<HeatingChambe
         return clamped * clamped * (3.0F - 2.0F * clamped);
     }
 
-    private static void renderModel(ModelResourceLocation modelLocation, BlockState state, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight) {
+    private static float renderBrightnessScale() {
+        float multiplier = Math.clamp(HeatingChamberLighting.RENDER_BRIGHTNESS_MULTIPLIER, 0.0F, 1.0F);
+        float floor = Math.clamp(HeatingChamberLighting.RENDER_BRIGHTNESS_FLOOR, 0.0F, 1.0F);
+        return Math.max(multiplier, floor);
+    }
+
+    private static void renderModel(ModelResourceLocation modelLocation, BlockState state, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, float brightnessScale) {
         Minecraft minecraft = Minecraft.getInstance();
         BakedModel model = minecraft.getModelManager().getModel(modelLocation);
         ModelBlockRenderer modelRenderer = minecraft.getBlockRenderer().getModelRenderer();
         VertexConsumer consumer = bufferSource.getBuffer(RenderType.cutout());
-        modelRenderer.renderModel(poseStack.last(), consumer, state, model, 1.0F, 1.0F, 1.0F, packedLight, OverlayTexture.NO_OVERLAY);
+        modelRenderer.renderModel(poseStack.last(), consumer, state, model, brightnessScale, brightnessScale, brightnessScale, packedLight, OverlayTexture.NO_OVERLAY);
     }
 }

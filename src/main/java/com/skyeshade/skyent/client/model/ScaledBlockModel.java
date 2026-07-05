@@ -71,8 +71,10 @@ public class ScaledBlockModel implements IUnbakedGeometry<ScaledBlockModel> {
     private final boolean bakeStaticFullbright;
     private final boolean runtimeSharedLight;
     private final int sharedLightReduction;
+    private final float renderBrightnessMultiplier;
+    private final float renderBrightnessFloor;
 
-    public ScaledBlockModel(BlockModel baseModel, float scale, float originX, float originY, float originZ, float translateX, float translateY, float translateZ, int sizeX, int sizeY, int sizeZ, String facingProperty, SharedLightingMode sharedLightingMode, @Nullable Boolean ambientOcclusion, boolean disableDiffuseShading, boolean forceUniformLight, boolean ignoreNeighborShading, boolean ignoreCullface, boolean forceGeneralQuads, boolean debugForceWhiteFullbright, boolean bakeStaticFullbright, boolean runtimeSharedLight, int sharedLightReduction) {
+    public ScaledBlockModel(BlockModel baseModel, float scale, float originX, float originY, float originZ, float translateX, float translateY, float translateZ, int sizeX, int sizeY, int sizeZ, String facingProperty, SharedLightingMode sharedLightingMode, @Nullable Boolean ambientOcclusion, boolean disableDiffuseShading, boolean forceUniformLight, boolean ignoreNeighborShading, boolean ignoreCullface, boolean forceGeneralQuads, boolean debugForceWhiteFullbright, boolean bakeStaticFullbright, boolean runtimeSharedLight, int sharedLightReduction, float renderBrightnessMultiplier, float renderBrightnessFloor) {
         this.baseModel = baseModel;
         this.scale = scale;
         this.originX = originX / 16.0F;
@@ -96,13 +98,15 @@ public class ScaledBlockModel implements IUnbakedGeometry<ScaledBlockModel> {
         this.bakeStaticFullbright = bakeStaticFullbright;
         this.runtimeSharedLight = runtimeSharedLight;
         this.sharedLightReduction = sharedLightReduction;
+        this.renderBrightnessMultiplier = renderBrightnessMultiplier;
+        this.renderBrightnessFloor = renderBrightnessFloor;
     }
 
     @Override
     public BakedModel bake(IGeometryBakingContext context, ModelBaker baker, Function<Material, TextureAtlasSprite> spriteGetter, ModelState modelState, ItemOverrides overrides) {
         if (context.getModelName().contains("heating_chamber")) {
             HeatingChamberRenderDebug.log(
-                    "bake modelName={} geometry=ScaledBlockModel base={} shared_lighting={} ambient_occlusion={} ignore_neighbor_shading={} ignore_cullface={} force_general_quads={} debug_force_white_fullbright={} bake_static_fullbright={} runtime_shared_light={} shared_light_reduction={}",
+                    "bake modelName={} geometry=ScaledBlockModel base={} shared_lighting={} ambient_occlusion={} ignore_neighbor_shading={} ignore_cullface={} force_general_quads={} debug_force_white_fullbright={} bake_static_fullbright={} runtime_shared_light={} shared_light_reduction={} render_brightness_multiplier={} render_brightness_floor={}",
                     context.getModelName(),
                     baseModel.name,
                     sharedLightingMode,
@@ -113,11 +117,13 @@ public class ScaledBlockModel implements IUnbakedGeometry<ScaledBlockModel> {
                     debugForceWhiteFullbright,
                     bakeStaticFullbright,
                     runtimeSharedLight,
-                    sharedLightReduction
+                    sharedLightReduction,
+                    renderBrightnessMultiplier,
+                    renderBrightnessFloor
             );
         }
         BakedModel bakedBase = UnbakedGeometryHelper.bake(baseModel, baker, baseModel, spriteGetter, modelState, context.isGui3d());
-        return new Baked(bakedBase, new ScaleTransformer(scale, originX, originY, originZ, translateX, translateY, translateZ), sizeX, sizeY, sizeZ, facingProperty, sharedLightingMode, ambientOcclusion, disableDiffuseShading, forceUniformLight, ignoreNeighborShading, ignoreCullface, forceGeneralQuads, debugForceWhiteFullbright, bakeStaticFullbright, runtimeSharedLight, sharedLightReduction);
+        return new Baked(bakedBase, new ScaleTransformer(scale, originX, originY, originZ, translateX, translateY, translateZ), sizeX, sizeY, sizeZ, facingProperty, sharedLightingMode, ambientOcclusion, disableDiffuseShading, forceUniformLight, ignoreNeighborShading, ignoreCullface, forceGeneralQuads, debugForceWhiteFullbright, bakeStaticFullbright, runtimeSharedLight, sharedLightReduction, renderBrightnessMultiplier, renderBrightnessFloor);
     }
 
     @Override
@@ -143,8 +149,10 @@ public class ScaledBlockModel implements IUnbakedGeometry<ScaledBlockModel> {
         private final boolean bakeStaticFullbright;
         private final boolean runtimeSharedLight;
         private final int sharedLightReduction;
+        private final float renderBrightnessMultiplier;
+        private final float renderBrightnessFloor;
 
-        private Baked(BakedModel originalModel, IQuadTransformer transformer, int sizeX, int sizeY, int sizeZ, String facingProperty, SharedLightingMode sharedLightingMode, @Nullable Boolean ambientOcclusion, boolean disableDiffuseShading, boolean forceUniformLight, boolean ignoreNeighborShading, boolean ignoreCullface, boolean forceGeneralQuads, boolean debugForceWhiteFullbright, boolean bakeStaticFullbright, boolean runtimeSharedLight, int sharedLightReduction) {
+        private Baked(BakedModel originalModel, IQuadTransformer transformer, int sizeX, int sizeY, int sizeZ, String facingProperty, SharedLightingMode sharedLightingMode, @Nullable Boolean ambientOcclusion, boolean disableDiffuseShading, boolean forceUniformLight, boolean ignoreNeighborShading, boolean ignoreCullface, boolean forceGeneralQuads, boolean debugForceWhiteFullbright, boolean bakeStaticFullbright, boolean runtimeSharedLight, int sharedLightReduction, float renderBrightnessMultiplier, float renderBrightnessFloor) {
             super(originalModel);
             this.transformer = transformer;
             this.sizeX = sizeX;
@@ -162,6 +170,8 @@ public class ScaledBlockModel implements IUnbakedGeometry<ScaledBlockModel> {
             this.bakeStaticFullbright = bakeStaticFullbright;
             this.runtimeSharedLight = runtimeSharedLight;
             this.sharedLightReduction = sharedLightReduction;
+            this.renderBrightnessMultiplier = renderBrightnessMultiplier;
+            this.renderBrightnessFloor = renderBrightnessFloor;
         }
 
         @Override
@@ -243,6 +253,8 @@ public class ScaledBlockModel implements IUnbakedGeometry<ScaledBlockModel> {
                     + ", bake_static_fullbright=" + bakeStaticFullbright
                     + ", runtime_shared_light=" + runtimeSharedLight
                     + ", shared_light_reduction=" + sharedLightReduction
+                    + ", render_brightness_multiplier=" + renderBrightnessMultiplier
+                    + ", render_brightness_floor=" + renderBrightnessFloor
                     + ", size=" + sizeX + "x" + sizeY + "x" + sizeZ
                     + '}';
         }
@@ -323,7 +335,7 @@ public class ScaledBlockModel implements IUnbakedGeometry<ScaledBlockModel> {
         private void logRuntimeLight(int originalPackedLight, int reducedPackedLight) {
             if (HeatingChamberRenderDebug.ENABLED && HEATING_CHAMBER_RUNTIME_LIGHT_LOGS.getAndIncrement() < 100) {
                 HeatingChamberRenderDebug.log(
-                        "runtime light shared_light_reduction={} originalPacked={} originalBlock={} originalSky={} reducedPacked={} reducedBlock={} reducedSky={} writesUv2=true colorScale={}",
+                        "runtime light shared_light_reduction={} originalPacked={} originalBlock={} originalSky={} reducedPacked={} reducedBlock={} reducedSky={} writesUv2=true renderBrightnessScale={}",
                         sharedLightReduction,
                         originalPackedLight,
                         LightTexture.block(originalPackedLight),
@@ -331,7 +343,7 @@ public class ScaledBlockModel implements IUnbakedGeometry<ScaledBlockModel> {
                         reducedPackedLight,
                         LightTexture.block(reducedPackedLight),
                         LightTexture.sky(reducedPackedLight),
-                        runtimeColorScale(originalPackedLight, reducedPackedLight)
+                        renderBrightnessScale(renderBrightnessMultiplier, renderBrightnessFloor)
                 );
             }
         }
@@ -350,7 +362,7 @@ public class ScaledBlockModel implements IUnbakedGeometry<ScaledBlockModel> {
                     forceDebugMagentaFullbright(vertices);
                 } else if (runtimePackedLight != null) {
                     bakePackedLight(vertices, runtimePackedLight.reducedPackedLight());
-                    applyRuntimeColorReduction(vertices, runtimePackedLight.originalPackedLight(), runtimePackedLight.reducedPackedLight());
+                    applyRenderBrightnessMultiplier(vertices, renderBrightnessMultiplier, renderBrightnessFloor);
                 } else if (bakeStaticFullbright) {
                     bakeFullbright(vertices);
                 } else if (shouldForceUniformLight) {
@@ -392,8 +404,8 @@ public class ScaledBlockModel implements IUnbakedGeometry<ScaledBlockModel> {
             return LightTexture.pack(block, sky);
         }
 
-        private static void applyRuntimeColorReduction(int[] vertices, int originalPackedLight, int reducedPackedLight) {
-            float scale = runtimeColorScale(originalPackedLight, reducedPackedLight);
+        private static void applyRenderBrightnessMultiplier(int[] vertices, float multiplier, float floor) {
+            float scale = renderBrightnessScale(multiplier, floor);
             if (scale >= 0.999F) {
                 return;
             }
@@ -404,19 +416,10 @@ public class ScaledBlockModel implements IUnbakedGeometry<ScaledBlockModel> {
             }
         }
 
-        private static float runtimeColorScale(int originalPackedLight, int reducedPackedLight) {
-            int original = Math.max(
-                    Mth.clamp(LightTexture.block(originalPackedLight), 0, 15),
-                    Mth.clamp(LightTexture.sky(originalPackedLight), 0, 15)
-            );
-            int reduced = Math.max(
-                    Mth.clamp(LightTexture.block(reducedPackedLight), 0, 15),
-                    Mth.clamp(LightTexture.sky(reducedPackedLight), 0, 15)
-            );
-            if (original <= 0) {
-                return 0.0F;
-            }
-            return Mth.clamp((float) reduced / (float) original, 0.0F, 1.0F);
+        private static float renderBrightnessScale(float multiplier, float floor) {
+            float safeMultiplier = Mth.clamp(multiplier, 0.0F, 1.0F);
+            float safeFloor = Mth.clamp(floor, 0.0F, 1.0F);
+            return Math.max(safeMultiplier, safeFloor);
         }
 
         private static int scaleColor(int color, float scale) {
@@ -615,7 +618,9 @@ public class ScaledBlockModel implements IUnbakedGeometry<ScaledBlockModel> {
                     GsonHelper.getAsBoolean(jsonObject, "debug_force_white_fullbright", false),
                     GsonHelper.getAsBoolean(jsonObject, "bake_static_fullbright", false),
                     GsonHelper.getAsBoolean(jsonObject, "runtime_shared_light", false),
-                    Math.max(0, GsonHelper.getAsInt(jsonObject, "shared_light_reduction", 0))
+                    Math.max(0, GsonHelper.getAsInt(jsonObject, "shared_light_reduction", 0)),
+                    GsonHelper.getAsFloat(jsonObject, "render_brightness_multiplier", 1.0F),
+                    GsonHelper.getAsFloat(jsonObject, "render_brightness_floor", 0.0F)
             );
         }
     }
