@@ -4,15 +4,21 @@ import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.client.model.SkyentModelData;
 import com.skyeshade.skyent.client.render.HeatingChamberLightRefreshTracker;
 import com.skyeshade.skyent.client.render.HeatingChamberLighting;
+import com.skyeshade.skyent.content.block.BasicConveyorBeltBlock;
 import com.skyeshade.skyent.content.block.HeatingChamberBlock;
+import com.skyeshade.skyent.content.conveyor.ConveyorBeltSurface;
+import com.skyeshade.skyent.content.conveyor.ConveyorGateSurface;
 import com.skyeshade.skyent.content.conveyor.ConveyorLogicConstants;
+import com.skyeshade.skyent.content.conveyor.ConveyorTravelDirectionProvider;
 import com.skyeshade.skyent.content.entity.ConveyorMovingItemEntity;
 import com.skyeshade.skyent.content.item.HotItemUtil;
 import com.skyeshade.skyent.content.particle.StreakParticleOptions;
 import com.skyeshade.skyent.registry.ModBlockEntities;
+import com.skyeshade.skyent.registry.ModBlocks;
 import com.skyeshade.skyent.registry.ModSounds;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -32,6 +38,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.client.model.data.ModelData;
 import org.jetbrains.annotations.Nullable;
 
@@ -52,13 +59,13 @@ public class HeatingChamberBlockEntity extends BlockEntity {
     private static final float HEATING_LOOP_VOLUME = 1.55F;
     private static final float HEATING_LOOP_PITCH = 0.85F;
     private static final double CAPTURE_FORWARD_DISTANCE = 0.08D;
-    private static final int RELEASE_SPACING_SUPPRESSION_TICKS = 40;
     private static final int HEATING_SPARK_INTERVAL = 3;
     private static final int OPENING_SMOKE_WINDOW_TICKS = 8;
 
     private HeatingState heatingState = HeatingState.IDLE_INTAKE;
     private final Set<UUID> insideItemIds = new HashSet<>();
     private final Set<UUID> capturedItemIds = new HashSet<>();
+    private final Set<UUID> releasedCapturedItemIds = new HashSet<>();
     private int stateTicks;
     private int activeHeatingDuration = MIN_HEAT_TICKS;
     private int cachedSharedPackedLight = -1;
@@ -165,8 +172,11 @@ public class HeatingChamberBlockEntity extends BlockEntity {
                 }
             }
             case RELEASING -> {
+                chamber.releaseNextCapturedItemIfPossible();
                 if (chamber.getCapturedItemsInside().isEmpty()) {
+                    chamber.debug("batch fully released");
                     chamber.capturedItemIds.clear();
+                    chamber.releasedCapturedItemIds.clear();
                     chamber.transitionTo(HeatingState.IDLE_INTAKE);
                 }
             }
@@ -188,7 +198,7 @@ public class HeatingChamberBlockEntity extends BlockEntity {
 
     public boolean canInternalConveyorMove(ConveyorMovingItemEntity item) {
         if (capturedItemIds.contains(item.getUUID())) {
-            return heatingState == HeatingState.RELEASING;
+            return heatingState == HeatingState.RELEASING && releasedCapturedItemIds.contains(item.getUUID());
         }
         return canInternalConveyorMove();
     }
@@ -199,9 +209,11 @@ public class HeatingChamberBlockEntity extends BlockEntity {
 
     public boolean canInternalConveyorOutput(ConveyorMovingItemEntity item) {
         if (capturedItemIds.contains(item.getUUID())) {
-            return heatingState == HeatingState.RELEASING;
+            return heatingState == HeatingState.RELEASING
+                    && releasedCapturedItemIds.contains(item.getUUID())
+                    && canReleaseToOutput(item);
         }
-        return canInternalConveyorOutput();
+        return canInternalConveyorOutput() && canReleaseToOutput(item);
     }
 
     public boolean isHeating() {
@@ -270,9 +282,10 @@ public class HeatingChamberBlockEntity extends BlockEntity {
         } else if (state == HeatingState.OPENING) {
             playMovementSound();
         } else if (state == HeatingState.RELEASING) {
-            releaseCapturedItems();
+            prepareCapturedItemsForRelease();
         } else if (state == HeatingState.IDLE_INTAKE) {
             activeHeatingDuration = MIN_HEAT_TICKS;
+            releasedCapturedItemIds.clear();
         }
 
         heatingState = state;
@@ -298,12 +311,164 @@ public class HeatingChamberBlockEntity extends BlockEntity {
         }
     }
 
-    private void releaseCapturedItems() {
+    private void prepareCapturedItemsForRelease() {
+        releasedCapturedItemIds.clear();
         for (ConveyorMovingItemEntity item : getCapturedItemsInside()) {
-            item.setBlocked(false);
-            item.suppressSpacingFor(RELEASE_SPACING_SUPPRESSION_TICKS);
-            debug("released item {} at {}", item.getUUID(), item.position());
+            item.setBlocked(true);
+            debug("captured item remains blocked for staged release {}", item.getUUID());
         }
+    }
+
+    private void releaseNextCapturedItemIfPossible() {
+        if (level == null || heatingState != HeatingState.RELEASING) {
+            return;
+        }
+
+        for (ConveyorMovingItemEntity item : getCapturedItemsSortedFrontFirst()) {
+            if (releasedCapturedItemIds.contains(item.getUUID())) {
+                continue;
+            }
+
+            item.setBlocked(true);
+            if (!canReleaseToOutput(item)) {
+                debug("release waiting: output blocked for item {}", item.getUUID());
+                return;
+            }
+            ConveyorMovingItemEntity blocker = findReleasedCapturedItemAhead(item);
+            if (blocker != null) {
+                debug("release waiting: spacing blocked by item {} ahead of {}", blocker.getUUID(), item.getUUID());
+                return;
+            }
+
+            releasedCapturedItemIds.add(item.getUUID());
+            item.setBlocked(false);
+            debug("released captured item {} at {}", item.getUUID(), item.position());
+            return;
+        }
+    }
+
+    private List<ConveyorMovingItemEntity> getCapturedItemsSortedFrontFirst() {
+        List<ConveyorMovingItemEntity> items = getCapturedItemsInside();
+        Direction direction = getInternalConveyorDirection();
+        items.sort(Comparator.comparingDouble((ConveyorMovingItemEntity item) -> getForwardProgressAlongConveyor(item, direction)).reversed());
+        return items;
+    }
+
+    private static double getForwardProgressAlongConveyor(ConveyorMovingItemEntity item, Direction direction) {
+        return item.getX() * direction.getStepX() + item.getZ() * direction.getStepZ();
+    }
+
+    @Nullable
+    private ConveyorMovingItemEntity findReleasedCapturedItemAhead(ConveyorMovingItemEntity item) {
+        Direction direction = getInternalConveyorDirection();
+        double itemProgress = getForwardProgressAlongConveyor(item, direction);
+        AABB searchBox = item.getBoundingBox().inflate(ConveyorMovingItemEntity.ITEM_SPACING_SEARCH_RADIUS + ConveyorMovingItemEntity.ITEM_SPACING_DISTANCE);
+
+        ConveyorMovingItemEntity nearestBlocker = null;
+        double nearestDistance = Double.MAX_VALUE;
+        for (ConveyorMovingItemEntity other : level.getEntitiesOfClass(ConveyorMovingItemEntity.class, searchBox, entity -> entity != item && !entity.isRemoved())) {
+            if (!releasedCapturedItemIds.contains(other.getUUID())) {
+                continue;
+            }
+            double forwardDistance = getForwardProgressAlongConveyor(other, direction) - itemProgress;
+            if (forwardDistance <= 0.0D || forwardDistance >= ConveyorMovingItemEntity.ITEM_SPACING_DISTANCE) {
+                continue;
+            }
+            if (!isNearConveyorLane(item, other, direction)) {
+                continue;
+            }
+            if (forwardDistance < nearestDistance) {
+                nearestDistance = forwardDistance;
+                nearestBlocker = other;
+            }
+        }
+
+        return nearestBlocker;
+    }
+
+    private static boolean isNearConveyorLane(ConveyorMovingItemEntity item, ConveyorMovingItemEntity other, Direction direction) {
+        double lateralDistance = direction.getAxis() == Direction.Axis.X
+                ? Math.abs(other.getZ() - item.getZ())
+                : Math.abs(other.getX() - item.getX());
+        return lateralDistance <= ConveyorMovingItemEntity.ITEM_SPACING_SEARCH_RADIUS;
+    }
+
+    private boolean canReleaseToOutput(ConveyorMovingItemEntity item) {
+        if (level == null || heatingState != HeatingState.RELEASING) {
+            return false;
+        }
+
+        Direction direction = getInternalConveyorDirection();
+        BlockPos currentPos = getMovingItemBlockPos(item);
+        BlockState currentState = level.getBlockState(currentPos);
+        if (!isOwnInternalConveyorPart(currentState, currentPos)) {
+            BlockPos below = currentPos.below();
+            BlockState belowState = level.getBlockState(below);
+            if (isOwnInternalConveyorPart(belowState, below)) {
+                currentPos = below;
+            } else {
+                return false;
+            }
+        }
+
+        BlockPos outputPos = currentPos.relative(direction);
+        BlockState outputState = level.getBlockState(outputPos);
+        if (isOwnInternalConveyorPart(outputState, outputPos)) {
+            return true;
+        }
+
+        if (outputState.getBlock() instanceof ConveyorBeltSurface) {
+            boolean canEnter = canEnterOutputConveyor(outputState, outputPos, direction.getOpposite());
+            if (!canEnter) {
+                debug("output blocked for item {} at {} canEnter={}", item.getUUID(), outputPos, canEnter);
+            }
+            return canEnter;
+        }
+
+        var handler = level.getCapability(Capabilities.ItemHandler.BLOCK, outputPos, direction.getOpposite());
+        if (handler == null) {
+            debug("output blocked for item {} at {} because no conveyor or handler exists", item.getUUID(), outputPos);
+            return false;
+        }
+
+        ItemStack remainder = item.getItemStack().copy();
+        for (int slot = 0; slot < handler.getSlots() && !remainder.isEmpty(); slot++) {
+            remainder = handler.insertItem(slot, remainder, true);
+        }
+
+        boolean accepted = remainder.isEmpty();
+        if (!accepted) {
+            debug("output handler blocked item {} at {} remainder={}", item.getUUID(), outputPos, remainder.getCount());
+        }
+        return accepted;
+    }
+
+    private boolean isOwnInternalConveyorPart(BlockState state, BlockPos pos) {
+        return state.is(ModBlocks.HEATING_CHAMBER_PART.get())
+                && HeatingChamberBlock.isInternalConveyorLocalPos(new BlockPos(
+                state.getValue(com.skyeshade.skyent.content.block.HeatingChamberPartBlock.PART_X),
+                state.getValue(com.skyeshade.skyent.content.block.HeatingChamberPartBlock.PART_Y),
+                state.getValue(com.skyeshade.skyent.content.block.HeatingChamberPartBlock.PART_Z)
+        ))
+                && HeatingChamberBlock.getMasterPos(state, pos).equals(worldPosition);
+    }
+
+    private static BlockPos getMovingItemBlockPos(ConveyorMovingItemEntity item) {
+        return BlockPos.containing(item.getX(), item.getY() - 0.05D, item.getZ());
+    }
+
+    private boolean canEnterOutputConveyor(BlockState outputState, BlockPos outputPos, Direction fromDirection) {
+        if (outputState.getBlock() instanceof ConveyorTravelDirectionProvider provider) {
+            Direction outputDirection = provider.skyent$getConveyorTravelDirection(level, outputPos, outputState);
+            if (outputDirection == fromDirection) {
+                return false;
+            }
+        } else if (outputState.hasProperty(BasicConveyorBeltBlock.FACING) && outputState.getValue(BasicConveyorBeltBlock.FACING) == fromDirection) {
+            return false;
+        }
+
+        return !(outputState.getBlock() instanceof ConveyorGateSurface gate)
+                || gate.skyent$canConveyorItemEnter(level, outputPos, outputState, fromDirection);
     }
 
     private int computeHeatingDuration() {
@@ -698,6 +863,8 @@ public class HeatingChamberBlockEntity extends BlockEntity {
         tag.putLongArray("InsideItemLeast", insideItemIds.stream().mapToLong(UUID::getLeastSignificantBits).toArray());
         tag.putLongArray("CapturedItemMost", capturedItemIds.stream().mapToLong(UUID::getMostSignificantBits).toArray());
         tag.putLongArray("CapturedItemLeast", capturedItemIds.stream().mapToLong(UUID::getLeastSignificantBits).toArray());
+        tag.putLongArray("ReleasedCapturedItemMost", releasedCapturedItemIds.stream().mapToLong(UUID::getMostSignificantBits).toArray());
+        tag.putLongArray("ReleasedCapturedItemLeast", releasedCapturedItemIds.stream().mapToLong(UUID::getLeastSignificantBits).toArray());
     }
 
     @Override
@@ -719,6 +886,12 @@ public class HeatingChamberBlockEntity extends BlockEntity {
         long[] least = tag.getLongArray("CapturedItemLeast");
         for (int i = 0; i < most.length && i < least.length; i++) {
             capturedItemIds.add(new UUID(most[i], least[i]));
+        }
+        releasedCapturedItemIds.clear();
+        long[] releasedMost = tag.getLongArray("ReleasedCapturedItemMost");
+        long[] releasedLeast = tag.getLongArray("ReleasedCapturedItemLeast");
+        for (int i = 0; i < releasedMost.length && i < releasedLeast.length; i++) {
+            releasedCapturedItemIds.add(new UUID(releasedMost[i], releasedLeast[i]));
         }
     }
 
