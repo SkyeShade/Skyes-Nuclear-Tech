@@ -581,8 +581,43 @@ public class HeatingChamberBlockEntity extends BlockEntity {
     }
 
     private Vec3 localToWorld(Vec3 local, Direction facing) {
-        Vec3 rotated = rotateLocalVec(local, facing);
-        return new Vec3(worldPosition.getX() + rotated.x, worldPosition.getY() + rotated.y, worldPosition.getZ() + rotated.z);
+        int blockX = Mth.floor(local.x);
+        int blockY = Mth.floor(local.y);
+        int blockZ = Mth.floor(local.z);
+
+        double fracX = local.x - blockX;
+        double fracY = local.y - blockY;
+        double fracZ = local.z - blockZ;
+
+        BlockPos blockPos = HeatingChamberBlock.localToWorld(worldPosition, facing, blockX, blockY, blockZ);
+
+        return switch (facing) {
+            case NORTH -> new Vec3(
+                    blockPos.getX() + fracX,
+                    blockPos.getY() + fracY,
+                    blockPos.getZ() + fracZ
+            );
+            case EAST -> new Vec3(
+                    blockPos.getX() + 1.0D - fracZ,
+                    blockPos.getY() + fracY,
+                    blockPos.getZ() + fracX
+            );
+            case SOUTH -> new Vec3(
+                    blockPos.getX() + 1.0D - fracX,
+                    blockPos.getY() + fracY,
+                    blockPos.getZ() + 1.0D - fracZ
+            );
+            case WEST -> new Vec3(
+                    blockPos.getX() + fracZ,
+                    blockPos.getY() + fracY,
+                    blockPos.getZ() + 1.0D - fracX
+            );
+            default -> new Vec3(
+                    blockPos.getX() + fracX,
+                    blockPos.getY() + fracY,
+                    blockPos.getZ() + fracZ
+            );
+        };
     }
 
     private static Vec3 rotateLocalVec(Vec3 local, Direction facing) {
