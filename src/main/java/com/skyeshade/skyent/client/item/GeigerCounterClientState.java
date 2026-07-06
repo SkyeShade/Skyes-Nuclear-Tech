@@ -38,4 +38,8 @@ public final class GeigerCounterClientState {
         return displayedExposureMillisievertsPerSecond;
     }
 
+    public static double getTargetExposureMillisievertsPerSecond() {
+        return targetExposureMillisievertsPerSecond;
+    }
+
 }

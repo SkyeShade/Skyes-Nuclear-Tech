@@ -23,6 +23,7 @@ import com.skyeshade.skyent.content.block.LVElectricPumpBlock;
 import com.skyeshade.skyent.content.block.LVSteamTurbineBlock;
 import com.skyeshade.skyent.content.block.MoltenCoriumBlock;
 import com.skyeshade.skyent.content.block.RadioactiveBlock;
+import com.skyeshade.skyent.content.block.RadioactiveScrapMetalBlock;
 import com.skyeshade.skyent.content.block.SiltBlock;
 import com.skyeshade.skyent.content.block.SteamForgeHammerBlock;
 import com.skyeshade.skyent.content.block.SteamForgeHammerPartBlock;
@@ -278,6 +279,15 @@ public final class ModBlocks {
             "corium_block",
             CoriumBlock::new,
             BlockBehaviour.Properties.ofFullCopy(Blocks.OBSIDIAN)
+    );
+
+    public static final DeferredBlock<RadioactiveScrapMetalBlock> RADIOACTIVE_SCRAP_METAL = BLOCKS.registerBlock(
+            "radioactive_scrap_metal",
+            RadioactiveScrapMetalBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 10.0F)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
     );
 
     public static final DeferredBlock<GeigerCounterPlacedBlock> GEIGER_COUNTER_PLACED = BLOCKS.registerBlock(

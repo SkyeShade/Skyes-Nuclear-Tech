@@ -19,6 +19,7 @@ import com.skyeshade.skyent.client.renderer.blockentity.SteamForgeHammerRenderer
 import com.skyeshade.skyent.client.renderer.entity.ConveyorMovingItemRenderer;
 import com.skyeshade.skyent.client.renderer.LVConnectorRenderer;
 import com.skyeshade.skyent.client.renderer.LVElectricPumpRenderer;
+import com.skyeshade.skyent.client.render.RadiationFeedbackClient;
 import com.skyeshade.skyent.client.sound.ConveyorSoundHandler;
 import com.skyeshade.skyent.client.sound.MachineSoundManager;
 import com.skyeshade.skyent.content.item.HotItemUtil;
@@ -35,6 +36,7 @@ import com.skyeshade.skyent.registry.ModEntities;
 import com.skyeshade.skyent.registry.ModItems;
 import com.skyeshade.skyent.registry.ModMenus;
 import com.skyeshade.skyent.registry.ModParticles;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
@@ -117,11 +119,23 @@ public final class ClientEvents {
 
     public static void onClientTick(ClientTickEvent.Post event) {
         GeigerCounterClientState.clientTick();
+        tickRadiationFeedback();
         GeigerCounterSoundManager.clientTick();
         PlacedGeigerCounterSoundManager.clientTick();
         ConveyorSoundHandler.clientTick();
         MachineSoundManager.tick();
         RadiationRayDebugClient.onClientTick(event);
+    }
+
+    private static void tickRadiationFeedback() {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null || minecraft.player == null) {
+            RadiationFeedbackClient.clear();
+            return;
+        }
+
+        RadiationFeedbackClient.setDoseRate((float) GeigerCounterClientState.getTargetExposureMillisievertsPerSecond());
+        RadiationFeedbackClient.tick();
     }
 
     public static void onRenderLevel(RenderLevelStageEvent event) {

@@ -16,6 +16,7 @@ import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
@@ -34,6 +35,7 @@ public final class ServerEvents {
         NeoForge.EVENT_BUS.addListener(ServerEvents::onLivingIncomingDamage);
         NeoForge.EVENT_BUS.addListener(ServerEvents::onEntityTick);
         NeoForge.EVENT_BUS.addListener(ServerEvents::onServerTick);
+        NeoForge.EVENT_BUS.addListener(ServerEvents::onChunkLoad);
     }
 
     public static void onServerStarting(ServerStartingEvent event) {
@@ -68,6 +70,12 @@ public final class ServerEvents {
             RadiationExposureSystem.tickPlayer(player);
             ToxicitySystem.tickLivingEntity(player);
             HotItemSystem.tickLivingEntity(player);
+        }
+    }
+
+    public static void onChunkLoad(ChunkEvent.Load event) {
+        if (event.getLevel() instanceof ServerLevel level) {
+            RadiationSourceTickSystem.discoverSourcesInChunk(level, event.getChunk());
         }
     }
 

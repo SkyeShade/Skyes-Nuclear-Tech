@@ -38,6 +38,9 @@ public final class RadiationItemValues {
         if (stack.is(ModItems.CORIUM_BLOCK.get())) {
             return RadiationBlockProfiles.getRadiationStrength(ModBlocks.CORIUM_BLOCK.get());
         }
+        if (stack.is(ModItems.RADIOACTIVE_SCRAP_METAL.get())) {
+            return RadiationBlockProfiles.getRadiationStrength(ModBlocks.RADIOACTIVE_SCRAP_METAL.get());
+        }
         return 0.0D;
     }
 

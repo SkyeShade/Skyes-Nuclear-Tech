@@ -102,6 +102,10 @@ public final class RadiationBlockProfiles {
                 .radiation(25_000.0D, 48, 180)
                 .transmission(0.90D)
                 .build());
+        register(ModBlocks.RADIOACTIVE_SCRAP_METAL, RadiationBlockProfile.builder()
+                .radiation(1000.0D, 16, 80)
+                .transmission(0.90D)
+                .build());
         register(ModBlocks.MOLTEN_CORIUM_BLOCK, RadiationBlockProfile.builder()
                 .radiation(25_000.0D, 48, 180)
                 .transmission(1.0D)

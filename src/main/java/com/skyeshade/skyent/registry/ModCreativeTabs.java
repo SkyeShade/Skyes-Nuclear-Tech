@@ -65,6 +65,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.DEEPSLATE_URANIUM_ORE.get());
                         output.accept(ModItems.URANIUM_BLOCK.get());
                         output.accept(ModItems.CORIUM_BLOCK.get());
+                        output.accept(ModItems.RADIOACTIVE_SCRAP_METAL.get());
                         output.accept(ModItems.MOLTEN_CORIUM_BUCKET.get());
                         output.accept(ModItems.STEEL_FLUID_BARREL.get());
                         addSteelFluidBarrelVariants(output);

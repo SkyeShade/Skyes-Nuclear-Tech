@@ -254,6 +254,11 @@ public final class ModItems {
             () -> new RadioactiveBlockItem(ModBlocks.CORIUM_BLOCK.get(), new Item.Properties())
     );
 
+    public static final DeferredItem<RadioactiveBlockItem> RADIOACTIVE_SCRAP_METAL = ITEMS.register(
+            "radioactive_scrap_metal",
+            () -> new RadioactiveBlockItem(ModBlocks.RADIOACTIVE_SCRAP_METAL.get(), new Item.Properties())
+    );
+
     public static final DeferredItem<BucketItem> MOLTEN_CORIUM_BUCKET = ITEMS.register(
             "molten_corium_bucket",
             () -> new BucketItem(ModFluids.MOLTEN_CORIUM.get(), new Item.Properties().craftRemainder(Items.BUCKET).stacksTo(1))

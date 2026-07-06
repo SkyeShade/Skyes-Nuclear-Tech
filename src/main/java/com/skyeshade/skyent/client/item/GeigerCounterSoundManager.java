@@ -1,5 +1,6 @@
 package com.skyeshade.skyent.client.item;
 
+import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.item.GeigerCounterItem;
 import com.skyeshade.skyent.registry.ModItems;
 import com.skyeshade.skyent.registry.ModSounds;
@@ -8,11 +9,13 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.resources.sounds.AbstractTickableSoundInstance;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.resources.sounds.SoundInstance;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.registries.DeferredHolder;
 
 import java.util.ArrayList;
@@ -37,11 +40,14 @@ public final class GeigerCounterSoundManager {
     private static final int AUDIO_ENABLE_PASSIVE_COOLDOWN_MIN_TICKS = 20;
     private static final int AUDIO_ENABLE_PASSIVE_COOLDOWN_RANDOM_TICKS = 40;
 
+    private static final boolean DEBUG_GEIGER_AUDIO = false;
+
     private static final RandomSource RANDOM = RandomSource.create();
 
     private static final List<GeigerLoopSoundInstance> activeLoops = new ArrayList<>();
 
     private static GeigerLoopSoundInstance currentLoop;
+    private static ResourceKey<Level> lastDimension;
     private static int activeLoopTier;
     private static int passiveClickCooldown;
     private static boolean hadAudioEnabledLastTick;
@@ -58,21 +64,47 @@ public final class GeigerCounterSoundManager {
             fadeOutAllLoops();
             passiveClickCooldown = 0;
             hadAudioEnabledLastTick = false;
+            lastDimension = player == null ? null : player.level().dimension();
             return;
         }
+
+        ResourceKey<Level> currentDimension = player.level().dimension();
+        if (lastDimension != null && lastDimension != currentDimension) {
+            resetAudioState("dimension changed from " + lastDimension.location() + " to " + currentDimension.location());
+        }
+        lastDimension = currentDimension;
 
         if (!hadAudioEnabledLastTick) {
             passiveClickCooldown = AUDIO_ENABLE_PASSIVE_COOLDOWN_MIN_TICKS + RANDOM.nextInt(AUDIO_ENABLE_PASSIVE_COOLDOWN_RANDOM_TICKS + 1);
         }
         hadAudioEnabledLastTick = true;
 
-        double exposure = GeigerCounterClientState.getDisplayedExposureMillisievertsPerSecond();
+        double exposure = GeigerCounterClientState.getTargetExposureMillisievertsPerSecond();
         int loopTier = loopTierForExposure(exposure);
 
         updateLoopTier(minecraft, loopTier);
         cleanupStoppedLoops();
 
         tickPassiveClicks(minecraft, exposure);
+    }
+
+    private static void resetAudioState(String reason) {
+        if (DEBUG_GEIGER_AUDIO) {
+            Minecraft minecraft = Minecraft.getInstance();
+            ResourceKey<Level> dimension = minecraft.player == null ? null : minecraft.player.level().dimension();
+            double exposure = GeigerCounterClientState.getTargetExposureMillisievertsPerSecond();
+            SkyesNuclearTech.LOGGER.info(
+                    "Geiger audio reset: reason={} dimension={} targetExposure={} activeLoopTier={}",
+                    reason,
+                    dimension == null ? "none" : dimension.location(),
+                    exposure,
+                    activeLoopTier
+            );
+        }
+
+        fadeOutAllLoops();
+        passiveClickCooldown = 0;
+        hadAudioEnabledLastTick = false;
     }
 
     private static void updateLoopTier(Minecraft minecraft, int loopTier) {

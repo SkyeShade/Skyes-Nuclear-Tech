@@ -20,7 +20,7 @@ public final class ConveyorSoundHandler {
     private static final int ADD_RADIUS = 14;
     private static final int REMOVE_RADIUS = 18;
     private static final int MAX_ACTIVE_CONVEYOR_SOUNDS = 12;
-    private static final float CONVEYOR_LOOP_VOLUME = 0.072F;
+    private static final float CONVEYOR_LOOP_VOLUME = 0.032F;
     private static final float CONVEYOR_LOOP_PITCH = 1.0F;
 
     private static int scanTicker;

@@ -20,6 +20,7 @@ import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
@@ -42,6 +43,7 @@ public final class RadiationExposureSystem {
     public static final double EXPOSURE_TO_SICKNESS_SCALE = 0.08D;
     public static final double RECOVERY_PER_SECOND = 0.25D;
     public static final double IRREVERSIBLE_WORSENING_PER_SECOND = 0.25D;
+    public static final double NETHER_AMBIENT_RADIATION_MSV_PER_SECOND = 3.0D;
 
     private static final int SYMPTOM_INTERVAL_TICKS = 100;
     private static final String PERSISTED_TAG = SkyesNuclearTech.MOD_ID + ":radiation_sickness";
@@ -78,7 +80,7 @@ public final class RadiationExposureSystem {
                 RadiationExposureUtil.DEFAULT_PLAYER_SCAN_RADIUS,
                 player
         );
-        double exposure = scan.exposureMillisievertsPerSecond();
+        double exposure = scan.exposureMillisievertsPerSecond() + getAmbientRadiationMillisievertsPerSecond(player);
         double inventoryExposure = RadiationItemValues.calculateInventoryRadiation(player);
         emitCarriedEnvironmentalRadiation(level, player, data, gameTime);
         data.setCurrentEnvironmentalExposureMillisievertsPerSecond(exposure);
@@ -114,7 +116,7 @@ public final class RadiationExposureSystem {
                 RadiationExposureUtil.DEFAULT_PLAYER_SCAN_RADIUS,
                 entity
         );
-        double environmentalExposure = scan.exposureMillisievertsPerSecond();
+        double environmentalExposure = scan.exposureMillisievertsPerSecond() + getAmbientRadiationMillisievertsPerSecond(entity);
         double inventoryExposure = RadiationItemValues.calculateInventoryRadiation(entity);
         emitCarriedEnvironmentalRadiation(level, entity, data, gameTime);
         data.setCurrentEnvironmentalExposureMillisievertsPerSecond(environmentalExposure);
@@ -279,6 +281,10 @@ public final class RadiationExposureSystem {
         data.setLastCarriedEnvironmentalRayTick(gameTime);
         double strength = CarriedRadiationUtil.carriedRadiationStrength(entity);
         CarriedRadiationUtil.emitEnvironmentalRays(level, entity, strength);
+    }
+
+    private static double getAmbientRadiationMillisievertsPerSecond(LivingEntity entity) {
+        return entity.level().dimension() == Level.NETHER ? NETHER_AMBIENT_RADIATION_MSV_PER_SECOND : 0.0D;
     }
 
     private static boolean isRadiationImmune(LivingEntity entity) {
