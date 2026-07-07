@@ -28,6 +28,9 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.capabilities.Capabilities;
 
 public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarrierEntity {
+    private static final boolean DEBUG_CONVEYOR_ITEM_SYNC = false;
+    private static final int MIN_CLIENT_LERP_STEPS = 3;
+    private static final double CLIENT_SNAP_DISTANCE_SQR = 4.0D;
     public static final double BELT_ITEM_SPEED = 0.062D;
     public static final double OUTPUT_EDGE_DISTANCE = 0.52D;
     public static final double BLOCKED_EDGE_DISTANCE = 0.42D;
@@ -45,6 +48,10 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
     private Direction lastBeltFacing;
     private int mergeSpacingTicks;
     private int spacingSuppressionTicks;
+    private double clientTargetX;
+    private double clientTargetY;
+    private double clientTargetZ;
+    private int clientLerpSteps;
     private static final EntityDataAccessor<Boolean> DATA_BLOCKED = SynchedEntityData.defineId(
             ConveyorMovingItemEntity.class,
             EntityDataSerializers.BOOLEAN
@@ -80,7 +87,7 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
         }
 
         if (level().isClientSide) {
-            tickClientVisualMovement();
+            tickClientInterpolation();
             return;
         }
 
@@ -171,43 +178,40 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
         return forwardDistance >= OUTPUT_EDGE_DISTANCE;
     }
 
-    private void tickClientVisualMovement() {
-        if (isBlocked()) {
+    private void tickClientInterpolation() {
+        if (clientLerpSteps <= 0) {
             tickMergeSpacing();
             return;
         }
 
-        BeltContext belt = findCurrentBelt();
-        if (belt == null || !belt.surface().canItemStay(level(), belt.pos(), position())) {
-            tickMergeSpacing();
-            return;
-        }
-
-
-        updateBeltTracking(belt);
-
-        if (!canMoveOnBelt(belt)) {
-            tickMergeSpacing();
-            return;
-        }
-
-        Vec3 next = belt.surface().getTravelLocation(level(), belt.pos(), position(), BELT_ITEM_SPEED);
-
-
-        if (wouldReachOutputEdge(belt, next) && shouldPreHandleOutput(belt)) {
-            setPos(clampedFrontPosition(belt));
-            tickMergeSpacing();
-            return;
-        }
-
-
-        if (isItemAheadTooClose(belt, next)) {
-            tickMergeSpacing();
-            return;
-        }
-
-        setPos(next.x, next.y, next.z);
+        double nextX = getX() + (clientTargetX - getX()) / clientLerpSteps;
+        double nextY = getY() + (clientTargetY - getY()) / clientLerpSteps;
+        double nextZ = getZ() + (clientTargetZ - getZ()) / clientLerpSteps;
+        setPos(nextX, nextY, nextZ);
+        clientLerpSteps--;
         tickMergeSpacing();
+    }
+
+    @Override
+    public void lerpTo(double x, double y, double z, float yRot, float xRot, int steps) {
+        if (!level().isClientSide) {
+            super.lerpTo(x, y, z, yRot, xRot, steps);
+            return;
+        }
+
+        double distanceSqr = distanceToSqr(x, y, z);
+        if (distanceSqr > CLIENT_SNAP_DISTANCE_SQR) {
+            setPos(x, y, z);
+            clientLerpSteps = 0;
+            debugSync("client snap to {},{},{} distanceSqr={}", x, y, z, distanceSqr);
+            return;
+        }
+
+        clientTargetX = x;
+        clientTargetY = y;
+        clientTargetZ = z;
+        clientLerpSteps = Math.max(steps, MIN_CLIENT_LERP_STEPS);
+        debugSync("client lerp target {},{},{} steps={} distanceSqr={}", x, y, z, clientLerpSteps, distanceSqr);
     }
 
     private boolean tryHandleOutput(BeltContext belt, boolean force) {
@@ -446,6 +450,15 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
 
     public void suppressSpacingFor(int ticks) {
         spacingSuppressionTicks = Math.max(spacingSuppressionTicks, ticks);
+    }
+
+    private void debugSync(String message, Object... args) {
+        if (DEBUG_CONVEYOR_ITEM_SYNC) {
+            Object[] combined = new Object[args.length + 1];
+            combined[0] = getUUID();
+            System.arraycopy(args, 0, combined, 1, args.length);
+            com.skyeshade.skyent.SkyesNuclearTech.LOGGER.info("[ConveyorMovingItem {}] " + message, combined);
+        }
     }
 
     public void dropAsNormalItem(Vec3 position, Vec3 velocity) {
