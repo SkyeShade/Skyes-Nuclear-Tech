@@ -2,6 +2,7 @@ package com.skyeshade.skyent.content.blockentity;
 
 import com.skyeshade.skyent.content.block.ConveyorExporterBlock;
 import com.skyeshade.skyent.content.conveyor.ConveyorBeltSurface;
+import com.skyeshade.skyent.content.conveyor.ConveyorInsertionUtil;
 import com.skyeshade.skyent.content.menu.ConveyorExporterMenu;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import com.skyeshade.skyent.registry.ModBlocks;
@@ -26,7 +27,8 @@ import org.jetbrains.annotations.Nullable;
 
 public class ConveyorExporterBlockEntity extends BlockEntity implements MenuProvider {
     public static final int FILTER_SLOTS = 15;
-    private static final int EXPORT_INTERVAL_TICKS = 8;
+    private static final int BASIC_EXPORT_INTERVAL_TICKS = 5;
+    private static final int BASIC_EXPORT_AMOUNT = 1;
     private static final int DATA_WHITELIST = 0;
     private static final int DATA_COUNT = 1;
     private static final String TAG_FILTER = "Filter";
@@ -75,7 +77,7 @@ public class ConveyorExporterBlockEntity extends BlockEntity implements MenuProv
             return;
         }
 
-        exporter.exportCooldown = EXPORT_INTERVAL_TICKS - 1;
+        exporter.exportCooldown = BASIC_EXPORT_INTERVAL_TICKS - 1;
         if (exporter.tryExport()) {
             setChanged(level, pos, state);
         }
@@ -104,22 +106,22 @@ public class ConveyorExporterBlockEntity extends BlockEntity implements MenuProv
         }
 
         for (int slot = 0; slot < source.getSlots(); slot++) {
-            ItemStack candidate = source.extractItem(slot, source.getSlotLimit(slot), true);
+            ItemStack candidate = source.extractItem(slot, BASIC_EXPORT_AMOUNT, true);
             if (candidate.isEmpty() || !matchesFilter(candidate)) {
                 continue;
             }
 
-            ItemStack simulatedRemainder = insertIntoHandler(conveyor, candidate, true);
+            ItemStack simulatedRemainder = ConveyorInsertionUtil.insertIntoHandler(conveyor, candidate, true);
             if (!simulatedRemainder.isEmpty()) {
                 continue;
             }
 
-            ItemStack extracted = source.extractItem(slot, candidate.getCount(), false);
+            ItemStack extracted = source.extractItem(slot, BASIC_EXPORT_AMOUNT, false);
             if (extracted.isEmpty()) {
                 continue;
             }
 
-            ItemStack remainder = insertIntoHandler(conveyor, extracted, false);
+            ItemStack remainder = ConveyorInsertionUtil.insertIntoHandler(conveyor, extracted, false);
             if (!remainder.isEmpty()) {
                 source.insertItem(slot, remainder, false);
             }
@@ -127,14 +129,6 @@ public class ConveyorExporterBlockEntity extends BlockEntity implements MenuProv
         }
 
         return false;
-    }
-
-    private static ItemStack insertIntoHandler(IItemHandler handler, ItemStack stack, boolean simulate) {
-        ItemStack remainder = stack.copy();
-        for (int slot = 0; slot < handler.getSlots() && !remainder.isEmpty(); slot++) {
-            remainder = handler.insertItem(slot, remainder, simulate);
-        }
-        return remainder;
     }
 
     public boolean matchesFilter(ItemStack stack) {

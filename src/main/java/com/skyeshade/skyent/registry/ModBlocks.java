@@ -7,6 +7,7 @@ import com.skyeshade.skyent.content.block.BrickBlastFurnaceBlock;
 import com.skyeshade.skyent.content.block.CoalForgeBlock;
 import com.skyeshade.skyent.content.block.CombustionGeneratorBlock;
 import com.skyeshade.skyent.content.block.ConveyorExporterBlock;
+import com.skyeshade.skyent.content.block.ConveyorSplitterBlock;
 import com.skyeshade.skyent.content.block.CoriumBlock;
 import com.skyeshade.skyent.content.block.DeadGrassBlock;
 import com.skyeshade.skyent.content.block.DeadLeavesBlock;
@@ -144,6 +145,13 @@ public final class ModBlocks {
     public static final DeferredBlock<BasicConveyorBeltBlock> BASIC_CONVEYOR_BELT = BLOCKS.registerBlock(
             "basic_conveyor_belt",
             BasicConveyorBeltBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .noOcclusion()
+    );
+
+    public static final DeferredBlock<ConveyorSplitterBlock> CONVEYOR_SPLITTER = BLOCKS.registerBlock(
+            "conveyor_splitter",
+            ConveyorSplitterBlock::new,
             BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
                     .noOcclusion()
     );

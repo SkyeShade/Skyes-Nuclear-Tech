@@ -34,6 +34,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.LV_STEAM_TURBINE.get());
                         output.accept(ModItems.BASIC_FLUID_DUCT.get());
                         output.accept(ModItems.BASIC_CONVEYOR_BELT.get());
+                        output.accept(ModItems.CONVEYOR_SPLITTER.get());
                         output.accept(ModItems.CONVEYOR_EXPORTER.get());
                         output.accept(ModItems.SILT.get());
                         output.accept(ModItems.DEAD_GRASS.get());

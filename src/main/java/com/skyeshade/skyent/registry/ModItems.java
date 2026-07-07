@@ -99,6 +99,11 @@ public final class ModItems {
             new Item.Properties()
     );
 
+    public static final DeferredItem<BlockItem> CONVEYOR_SPLITTER = ITEMS.registerSimpleBlockItem(
+            ModBlocks.CONVEYOR_SPLITTER,
+            new Item.Properties()
+    );
+
     public static final DeferredItem<BlockItem> CONVEYOR_EXPORTER = ITEMS.registerSimpleBlockItem(
             ModBlocks.CONVEYOR_EXPORTER,
             new Item.Properties()
