@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
 
 public class ConveyorExporterBlockEntity extends BlockEntity implements MenuProvider {
     public static final int FILTER_SLOTS = 15;
-    private static final int BASIC_EXPORT_INTERVAL_TICKS = 5;
+    private static final int BASIC_EXPORT_INTERVAL_TICKS = 2;
     private static final int BASIC_EXPORT_AMOUNT = 1;
     private static final int DATA_WHITELIST = 0;
     private static final int DATA_COUNT = 1;

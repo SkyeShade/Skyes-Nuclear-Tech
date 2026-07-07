@@ -34,9 +34,9 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
     private static final double CLIENT_SNAP_DISTANCE_SQR = 4.0D;
     public static final double BELT_ITEM_SPEED = 0.062D;
     public static final double OUTPUT_EDGE_DISTANCE = 0.52D;
-    public static final double BLOCKED_EDGE_DISTANCE = 0.42D;
-    public static final double STRAIGHT_ITEM_SPACING = 0.42D;
-    public static final double MERGE_ITEM_SPACING = 0.46D;
+    public static final double BLOCKED_EDGE_DISTANCE = 0.32D;
+    public static final double STRAIGHT_ITEM_SPACING = 0.32D;
+    public static final double MERGE_ITEM_SPACING = 0.36D;
     public static final double MERGE_SPACING_DISTANCE_FROM_CENTER = 0.55D;
     public static final int MERGE_SPACING_TICKS = 12;
     public static final int MERGE_GHOST_TICKS = 10;
