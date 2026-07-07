@@ -36,7 +36,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 public class ConveyorSplitterBlock extends BaseEntityBlock implements ConveyorBeltSurface, ConveyorGateSurface, ConveyorTravelDirectionProvider, ConveyorVisualFeeder {
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     public static final MapCodec<ConveyorSplitterBlock> CODEC = simpleCodec(ConveyorSplitterBlock::new);
-    private static final VoxelShape SHAPE = Block.box(0.0D, 0.0D, 0.0D, 16.0D, 4.0D, 16.0D);
+    private static final VoxelShape SHAPE = Block.box(0.0D, 0.0D, 0.0D, 16.0D, 16.0D, 16.0D);
     private static final double HOLD_FORWARD_DISTANCE = -0.28D;
     private static final double INPUT_LANE_RADIUS = 0.18D;
 

@@ -29,6 +29,7 @@ import net.neoforged.neoforge.capabilities.Capabilities;
 
 public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarrierEntity {
     private static final boolean DEBUG_CONVEYOR_ITEM_SYNC = false;
+    private static final boolean DEBUG_CONVEYOR_MERGE = false;
     private static final int MIN_CLIENT_LERP_STEPS = 3;
     private static final double CLIENT_SNAP_DISTANCE_SQR = 4.0D;
     public static final double BELT_ITEM_SPEED = 0.062D;
@@ -38,6 +39,13 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
     public static final double MERGE_ITEM_SPACING = 0.46D;
     public static final double MERGE_SPACING_DISTANCE_FROM_CENTER = 0.55D;
     public static final int MERGE_SPACING_TICKS = 12;
+    public static final int MERGE_GHOST_TICKS = 10;
+    public static final double MERGE_RESERVE_FRONT_GAP = 0.56D;
+    public static final double MERGE_RESERVE_REAR_GAP = 0.56D;
+    public static final double MERGE_ENTRY_CLEARANCE = 0.55D;
+    public static final double MERGE_ANTICIPATION_DISTANCE = 0.02D;
+    public static final double MERGE_COMMIT_DISTANCE_FROM_CENTERLINE = 0.10D;
+    public static final double SAME_LANE_SPACING_DISTANCE_FROM_CENTERLINE = 0.30D;
     public static final double ITEM_SPACING_DISTANCE = STRAIGHT_ITEM_SPACING;
     public static final double ITEM_SPACING_SEARCH_RADIUS = 0.75D;
     private static final EntityDataAccessor<ItemStack> DATA_ITEM = SynchedEntityData.defineId(
@@ -48,6 +56,11 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
     private Direction lastBeltFacing;
     private int mergeSpacingTicks;
     private int spacingSuppressionTicks;
+    private boolean mergeGhost;
+    private int mergeGhostTicks;
+    private BlockPos mergeDestinationPos;
+    private Direction mergeDestinationFacing;
+    private double mergeReservedProgress;
     private double clientTargetX;
     private double clientTargetY;
     private double clientTargetZ;
@@ -113,6 +126,7 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
         }
 
         updateBeltTracking(belt);
+        updateMergeGhostState(belt);
 
         if (isBlocked()) {
             if (!canMoveOnBelt(belt)) {
@@ -243,6 +257,15 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
                 setPos(clampedFrontPosition(belt));
                 return true;
             }
+            if (outputFacing != belt.facing()) {
+                MergeReservation reservation = reserveMergeGapIntoOutputBelt(belt, outputPos, outputFacing);
+                if (!reservation.allowed()) {
+                    setBlocked(true);
+                    setPos(clampedFrontPosition(belt));
+                    return true;
+                }
+                startMergeGhost(outputPos, outputFacing, reservation.reservedProgress());
+            }
             setBlocked(false);
             return false;
         }
@@ -295,6 +318,170 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
                 || gate.skyent$canConveyorItemEnter(level(), outputPos, outputState, fromDirection);
     }
 
+    private MergeReservation reserveMergeGapIntoOutputBelt(BeltContext sourceBelt, BlockPos outputPos, Direction outputFacing) {
+        Vec3 mergePosition = mergeEntryPosition(outputPos, outputFacing, sourceBelt.facing());
+        AABB searchBox = new AABB(mergePosition, mergePosition).inflate(ITEM_SPACING_SEARCH_RADIUS + MERGE_ITEM_SPACING);
+        ConveyorMovingItemEntity aheadItem = null;
+        ConveyorMovingItemEntity behindItem = null;
+        ConveyorMovingItemEntity ghostConflict = null;
+        ConveyorMovingItemEntity clearanceBlocker = null;
+        double nearestAhead = Double.MAX_VALUE;
+        double nearestBehind = Double.MAX_VALUE;
+        double reservedProgress = progressAlong(outputFacing, mergePosition);
+
+        for (ConveyorMovingItemEntity other : level().getEntitiesOfClass(ConveyorMovingItemEntity.class, searchBox, entity -> entity != this && !entity.isRemoved())) {
+            if (other.isUncommittedMergeGhostFor(outputPos, outputFacing)) {
+                ghostConflict = other;
+                break;
+            }
+            if (!isOnDestinationLane(other.position(), outputPos, outputFacing)) {
+                continue;
+            }
+
+            double alongLane = projectionAlong(other.position().subtract(mergePosition), outputFacing);
+            double distanceFromEntry = Math.abs(alongLane);
+            if (distanceFromEntry < MERGE_ENTRY_CLEARANCE) {
+                clearanceBlocker = other;
+            }
+            if (alongLane > 0.0D && alongLane < nearestAhead) {
+                nearestAhead = alongLane;
+                aheadItem = other;
+            } else if (alongLane < 0.0D && -alongLane < nearestBehind) {
+                nearestBehind = -alongLane;
+                behindItem = other;
+            }
+        }
+
+        boolean frontGap = aheadItem == null || nearestAhead >= MERGE_RESERVE_FRONT_GAP;
+        boolean rearGap = behindItem == null || nearestBehind >= MERGE_RESERVE_REAR_GAP;
+        boolean gapWideEnough = aheadItem == null || behindItem == null
+                || nearestAhead + nearestBehind >= MERGE_RESERVE_FRONT_GAP + MERGE_RESERVE_REAR_GAP;
+        boolean allowed = ghostConflict == null && clearanceBlocker == null && frontGap && rearGap && gapWideEnough;
+        debugMerge(
+                "reserve {}@{} -> {}@{} entry={} entryProgress={} allowed={} ahead={} aheadGap={} behind={} behindGap={} ghostConflict={} clearanceBlocker={} anticipation={} gapWideEnough={}",
+                sourceBelt.facing(),
+                sourceBelt.pos(),
+                outputFacing,
+                outputPos,
+                mergePosition,
+                reservedProgress,
+                allowed,
+                aheadItem == null ? null : aheadItem.getUUID(),
+                aheadItem == null ? -1.0D : nearestAhead,
+                behindItem == null ? null : behindItem.getUUID(),
+                behindItem == null ? -1.0D : nearestBehind,
+                ghostConflict == null ? null : ghostConflict.getUUID(),
+                clearanceBlocker == null ? null : clearanceBlocker.getUUID(),
+                MERGE_ANTICIPATION_DISTANCE,
+                gapWideEnough
+        );
+        return new MergeReservation(allowed, reservedProgress);
+    }
+
+    private static Vec3 mergeEntryPosition(BlockPos outputPos, Direction outputFacing, Direction incomingDirection) {
+        double x = outputPos.getX() + 0.5D;
+        double y = outputPos.getY() + com.skyeshade.skyent.content.conveyor.ConveyorLogicConstants.ITEM_PATH_Y_OFFSET;
+        double z = outputPos.getZ() + 0.5D;
+
+        if (incomingDirection == outputFacing.getOpposite()) {
+            x -= outputFacing.getStepX() * BLOCKED_EDGE_DISTANCE;
+            z -= outputFacing.getStepZ() * BLOCKED_EDGE_DISTANCE;
+        } else {
+            x -= incomingDirection.getStepX() * BLOCKED_EDGE_DISTANCE;
+            z -= incomingDirection.getStepZ() * BLOCKED_EDGE_DISTANCE;
+        }
+
+        return new Vec3(x, y, z);
+    }
+
+    private static boolean isOnDestinationLane(Vec3 position, BlockPos beltPos, Direction beltFacing) {
+        return distanceFromLaneCenterline(beltPos, beltFacing, position) <= SAME_LANE_SPACING_DISTANCE_FROM_CENTERLINE;
+    }
+
+    private static double distanceFromLaneCenterline(BlockPos beltPos, Direction beltFacing, Vec3 position) {
+        Vec3 center = beltPos.getCenter();
+        return beltFacing.getAxis() == Direction.Axis.X
+                ? Math.abs(position.z - center.z)
+                : Math.abs(position.x - center.x);
+    }
+
+    private static double projectionAlong(Vec3 delta, Direction direction) {
+        return delta.x * direction.getStepX() + delta.z * direction.getStepZ();
+    }
+
+    private static double progressAlong(Direction direction, Vec3 position) {
+        return position.x * direction.getStepX() + position.z * direction.getStepZ();
+    }
+
+    private void startMergeGhost(BlockPos destinationPos, Direction destinationFacing, double reservedProgress) {
+        mergeGhost = true;
+        mergeGhostTicks = MERGE_GHOST_TICKS;
+        mergeDestinationPos = destinationPos;
+        mergeDestinationFacing = destinationFacing;
+        mergeReservedProgress = reservedProgress;
+        mergeSpacingTicks = Math.max(mergeSpacingTicks, MERGE_SPACING_TICKS);
+        debugMerge("ghost start destination={} facing={} reservedProgress={}", destinationPos, destinationFacing, reservedProgress);
+    }
+
+    private void updateMergeGhostState(BeltContext belt) {
+        if (!mergeGhost) {
+            return;
+        }
+
+        if (shouldCommitMergeGhost(belt)) {
+            debugMerge("ghost commit on {} facing={} pos={}", belt.pos(), belt.facing(), position());
+            clearMergeGhost();
+            return;
+        }
+
+        if (mergeDestinationPos != null && mergeDestinationPos.equals(belt.pos()) && mergeDestinationFacing == belt.facing()) {
+            mergeGhostTicks--;
+            if (mergeGhostTicks <= 0) {
+                mergeGhostTicks = 1;
+                debugMerge(
+                        "ghost timeout extended on {} facing={} pos={} lateralDistance={}",
+                        belt.pos(),
+                        belt.facing(),
+                        position(),
+                        distanceFromLaneCenterline(belt.pos(), belt.facing(), position())
+                );
+            }
+        }
+    }
+
+    private boolean shouldCommitMergeGhost(BeltContext belt) {
+        if (mergeDestinationPos == null || mergeDestinationFacing == null) {
+            return true;
+        }
+        if (!mergeDestinationPos.equals(belt.pos()) || mergeDestinationFacing != belt.facing()) {
+            return false;
+        }
+
+        double lateralDistance = distanceFromLaneCenterline(belt.pos(), belt.facing(), position());
+        double currentProgress = progressAlong(belt.facing(), position());
+        return lateralDistance <= MERGE_COMMIT_DISTANCE_FROM_CENTERLINE
+                && currentProgress >= mergeReservedProgress - MERGE_ANTICIPATION_DISTANCE;
+    }
+
+    private void clearMergeGhost() {
+        mergeGhost = false;
+        mergeGhostTicks = 0;
+        mergeDestinationPos = null;
+        mergeDestinationFacing = null;
+        mergeReservedProgress = 0.0D;
+    }
+
+    private boolean isUncommittedMergeGhostFor(BeltContext belt) {
+        return isUncommittedMergeGhostFor(belt.pos(), belt.facing());
+    }
+
+    private boolean isUncommittedMergeGhostFor(BlockPos beltPos, Direction beltFacing) {
+        return mergeGhost
+                && mergeDestinationPos != null
+                && mergeDestinationPos.equals(beltPos)
+                && mergeDestinationFacing == beltFacing;
+    }
+
     private Vec3 clampedFrontPosition(BeltContext belt) {
         Vec3 snap = belt.surface().getClosestSnappingPosition(level(), belt.pos(), position());
         Vec3 center = belt.pos().getCenter();
@@ -321,21 +508,31 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
             return false;
         }
 
+        if (isUncommittedMergeGhostFor(belt)) {
+            return false;
+        }
+
         AABB searchBox = getBoundingBox().inflate(ITEM_SPACING_SEARCH_RADIUS);
         for (ConveyorMovingItemEntity other : level().getEntitiesOfClass(ConveyorMovingItemEntity.class, searchBox, entity -> entity != this && !entity.isRemoved())) {
             if (other.spacingSuppressionTicks > 0) {
                 continue;
             }
-            double requiredSpacing = Math.max(getCurrentSpacingDistance(), other.getCurrentSpacingDistance());
-            if (isUsingMergeSpacing() || other.isUsingMergeSpacing()) {
-                double dx = other.getX() - nextPosition.x;
-                double dz = other.getZ() - nextPosition.z;
-                if (Math.sqrt(dx * dx + dz * dz) < requiredSpacing) {
-                    return true;
-                }
+            if (other.isUncommittedMergeGhostFor(belt)) {
+                debugMerge("ignored ghost {} in spacing check on {} facing={}", other.getUUID(), belt.pos(), belt.facing());
                 continue;
             }
-
+            double lateralDistance = distanceFromLaneCenterline(belt.pos(), belt.facing(), other.position());
+            if (lateralDistance > SAME_LANE_SPACING_DISTANCE_FROM_CENTERLINE) {
+                debugMerge(
+                        "ignored off-lane item {} in spacing check on {} facing={} lateralDistance={}",
+                        other.getUUID(),
+                        belt.pos(),
+                        belt.facing(),
+                        lateralDistance
+                );
+                continue;
+            }
+            double requiredSpacing = Math.max(getCurrentSpacingDistance(), other.getCurrentSpacingDistance());
             Vec3 delta = other.position().subtract(nextPosition);
             double ahead = delta.x * belt.facing().getStepX() + delta.z * belt.facing().getStepZ();
             if (ahead > 0.0D && ahead < requiredSpacing) {
@@ -379,6 +576,9 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
     }
 
     private double getCurrentSpacingDistance() {
+        if (mergeGhost) {
+            return STRAIGHT_ITEM_SPACING;
+        }
         return isUsingMergeSpacing() ? MERGE_ITEM_SPACING : STRAIGHT_ITEM_SPACING;
     }
 
@@ -461,6 +661,15 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
         }
     }
 
+    private void debugMerge(String message, Object... args) {
+        if (DEBUG_CONVEYOR_MERGE) {
+            Object[] combined = new Object[args.length + 1];
+            combined[0] = getUUID();
+            System.arraycopy(args, 0, combined, 1, args.length);
+            com.skyeshade.skyent.SkyesNuclearTech.LOGGER.info("[ConveyorMerge {}] " + message, combined);
+        }
+    }
+
     public void dropAsNormalItem(Vec3 position, Vec3 velocity) {
         if (level().isClientSide || getItemStack().isEmpty()) {
             return;
@@ -478,6 +687,7 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
         setBlocked(compound.getBoolean("Blocked"));
         mergeSpacingTicks = compound.getInt("MergeSpacingTicks");
         spacingSuppressionTicks = compound.getInt("SpacingSuppressionTicks");
+        clearMergeGhost();
         if (compound.contains("LastBeltX")) {
             lastBeltPos = new BlockPos(compound.getInt("LastBeltX"), compound.getInt("LastBeltY"), compound.getInt("LastBeltZ"));
         }
@@ -541,6 +751,9 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
     @Override
     public boolean isPushable() {
         return false;
+    }
+
+    private record MergeReservation(boolean allowed, double reservedProgress) {
     }
 
     private record BeltContext(BlockPos pos, ConveyorBeltSurface surface, net.minecraft.core.Direction facing) {

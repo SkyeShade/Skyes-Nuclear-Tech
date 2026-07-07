@@ -6,6 +6,7 @@ import com.skyeshade.skyent.content.item.SteelFluidBarrelItem;
 import com.skyeshade.skyent.content.menu.CombustionGeneratorMenu;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import com.skyeshade.skyent.registry.ModFluids;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -121,6 +122,8 @@ public class CombustionGeneratorBlockEntity extends BlockEntity implements MenuP
     };
     private final IFluidHandler waterFillHandler = new WaterFillHandler();
     private final IFluidHandler automationFluidHandler = new BoilerFluidHandler();
+    private final IItemHandler nullSideAutomationItemHandler = new CombustionGeneratorAutomationItemHandler(this, null);
+    private final EnumMap<Direction, IItemHandler> sidedAutomationItemHandlers = new EnumMap<>(Direction.class);
 
     private final ContainerData data = new ContainerData() {
         @Override
@@ -583,7 +586,14 @@ public class CombustionGeneratorBlockEntity extends BlockEntity implements MenuP
     }
 
     public IItemHandler getAutomationItemHandler(@Nullable Direction side) {
-        return new AutomationItemHandler(side);
+        if (side == null) {
+            return nullSideAutomationItemHandler;
+        }
+
+        return sidedAutomationItemHandlers.computeIfAbsent(
+                side,
+                direction -> new CombustionGeneratorAutomationItemHandler(this, direction)
+        );
     }
 
     public IFluidHandler getAutomationFluidHandler(@Nullable Direction side) {
@@ -755,60 +765,4 @@ public class CombustionGeneratorBlockEntity extends BlockEntity implements MenuP
         }
     }
 
-    private final class AutomationItemHandler implements IItemHandler {
-        @Nullable
-        private final Direction side;
-
-        private AutomationItemHandler(@Nullable Direction side) {
-            this.side = side;
-        }
-
-        @Override
-        public int getSlots() {
-            return INVENTORY_SLOT_COUNT;
-        }
-
-        @Override
-        public ItemStack getStackInSlot(int slot) {
-            return inventory.getStackInSlot(slot);
-        }
-
-        @Override
-        public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
-            if (stack.isEmpty()) {
-                return ItemStack.EMPTY;
-            }
-            if (isWaterContainer(stack)) {
-                return inventory.insertItem(WATER_INPUT_SLOT, stack, simulate);
-            }
-            if (isFillableFluidContainer(stack)) {
-                return inventory.insertItem(STEAM_CONTAINER_INPUT_SLOT, stack, simulate);
-            }
-            if (isFuel(stack)) {
-                return inventory.insertItem(FUEL_SLOT, stack, simulate);
-            }
-            return stack;
-        }
-
-        @Override
-        public ItemStack extractItem(int slot, int amount, boolean simulate) {
-            if (side != Direction.DOWN && side != null) {
-                return ItemStack.EMPTY;
-            }
-            if (slot != EMPTY_CONTAINER_SLOT && slot != STEAM_CONTAINER_OUTPUT_SLOT) {
-                return ItemStack.EMPTY;
-            }
-            return inventory.extractItem(slot, amount, simulate);
-        }
-
-        @Override
-        public int getSlotLimit(int slot) {
-            return inventory.getSlotLimit(slot);
-        }
-
-        @Override
-        public boolean isItemValid(int slot, ItemStack stack) {
-            return inventory.isItemValid(slot, stack);
-        }
-    }
 }
