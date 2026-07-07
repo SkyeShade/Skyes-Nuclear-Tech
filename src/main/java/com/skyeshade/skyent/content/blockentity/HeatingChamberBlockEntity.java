@@ -59,6 +59,7 @@ public class HeatingChamberBlockEntity extends BlockEntity {
     private static final float HEATING_LOOP_VOLUME = 1.55F;
     private static final float HEATING_LOOP_PITCH = 0.85F;
     private static final double CAPTURE_FORWARD_DISTANCE = 0.16D;
+    private static final double[] CAPTURE_HOLDING_SLOT_LOCAL_Z_FRONT_TO_BACK = {0.25D, 0.75D, 1.25D, 1.75D};
     private static final int HEATING_SPARK_INTERVAL = 3;
     private static final int OPENING_SMOKE_WINDOW_TICKS = 8;
 
@@ -133,6 +134,7 @@ public class HeatingChamberBlockEntity extends BlockEntity {
         chamber.updateInsideTracking();
         chamber.captureEligibleItems();
         chamber.pruneCapturedItems();
+        chamber.snapCapturedItemsToHoldingSlots();
 
         switch (chamber.heatingState) {
             case IDLE_INTAKE -> {
@@ -309,6 +311,7 @@ public class HeatingChamberBlockEntity extends BlockEntity {
                 debug("finalized inside item {} into batch count={}", item.getUUID(), capturedItemIds.size());
             }
         }
+        snapCapturedItemsToHoldingSlots();
     }
 
     private void prepareCapturedItemsForRelease() {
@@ -317,6 +320,37 @@ public class HeatingChamberBlockEntity extends BlockEntity {
             item.setBlocked(true);
             debug("captured item remains blocked for staged release {}", item.getUUID());
         }
+    }
+
+    private void snapCapturedItemsToHoldingSlots() {
+        if (level == null || heatingState == HeatingState.IDLE_INTAKE || heatingState == HeatingState.RELEASING || capturedItemIds.isEmpty()) {
+            return;
+        }
+
+        Direction facing = getBlockState().hasProperty(HeatingChamberBlock.FACING)
+                ? getBlockState().getValue(HeatingChamberBlock.FACING)
+                : Direction.NORTH;
+        List<ConveyorMovingItemEntity> items = getCapturedItemsSortedFrontFirst();
+        int slotCount = Math.min(items.size(), CAPTURE_HOLDING_SLOT_LOCAL_Z_FRONT_TO_BACK.length);
+        for (int index = 0; index < slotCount; index++) {
+            ConveyorMovingItemEntity item = items.get(index);
+            if (releasedCapturedItemIds.contains(item.getUUID())) {
+                continue;
+            }
+
+            Vec3 slot = capturedHoldingSlotPosition(facing, index);
+            item.setBlocked(true);
+            item.setPos(slot.x, slot.y, slot.z);
+        }
+    }
+
+    private Vec3 capturedHoldingSlotPosition(Direction facing, int frontToBackIndex) {
+        double localZ = CAPTURE_HOLDING_SLOT_LOCAL_Z_FRONT_TO_BACK[Mth.clamp(frontToBackIndex, 0, CAPTURE_HOLDING_SLOT_LOCAL_Z_FRONT_TO_BACK.length - 1)];
+        return localToWorld(new Vec3(
+                0.5D,
+                1.0D + ConveyorLogicConstants.ITEM_PATH_Y_OFFSET,
+                localZ
+        ), facing);
     }
 
     private void releaseNextCapturedItemIfPossible() {
