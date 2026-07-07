@@ -48,6 +48,8 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
     public static final double SAME_LANE_SPACING_DISTANCE_FROM_CENTERLINE = 0.30D;
     public static final double ITEM_SPACING_DISTANCE = STRAIGHT_ITEM_SPACING;
     public static final double ITEM_SPACING_SEARCH_RADIUS = 0.75D;
+    private static final double PATH_SPACING_HIT_RADIUS = 0.16D;
+    private static final double PATH_SPACING_SAMPLE_STEP = BELT_ITEM_SPEED;
     private static final EntityDataAccessor<ItemStack> DATA_ITEM = SynchedEntityData.defineId(
             ConveyorMovingItemEntity.class,
             EntityDataSerializers.ITEM_STACK
@@ -521,25 +523,112 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
                 debugMerge("ignored ghost {} in spacing check on {} facing={}", other.getUUID(), belt.pos(), belt.facing());
                 continue;
             }
-            double lateralDistance = distanceFromLaneCenterline(belt.pos(), belt.facing(), other.position());
-            if (lateralDistance > SAME_LANE_SPACING_DISTANCE_FROM_CENTERLINE) {
-                debugMerge(
-                        "ignored off-lane item {} in spacing check on {} facing={} lateralDistance={}",
-                        other.getUUID(),
-                        belt.pos(),
-                        belt.facing(),
-                        lateralDistance
-                );
+
+            double requiredSpacing = Math.max(getCurrentSpacingDistance(), other.getCurrentSpacingDistance());
+            if (isOnSameBeltLane(belt, other, other.findCurrentBelt())) {
+                Vec3 delta = other.position().subtract(nextPosition);
+                double ahead = delta.x * belt.facing().getStepX() + delta.z * belt.facing().getStepZ();
+                if (ahead > 0.0D && ahead < requiredSpacing) {
+                    return true;
+                }
                 continue;
             }
-            double requiredSpacing = Math.max(getCurrentSpacingDistance(), other.getCurrentSpacingDistance());
-            Vec3 delta = other.position().subtract(nextPosition);
-            double ahead = delta.x * belt.facing().getStepX() + delta.z * belt.facing().getStepZ();
-            if (ahead > 0.0D && ahead < requiredSpacing) {
+
+            if (isOtherOnFuturePathWithinSpacing(belt, nextPosition, other, requiredSpacing)) {
                 return true;
             }
         }
         return false;
+    }
+
+    private boolean isOnSameBeltLane(BeltContext belt, ConveyorMovingItemEntity other, @Nullable BeltContext otherBelt) {
+        if (otherBelt != null && (!otherBelt.pos().equals(belt.pos()) || otherBelt.facing() != belt.facing())) {
+            return false;
+        }
+        if (otherBelt == null && other.lastBeltPos != null && (!other.lastBeltPos.equals(belt.pos()) || other.lastBeltFacing != belt.facing())) {
+            return false;
+        }
+        if (otherBelt == null && other.lastBeltPos == null) {
+            return false;
+        }
+
+        double lateralDistance = distanceFromLaneCenterline(belt.pos(), belt.facing(), other.position());
+        if (lateralDistance > SAME_LANE_SPACING_DISTANCE_FROM_CENTERLINE) {
+            debugMerge(
+                    "ignored off-lane item {} in spacing check on {} facing={} lateralDistance={}",
+                    other.getUUID(),
+                    belt.pos(),
+                    belt.facing(),
+                    lateralDistance
+            );
+            return false;
+        }
+        return true;
+    }
+
+    private boolean isOtherOnFuturePathWithinSpacing(BeltContext startBelt, Vec3 startPosition, ConveyorMovingItemEntity other, double maxDistance) {
+        Vec3 probe = startPosition;
+        BeltContext probeBelt = startBelt;
+        double traveled = 0.0D;
+        double hitRadiusSqr = PATH_SPACING_HIT_RADIUS * PATH_SPACING_HIT_RADIUS;
+
+        for (int i = 0; i < 16 && traveled < maxDistance; i++) {
+            if (!isRelevantPathSpacingItem(startBelt, probeBelt, other)) {
+                return false;
+            }
+
+            if (horizontalDistanceSqr(probe, other.position()) <= hitRadiusSqr) {
+                return traveled > 0.0D;
+            }
+
+            Vec3 nextProbe = probeBelt.surface().getTravelLocation(level(), probeBelt.pos(), probe, PATH_SPACING_SAMPLE_STEP);
+            double stepDistance = horizontalDistance(probe, nextProbe);
+            if (stepDistance <= 1.0E-6D) {
+                break;
+            }
+            traveled += stepDistance;
+            probe = nextProbe;
+
+            if (wouldReachOutputEdge(probeBelt, probe)) {
+                BlockPos outputPos = probeBelt.pos().relative(probeBelt.facing());
+                BeltContext nextBelt = beltAt(outputPos);
+                if (nextBelt == null || nextBelt.facing() == probeBelt.facing().getOpposite()) {
+                    break;
+                }
+                probeBelt = nextBelt;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean isRelevantPathSpacingItem(BeltContext startBelt, BeltContext probeBelt, ConveyorMovingItemEntity other) {
+        BlockPos directOutputPos = startBelt.pos().relative(startBelt.facing());
+        BeltContext otherBelt = other.findCurrentBelt();
+
+        if (otherBelt != null) {
+            return otherBelt.pos().equals(startBelt.pos())
+                    || otherBelt.pos().equals(probeBelt.pos())
+                    || otherBelt.pos().equals(directOutputPos);
+        }
+
+        if (other.lastBeltPos == null) {
+            return false;
+        }
+
+        return other.lastBeltPos.equals(startBelt.pos())
+                || other.lastBeltPos.equals(probeBelt.pos())
+                || other.lastBeltPos.equals(directOutputPos);
+    }
+
+    private static double horizontalDistance(Vec3 a, Vec3 b) {
+        return Math.sqrt(horizontalDistanceSqr(a, b));
+    }
+
+    private static double horizontalDistanceSqr(Vec3 a, Vec3 b) {
+        double dx = a.x - b.x;
+        double dz = a.z - b.z;
+        return dx * dx + dz * dz;
     }
 
     private void updateBeltTracking(BeltContext belt) {

@@ -58,7 +58,7 @@ public class HeatingChamberBlockEntity extends BlockEntity {
     private static final float MOVEMENT_SOUND_PITCH = 0.85F;
     private static final float HEATING_LOOP_VOLUME = 1.55F;
     private static final float HEATING_LOOP_PITCH = 0.85F;
-    private static final double CAPTURE_FORWARD_DISTANCE = 0.08D;
+    private static final double CAPTURE_FORWARD_DISTANCE = 0.16D;
     private static final int HEATING_SPARK_INTERVAL = 3;
     private static final int OPENING_SMOKE_WINDOW_TICKS = 8;
 
