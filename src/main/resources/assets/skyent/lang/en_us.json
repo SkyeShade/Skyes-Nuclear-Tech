@@ -178,6 +178,7 @@
   "subtitle.skyent.conveyor_loop": "Conveyor belt hums",
   "subtitle.skyent.electric_furnace_loop": "Electric furnace hums",
   "subtitle.skyent.transformer_loop": "Transformer hums",
+  "subtitle.skyent.mechanical_lever": "Mechanical lever clicks",
   "subtitle.skyent.heavy_moving_metal": "Heavy metal moves",
   "message.skyent.too_cold_to_forge": "Too cold to forge",
   "death.attack.radiation": "%1$s died from radiation poisoning",

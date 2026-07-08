@@ -27,7 +27,6 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -323,7 +322,8 @@ public class LVMVTransformerBlockEntity extends BlockEntity implements RJEnergyI
         mode = mode == TransformerMode.STEP_UP ? TransformerMode.STEP_DOWN : TransformerMode.STEP_UP;
         setChangedAndSync();
         if (level != null && !level.isClientSide) {
-            level.playSound(null, worldPosition, SoundEvents.METAL_PRESSURE_PLATE_CLICK_ON, SoundSource.BLOCKS, 0.45F, mode == TransformerMode.STEP_UP ? 1.05F : 0.8F);
+            Vec3 center = transformerCenter();
+            level.playSound(null, center.x, center.y, center.z, ModSounds.MECHANICAL_LEVER.get(), SoundSource.BLOCKS, 0.85F, 1.0F);
             player.displayClientMessage(Component.literal("Transformer mode: " + mode.displayName()), true);
         }
     }

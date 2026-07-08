@@ -57,6 +57,12 @@
     ],
     "subtitle": "subtitle.skyent.transformer_loop"
   },
+  "mechanical_lever": {
+    "sounds": [
+      "skyent:mechanical_lever"
+    ],
+    "subtitle": "subtitle.skyent.mechanical_lever"
+  },
   "heavy_moving_metal": {
     "sounds": [
       "skyent:heavy_moving_metal"
