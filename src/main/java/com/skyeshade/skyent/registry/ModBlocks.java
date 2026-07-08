@@ -6,6 +6,7 @@ import com.skyeshade.skyent.content.block.BasicFluidDuctBlock;
 import com.skyeshade.skyent.content.block.BrickBlastFurnaceBlock;
 import com.skyeshade.skyent.content.block.CoalForgeBlock;
 import com.skyeshade.skyent.content.block.CombustionGeneratorBlock;
+import com.skyeshade.skyent.content.block.ConveyorChuteBlock;
 import com.skyeshade.skyent.content.block.ConveyorElevatorBlock;
 import com.skyeshade.skyent.content.block.ConveyorExporterBlock;
 import com.skyeshade.skyent.content.block.ConveyorSplitterBlock;
@@ -166,6 +167,13 @@ public final class ModBlocks {
     public static final DeferredBlock<ConveyorElevatorBlock> CONVEYOR_ELEVATOR = BLOCKS.registerBlock(
             "conveyor_elevator",
             ConveyorElevatorBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .noOcclusion()
+    );
+
+    public static final DeferredBlock<ConveyorChuteBlock> CONVEYOR_CHUTE = BLOCKS.registerBlock(
+            "conveyor_chute",
+            ConveyorChuteBlock::new,
             BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
                     .noOcclusion()
     );

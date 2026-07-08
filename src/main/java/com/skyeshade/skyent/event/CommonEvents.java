@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.event;
 
 import com.skyeshade.skyent.event.systems.BootstrapSystem;
+import com.skyeshade.skyent.content.block.ConveyorChuteBlock;
 import com.skyeshade.skyent.content.block.ConveyorElevatorBlock;
 import com.skyeshade.skyent.content.block.HeatingChamberPartBlock;
 import com.skyeshade.skyent.content.block.SteamForgeHammerBlock;
@@ -113,6 +114,12 @@ public final class CommonEvents {
                 Capabilities.ItemHandler.BLOCK,
                 (level, pos, state, blockEntity, side) -> ConveyorElevatorBlock.getItemHandler(level, pos, state, side),
                 ModBlocks.CONVEYOR_ELEVATOR.get()
+        );
+
+        event.registerBlock(
+                Capabilities.ItemHandler.BLOCK,
+                (level, pos, state, blockEntity, side) -> ConveyorChuteBlock.getItemHandler(level, pos, state, side),
+                ModBlocks.CONVEYOR_CHUTE.get()
         );
 
         event.registerBlockEntity(

@@ -1,5 +1,6 @@
 package com.skyeshade.skyent.content.entity;
 
+import com.skyeshade.skyent.content.block.ConveyorChuteBlock;
 import com.skyeshade.skyent.content.block.ConveyorElevatorBlock;
 import com.skyeshade.skyent.content.conveyor.ConveyorBeltSurface;
 import com.skyeshade.skyent.content.conveyor.ConveyorGateSurface;
@@ -138,6 +139,12 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
                 return;
             }
         }
+        if (currentState.getBlock() instanceof ConveyorChuteBlock) {
+            if (ConveyorChuteBlock.tryCaptureMovingItem(level(), belt.pos(), currentState, this)) {
+                tickMergeSpacing();
+                return;
+            }
+        }
 
         if (isBlocked()) {
             if (!canMoveOnBelt(belt)) {
@@ -259,6 +266,15 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
         if (outputState.getBlock() instanceof ConveyorBeltSurface) {
             if (outputState.getBlock() instanceof ConveyorElevatorBlock) {
                 if (!ConveyorElevatorBlock.canAcceptHorizontalInput(level(), outputPos, outputState, belt.facing().getOpposite())) {
+                    setBlocked(true);
+                    setPos(clampedFrontPosition(belt));
+                    return true;
+                }
+                setBlocked(false);
+                return false;
+            }
+            if (outputState.getBlock() instanceof ConveyorChuteBlock) {
+                if (!ConveyorChuteBlock.canAcceptHorizontalInput(level(), outputPos, outputState, belt.facing().getOpposite())) {
                     setBlocked(true);
                     setPos(clampedFrontPosition(belt));
                     return true;
@@ -566,12 +582,18 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
 
     private boolean usesHorizontalOutput(BeltContext belt) {
         BlockState state = level().getBlockState(belt.pos());
-        return !(state.getBlock() instanceof ConveyorElevatorBlock) || ConveyorElevatorBlock.isHorizontalOutputSegment(state);
+        if (state.getBlock() instanceof ConveyorElevatorBlock) {
+            return ConveyorElevatorBlock.isHorizontalOutputSegment(state);
+        }
+        if (state.getBlock() instanceof ConveyorChuteBlock) {
+            return ConveyorChuteBlock.isHorizontalOutputSegment(state);
+        }
+        return true;
     }
 
     private boolean isVerticalElevatorSpacingBlocked(BeltContext belt, Vec3 nextPosition, ConveyorMovingItemEntity other, double requiredSpacing) {
         BlockState state = level().getBlockState(belt.pos());
-        if (!ConveyorElevatorBlock.isVerticalTravelSegment(state)) {
+        if (!ConveyorElevatorBlock.isVerticalTravelSegment(state) && !ConveyorChuteBlock.isVerticalTravelSegment(state)) {
             return false;
         }
 
