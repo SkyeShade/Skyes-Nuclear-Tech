@@ -36,6 +36,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.BASIC_CONVEYOR_BELT.get());
                         output.accept(ModItems.CONVEYOR_SPLITTER.get());
                         output.accept(ModItems.CONVEYOR_EXPORTER.get());
+                        output.accept(ModItems.CONVEYOR_ELEVATOR.get());
                         output.accept(ModItems.SILT.get());
                         output.accept(ModItems.DEAD_GRASS.get());
                         output.accept(ModItems.DEAD_SHORT_GRASS.get());

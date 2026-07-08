@@ -1,5 +1,6 @@
 package com.skyeshade.skyent.content.entity;
 
+import com.skyeshade.skyent.content.block.ConveyorElevatorBlock;
 import com.skyeshade.skyent.content.conveyor.ConveyorBeltSurface;
 import com.skyeshade.skyent.content.conveyor.ConveyorGateSurface;
 import com.skyeshade.skyent.content.conveyor.ConveyorTravelDirectionProvider;
@@ -130,6 +131,14 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
         updateBeltTracking(belt);
         updateMergeGhostState(belt);
 
+        BlockState currentState = level().getBlockState(belt.pos());
+        if (currentState.getBlock() instanceof ConveyorElevatorBlock) {
+            if (ConveyorElevatorBlock.tryCaptureMovingItem(level(), belt.pos(), currentState, this)) {
+                tickMergeSpacing();
+                return;
+            }
+        }
+
         if (isBlocked()) {
             if (!canMoveOnBelt(belt)) {
                 tickMergeSpacing();
@@ -146,14 +155,14 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
             return;
         }
 
-        if (tryHandleOutput(belt, false)) {
+        if (usesHorizontalOutput(belt) && tryHandleOutput(belt, false)) {
             tickMergeSpacing();
             return;
         }
 
         Vec3 next = belt.surface().getTravelLocation(level(), belt.pos(), position(), BELT_ITEM_SPEED);
 
-        if (wouldReachOutputEdge(belt, next) && shouldPreHandleOutput(belt)) {
+        if (usesHorizontalOutput(belt) && wouldReachOutputEdge(belt, next) && shouldPreHandleOutput(belt)) {
             setPos(canOutputFromBelt(belt) ? clampedFrontPosition(belt) : blockedPosition(belt));
             tryHandleOutput(belt, true);
             tickMergeSpacing();
@@ -248,6 +257,16 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
         BlockPos outputPos = belt.pos().relative(belt.facing());
         BlockState outputState = level().getBlockState(outputPos);
         if (outputState.getBlock() instanceof ConveyorBeltSurface) {
+            if (outputState.getBlock() instanceof ConveyorElevatorBlock) {
+                if (!ConveyorElevatorBlock.canAcceptHorizontalInput(level(), outputPos, outputState, belt.facing().getOpposite())) {
+                    setBlocked(true);
+                    setPos(clampedFrontPosition(belt));
+                    return true;
+                }
+                setBlocked(false);
+                return false;
+            }
+
             Direction outputFacing = getConveyorTravelDirection(outputState, outputPos);
             if (outputFacing == belt.facing().getOpposite()) {
                 setBlocked(true);
@@ -525,6 +544,10 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
             }
 
             double requiredSpacing = Math.max(getCurrentSpacingDistance(), other.getCurrentSpacingDistance());
+            if (isVerticalElevatorSpacingBlocked(belt, nextPosition, other, requiredSpacing)) {
+                return true;
+            }
+
             if (isOnSameBeltLane(belt, other, other.findCurrentBelt())) {
                 Vec3 delta = other.position().subtract(nextPosition);
                 double ahead = delta.x * belt.facing().getStepX() + delta.z * belt.facing().getStepZ();
@@ -539,6 +562,35 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
             }
         }
         return false;
+    }
+
+    private boolean usesHorizontalOutput(BeltContext belt) {
+        BlockState state = level().getBlockState(belt.pos());
+        return !(state.getBlock() instanceof ConveyorElevatorBlock) || ConveyorElevatorBlock.isHorizontalOutputSegment(state);
+    }
+
+    private boolean isVerticalElevatorSpacingBlocked(BeltContext belt, Vec3 nextPosition, ConveyorMovingItemEntity other, double requiredSpacing) {
+        BlockState state = level().getBlockState(belt.pos());
+        if (!ConveyorElevatorBlock.isVerticalTravelSegment(state)) {
+            return false;
+        }
+
+        BeltContext otherBelt = other.findCurrentBelt();
+        if (otherBelt != null && !otherBelt.pos().equals(belt.pos()) && !otherBelt.pos().equals(belt.pos().above())) {
+            return false;
+        }
+        if (otherBelt == null && other.lastBeltPos != null && !other.lastBeltPos.equals(belt.pos()) && !other.lastBeltPos.equals(belt.pos().above())) {
+            return false;
+        }
+
+        double dx = other.getX() - nextPosition.x;
+        double dz = other.getZ() - nextPosition.z;
+        if (dx * dx + dz * dz > SAME_LANE_SPACING_DISTANCE_FROM_CENTERLINE * SAME_LANE_SPACING_DISTANCE_FROM_CENTERLINE) {
+            return false;
+        }
+
+        double ahead = other.getY() - nextPosition.y;
+        return ahead > 0.0D && ahead < requiredSpacing;
     }
 
     private boolean isOnSameBeltLane(BeltContext belt, ConveyorMovingItemEntity other, @Nullable BeltContext otherBelt) {

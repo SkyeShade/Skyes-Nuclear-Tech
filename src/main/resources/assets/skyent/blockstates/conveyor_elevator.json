@@ -1,0 +1,18 @@
+{
+  "variants": {
+    "facing=north,segment=bottom": { "model": "skyent:block/conveyor_elevator_bottom", "y": 0 },
+    "facing=east,segment=bottom": { "model": "skyent:block/conveyor_elevator_bottom", "y": 90 },
+    "facing=south,segment=bottom": { "model": "skyent:block/conveyor_elevator_bottom", "y": 180 },
+    "facing=west,segment=bottom": { "model": "skyent:block/conveyor_elevator_bottom", "y": 270 },
+
+    "facing=north,segment=middle": { "model": "skyent:block/conveyor_elevator_middle", "y": 0 },
+    "facing=east,segment=middle": { "model": "skyent:block/conveyor_elevator_middle", "y": 90 },
+    "facing=south,segment=middle": { "model": "skyent:block/conveyor_elevator_middle", "y": 180 },
+    "facing=west,segment=middle": { "model": "skyent:block/conveyor_elevator_middle", "y": 270 },
+
+    "facing=north,segment=top": { "model": "skyent:block/conveyor_elevator_top", "y": 0 },
+    "facing=east,segment=top": { "model": "skyent:block/conveyor_elevator_top", "y": 90 },
+    "facing=south,segment=top": { "model": "skyent:block/conveyor_elevator_top", "y": 180 },
+    "facing=west,segment=top": { "model": "skyent:block/conveyor_elevator_top", "y": 270 }
+  }
+}

@@ -109,6 +109,11 @@ public final class ModItems {
             new Item.Properties()
     );
 
+    public static final DeferredItem<BlockItem> CONVEYOR_ELEVATOR = ITEMS.registerSimpleBlockItem(
+            ModBlocks.CONVEYOR_ELEVATOR,
+            new Item.Properties()
+    );
+
     public static final DeferredItem<BlockItem> SILT = ITEMS.registerSimpleBlockItem(
             ModBlocks.SILT,
             new Item.Properties()
