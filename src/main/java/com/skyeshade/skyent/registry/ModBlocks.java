@@ -23,6 +23,8 @@ import com.skyeshade.skyent.content.block.LVCrusherBlock;
 import com.skyeshade.skyent.content.block.LVConverterBlock;
 import com.skyeshade.skyent.content.block.LVConnectorBlock;
 import com.skyeshade.skyent.content.block.LVElectricPumpBlock;
+import com.skyeshade.skyent.content.block.LVMVTransformerBlock;
+import com.skyeshade.skyent.content.block.LVMVTransformerPartBlock;
 import com.skyeshade.skyent.content.block.LVSteamTurbineBlock;
 import com.skyeshade.skyent.content.block.MoltenCoriumBlock;
 import com.skyeshade.skyent.content.block.RadioactiveBlock;
@@ -271,6 +273,20 @@ public final class ModBlocks {
                     .requiresCorrectToolForDrops()
     );
 
+    public static final DeferredBlock<?> COBALT_BLOCK = BLOCKS.registerSimpleBlock(
+            "cobalt_block",
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 9.0F)
+                    .requiresCorrectToolForDrops()
+    );
+
+    public static final DeferredBlock<?> NICKEL_BLOCK = BLOCKS.registerSimpleBlock(
+            "nickel_block",
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 9.0F)
+                    .requiresCorrectToolForDrops()
+    );
+
     public static final DeferredBlock<?> LEAD_ORE = BLOCKS.registerSimpleBlock(
             "lead_ore",
             BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_ORE)
@@ -337,6 +353,13 @@ public final class ModBlocks {
                     .noOcclusion()
     );
 
+    public static final DeferredBlock<LVConnectorBlock> MV_CONNECTOR = BLOCKS.registerBlock(
+            "mv_connector",
+            LVConnectorBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .noOcclusion()
+    );
+
     public static final DeferredBlock<LVConverterBlock> LV_RJ_CONVERTER = BLOCKS.registerBlock(
             "lv_rj_converter",
             properties -> new LVConverterBlock(properties, LVConverterBlock.ConverterMode.RJ_TO_FE),
@@ -347,6 +370,23 @@ public final class ModBlocks {
             "lv_fe_converter",
             properties -> new LVConverterBlock(properties, LVConverterBlock.ConverterMode.FE_TO_RJ),
             BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+    );
+
+    public static final DeferredBlock<LVMVTransformerBlock> LV_MV_TRANSFORMER = BLOCKS.registerBlock(
+            "lv_mv_transformer",
+            LVMVTransformerBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 12.0F)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
+    );
+
+    public static final DeferredBlock<LVMVTransformerPartBlock> LV_MV_TRANSFORMER_PART = BLOCKS.registerBlock(
+            "lv_mv_transformer_part",
+            LVMVTransformerPartBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 12.0F)
+                    .requiresCorrectToolForDrops()
     );
 
     private ModBlocks() {

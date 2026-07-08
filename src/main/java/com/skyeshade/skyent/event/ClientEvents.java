@@ -15,6 +15,7 @@ import com.skyeshade.skyent.client.renderer.blockentity.CoalForgeRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.ForgingAnvilRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.GeigerCounterPlacedRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.HeatingChamberRenderer;
+import com.skyeshade.skyent.client.renderer.blockentity.LVMVTransformerRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.SteamForgeHammerRenderer;
 import com.skyeshade.skyent.client.renderer.entity.ConveyorMovingItemRenderer;
 import com.skyeshade.skyent.client.renderer.LVConnectorRenderer;
@@ -96,6 +97,7 @@ public final class ClientEvents {
         event.registerBlockEntityRenderer(ModBlockEntities.FORGING_ANVIL.get(), ForgingAnvilRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.STEAM_FORGE_HAMMER.get(), SteamForgeHammerRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.HEATING_CHAMBER.get(), HeatingChamberRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.LV_MV_TRANSFORMER.get(), LVMVTransformerRenderer::new);
     }
 
     public static void onRegisterAdditionalModels(ModelEvent.RegisterAdditional event) {
@@ -158,6 +160,8 @@ public final class ClientEvents {
         registerHotIngotProperty(ModItems.STEEL_INGOT.get(), hotProperty);
         registerHotIngotProperty(ModItems.ALUMINUM_INGOT.get(), hotProperty);
         registerHotIngotProperty(ModItems.TITANIUM_INGOT.get(), hotProperty);
+        registerHotIngotProperty(ModItems.COBALT_INGOT.get(), hotProperty);
+        registerHotIngotProperty(ModItems.NICKEL_INGOT.get(), hotProperty);
         registerHotIngotProperty(ModItems.LEAD_INGOT.get(), hotProperty);
         registerHotIngotProperty(ModItems.TUNGSTEN_INGOT.get(), hotProperty);
         registerHotIngotProperty(ModItems.URANIUM_INGOT.get(), hotProperty);

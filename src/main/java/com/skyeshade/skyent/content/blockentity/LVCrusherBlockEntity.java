@@ -41,7 +41,8 @@ public class LVCrusherBlockEntity extends BlockEntity implements MenuProvider, R
     public static final int MAX_INPUT_RJ_PER_TICK = LVEnergyConstants.LV_MACHINE_MAX_INPUT_RJ_PER_TICK;
     public static final int INPUT_SLOT = 0;
     public static final int OUTPUT_SLOT = 1;
-    private static final int INVENTORY_SLOT_COUNT = 2;
+    public static final int SECONDARY_OUTPUT_SLOT = 2;
+    private static final int INVENTORY_SLOT_COUNT = 3;
     private static final float CRUSHER_LOOP_VOLUME = 0.4F;
     private static final float CRUSHER_LOOP_PITCH = 0.65F;
     private static final String TAG_STORED_RJ = "StoredRJ";
@@ -58,17 +59,7 @@ public class LVCrusherBlockEntity extends BlockEntity implements MenuProvider, R
     private int progress;
     private int currentEnergyUsage;
 
-    private final ItemStackHandler inventory = new ItemStackHandler(INVENTORY_SLOT_COUNT) {
-        @Override
-        public boolean isItemValid(int slot, ItemStack stack) {
-            return slot == INPUT_SLOT && LVCrusherRecipes.isCrushable(stack);
-        }
-
-        @Override
-        protected void onContentsChanged(int slot) {
-            setChanged();
-        }
-    };
+    private final CrusherItemStackHandler inventory = new CrusherItemStackHandler();
 
     private final RJStorage rjStorage = new RJStorage(ENERGY_CAPACITY_RJ);
     private final IItemHandler automationItemHandler = new AutomationItemHandler();
@@ -116,8 +107,8 @@ public class LVCrusherBlockEntity extends BlockEntity implements MenuProvider, R
         crusher.currentEnergyUsage = 0;
         boolean changed = false;
 
-        ItemStack result = crusher.getCurrentResult();
-        if (result.isEmpty() || !crusher.canOutput(result)) {
+        LVCrusherRecipes.CrusherRecipe recipe = crusher.getCurrentRecipe();
+        if (recipe == null || !crusher.canOutput(recipe)) {
             if (crusher.progress != 0) {
                 crusher.progress = 0;
                 changed = true;
@@ -129,7 +120,7 @@ public class LVCrusherBlockEntity extends BlockEntity implements MenuProvider, R
             changed = true;
 
             if (crusher.progress >= MAX_PROGRESS) {
-                crusher.completeRecipe(result);
+                crusher.completeRecipe(recipe, level);
                 crusher.progress = 0;
             }
         }
@@ -161,31 +152,63 @@ public class LVCrusherBlockEntity extends BlockEntity implements MenuProvider, R
         return LVCrusherRecipes.isCrushable(stack);
     }
 
-    private ItemStack getCurrentResult() {
-        return LVCrusherRecipes.getResult(inventory.getStackInSlot(INPUT_SLOT)).orElse(ItemStack.EMPTY);
+    @Nullable
+    private LVCrusherRecipes.CrusherRecipe getCurrentRecipe() {
+        return hasInventorySlot(INPUT_SLOT)
+                ? LVCrusherRecipes.getRecipe(inventory.getStackInSlot(INPUT_SLOT)).orElse(null)
+                : null;
     }
 
-    private boolean canOutput(ItemStack result) {
-        if (result.isEmpty()) {
+    private boolean canOutput(LVCrusherRecipes.CrusherRecipe recipe) {
+        if (!recipe.hasPrimaryOutput() && !recipe.hasSecondaryOutput()) {
             return false;
         }
 
-        ItemStack output = inventory.getStackInSlot(OUTPUT_SLOT);
+        if (recipe.hasPrimaryOutput() && !canOutputSlot(OUTPUT_SLOT, recipe.primaryOutput())) {
+            return false;
+        }
+
+        return !recipe.hasSecondaryOutput() || canOutputSlot(SECONDARY_OUTPUT_SLOT, recipe.secondaryOutput());
+    }
+
+    private boolean canOutputSlot(int slot, ItemStack result) {
+        if (!hasInventorySlot(slot)) {
+            return false;
+        }
+
+        ItemStack output = inventory.getStackInSlot(slot);
         return output.isEmpty()
                 || ItemStack.isSameItemSameComponents(output, result) && output.getCount() + result.getCount() <= output.getMaxStackSize();
     }
 
-    private void completeRecipe(ItemStack result) {
+    private void completeRecipe(LVCrusherRecipes.CrusherRecipe recipe, Level level) {
+        if (!hasInventorySlot(INPUT_SLOT)) {
+            return;
+        }
+
         ItemStack input = inventory.getStackInSlot(INPUT_SLOT);
-        ItemStack output = inventory.getStackInSlot(OUTPUT_SLOT);
 
         input.shrink(1);
+        if (recipe.hasPrimaryOutput()) {
+            mergeOutput(OUTPUT_SLOT, recipe.primaryOutput());
+        }
+        if (recipe.hasSecondaryOutput() && level.random.nextDouble() < recipe.secondaryChance()) {
+            mergeOutput(SECONDARY_OUTPUT_SLOT, recipe.secondaryOutput());
+        }
+    }
+
+    private void mergeOutput(int slot, ItemStack result) {
+        if (!hasInventorySlot(slot)) {
+            return;
+        }
+
+        ItemStack output = inventory.getStackInSlot(slot);
         if (output.isEmpty()) {
-            inventory.setStackInSlot(OUTPUT_SLOT, result.copy());
+            inventory.setStackInSlot(slot, result.copy());
         } else {
             ItemStack merged = output.copy();
             merged.grow(result.getCount());
-            inventory.setStackInSlot(OUTPUT_SLOT, merged);
+            inventory.setStackInSlot(slot, merged);
         }
     }
 
@@ -239,7 +262,17 @@ public class LVCrusherBlockEntity extends BlockEntity implements MenuProvider, R
     }
 
     public int getRedstoneSignal() {
-        return Mth.floor((float) inventory.getStackInSlot(OUTPUT_SLOT).getCount() / inventory.getSlotLimit(OUTPUT_SLOT) * 15.0F);
+        int primarySignal = redstoneSignalForSlot(OUTPUT_SLOT);
+        int secondarySignal = redstoneSignalForSlot(SECONDARY_OUTPUT_SLOT);
+        return Math.max(primarySignal, secondarySignal);
+    }
+
+    private int redstoneSignalForSlot(int slot) {
+        if (!hasInventorySlot(slot)) {
+            return 0;
+        }
+
+        return Mth.floor((float) inventory.getStackInSlot(slot).getCount() / inventory.getSlotLimit(slot) * 15.0F);
     }
 
     public void dropContents(Level level, BlockPos pos) {
@@ -275,7 +308,11 @@ public class LVCrusherBlockEntity extends BlockEntity implements MenuProvider, R
         super.loadAdditional(tag, registries);
         rjStorage.setStoredRJ(tag.getInt(TAG_STORED_RJ));
         progress = tag.getInt("Progress");
-        inventory.deserializeNBT(registries, tag.getCompound("Inventory"));
+        inventory.deserializeAndMigrate(registries, tag.getCompound("Inventory"));
+    }
+
+    private boolean hasInventorySlot(int slot) {
+        return slot >= 0 && slot < inventory.getSlots();
     }
 
     @Override
@@ -334,12 +371,16 @@ public class LVCrusherBlockEntity extends BlockEntity implements MenuProvider, R
 
         @Override
         public ItemStack getStackInSlot(int slot) {
+            if (!hasInventorySlot(slot)) {
+                return ItemStack.EMPTY;
+            }
+
             return inventory.getStackInSlot(slot);
         }
 
         @Override
         public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
-            if (slot != INPUT_SLOT || !isCrushable(stack)) {
+            if (slot != INPUT_SLOT || !hasInventorySlot(INPUT_SLOT) || !isCrushable(stack)) {
                 return stack;
             }
 
@@ -348,21 +389,63 @@ public class LVCrusherBlockEntity extends BlockEntity implements MenuProvider, R
 
         @Override
         public ItemStack extractItem(int slot, int amount, boolean simulate) {
-            if (slot != OUTPUT_SLOT) {
+            if ((slot != OUTPUT_SLOT && slot != SECONDARY_OUTPUT_SLOT) || !hasInventorySlot(slot)) {
                 return ItemStack.EMPTY;
             }
 
-            return inventory.extractItem(OUTPUT_SLOT, amount, simulate);
+            return inventory.extractItem(slot, amount, simulate);
         }
 
         @Override
         public int getSlotLimit(int slot) {
+            if (!hasInventorySlot(slot)) {
+                return 0;
+            }
+
             return inventory.getSlotLimit(slot);
         }
 
         @Override
         public boolean isItemValid(int slot, ItemStack stack) {
-            return slot == INPUT_SLOT && isCrushable(stack);
+            return slot == INPUT_SLOT && hasInventorySlot(INPUT_SLOT) && isCrushable(stack);
+        }
+    }
+
+    private final class CrusherItemStackHandler extends ItemStackHandler {
+        private CrusherItemStackHandler() {
+            super(INVENTORY_SLOT_COUNT);
+        }
+
+        @Override
+        public boolean isItemValid(int slot, ItemStack stack) {
+            return slot == INPUT_SLOT && LVCrusherRecipes.isCrushable(stack);
+        }
+
+        @Override
+        protected void onContentsChanged(int slot) {
+            setChanged();
+        }
+
+        private void deserializeAndMigrate(HolderLookup.Provider registries, CompoundTag tag) {
+            deserializeNBT(registries, tag);
+            migrateSlotCount();
+        }
+
+        private void migrateSlotCount() {
+            int oldSlotCount = getSlots();
+            if (oldSlotCount == INVENTORY_SLOT_COUNT) {
+                return;
+            }
+
+            ItemStack[] migrated = new ItemStack[INVENTORY_SLOT_COUNT];
+            for (int slot = 0; slot < INVENTORY_SLOT_COUNT; slot++) {
+                migrated[slot] = slot < oldSlotCount ? getStackInSlot(slot).copy() : ItemStack.EMPTY;
+            }
+
+            setSize(INVENTORY_SLOT_COUNT);
+            for (int slot = 0; slot < INVENTORY_SLOT_COUNT; slot++) {
+                setStackInSlot(slot, migrated[slot]);
+            }
         }
     }
 }

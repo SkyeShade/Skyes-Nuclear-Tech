@@ -16,6 +16,12 @@ public final class ForgingAnvilRecipes {
         if (input.is(Items.COPPER_INGOT)) {
             return Optional.of(new ItemStack(ModItems.COPPER_PLATE.get()));
         }
+        if (input.is(ModItems.COBALT_INGOT.get())) {
+            return Optional.of(new ItemStack(ModItems.COBALT_PLATE.get()));
+        }
+        if (input.is(ModItems.NICKEL_INGOT.get())) {
+            return Optional.of(new ItemStack(ModItems.NICKEL_PLATE.get()));
+        }
         if (input.is(Items.GOLD_INGOT)) {
             return Optional.of(new ItemStack(ModItems.GOLD_PLATE.get()));
         }
@@ -43,6 +49,12 @@ public final class ForgingAnvilRecipes {
         }
         if (input.is(Items.RAW_COPPER)) {
             return Optional.of(new ItemStack(ModItems.COPPER_POWDER.get()));
+        }
+        if (input.is(ModItems.RAW_COBALT.get())) {
+            return Optional.of(new ItemStack(ModItems.COBALT_POWDER.get()));
+        }
+        if (input.is(ModItems.RAW_NICKEL.get())) {
+            return Optional.of(new ItemStack(ModItems.NICKEL_POWDER.get()));
         }
         if (input.is(ModItems.RAW_LEAD.get())) {
             return Optional.of(new ItemStack(ModItems.LEAD_POWDER.get()));

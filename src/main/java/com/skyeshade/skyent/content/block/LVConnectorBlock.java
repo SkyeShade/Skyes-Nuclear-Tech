@@ -4,6 +4,7 @@ import com.mojang.serialization.MapCodec;
 import com.skyeshade.skyent.content.blockentity.LVConnectorBlockEntity;
 import com.skyeshade.skyent.event.systems.LVElectricalNetworkSystem;
 import com.skyeshade.skyent.registry.ModBlockEntities;
+import com.skyeshade.skyent.registry.ModBlocks;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -72,6 +73,48 @@ public class LVConnectorBlock extends BaseEntityBlock {
             Block.box(10.0D, 6.0D, 6.0D, 11.0D, 10.0D, 10.0D),
             Block.box(9.0D, 6.5D, 6.5D, 10.0D, 9.5D, 9.5D)
     );
+    private static final VoxelShape MV_UP_SHAPE = Shapes.or(
+            Block.box(5.0D, 0.0D, 5.0D, 11.0D, 2.0D, 11.0D),
+            Block.box(6.0D, 2.0D, 6.0D, 10.0D, 8.0D, 10.0D),
+            Block.box(5.0D, 3.0D, 5.0D, 11.0D, 5.0D, 11.0D),
+            Block.box(5.0D, 6.0D, 5.0D, 11.0D, 7.0D, 11.0D),
+            Block.box(6.5D, 8.0D, 6.5D, 9.5D, 9.0D, 9.5D)
+    );
+    private static final VoxelShape MV_DOWN_SHAPE = Shapes.or(
+            Block.box(5.0D, 14.0D, 5.0D, 11.0D, 16.0D, 11.0D),
+            Block.box(6.0D, 8.0D, 6.0D, 10.0D, 14.0D, 10.0D),
+            Block.box(5.0D, 11.0D, 5.0D, 11.0D, 13.0D, 11.0D),
+            Block.box(5.0D, 9.0D, 5.0D, 11.0D, 10.0D, 11.0D),
+            Block.box(6.5D, 7.0D, 6.5D, 9.5D, 8.0D, 9.5D)
+    );
+    private static final VoxelShape MV_NORTH_SHAPE = Shapes.or(
+            Block.box(5.0D, 5.0D, 14.0D, 11.0D, 11.0D, 16.0D),
+            Block.box(6.0D, 6.0D, 8.0D, 10.0D, 10.0D, 14.0D),
+            Block.box(5.0D, 5.0D, 11.0D, 11.0D, 11.0D, 13.0D),
+            Block.box(5.0D, 5.0D, 9.0D, 11.0D, 11.0D, 10.0D),
+            Block.box(6.5D, 6.5D, 7.0D, 9.5D, 9.5D, 8.0D)
+    );
+    private static final VoxelShape MV_SOUTH_SHAPE = Shapes.or(
+            Block.box(5.0D, 5.0D, 0.0D, 11.0D, 11.0D, 2.0D),
+            Block.box(6.0D, 6.0D, 2.0D, 10.0D, 10.0D, 8.0D),
+            Block.box(5.0D, 5.0D, 3.0D, 11.0D, 11.0D, 5.0D),
+            Block.box(5.0D, 5.0D, 6.0D, 11.0D, 11.0D, 7.0D),
+            Block.box(6.5D, 6.5D, 8.0D, 9.5D, 9.5D, 9.0D)
+    );
+    private static final VoxelShape MV_EAST_SHAPE = Shapes.or(
+            Block.box(0.0D, 5.0D, 5.0D, 2.0D, 11.0D, 11.0D),
+            Block.box(2.0D, 6.0D, 6.0D, 8.0D, 10.0D, 10.0D),
+            Block.box(3.0D, 5.0D, 5.0D, 5.0D, 11.0D, 11.0D),
+            Block.box(6.0D, 5.0D, 5.0D, 7.0D, 11.0D, 11.0D),
+            Block.box(8.0D, 6.5D, 6.5D, 9.0D, 9.5D, 9.5D)
+    );
+    private static final VoxelShape MV_WEST_SHAPE = Shapes.or(
+            Block.box(14.0D, 5.0D, 5.0D, 16.0D, 11.0D, 11.0D),
+            Block.box(8.0D, 6.0D, 6.0D, 14.0D, 10.0D, 10.0D),
+            Block.box(11.0D, 5.0D, 5.0D, 13.0D, 11.0D, 11.0D),
+            Block.box(9.0D, 5.0D, 5.0D, 10.0D, 11.0D, 11.0D),
+            Block.box(7.0D, 6.5D, 6.5D, 8.0D, 9.5D, 9.5D)
+    );
 
     public LVConnectorBlock(BlockBehaviour.Properties properties) {
         super(properties);
@@ -85,12 +128,12 @@ public class LVConnectorBlock extends BaseEntityBlock {
 
     @Override
     protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return shapeFor(state.getValue(FACING));
+        return shapeFor(state);
     }
 
     @Override
     protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return shapeFor(state.getValue(FACING));
+        return shapeFor(state);
     }
 
     @Override
@@ -109,7 +152,10 @@ public class LVConnectorBlock extends BaseEntityBlock {
     protected boolean canSurvive(BlockState state, net.minecraft.world.level.LevelReader level, BlockPos pos) {
         Direction facing = state.getValue(FACING);
         BlockPos supportPos = pos.relative(facing.getOpposite());
-        return level.getBlockState(supportPos).isFaceSturdy(level, supportPos, facing);
+        BlockState supportState = level.getBlockState(supportPos);
+        return supportState.isFaceSturdy(level, supportPos, facing)
+                || LVMVTransformerBlock.isConnectorSupportCell(supportState)
+                || HeatingChamberBlock.isConnectorSupportCell(supportState);
     }
 
     @Override
@@ -141,6 +187,7 @@ public class LVConnectorBlock extends BaseEntityBlock {
             return null;
         }
 
+        // MV connectors currently share the LV connector transport/network implementation.
         return createTickerHelper(
                 blockEntityType,
                 ModBlockEntities.LV_CONNECTOR.get(),
@@ -162,7 +209,19 @@ public class LVConnectorBlock extends BaseEntityBlock {
         builder.add(FACING);
     }
 
-    private static VoxelShape shapeFor(Direction facing) {
+    private static VoxelShape shapeFor(BlockState state) {
+        Direction facing = state.getValue(FACING);
+        if (state.is(ModBlocks.MV_CONNECTOR.get())) {
+            return switch (facing) {
+                case DOWN -> MV_DOWN_SHAPE;
+                case NORTH -> MV_NORTH_SHAPE;
+                case SOUTH -> MV_SOUTH_SHAPE;
+                case EAST -> MV_EAST_SHAPE;
+                case WEST -> MV_WEST_SHAPE;
+                case UP -> MV_UP_SHAPE;
+            };
+        }
+
         return switch (facing) {
             case DOWN -> DOWN_SHAPE;
             case NORTH -> NORTH_SHAPE;

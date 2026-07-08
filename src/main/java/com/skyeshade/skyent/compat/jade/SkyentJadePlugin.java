@@ -2,6 +2,8 @@ package com.skyeshade.skyent.compat.jade;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.block.ElectricFurnaceBlock;
+import com.skyeshade.skyent.content.block.HeatingChamberBlock;
+import com.skyeshade.skyent.content.block.HeatingChamberPartBlock;
 import com.skyeshade.skyent.content.block.LVCrusherBlock;
 import com.skyeshade.skyent.content.block.LVElectricPumpBlock;
 import com.skyeshade.skyent.content.block.LVSteamTurbineBlock;
@@ -18,6 +20,8 @@ public final class SkyentJadePlugin implements IWailaPlugin {
         registration.registerBlockDataProvider(RJComponentProvider.INSTANCE, LVCrusherBlock.class);
         registration.registerBlockDataProvider(RJComponentProvider.INSTANCE, LVElectricPumpBlock.class);
         registration.registerBlockDataProvider(RJComponentProvider.INSTANCE, LVSteamTurbineBlock.class);
+        registration.registerBlockDataProvider(RJComponentProvider.INSTANCE, HeatingChamberBlock.class);
+        registration.registerBlockDataProvider(RJComponentProvider.INSTANCE, HeatingChamberPartBlock.class);
     }
 
     @Override
@@ -26,5 +30,7 @@ public final class SkyentJadePlugin implements IWailaPlugin {
         registration.registerBlockComponent(RJComponentProvider.INSTANCE, LVCrusherBlock.class);
         registration.registerBlockComponent(RJComponentProvider.INSTANCE, LVElectricPumpBlock.class);
         registration.registerBlockComponent(RJComponentProvider.INSTANCE, LVSteamTurbineBlock.class);
+        registration.registerBlockComponent(RJComponentProvider.INSTANCE, HeatingChamberBlock.class);
+        registration.registerBlockComponent(RJComponentProvider.INSTANCE, HeatingChamberPartBlock.class);
     }
 }

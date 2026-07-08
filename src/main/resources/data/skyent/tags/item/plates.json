@@ -7,6 +7,8 @@
     "skyent:aluminum_plate",
     "skyent:titanium_plate",
     "skyent:copper_plate",
+    "skyent:cobalt_plate",
+    "skyent:nickel_plate",
     "skyent:lead_plate"
   ]
 }

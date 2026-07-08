@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "skyent:small_tin_powder"
+    },
+    {
+      "item": "skyent:small_tin_powder"
+    },
+    {
+      "item": "skyent:small_tin_powder"
+    },
+    {
+      "item": "skyent:small_tin_powder"
+    }
+  ],
+  "result": {
+    "id": "skyent:tin_powder"
+  }
+}

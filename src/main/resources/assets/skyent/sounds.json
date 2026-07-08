@@ -51,6 +51,12 @@
     ],
     "subtitle": "subtitle.skyent.electric_furnace_loop"
   },
+  "transformer_loop": {
+    "sounds": [
+      "skyent:transformer_loop"
+    ],
+    "subtitle": "subtitle.skyent.transformer_loop"
+  },
   "heavy_moving_metal": {
     "sounds": [
       "skyent:heavy_moving_metal"

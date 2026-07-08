@@ -1,7 +1,10 @@
 package com.skyeshade.skyent.content.blockentity;
 
+import com.skyeshade.skyent.content.block.LVMVTransformerBlock;
 import com.skyeshade.skyent.registry.ModBlockEntities;
+import com.skyeshade.skyent.content.energy.ElectricalTier;
 import com.skyeshade.skyent.content.energy.LVWireType;
+import com.skyeshade.skyent.registry.ModBlocks;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -25,6 +28,7 @@ public class LVConnectorBlockEntity extends BlockEntity {
     public static final double CONNECTOR_ANCHOR_CENTER = 0.5D;
     public static final double CONNECTOR_ANCHOR_NEAR_FACE = 0.45D - 1.0D / 16.0D;
     public static final double CONNECTOR_ANCHOR_FAR_FACE = 1.0D - CONNECTOR_ANCHOR_NEAR_FACE;
+    private static final double MV_CONNECTOR_ANCHOR_LOCAL_OFFSET = 2.0D / 16.0D;
 
     private static final String CONNECTIONS_TAG = "Connections";
     private static final String POSITION_TAG = "Position";
@@ -52,12 +56,34 @@ public class LVConnectorBlockEntity extends BlockEntity {
         return !worldPosition.equals(pos) && connections.size() < MAX_CONNECTIONS && !connections.contains(pos);
     }
 
+    public boolean canAddConnection(BlockPos pos, LVWireType wireType) {
+        return canAddConnection(pos) && canAcceptWireType(wireType);
+    }
+
+    public boolean canConnectTo(LVConnectorBlockEntity other, LVWireType wireType) {
+        return other != null
+                && canAddConnection(other.getBlockPos(), wireType)
+                && other.canAddConnection(getBlockPos(), wireType);
+    }
+
+    public boolean canAcceptWireType(LVWireType wireType) {
+        return wireType.isTier(getConnectorTier());
+    }
+
+    public ElectricalTier getConnectorTier() {
+        return isMVConnector() ? ElectricalTier.MV : ElectricalTier.LV;
+    }
+
+    public boolean isMVConnector() {
+        return getBlockState().is(ModBlocks.MV_CONNECTOR.get());
+    }
+
     public boolean addConnection(BlockPos pos) {
         return addConnection(pos, LVWireType.COPPER);
     }
 
     public boolean addConnection(BlockPos pos, LVWireType wireType) {
-        if (!canAddConnection(pos)) {
+        if (!canAddConnection(pos, wireType)) {
             return false;
         }
 
@@ -85,6 +111,15 @@ public class LVConnectorBlockEntity extends BlockEntity {
             for (BlockPos connection : List.copyOf(connections)) {
                 if (level.getBlockEntity(connection) instanceof LVConnectorBlockEntity connector) {
                     connector.removeConnection(worldPosition);
+                    continue;
+                }
+
+                BlockState connectionState = level.getBlockState(connection);
+                if (LVMVTransformerBlock.isMVTerminal(connectionState)) {
+                    BlockPos masterPos = LVMVTransformerBlock.getMasterPos(connectionState, connection);
+                    if (level.getBlockEntity(masterPos) instanceof LVMVTransformerBlockEntity transformer) {
+                        transformer.removeTerminalConnection(connection, worldPosition);
+                    }
                 }
             }
         }
@@ -163,7 +198,7 @@ public class LVConnectorBlockEntity extends BlockEntity {
         double y = pos.getY() + CONNECTOR_ANCHOR_CENTER;
         double z = pos.getZ() + CONNECTOR_ANCHOR_CENTER;
 
-        return switch (facing) {
+        Vec3 anchor = switch (facing) {
             case UP -> new Vec3(x, pos.getY() + CONNECTOR_ANCHOR_NEAR_FACE, z);
             case DOWN -> new Vec3(x, pos.getY() + CONNECTOR_ANCHOR_FAR_FACE, z);
             case NORTH -> new Vec3(x, y, pos.getZ() + CONNECTOR_ANCHOR_FAR_FACE);
@@ -171,6 +206,13 @@ public class LVConnectorBlockEntity extends BlockEntity {
             case EAST -> new Vec3(pos.getX() + CONNECTOR_ANCHOR_NEAR_FACE, y, z);
             case WEST -> new Vec3(pos.getX() + CONNECTOR_ANCHOR_FAR_FACE, y, z);
         };
+        return state.is(ModBlocks.MV_CONNECTOR.get())
+                ? anchor.add(
+                facing.getStepX() * MV_CONNECTOR_ANCHOR_LOCAL_OFFSET,
+                facing.getStepY() * MV_CONNECTOR_ANCHOR_LOCAL_OFFSET,
+                facing.getStepZ() * MV_CONNECTOR_ANCHOR_LOCAL_OFFSET
+        )
+                : anchor;
     }
 
     @Override
@@ -226,11 +268,11 @@ public class LVConnectorBlockEntity extends BlockEntity {
         ListTag list = tag.getList(CONNECTIONS_TAG, Tag.TAG_COMPOUND);
         for (int index = 0; index < list.size() && connections.size() < MAX_CONNECTIONS; index++) {
             BlockPos connection = BlockPos.of(list.getCompound(index).getLong(POSITION_TAG));
-            if (!worldPosition.equals(connection) && !connections.contains(connection)) {
+            LVWireType wireType = LVWireType.byName(list.getCompound(index).getString(WIRE_TYPE_TAG));
+            if (!worldPosition.equals(connection) && !connections.contains(connection) && canAcceptWireType(wireType)) {
                 connection = connection.immutable();
                 connections.add(connection);
                 double heat = list.getCompound(index).getDouble(HEAT_TAG);
-                LVWireType wireType = LVWireType.byName(list.getCompound(index).getString(WIRE_TYPE_TAG));
                 connectionHeat.put(connection, heat);
                 connectionWireTypes.put(connection, wireType);
                 lastSyncedConnectionHeat.put(connection, heat);

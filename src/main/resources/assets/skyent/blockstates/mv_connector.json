@@ -1,0 +1,30 @@
+{
+  "variants": {
+    "facing=up": {
+      "model": "skyent:block/mv_connector"
+    },
+    "facing=down": {
+      "model": "skyent:block/mv_connector",
+      "x": 180
+    },
+    "facing=north": {
+      "model": "skyent:block/mv_connector",
+      "x": 90
+    },
+    "facing=south": {
+      "model": "skyent:block/mv_connector",
+      "x": 90,
+      "y": 180
+    },
+    "facing=east": {
+      "model": "skyent:block/mv_connector",
+      "x": 90,
+      "y": 90
+    },
+    "facing=west": {
+      "model": "skyent:block/mv_connector",
+      "x": 90,
+      "y": 270
+    }
+  }
+}

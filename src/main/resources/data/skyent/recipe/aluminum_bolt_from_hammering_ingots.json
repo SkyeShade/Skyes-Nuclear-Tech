@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "IH",
+    "I "
+  ],
+  "key": {
+    "I": {
+      "item": "skyent:aluminum_plate"
+    },
+    "H": {
+      "item": "skyent:forging_hammer"
+    }
+  },
+  "result": {
+    "id": "skyent:aluminum_bolt"
+  }
+}

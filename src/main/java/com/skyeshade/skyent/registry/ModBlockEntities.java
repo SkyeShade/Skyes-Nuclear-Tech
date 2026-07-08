@@ -18,6 +18,7 @@ import com.skyeshade.skyent.content.blockentity.HeatingChamberBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVCrusherBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVFEConverterBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVElectricPumpBlockEntity;
+import com.skyeshade.skyent.content.blockentity.LVMVTransformerBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVSteamTurbineBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVRJConverterBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVConnectorBlockEntity;
@@ -133,7 +134,8 @@ public final class ModBlockEntities {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<LVConnectorBlockEntity>> LV_CONNECTOR =
             BLOCK_ENTITIES.register("lv_connector", () -> BlockEntityType.Builder.of(
                     LVConnectorBlockEntity::new,
-                    ModBlocks.LV_CONNECTOR.get()
+                    ModBlocks.LV_CONNECTOR.get(),
+                    ModBlocks.MV_CONNECTOR.get()
             ).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<LVRJConverterBlockEntity>> LV_RJ_CONVERTER =
@@ -146,6 +148,12 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("lv_fe_converter", () -> BlockEntityType.Builder.of(
                     LVFEConverterBlockEntity::new,
                     ModBlocks.LV_FE_CONVERTER.get()
+            ).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<LVMVTransformerBlockEntity>> LV_MV_TRANSFORMER =
+            BLOCK_ENTITIES.register("lv_mv_transformer", () -> BlockEntityType.Builder.of(
+                    LVMVTransformerBlockEntity::new,
+                    ModBlocks.LV_MV_TRANSFORMER.get()
             ).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CoriumBlockEntity>> CORIUM_BLOCK =

@@ -5,6 +5,7 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.skyeshade.skyent.SkyesNuclearTech;
+import com.skyeshade.skyent.content.block.LVMVTransformerBlock;
 import com.skyeshade.skyent.content.blockentity.LVConnectorBlockEntity;
 import com.skyeshade.skyent.content.energy.CopperWireConstants;
 import com.skyeshade.skyent.content.energy.LVWireType;
@@ -26,7 +27,6 @@ import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
 public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlockEntity> {
-    public static final float CABLE_HALF_WIDTH = 0.025F;
     private static final int CABLE_SEGMENTS = LVElectricalNetworkSystem.CABLE_SEGMENTS;
 
     private static final float CABLE_ALPHA = 1.0F;
@@ -85,7 +85,7 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
 
             Vec3 endAnchor = level == null
                     ? new Vec3(LVConnectorBlockEntity.anchorX(connection), LVConnectorBlockEntity.anchorY(connection), LVConnectorBlockEntity.anchorZ(connection))
-                    : LVConnectorBlockEntity.anchor(level.getBlockState(connection), connection);
+                    : anchor(level, level.getBlockState(connection), connection);
             Vector3f end = new Vector3f(
                     (float) (endAnchor.x - origin.getX()),
                     (float) (endAnchor.y - origin.getY()),
@@ -95,7 +95,7 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
             LVWireType wireType = connector.getConnectionWireType(connection);
             debugRenderedConnection(origin, connection, key, heat);
             CableColor color = getCableHeatColor(wireType, heat).withAlpha(1.0F);
-            drawCable(buffer, pose, start, end, camera, color, getCableLight(packedLight, heat));
+            drawCable(buffer, pose, start, end, camera, color, getCableLight(packedLight, heat), wireType.cableHalfWidth());
         }
     }
 
@@ -117,6 +117,9 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
     }
 
     private static Vec3 anchor(Level level, net.minecraft.world.level.block.state.BlockState state, BlockPos pos) {
+        if (LVMVTransformerBlock.isMVTerminal(state)) {
+            return LVMVTransformerBlock.mvTerminalAnchor(pos);
+        }
         return level == null
                 ? new Vec3(LVConnectorBlockEntity.anchorX(pos), LVConnectorBlockEntity.anchorY(pos), LVConnectorBlockEntity.anchorZ(pos))
                 : LVConnectorBlockEntity.anchor(state, pos);
@@ -128,7 +131,7 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
         }
     }
 
-    private static void drawCable(VertexConsumer buffer, Matrix4f pose, Vector3f start, Vector3f end, Vector3f camera, CableColor color, int packedLight) {
+    private static void drawCable(VertexConsumer buffer, Matrix4f pose, Vector3f start, Vector3f end, Vector3f camera, CableColor color, int packedLight, float halfWidth) {
         Vector3f cable = new Vector3f(end).sub(start);
         if (cable.lengthSquared() <= 0.0001F) {
             return;
@@ -143,7 +146,7 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
 
         for (int sample = 0; sample <= CABLE_SEGMENTS; sample++) {
             Vector3f tangent = tangentAt(points, sample);
-            Vector3f side = sideAt(points[sample], tangent, camera);
+            Vector3f side = sideAt(points[sample], tangent, camera, halfWidth);
             left[sample] = new Vector3f(points[sample]).sub(side);
             right[sample] = new Vector3f(points[sample]).add(side);
         }
@@ -173,7 +176,7 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
         return tangent.normalize();
     }
 
-    private static Vector3f sideAt(Vector3f point, Vector3f tangent, Vector3f camera) {
+    private static Vector3f sideAt(Vector3f point, Vector3f tangent, Vector3f camera, float halfWidth) {
         Vector3f viewDirection = new Vector3f(camera).sub(point);
         if (viewDirection.lengthSquared() <= 0.0001F) {
             viewDirection.set(0.0F, 1.0F, 0.0F);
@@ -187,7 +190,7 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
             side = new Vector3f(tangent).cross(fallback);
         }
 
-        return side.normalize().mul(CABLE_HALF_WIDTH);
+        return side.normalize().mul(halfWidth);
     }
 
     private static Vector3f sagPoint(Vector3f start, Vector3f end, float amount) {

@@ -5,6 +5,7 @@ import com.skyeshade.skyent.content.blockentity.HeatingChamberBlockEntity;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import com.skyeshade.skyent.registry.ModBlocks;
 import com.skyeshade.skyent.registry.ModItems;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -16,6 +17,7 @@ import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -238,6 +240,13 @@ public class HeatingChamberBlock extends BaseEntityBlock {
         return pos;
     }
 
+    public static Optional<HeatingChamberBlockEntity> getMasterBlockEntity(LevelAccessor level, BlockState state, BlockPos pos) {
+        BlockPos masterPos = getMasterPos(state, pos);
+        return level.getBlockEntity(masterPos) instanceof HeatingChamberBlockEntity chamber
+                ? Optional.of(chamber)
+                : Optional.empty();
+    }
+
     public static BlockPos resolveDestroyProgressPos(Level level, BlockPos pos) {
         BlockState state = level.getBlockState(pos);
         if (state.is(ModBlocks.HEATING_CHAMBER_PART.get())) {
@@ -255,6 +264,10 @@ public class HeatingChamberBlock extends BaseEntityBlock {
 
     public static boolean isInternalConveyorLocalPos(BlockPos local) {
         return local.getX() == 0 && local.getY() == 1 && (local.getZ() == 0 || local.getZ() == 1);
+    }
+
+    public static boolean isConnectorSupportCell(BlockState state) {
+        return state.is(ModBlocks.HEATING_CHAMBER.get()) || state.is(ModBlocks.HEATING_CHAMBER_PART.get());
     }
 
     public static BlockPos[] getInternalConveyorWorldPositions(Direction facing, BlockPos controllerPos) {

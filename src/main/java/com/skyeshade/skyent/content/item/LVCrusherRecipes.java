@@ -11,18 +11,23 @@ import net.minecraft.world.level.block.Blocks;
 
 public final class LVCrusherRecipes {
     private static final List<Entry> RECIPES = List.of(
-            raw(Items.RAW_IRON, ModItems.IRON_POWDER.get()),
+            rawWithSecondary(Items.RAW_IRON, ModItems.IRON_POWDER.get(), ModItems.NICKEL_POWDER.get(), 0.10D),
             raw(Items.RAW_GOLD, ModItems.GOLD_POWDER.get()),
-            raw(Items.RAW_COPPER, ModItems.COPPER_POWDER.get()),
+            rawWithSecondary(Items.RAW_COPPER, ModItems.COPPER_POWDER.get(), ModItems.COBALT_POWDER.get(), 0.10D),
+            raw(ModItems.RAW_COBALT.get(), ModItems.COBALT_POWDER.get()),
+            raw(ModItems.RAW_NICKEL.get(), ModItems.NICKEL_POWDER.get()),
             raw(ModItems.RAW_LEAD.get(), ModItems.LEAD_POWDER.get()),
             raw(ModItems.RAW_TUNGSTEN.get(), ModItems.TUNGSTEN_POWDER.get()),
             raw(ModItems.RAW_URANIUM.get(), ModItems.URANIUM_POWDER.get()),
             raw(ModItems.RAW_TITANIUM.get(), ModItems.TITANIUM_POWDER.get()),
             raw(ModItems.RAW_ALUMINUM.get(), ModItems.ALUMINUM_POWDER.get()),
+            secondaryOnly(ModItems.SILT.get(), ModItems.SMALL_TIN_POWDER.get(), 0.40D),
 
             ingot(Items.IRON_INGOT, ModItems.IRON_POWDER.get()),
             ingot(Items.GOLD_INGOT, ModItems.GOLD_POWDER.get()),
             ingot(Items.COPPER_INGOT, ModItems.COPPER_POWDER.get()),
+            ingot(ModItems.COBALT_INGOT.get(), ModItems.COBALT_POWDER.get()),
+            ingot(ModItems.NICKEL_INGOT.get(), ModItems.NICKEL_POWDER.get()),
             ingot(ModItems.LEAD_INGOT.get(), ModItems.LEAD_POWDER.get()),
             ingot(ModItems.TUNGSTEN_INGOT.get(), ModItems.TUNGSTEN_POWDER.get()),
             ingot(ModItems.URANIUM_INGOT.get(), ModItems.URANIUM_POWDER.get()),
@@ -33,17 +38,19 @@ public final class LVCrusherRecipes {
             plate(ModItems.IRON_PLATE.get(), ModItems.IRON_POWDER.get()),
             plate(ModItems.GOLD_PLATE.get(), ModItems.GOLD_POWDER.get()),
             plate(ModItems.COPPER_PLATE.get(), ModItems.COPPER_POWDER.get()),
+            plate(ModItems.COBALT_PLATE.get(), ModItems.COBALT_POWDER.get()),
+            plate(ModItems.NICKEL_PLATE.get(), ModItems.NICKEL_POWDER.get()),
             plate(ModItems.LEAD_PLATE.get(), ModItems.LEAD_POWDER.get()),
             plate(ModItems.TITANIUM_PLATE.get(), ModItems.TITANIUM_POWDER.get()),
             plate(ModItems.ALUMINUM_PLATE.get(), ModItems.ALUMINUM_POWDER.get()),
             plate(ModItems.STEEL_PLATE.get(), ModItems.STEEL_POWDER.get()),
 
-            ore(Blocks.IRON_ORE, ModItems.IRON_POWDER.get()),
-            ore(Blocks.DEEPSLATE_IRON_ORE, ModItems.IRON_POWDER.get()),
+            oreWithSecondary(Blocks.IRON_ORE, ModItems.IRON_POWDER.get(), ModItems.NICKEL_POWDER.get(), 0.20D),
+            oreWithSecondary(Blocks.DEEPSLATE_IRON_ORE, ModItems.IRON_POWDER.get(), ModItems.NICKEL_POWDER.get(), 0.20D),
             ore(Blocks.GOLD_ORE, ModItems.GOLD_POWDER.get()),
             ore(Blocks.DEEPSLATE_GOLD_ORE, ModItems.GOLD_POWDER.get()),
-            ore(Blocks.COPPER_ORE, ModItems.COPPER_POWDER.get()),
-            ore(Blocks.DEEPSLATE_COPPER_ORE, ModItems.COPPER_POWDER.get()),
+            oreWithSecondary(Blocks.COPPER_ORE, ModItems.COPPER_POWDER.get(), ModItems.COBALT_POWDER.get(), 0.20D),
+            oreWithSecondary(Blocks.DEEPSLATE_COPPER_ORE, ModItems.COPPER_POWDER.get(), ModItems.COBALT_POWDER.get(), 0.20D),
             ore(ModBlocks.LEAD_ORE.get(), ModItems.LEAD_POWDER.get()),
             ore(ModBlocks.TUNGSTEN_ORE.get(), ModItems.TUNGSTEN_POWDER.get()),
             ore(ModBlocks.DEEPSLATE_TUNGSTEN_ORE.get(), ModItems.TUNGSTEN_POWDER.get()),
@@ -58,7 +65,7 @@ public final class LVCrusherRecipes {
     private LVCrusherRecipes() {
     }
 
-    public static Optional<ItemStack> getResult(ItemStack input) {
+    public static Optional<CrusherRecipe> getRecipe(ItemStack input) {
         if (input.isEmpty()) {
             return Optional.empty();
         }
@@ -66,32 +73,64 @@ public final class LVCrusherRecipes {
         for (Entry entry : RECIPES) {
             if (input.is(entry.input().asItem())) {
                 // TODO: when isotope components exist, preserve uranium composition into powder outputs.
-                return Optional.of(new ItemStack(entry.output(), entry.count()));
+                ItemStack primary = entry.output() == null
+                        ? ItemStack.EMPTY
+                        : new ItemStack(entry.output(), entry.count());
+                ItemStack secondary = entry.secondaryOutput() == null
+                        ? ItemStack.EMPTY
+                        : new ItemStack(entry.secondaryOutput(), entry.secondaryCount());
+                return Optional.of(new CrusherRecipe(primary, secondary, entry.secondaryChance()));
             }
         }
         return Optional.empty();
     }
 
+    public static Optional<ItemStack> getResult(ItemStack input) {
+        return getRecipe(input).map(CrusherRecipe::primaryOutput);
+    }
+
     public static boolean isCrushable(ItemStack input) {
-        return getResult(input).isPresent();
+        return getRecipe(input).isPresent();
     }
 
     private static Entry raw(ItemLike input, ItemLike output) {
-        return new Entry(input, output, 2);
+        return new Entry(input, output, 2, null, 0, 0.0D);
+    }
+
+    private static Entry rawWithSecondary(ItemLike input, ItemLike output, ItemLike secondaryOutput, double secondaryChance) {
+        return new Entry(input, output, 2, secondaryOutput, 1, secondaryChance);
     }
 
     private static Entry ingot(ItemLike input, ItemLike output) {
-        return new Entry(input, output, 1);
+        return new Entry(input, output, 1, null, 0, 0.0D);
     }
 
     private static Entry plate(ItemLike input, ItemLike output) {
-        return new Entry(input, output, 1);
+        return new Entry(input, output, 1, null, 0, 0.0D);
     }
 
     private static Entry ore(ItemLike input, ItemLike output) {
-        return new Entry(input, output, 3);
+        return new Entry(input, output, 3, null, 0, 0.0D);
     }
 
-    private record Entry(ItemLike input, ItemLike output, int count) {
+    private static Entry oreWithSecondary(ItemLike input, ItemLike output, ItemLike secondaryOutput, double secondaryChance) {
+        return new Entry(input, output, 3, secondaryOutput, 1, secondaryChance);
+    }
+
+    private static Entry secondaryOnly(ItemLike input, ItemLike secondaryOutput, double secondaryChance) {
+        return new Entry(input, null, 0, secondaryOutput, 1, secondaryChance);
+    }
+
+    public record CrusherRecipe(ItemStack primaryOutput, ItemStack secondaryOutput, double secondaryChance) {
+        public boolean hasPrimaryOutput() {
+            return !primaryOutput.isEmpty();
+        }
+
+        public boolean hasSecondaryOutput() {
+            return !secondaryOutput.isEmpty() && secondaryChance > 0.0D;
+        }
+    }
+
+    private record Entry(ItemLike input, ItemLike output, int count, ItemLike secondaryOutput, int secondaryCount, double secondaryChance) {
     }
 }

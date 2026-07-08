@@ -11,6 +11,9 @@ import com.skyeshade.skyent.content.conveyor.ConveyorGateSurface;
 import com.skyeshade.skyent.content.conveyor.ConveyorLogicConstants;
 import com.skyeshade.skyent.content.conveyor.ConveyorTravelDirectionProvider;
 import com.skyeshade.skyent.content.entity.ConveyorMovingItemEntity;
+import com.skyeshade.skyent.content.energy.ElectricalTier;
+import com.skyeshade.skyent.content.energy.RJEnergyInfo;
+import com.skyeshade.skyent.content.energy.RJStorage;
 import com.skyeshade.skyent.content.item.HotItemUtil;
 import com.skyeshade.skyent.content.particle.StreakParticleOptions;
 import com.skyeshade.skyent.registry.ModBlockEntities;
@@ -42,7 +45,7 @@ import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.client.model.data.ModelData;
 import org.jetbrains.annotations.Nullable;
 
-public class HeatingChamberBlockEntity extends BlockEntity {
+public class HeatingChamberBlockEntity extends BlockEntity implements RJEnergyInfo {
     private static final boolean DEBUG_HEATING_CHAMBER_BATCH = false;
     private static final int BATCH_SIZE = 4;
     private static final int MAX_INSIDE_ITEMS = 4;
@@ -61,13 +64,25 @@ public class HeatingChamberBlockEntity extends BlockEntity {
     private static final double CAPTURE_FORWARD_DISTANCE = 0.16D;
     private static final int HEATING_SPARK_INTERVAL = 3;
     private static final int OPENING_SMOKE_WINDOW_TICKS = 8;
+    private static final int HEATING_CHAMBER_ENERGY_CAPACITY_RJ = 512_000;
+    private static final ElectricalTier REQUIRED_TIER = ElectricalTier.MV;
+    private static final double RUNNING_CURRENT_AMPS = 0.5D;
+    private static final double MAX_INPUT_CURRENT_AMPS = 2.0D;
+    private static final int HEATING_CHAMBER_MV_RJ_PER_TICK =
+            (int) Math.round(REQUIRED_TIER.voltage() * RUNNING_CURRENT_AMPS);
+    private static final int MAX_INPUT_RJ_PER_TICK =
+            (int) Math.round(REQUIRED_TIER.voltage() * MAX_INPUT_CURRENT_AMPS);
+    private static final String TAG_STORED_RJ = "StoredRJ";
+    private static final String TAG_CURRENT_ENERGY_USAGE = "CurrentEnergyUsage";
 
     private HeatingState heatingState = HeatingState.IDLE_INTAKE;
+    private final RJStorage rjStorage = new RJStorage(HEATING_CHAMBER_ENERGY_CAPACITY_RJ);
     private final Set<UUID> insideItemIds = new HashSet<>();
     private final Set<UUID> capturedItemIds = new HashSet<>();
     private final Set<UUID> releasedCapturedItemIds = new HashSet<>();
     private int stateTicks;
     private int activeHeatingDuration = MIN_HEAT_TICKS;
+    private int currentEnergyUsage;
     private int cachedSharedPackedLight = -1;
     private int lightCheckTicks;
 
@@ -134,6 +149,9 @@ public class HeatingChamberBlockEntity extends BlockEntity {
         chamber.captureEligibleItems();
         chamber.pruneCapturedItems();
 
+        int previousEnergyUsage = chamber.currentEnergyUsage;
+        chamber.currentEnergyUsage = 0;
+
         switch (chamber.heatingState) {
             case IDLE_INTAKE -> {
                 if (!chamber.capturedItemIds.isEmpty()) {
@@ -153,12 +171,18 @@ public class HeatingChamberBlockEntity extends BlockEntity {
                 }
             }
             case CLOSING -> {
+                if (!chamber.canRunPoweredTick()) {
+                    break;
+                }
                 chamber.stateTicks++;
                 if (chamber.stateTicks >= CLOSE_TICKS) {
                     chamber.transitionTo(HeatingState.HEATING);
                 }
             }
             case HEATING -> {
+                if (!chamber.canRunPoweredTick()) {
+                    break;
+                }
                 chamber.stateTicks++;
                 if (chamber.stateTicks >= chamber.activeHeatingDuration) {
                     chamber.heatCapturedItems();
@@ -166,6 +190,9 @@ public class HeatingChamberBlockEntity extends BlockEntity {
                 }
             }
             case OPENING -> {
+                if (!chamber.canRunPoweredTick()) {
+                    break;
+                }
                 chamber.stateTicks++;
                 if (chamber.stateTicks >= OPEN_TICKS) {
                     chamber.transitionTo(HeatingState.RELEASING);
@@ -180,6 +207,10 @@ public class HeatingChamberBlockEntity extends BlockEntity {
                     chamber.transitionTo(HeatingState.IDLE_INTAKE);
                 }
             }
+        }
+
+        if (previousEnergyUsage != chamber.currentEnergyUsage) {
+            chamber.setChangedAndSync();
         }
     }
 
@@ -218,6 +249,42 @@ public class HeatingChamberBlockEntity extends BlockEntity {
 
     public boolean isHeating() {
         return heatingState == HeatingState.HEATING;
+    }
+
+    public int getAvailableRJCapacity() {
+        return Math.min(rjStorage.getAvailableRJCapacity(), MAX_INPUT_RJ_PER_TICK);
+    }
+
+    public int receiveRJ(ElectricalTier tier, int maxAmount, boolean simulate) {
+        if (tier != REQUIRED_TIER) {
+            return 0;
+        }
+
+        int received = rjStorage.receiveRJ(Math.min(maxAmount, MAX_INPUT_RJ_PER_TICK), simulate);
+        if (received > 0 && !simulate) {
+            setChanged();
+        }
+        return received;
+    }
+
+    @Override
+    public int getEnergyStoredRJ() {
+        return rjStorage.getStoredRJ();
+    }
+
+    @Override
+    public int getEnergyCapacityRJ() {
+        return rjStorage.getCapacityRJ();
+    }
+
+    @Override
+    public int getCurrentUsageRJPerTick() {
+        return currentEnergyUsage;
+    }
+
+    @Override
+    public String getVoltageTierName() {
+        return REQUIRED_TIER.displayName();
     }
 
     public float getChamberTravelBlocks(float partialTick) {
@@ -261,6 +328,10 @@ public class HeatingChamberBlockEntity extends BlockEntity {
     }
 
     private void tickClientAnimationState() {
+        if (isPowerRequiredForCurrentState() && currentEnergyUsage <= 0) {
+            return;
+        }
+
         switch (heatingState) {
             case CLOSING -> stateTicks = Math.min(stateTicks + 1, CLOSE_TICKS);
             case HEATING -> stateTicks = Math.min(stateTicks + 1, Math.max(MIN_HEAT_TICKS, activeHeatingDuration));
@@ -292,6 +363,31 @@ public class HeatingChamberBlockEntity extends BlockEntity {
         stateTicks = 0;
         debug("transitioned to {} with {} captured item(s), heatDuration={}", state, capturedItemIds.size(), activeHeatingDuration);
         setChangedAndSync();
+    }
+
+    private boolean isPowerRequiredForCurrentState() {
+        return heatingState == HeatingState.CLOSING
+                || heatingState == HeatingState.HEATING
+                || heatingState == HeatingState.OPENING;
+    }
+
+    private boolean canRunPoweredTick() {
+        return !isPowerRequiredForCurrentState() || consumeEnergyForActiveTick();
+    }
+
+    private boolean consumeEnergyForActiveTick() {
+        if (!isPowerRequiredForCurrentState()) {
+            return true;
+        }
+        if (rjStorage.getStoredRJ() < HEATING_CHAMBER_MV_RJ_PER_TICK) {
+            currentEnergyUsage = 0;
+            return false;
+        }
+
+        rjStorage.consumeRJ(HEATING_CHAMBER_MV_RJ_PER_TICK);
+        currentEnergyUsage = HEATING_CHAMBER_MV_RJ_PER_TICK;
+        setChanged();
+        return true;
     }
 
     private void finalizeCapturedBatch() {
@@ -859,6 +955,8 @@ public class HeatingChamberBlockEntity extends BlockEntity {
         tag.putString("HeatingState", heatingState.getSerializedName());
         tag.putInt("StateTicks", stateTicks);
         tag.putInt("ActiveHeatingDuration", activeHeatingDuration);
+        tag.putInt(TAG_STORED_RJ, rjStorage.getStoredRJ());
+        tag.putInt(TAG_CURRENT_ENERGY_USAGE, currentEnergyUsage);
         tag.putLongArray("InsideItemMost", insideItemIds.stream().mapToLong(UUID::getMostSignificantBits).toArray());
         tag.putLongArray("InsideItemLeast", insideItemIds.stream().mapToLong(UUID::getLeastSignificantBits).toArray());
         tag.putLongArray("CapturedItemMost", capturedItemIds.stream().mapToLong(UUID::getMostSignificantBits).toArray());
@@ -875,6 +973,8 @@ public class HeatingChamberBlockEntity extends BlockEntity {
         activeHeatingDuration = tag.contains("ActiveHeatingDuration")
                 ? Mth.clamp(tag.getInt("ActiveHeatingDuration"), MIN_HEAT_TICKS, MAX_HEAT_TICKS)
                 : MIN_HEAT_TICKS;
+        rjStorage.setStoredRJ(tag.getInt(TAG_STORED_RJ));
+        currentEnergyUsage = Math.max(0, tag.getInt(TAG_CURRENT_ENERGY_USAGE));
         insideItemIds.clear();
         long[] insideMost = tag.getLongArray("InsideItemMost");
         long[] insideLeast = tag.getLongArray("InsideItemLeast");

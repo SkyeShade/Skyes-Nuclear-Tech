@@ -79,6 +79,12 @@ public final class HotItemUtil {
         if (stack.is(Items.COPPER_INGOT)) {
             return 800.0D;
         }
+        if (stack.is(ModItems.COBALT_INGOT.get())) {
+            return 1250.0D;
+        }
+        if (stack.is(ModItems.NICKEL_INGOT.get())) {
+            return 1150.0D;
+        }
         if (stack.is(ModItems.URANIUM_INGOT.get())) {
             return 600.0D;
         }

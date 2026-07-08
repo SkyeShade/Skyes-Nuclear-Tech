@@ -62,6 +62,8 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.DEEPSLATE_TUNGSTEN_ORE.get());
                         output.accept(ModItems.TUNGSTEN_BLOCK.get());
                         output.accept(ModItems.STEEL_BLOCK.get());
+                        output.accept(ModItems.COBALT_BLOCK.get());
+                        output.accept(ModItems.NICKEL_BLOCK.get());
                         output.accept(ModItems.LEAD_ORE.get());
                         output.accept(ModItems.LEAD_BLOCK.get());
                         output.accept(ModItems.URANIUM_ORE.get());
@@ -73,7 +75,10 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.STEEL_FLUID_BARREL.get());
                         addSteelFluidBarrelVariants(output);
                         output.accept(ModItems.LV_CONNECTOR.get());
+                        output.accept(ModItems.MV_CONNECTOR.get());
                         output.accept(ModItems.STEEL_INGOT.get());
+                        output.accept(ModItems.RAW_COBALT.get());
+                        output.accept(ModItems.RAW_NICKEL.get());
                         output.accept(ModItems.RAW_TITANIUM.get());
                         output.accept(ModItems.RAW_TUNGSTEN.get());
                         output.accept(ModItems.RAW_ALUMINUM.get());
@@ -84,12 +89,17 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.ALUMINUM_INGOT.get());
                         output.accept(ModItems.LEAD_INGOT.get());
                         output.accept(ModItems.URANIUM_INGOT.get());
+                        output.accept(ModItems.COBALT_INGOT.get());
+                        output.accept(ModItems.NICKEL_INGOT.get());
+                        output.accept(ModItems.TIN_INGOT.get());
                         output.accept(ModItems.IRON_PLATE.get());
                         output.accept(ModItems.STEEL_PLATE.get());
                         output.accept(ModItems.GOLD_PLATE.get());
                         output.accept(ModItems.ALUMINUM_PLATE.get());
                         output.accept(ModItems.TITANIUM_PLATE.get());
                         output.accept(ModItems.COPPER_PLATE.get());
+                        output.accept(ModItems.COBALT_PLATE.get());
+                        output.accept(ModItems.NICKEL_PLATE.get());
                         output.accept(ModItems.LEAD_PLATE.get());
                         output.accept(ModItems.IRON_POWDER.get());
                         output.accept(ModItems.GOLD_POWDER.get());
@@ -100,13 +110,22 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.COPPER_POWDER.get());
                         output.accept(ModItems.TITANIUM_POWDER.get());
                         output.accept(ModItems.ALUMINUM_POWDER.get());
+                        output.accept(ModItems.COBALT_POWDER.get());
+                        output.accept(ModItems.NICKEL_POWDER.get());
+                        output.accept(ModItems.TIN_POWDER.get());
+                        output.accept(ModItems.SMALL_TIN_POWDER.get());
                         output.accept(ModItems.FIRE_CLAY.get());
                         output.accept(ModItems.FIRE_BRICK.get());
                         output.accept(ModItems.IRON_BOLT.get());
                         output.accept(ModItems.COPPER_BOLT.get());
                         output.accept(ModItems.STEEL_BOLT.get());
                         output.accept(ModItems.TUNGSTEN_BOLT.get());
+                        output.accept(ModItems.COBALT_BOLT.get());
+                        output.accept(ModItems.NICKEL_BOLT.get());
+                        output.accept(ModItems.ALUMINUM_BOLT.get());
+                        output.accept(ModItems.TITANIUM_BOLT.get());
                         output.accept(ModItems.COPPER_WIRE.get());
+                        output.accept(ModItems.TIN_WIRE.get());
                         output.accept(ModItems.STEEL_WIRE.get());
                         output.accept(ModItems.STEEL_BEARING.get());
                         output.accept(ModItems.TITANIUM_TURBINE_BLADE.get());
@@ -127,10 +146,12 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.TUNGSTEN_AXE.get());
                         output.accept(ModItems.TUNGSTEN_SHOVEL.get());
                         output.accept(ModItems.TUNGSTEN_HOE.get());
-                        output.accept(ModItems.LV_COPPER_WIRE_DRUM.get());
+                        output.accept(ModItems.LV_TIN_WIRE_DRUM.get());
                         output.accept(ModItems.LV_STEEL_WIRE_DRUM.get());
+                        output.accept(ModItems.MV_COPPER_WIRE_DRUM.get());
                         output.accept(ModItems.LV_RJ_CONVERTER.get());
                         output.accept(ModItems.LV_FE_CONVERTER.get());
+                        output.accept(ModItems.LV_MV_TRANSFORMER.get());
                     })
                     .build()
     );

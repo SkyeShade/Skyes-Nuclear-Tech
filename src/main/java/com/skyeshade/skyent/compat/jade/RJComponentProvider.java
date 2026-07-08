@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.compat.jade;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
+import com.skyeshade.skyent.content.block.HeatingChamberBlock;
 import com.skyeshade.skyent.content.energy.EnergyUnits;
 import com.skyeshade.skyent.content.energy.RJEnergyInfo;
 import java.text.NumberFormat;
@@ -14,6 +15,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec2;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IBlockComponentProvider;
@@ -63,7 +65,7 @@ public enum RJComponentProvider implements IBlockComponentProvider, IServerDataP
 
     @Override
     public void appendServerData(CompoundTag data, BlockAccessor accessor) {
-        BlockEntity blockEntity = accessor.getBlockEntity();
+        BlockEntity blockEntity = resolveEnergyBlockEntity(accessor);
         if (!(blockEntity instanceof RJEnergyInfo energyInfo)) {
             return;
         }
@@ -79,6 +81,18 @@ public enum RJComponentProvider implements IBlockComponentProvider, IServerDataP
         data.putInt(DATA_MAX_OUTPUT_RJ_PER_TICK, energyInfo.getMaxOutputRJPerTick());
         data.putString(DATA_VOLTAGE_TIER, energyInfo.getVoltageTierName());
         data.putString(DATA_BLOCK_ENTITY_CLASS, blockEntityClassName);
+    }
+
+    private static BlockEntity resolveEnergyBlockEntity(BlockAccessor accessor) {
+        BlockEntity blockEntity = accessor.getBlockEntity();
+        if (blockEntity instanceof RJEnergyInfo) {
+            return blockEntity;
+        }
+
+        BlockState state = accessor.getBlockState();
+        return HeatingChamberBlock.getMasterBlockEntity(accessor.getLevel(), state, accessor.getPosition())
+                .map(BlockEntity.class::cast)
+                .orElse(blockEntity);
     }
 
     @Override

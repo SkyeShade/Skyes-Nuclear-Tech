@@ -1,0 +1,21 @@
+{
+  "loader": "skyent:scaled_block_model",
+  "base": {
+    "parent": "skyent:block/mv_transformer"
+  },
+  "scale": 2.0,
+  "origin": [8, 0, 8],
+  "translation": [0, 0, -8],
+  "size": [1, 2, 2],
+  "facing_property": "facing",
+  "ambient_occlusion": false,
+  "shared_lighting": "controller",
+  "disable_diffuse_shading": true,
+  "ignore_neighbor_shading": true,
+  "ignore_cullface": true,
+  "force_general_quads": true,
+  "runtime_shared_light": true,
+  "shared_light_reduction": 0,
+  "render_brightness_multiplier": 0.8,
+  "render_brightness_floor": 0.3
+}

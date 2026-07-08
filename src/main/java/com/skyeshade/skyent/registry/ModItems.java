@@ -239,6 +239,16 @@ public final class ModItems {
             () -> new ShieldingBlockItem(ModBlocks.STEEL_BLOCK.get(), new Item.Properties())
     );
 
+    public static final DeferredItem<ShieldingBlockItem> COBALT_BLOCK = ITEMS.register(
+            "cobalt_block",
+            () -> new ShieldingBlockItem(ModBlocks.COBALT_BLOCK.get(), new Item.Properties())
+    );
+
+    public static final DeferredItem<ShieldingBlockItem> NICKEL_BLOCK = ITEMS.register(
+            "nickel_block",
+            () -> new ShieldingBlockItem(ModBlocks.NICKEL_BLOCK.get(), new Item.Properties())
+    );
+
     public static final DeferredItem<ToxicBlockItem> LEAD_ORE = ITEMS.register(
             "lead_ore",
             () -> new ToxicBlockItem(ModBlocks.LEAD_ORE.get(), new Item.Properties())
@@ -288,11 +298,18 @@ public final class ModItems {
             new Item.Properties()
     );
 
+    public static final DeferredItem<BlockItem> MV_CONNECTOR = ITEMS.registerSimpleBlockItem(
+            ModBlocks.MV_CONNECTOR,
+            new Item.Properties()
+    );
+
     public static final DeferredItem<Item> STEEL_INGOT = ITEMS.registerSimpleItem(
             "steel_ingot",
             new Item.Properties()
     );
 
+    public static final DeferredItem<Item> RAW_COBALT = simpleItem("raw_cobalt");
+    public static final DeferredItem<Item> RAW_NICKEL = simpleItem("raw_nickel");
     public static final DeferredItem<Item> RAW_TITANIUM = simpleItem("raw_titanium");
     public static final DeferredItem<Item> RAW_TUNGSTEN = simpleItem("raw_tungsten");
     public static final DeferredItem<Item> RAW_ALUMINUM = simpleItem("raw_aluminum");
@@ -315,12 +332,17 @@ public final class ModItems {
             "uranium_ingot",
             () -> new RadioactiveItem(new Item.Properties())
     );
+    public static final DeferredItem<Item> COBALT_INGOT = simpleItem("cobalt_ingot");
+    public static final DeferredItem<Item> NICKEL_INGOT = simpleItem("nickel_ingot");
+    public static final DeferredItem<Item> TIN_INGOT = simpleItem("tin_ingot");
     public static final DeferredItem<Item> IRON_PLATE = simpleItem("iron_plate");
     public static final DeferredItem<Item> STEEL_PLATE = simpleItem("steel_plate");
     public static final DeferredItem<Item> GOLD_PLATE = simpleItem("gold_plate");
     public static final DeferredItem<Item> ALUMINUM_PLATE = simpleItem("aluminum_plate");
     public static final DeferredItem<Item> TITANIUM_PLATE = simpleItem("titanium_plate");
     public static final DeferredItem<Item> COPPER_PLATE = simpleItem("copper_plate");
+    public static final DeferredItem<Item> COBALT_PLATE = simpleItem("cobalt_plate");
+    public static final DeferredItem<Item> NICKEL_PLATE = simpleItem("nickel_plate");
     public static final DeferredItem<ToxicItem> LEAD_PLATE = ITEMS.register(
             "lead_plate",
             () -> new ToxicItem(new Item.Properties())
@@ -340,13 +362,22 @@ public final class ModItems {
     public static final DeferredItem<Item> COPPER_POWDER = simpleItem("copper_powder");
     public static final DeferredItem<Item> TITANIUM_POWDER = simpleItem("titanium_powder");
     public static final DeferredItem<Item> ALUMINUM_POWDER = simpleItem("aluminum_powder");
+    public static final DeferredItem<Item> COBALT_POWDER = simpleItem("cobalt_powder");
+    public static final DeferredItem<Item> NICKEL_POWDER = simpleItem("nickel_powder");
+    public static final DeferredItem<Item> TIN_POWDER = simpleItem("tin_powder");
+    public static final DeferredItem<Item> SMALL_TIN_POWDER = simpleItem("small_tin_powder");
     public static final DeferredItem<Item> FIRE_CLAY = simpleItem("fire_clay");
     public static final DeferredItem<Item> FIRE_BRICK = simpleItem("fire_brick");
     public static final DeferredItem<Item> IRON_BOLT = simpleItem("iron_bolt");
     public static final DeferredItem<Item> COPPER_BOLT = simpleItem("copper_bolt");
     public static final DeferredItem<Item> STEEL_BOLT = simpleItem("steel_bolt");
     public static final DeferredItem<Item> TUNGSTEN_BOLT = simpleItem("tungsten_bolt");
+    public static final DeferredItem<Item> COBALT_BOLT = simpleItem("cobalt_bolt");
+    public static final DeferredItem<Item> NICKEL_BOLT = simpleItem("nickel_bolt");
+    public static final DeferredItem<Item> ALUMINUM_BOLT = simpleItem("aluminum_bolt");
+    public static final DeferredItem<Item> TITANIUM_BOLT = simpleItem("titanium_bolt");
     public static final DeferredItem<Item> COPPER_WIRE = simpleItem("copper_wire");
+    public static final DeferredItem<Item> TIN_WIRE = simpleItem("tin_wire");
     public static final DeferredItem<Item> STEEL_WIRE = simpleItem("steel_wire");
     public static final DeferredItem<Item> STEEL_BEARING = simpleItem("steel_bearing");
     public static final DeferredItem<Item> TITANIUM_TURBINE_BLADE = simpleItem("titanium_turbine_blade");
@@ -425,21 +456,30 @@ public final class ModItems {
             () -> new HoeItem(SkyentToolTier.TUNGSTEN, new Item.Properties().durability(SkyentToolTier.TUNGSTEN.getUses()))
     );
 
-    public static final DeferredItem<LVWireDrumItem> LV_COPPER_WIRE_DRUM = ITEMS.register(
-            "lv_copper_wire_drum",
+    public static final DeferredItem<LVWireDrumItem> LV_TIN_WIRE_DRUM = ITEMS.register(
+            "lv_tin_wire_drum",
             () -> new LVWireDrumItem(
-                    new Item.Properties().stacksTo(1),
+                    new Item.Properties().stacksTo(64),
                     LVWireType.COPPER,
-                    "tooltip.skyent.lv_copper_wire_drum"
+                    "tooltip.skyent.lv_tin_wire_drum"
             )
     );
 
     public static final DeferredItem<LVWireDrumItem> LV_STEEL_WIRE_DRUM = ITEMS.register(
             "lv_steel_wire_drum",
             () -> new LVWireDrumItem(
-                    new Item.Properties().stacksTo(1),
+                    new Item.Properties().stacksTo(64),
                     LVWireType.STEEL,
                     "tooltip.skyent.lv_steel_wire_drum"
+            )
+    );
+
+    public static final DeferredItem<LVWireDrumItem> MV_COPPER_WIRE_DRUM = ITEMS.register(
+            "mv_copper_wire_drum",
+            () -> new LVWireDrumItem(
+                    new Item.Properties().stacksTo(64),
+                    LVWireType.MV_COPPER,
+                    "tooltip.skyent.mv_copper_wire_drum"
             )
     );
 
@@ -459,6 +499,11 @@ public final class ModItems {
                     new Item.Properties(),
                     "tooltip.skyent.lv_fe_converter.line1"
             )
+    );
+
+    public static final DeferredItem<BlockItem> LV_MV_TRANSFORMER = ITEMS.registerSimpleBlockItem(
+            ModBlocks.LV_MV_TRANSFORMER,
+            new Item.Properties()
     );
 
     private ModItems() {

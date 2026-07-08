@@ -21,13 +21,15 @@ public class LVCrusherMenu extends AbstractContainerMenu {
     public static final int INPUT_SLOT_Y = 26;
     public static final int OUTPUT_SLOT_X = 102;
     public static final int OUTPUT_SLOT_Y = 26;
+    public static final int SECONDARY_OUTPUT_SLOT_X = 125;
+    public static final int SECONDARY_OUTPUT_SLOT_Y = 26;
     private static final int PLAYER_INVENTORY_X = 8;
     private static final int PLAYER_INVENTORY_Y = 84;
     private static final int HOTBAR_Y = 142;
     private static final int SLOT_SIZE = 18;
     private static final int PLAYER_INVENTORY_ROWS = 3;
     private static final int PLAYER_INVENTORY_COLUMNS = 9;
-    private static final int MACHINE_SLOT_COUNT = 2;
+    private static final int MACHINE_SLOT_COUNT = 3;
     private static final int PLAYER_INVENTORY_SLOT_COUNT = 27;
     private static final int DATA_COUNT = 7;
 
@@ -45,6 +47,7 @@ public class LVCrusherMenu extends AbstractContainerMenu {
 
         addSlot(new InputSlot(blockEntity, blockEntity.getInventory(), LVCrusherBlockEntity.INPUT_SLOT, INPUT_SLOT_X, INPUT_SLOT_Y));
         addSlot(new OutputSlot(blockEntity.getInventory(), LVCrusherBlockEntity.OUTPUT_SLOT, OUTPUT_SLOT_X, OUTPUT_SLOT_Y));
+        addSlot(new OutputSlot(blockEntity.getInventory(), LVCrusherBlockEntity.SECONDARY_OUTPUT_SLOT, SECONDARY_OUTPUT_SLOT_X, SECONDARY_OUTPUT_SLOT_Y));
         addPlayerInventory(playerInventory);
         addDataSlots(data);
     }

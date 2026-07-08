@@ -1,7 +1,9 @@
 package com.skyeshade.skyent.content.item;
 
+import com.skyeshade.skyent.content.block.LVMVTransformerBlock;
 import com.skyeshade.skyent.content.blockentity.LVConnectorBlockEntity;
 import com.skyeshade.skyent.content.energy.LVWireType;
+import com.skyeshade.skyent.content.energy.ElectricalTier;
 import com.skyeshade.skyent.event.systems.LVElectricalNetworkSystem;
 import java.util.List;
 import net.minecraft.ChatFormatting;
@@ -32,7 +34,7 @@ public class LVWireDrumItem extends Item {
     private final String tooltipPrefix;
 
     public LVWireDrumItem(Properties properties) {
-        this(properties, LVWireType.COPPER, "tooltip.skyent.lv_copper_wire_drum");
+        this(properties, LVWireType.COPPER, "tooltip.skyent.lv_tin_wire_drum");
     }
 
     public LVWireDrumItem(Properties properties, LVWireType wireType, String tooltipPrefix) {
@@ -52,10 +54,10 @@ public class LVWireDrumItem extends Item {
 
     @Override
     public InteractionResult useOn(UseOnContext context) {
-        Level level = context.getLevel();
-        Player player = context.getPlayer();
-        ItemStack stack = context.getItemInHand();
+        return useOnWireEndpoint(context.getLevel(), context.getClickedPos(), context.getPlayer(), context.getItemInHand());
+    }
 
+    public InteractionResult useOnWireEndpoint(Level level, BlockPos clickedBlockPos, Player player, ItemStack stack) {
         if (player == null) {
             return InteractionResult.PASS;
         }
@@ -69,7 +71,8 @@ public class LVWireDrumItem extends Item {
             return InteractionResult.sidedSuccess(level.isClientSide);
         }
 
-        if (!(level.getBlockEntity(context.getClickedPos()) instanceof LVConnectorBlockEntity clickedConnector)) {
+        WireEndpoint clickedEndpoint = resolveEndpoint(level, clickedBlockPos);
+        if (clickedEndpoint == null) {
             return InteractionResult.PASS;
         }
 
@@ -77,7 +80,12 @@ public class LVWireDrumItem extends Item {
             return InteractionResult.SUCCESS;
         }
 
-        BlockPos clickedPos = clickedConnector.getBlockPos();
+        BlockPos clickedPos = clickedEndpoint.pos();
+        if (!clickedEndpoint.canAccept(wireType)) {
+            message(player, incompatibleConnectorMessage());
+            return InteractionResult.CONSUME;
+        }
+
         BlockPos selectedPos = getSelectedConnector(stack);
         if (selectedPos == null) {
             setSelectedConnector(stack, clickedPos);
@@ -91,11 +99,23 @@ public class LVWireDrumItem extends Item {
             return InteractionResult.CONSUME;
         }
 
-        if (!(level instanceof ServerLevel serverLevel)
-                || !(serverLevel.getBlockEntity(selectedPos) instanceof LVConnectorBlockEntity selectedConnector)
-                || serverLevel.getBlockEntity(clickedPos) != clickedConnector) {
+        if (!(level instanceof ServerLevel serverLevel)) {
             clearSelection(stack);
             message(player, "Connector missing. Selection cleared.");
+            return InteractionResult.CONSUME;
+        }
+
+        WireEndpoint selectedEndpoint = resolveEndpoint(serverLevel, selectedPos);
+        clickedEndpoint = resolveEndpoint(serverLevel, clickedPos);
+        if (selectedEndpoint == null || clickedEndpoint == null) {
+            clearSelection(stack);
+            message(player, "Connector missing. Selection cleared.");
+            return InteractionResult.CONSUME;
+        }
+
+        if (!selectedEndpoint.canAccept(wireType)) {
+            clearSelection(stack);
+            message(player, incompatibleConnectorMessage());
             return InteractionResult.CONSUME;
         }
 
@@ -104,9 +124,9 @@ public class LVWireDrumItem extends Item {
             return InteractionResult.CONSUME;
         }
 
-        if (!selectedConnector.canAddConnection(clickedPos) || !clickedConnector.canAddConnection(selectedPos)) {
+        if (!selectedEndpoint.canConnectTo(clickedEndpoint, wireType)) {
             clearSelection(stack);
-            message(player, "Connector cannot accept another cable.");
+            message(player, "Connector cannot accept this cable.");
             return InteractionResult.CONSUME;
         }
 
@@ -115,12 +135,40 @@ public class LVWireDrumItem extends Item {
             return InteractionResult.CONSUME;
         }
 
-        // TODO: consume Copper Wire Coil items here once wire material costs are added.
-        selectedConnector.addConnection(clickedPos, wireType);
-        clickedConnector.addConnection(selectedPos, wireType);
+        if (!selectedEndpoint.addConnection(clickedPos, wireType)) {
+            clearSelection(stack);
+            message(player, "Connector cannot accept this cable.");
+            return InteractionResult.CONSUME;
+        }
+        if (!clickedEndpoint.addConnection(selectedPos, wireType)) {
+            selectedEndpoint.removeConnection(clickedPos);
+            clearSelection(stack);
+            message(player, "Connector cannot accept this cable.");
+            return InteractionResult.CONSUME;
+        }
+
         clearSelection(stack);
-        message(player, "Connected LV cable.");
+        if (!player.getAbilities().instabuild) {
+            stack.shrink(1);
+        }
+        message(player, "Connected cable.");
         return InteractionResult.CONSUME;
+    }
+
+    private static WireEndpoint resolveEndpoint(Level level, BlockPos pos) {
+        if (level.getBlockEntity(pos) instanceof LVConnectorBlockEntity connector) {
+            return new WireEndpoint(connector.getBlockPos(), connector.getConnectorTier(), connector);
+        }
+
+        BlockState state = level.getBlockState(pos);
+        if (LVMVTransformerBlock.isMVTerminal(state)) {
+            BlockPos masterPos = LVMVTransformerBlock.getMasterPos(state, pos);
+            if (level.getBlockEntity(masterPos) instanceof com.skyeshade.skyent.content.blockentity.LVMVTransformerBlockEntity transformer) {
+                return new WireEndpoint(pos.immutable(), ElectricalTier.MV, null, transformer);
+            }
+        }
+
+        return null;
     }
 
     private static BlockPos getSelectedConnector(ItemStack stack) {
@@ -140,9 +188,18 @@ public class LVWireDrumItem extends Item {
     }
 
     private static void clearSelection(ItemStack stack) {
-        CompoundTag tag = getOrCreateCustomTag(stack);
+        CustomData customData = stack.get(DataComponents.CUSTOM_DATA);
+        if (customData == null) {
+            return;
+        }
+
+        CompoundTag tag = customData.copyTag();
         tag.remove(SELECTED_CONNECTOR_TAG);
-        stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+        if (tag.isEmpty()) {
+            stack.remove(DataComponents.CUSTOM_DATA);
+        } else {
+            stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+        }
     }
 
     private static CompoundTag getOrCreateCustomTag(ItemStack stack) {
@@ -169,7 +226,52 @@ public class LVWireDrumItem extends Item {
         return false;
     }
 
+    private String incompatibleConnectorMessage() {
+        return wireType == LVWireType.MV_COPPER
+                ? "MV copper cable can only connect MV connectors or transformer MV terminals."
+                : "LV cable cannot connect to MV connectors.";
+    }
+
     private static void message(Player player, String message) {
         player.displayClientMessage(Component.literal(message), true);
+    }
+
+    private record WireEndpoint(BlockPos pos, ElectricalTier tier, LVConnectorBlockEntity connector, com.skyeshade.skyent.content.blockentity.LVMVTransformerBlockEntity transformer) {
+        private WireEndpoint(BlockPos pos, ElectricalTier tier, LVConnectorBlockEntity connector) {
+            this(pos, tier, connector, null);
+        }
+
+        private boolean canAccept(LVWireType wireType) {
+            return wireType.isTier(tier);
+        }
+
+        private boolean canConnectTo(WireEndpoint other, LVWireType wireType) {
+            if (!canAccept(wireType) || !other.canAccept(wireType)) {
+                return false;
+            }
+            return (connector == null || connector.canAddConnection(other.pos, wireType))
+                    && (other.connector == null || other.connector.canAddConnection(pos, wireType))
+                    && (transformer == null || transformer.canAddTerminalConnection(pos, other.pos, wireType))
+                    && (other.transformer == null || other.transformer.canAddTerminalConnection(other.pos, pos, wireType));
+        }
+
+        private boolean addConnection(BlockPos otherPos, LVWireType wireType) {
+            if (connector != null) {
+                return connector.addConnection(otherPos, wireType);
+            }
+            if (transformer != null) {
+                return transformer.addTerminalConnection(pos, otherPos, wireType);
+            }
+            return false;
+        }
+
+        private void removeConnection(BlockPos otherPos) {
+            if (connector != null) {
+                connector.removeConnection(otherPos);
+            }
+            if (transformer != null) {
+                transformer.removeTerminalConnection(pos, otherPos);
+            }
+        }
     }
 }
