@@ -43,11 +43,10 @@ public class ConveyorExporterBlock extends BaseEntityBlock implements ConveyorVi
 
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
-        Direction oldBehaviorFacing = context.getHorizontalDirection().getOpposite();
-        Direction finalFacing = context.getPlayer() != null && context.getPlayer().isShiftKeyDown()
-                ? oldBehaviorFacing
-                : oldBehaviorFacing.getOpposite();
-        return defaultBlockState().setValue(FACING, finalFacing);
+        Direction playerFacing = context.getHorizontalDirection();
+        boolean sneaking = context.getPlayer() != null && context.getPlayer().isShiftKeyDown();
+        Direction facing = sneaking ? playerFacing : playerFacing.getOpposite();
+        return defaultBlockState().setValue(FACING, facing);
     }
 
     @Override

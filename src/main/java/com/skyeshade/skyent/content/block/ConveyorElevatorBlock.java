@@ -59,7 +59,12 @@ public class ConveyorElevatorBlock extends BaseEntityBlock implements ConveyorBe
 
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
-        return defaultBlockState().setValue(FACING, context.getHorizontalDirection());
+        Direction playerFacing = context.getHorizontalDirection();
+        boolean sneaking = context.getPlayer() != null && context.getPlayer().isShiftKeyDown();
+        Direction facing = sneaking ? playerFacing : playerFacing.getOpposite();
+        return defaultBlockState()
+                .setValue(FACING, facing)
+                .setValue(SEGMENT, ConveyorElevatorSegment.TOP);
     }
 
     @Override
