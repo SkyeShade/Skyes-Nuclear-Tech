@@ -93,6 +93,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.NICKEL_INGOT.get());
                         output.accept(ModItems.TIN_INGOT.get());
                         output.accept(ModItems.COBALT_BRONZE_INGOT.get());
+                        output.accept(ModItems.CUPRONICKEL_INGOT.get());
                         output.accept(ModItems.IRON_PLATE.get());
                         output.accept(ModItems.STEEL_PLATE.get());
                         output.accept(ModItems.GOLD_PLATE.get());
@@ -130,6 +131,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.TIN_WIRE.get());
                         output.accept(ModItems.STEEL_WIRE.get());
                         output.accept(ModItems.COBALT_BRONZE_WIRE.get());
+                        output.accept(ModItems.CUPRONICKEL_WIRE.get());
                         output.accept(ModItems.STEEL_BEARING.get());
                         output.accept(ModItems.TITANIUM_TURBINE_BLADE.get());
                         output.accept(ModItems.ELECTRIC_MOTOR.get());

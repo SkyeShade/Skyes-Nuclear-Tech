@@ -336,6 +336,7 @@ public final class ModItems {
     public static final DeferredItem<Item> NICKEL_INGOT = simpleItem("nickel_ingot");
     public static final DeferredItem<Item> TIN_INGOT = simpleItem("tin_ingot");
     public static final DeferredItem<Item> COBALT_BRONZE_INGOT = simpleItem("cobalt_bronze_ingot");
+    public static final DeferredItem<Item> CUPRONICKEL_INGOT = simpleItem("cupronickel_ingot");
     public static final DeferredItem<Item> IRON_PLATE = simpleItem("iron_plate");
     public static final DeferredItem<Item> STEEL_PLATE = simpleItem("steel_plate");
     public static final DeferredItem<Item> GOLD_PLATE = simpleItem("gold_plate");
@@ -382,6 +383,7 @@ public final class ModItems {
     public static final DeferredItem<Item> TIN_WIRE = simpleItem("tin_wire");
     public static final DeferredItem<Item> STEEL_WIRE = simpleItem("steel_wire");
     public static final DeferredItem<Item> COBALT_BRONZE_WIRE = simpleItem("cobalt_bronze_wire");
+    public static final DeferredItem<Item> CUPRONICKEL_WIRE = simpleItem("cupronickel_wire");
     public static final DeferredItem<Item> STEEL_BEARING = simpleItem("steel_bearing");
     public static final DeferredItem<Item> TITANIUM_TURBINE_BLADE = simpleItem("titanium_turbine_blade");
     public static final DeferredItem<Item> ELECTRIC_MOTOR = simpleItem("electric_motor");

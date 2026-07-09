@@ -82,6 +82,9 @@ public final class HotItemUtil {
         if (stack.is(ModItems.COBALT_BRONZE_INGOT.get())) {
             return 1000.0D;
         }
+        if (stack.is(ModItems.CUPRONICKEL_INGOT.get())) {
+            return 950.0D;
+        }
         if (stack.is(ModItems.COBALT_INGOT.get())) {
             return 1250.0D;
         }

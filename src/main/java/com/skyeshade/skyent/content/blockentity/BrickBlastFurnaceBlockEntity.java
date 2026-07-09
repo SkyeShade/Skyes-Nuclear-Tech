@@ -194,6 +194,12 @@ public class BrickBlastFurnaceBlockEntity extends BlockEntity implements MenuPro
         if (top.is(Items.COPPER_INGOT) && top.getCount() >= 4 && bottom.is(ModItems.COBALT_INGOT.get())) {
             return new FurnaceRecipe(TOP_INPUT_SLOT, 4, BOTTOM_INPUT_SLOT, 1, new ItemStack(ModItems.COBALT_BRONZE_INGOT.get(), 2));
         }
+        if (top.is(ModItems.NICKEL_INGOT.get()) && bottom.is(Items.COPPER_INGOT) && bottom.getCount() >= 3) {
+            return new FurnaceRecipe(TOP_INPUT_SLOT, 1, BOTTOM_INPUT_SLOT, 3, new ItemStack(ModItems.CUPRONICKEL_INGOT.get(), 4));
+        }
+        if (top.is(Items.COPPER_INGOT) && top.getCount() >= 3 && bottom.is(ModItems.NICKEL_INGOT.get())) {
+            return new FurnaceRecipe(TOP_INPUT_SLOT, 3, BOTTOM_INPUT_SLOT, 1, new ItemStack(ModItems.CUPRONICKEL_INGOT.get(), 4));
+        }
         return null;
     }
 
