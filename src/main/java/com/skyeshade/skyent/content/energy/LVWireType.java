@@ -3,7 +3,7 @@ package com.skyeshade.skyent.content.energy;
 import java.util.Locale;
 
 public enum LVWireType {
-    COPPER("copper", ElectricalTier.LV, 4.0D, 128, 1.0D, 0.72F, 0.72F, 0.68F, 0.025F),
+    COPPER("copper", ElectricalTier.LV, 4.0D, 128, 1.0D, 0.72F, 0.36F, 0.16F, 0.025F),
     STEEL("steel", ElectricalTier.LV, 8.0D, 256, 2.0D, 0.48F, 0.50F, 0.52F, 0.025F),
     MV_COPPER("mv_copper", ElectricalTier.MV, 4.0D, 512, 1.0D, 0.72F, 0.36F, 0.16F, 0.0375F);
 

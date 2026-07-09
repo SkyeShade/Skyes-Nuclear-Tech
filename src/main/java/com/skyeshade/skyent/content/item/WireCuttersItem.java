@@ -142,7 +142,7 @@ public class WireCuttersItem extends Item {
 
     private static ItemLike drumItemForWireType(LVWireType wireType) {
         return switch (wireType) {
-            case COPPER -> ModItems.LV_TIN_WIRE_DRUM.get();
+            case COPPER -> ModItems.LV_COPPER_WIRE_DRUM.get();
             case STEEL -> ModItems.LV_STEEL_WIRE_DRUM.get();
             case MV_COPPER -> ModItems.MV_COPPER_WIRE_DRUM.get();
         };

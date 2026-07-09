@@ -456,12 +456,12 @@ public final class ModItems {
             () -> new HoeItem(SkyentToolTier.TUNGSTEN, new Item.Properties().durability(SkyentToolTier.TUNGSTEN.getUses()))
     );
 
-    public static final DeferredItem<LVWireDrumItem> LV_TIN_WIRE_DRUM = ITEMS.register(
-            "lv_tin_wire_drum",
+    public static final DeferredItem<LVWireDrumItem> LV_COPPER_WIRE_DRUM = ITEMS.register(
+            "lv_copper_wire_drum",
             () -> new LVWireDrumItem(
                     new Item.Properties().stacksTo(64),
                     LVWireType.COPPER,
-                    "tooltip.skyent.lv_tin_wire_drum"
+                    "tooltip.skyent.lv_copper_wire_drum"
             )
     );
 

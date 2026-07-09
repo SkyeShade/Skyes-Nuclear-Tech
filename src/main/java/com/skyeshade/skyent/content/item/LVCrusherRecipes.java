@@ -21,7 +21,7 @@ public final class LVCrusherRecipes {
             raw(ModItems.RAW_URANIUM.get(), ModItems.URANIUM_POWDER.get()),
             raw(ModItems.RAW_TITANIUM.get(), ModItems.TITANIUM_POWDER.get()),
             raw(ModItems.RAW_ALUMINUM.get(), ModItems.ALUMINUM_POWDER.get()),
-            secondaryOnly(ModItems.SILT.get(), ModItems.SMALL_TIN_POWDER.get(), 0.40D),
+            siltWithSecondary(ModItems.SILT.get(), Blocks.SAND, ModItems.SMALL_TIN_POWDER.get(), 0.40D),
 
             ingot(Items.IRON_INGOT, ModItems.IRON_POWDER.get()),
             ingot(Items.GOLD_INGOT, ModItems.GOLD_POWDER.get()),
@@ -115,6 +115,10 @@ public final class LVCrusherRecipes {
 
     private static Entry oreWithSecondary(ItemLike input, ItemLike output, ItemLike secondaryOutput, double secondaryChance) {
         return new Entry(input, output, 3, secondaryOutput, 1, secondaryChance);
+    }
+
+    private static Entry siltWithSecondary(ItemLike input, ItemLike output, ItemLike secondaryOutput, double secondaryChance) {
+        return new Entry(input, output, 1, secondaryOutput, 1, secondaryChance);
     }
 
     private static Entry secondaryOnly(ItemLike input, ItemLike secondaryOutput, double secondaryChance) {

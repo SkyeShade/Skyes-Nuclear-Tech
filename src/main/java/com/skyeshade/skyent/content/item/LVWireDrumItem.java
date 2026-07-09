@@ -34,7 +34,7 @@ public class LVWireDrumItem extends Item {
     private final String tooltipPrefix;
 
     public LVWireDrumItem(Properties properties) {
-        this(properties, LVWireType.COPPER, "tooltip.skyent.lv_tin_wire_drum");
+        this(properties, LVWireType.COPPER, "tooltip.skyent.lv_copper_wire_drum");
     }
 
     public LVWireDrumItem(Properties properties, LVWireType wireType, String tooltipPrefix) {

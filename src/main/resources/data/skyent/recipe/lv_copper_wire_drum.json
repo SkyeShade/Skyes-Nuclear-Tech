@@ -2,19 +2,19 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "pattern": [
-    "CCC",
+    " C ",
     "CSC",
-    "CCC"
+    " C "
   ],
   "key": {
     "C": {
-      "item": "skyent:tin_wire"
+      "item": "skyent:copper_wire"
     },
     "S": {
-      "tag": "minecraft:planks"
+      "item": "skyent:steel_ingot"
     }
   },
   "result": {
-    "id": "skyent:lv_tin_wire_drum"
+    "id": "skyent:lv_copper_wire_drum"
   }
 }

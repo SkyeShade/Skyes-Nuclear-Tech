@@ -146,7 +146,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.TUNGSTEN_AXE.get());
                         output.accept(ModItems.TUNGSTEN_SHOVEL.get());
                         output.accept(ModItems.TUNGSTEN_HOE.get());
-                        output.accept(ModItems.LV_TIN_WIRE_DRUM.get());
+                        output.accept(ModItems.LV_COPPER_WIRE_DRUM.get());
                         output.accept(ModItems.LV_STEEL_WIRE_DRUM.get());
                         output.accept(ModItems.MV_COPPER_WIRE_DRUM.get());
                         output.accept(ModItems.LV_RJ_CONVERTER.get());
