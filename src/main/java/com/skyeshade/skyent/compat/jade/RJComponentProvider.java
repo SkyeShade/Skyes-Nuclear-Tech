@@ -2,10 +2,14 @@ package com.skyeshade.skyent.compat.jade;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.block.HeatingChamberBlock;
+import com.skyeshade.skyent.content.block.LVMVTransformerBlock;
+import com.skyeshade.skyent.content.blockentity.LVMVTransformerBlockEntity;
+import com.skyeshade.skyent.content.energy.ElectricalTier;
 import com.skyeshade.skyent.content.energy.EnergyUnits;
 import com.skyeshade.skyent.content.energy.RJEnergyInfo;
 import java.text.NumberFormat;
 import java.util.Locale;
+import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -40,6 +44,15 @@ public enum RJComponentProvider implements IBlockComponentProvider, IServerDataP
     private static final String DATA_MAX_OUTPUT_RJ_PER_TICK = "SkyentMaxOutputRJPerTick";
     private static final String DATA_VOLTAGE_TIER = "SkyentVoltageTier";
     private static final String DATA_BLOCK_ENTITY_CLASS = "SkyentBlockEntityClass";
+    private static final String DATA_TRANSFORMER_MODE = "SkyentTransformerMode";
+    private static final String DATA_TRANSFORMER_ACTIVE = "SkyentTransformerActive";
+    private static final String DATA_TRANSFORMER_INPUT_TIER = "SkyentTransformerInputTier";
+    private static final String DATA_TRANSFORMER_INPUT_VOLTAGE = "SkyentTransformerInputVoltage";
+    private static final String DATA_TRANSFORMER_OUTPUT_TIER = "SkyentTransformerOutputTier";
+    private static final String DATA_TRANSFORMER_OUTPUT_VOLTAGE = "SkyentTransformerOutputVoltage";
+    private static final String DATA_TRANSFORMER_RATING_RJ_PER_TICK = "SkyentTransformerRatingRJPerTick";
+    private static final String DATA_TRANSFORMER_LV_RATED_AMPS = "SkyentTransformerLVRatedAmps";
+    private static final String DATA_TRANSFORMER_MV_RATED_AMPS = "SkyentTransformerMVRatedAmps";
     private static final NumberFormat NUMBER_FORMAT = NumberFormat.getIntegerInstance(Locale.US);
     private static final int ENERGY_BAR_WIDTH = 120;
     private static final int ENERGY_BAR_HEIGHT = 14;
@@ -81,6 +94,20 @@ public enum RJComponentProvider implements IBlockComponentProvider, IServerDataP
         data.putInt(DATA_MAX_OUTPUT_RJ_PER_TICK, energyInfo.getMaxOutputRJPerTick());
         data.putString(DATA_VOLTAGE_TIER, energyInfo.getVoltageTierName());
         data.putString(DATA_BLOCK_ENTITY_CLASS, blockEntityClassName);
+
+        if (blockEntity instanceof LVMVTransformerBlockEntity transformer) {
+            ElectricalTier inputTier = transformer.inputTier();
+            ElectricalTier outputTier = transformer.outputTier();
+            data.putString(DATA_TRANSFORMER_MODE, transformer.mode().displayName());
+            data.putBoolean(DATA_TRANSFORMER_ACTIVE, transformer.isTransforming());
+            data.putString(DATA_TRANSFORMER_INPUT_TIER, inputTier.name());
+            data.putInt(DATA_TRANSFORMER_INPUT_VOLTAGE, inputTier.voltage());
+            data.putString(DATA_TRANSFORMER_OUTPUT_TIER, outputTier.name());
+            data.putInt(DATA_TRANSFORMER_OUTPUT_VOLTAGE, outputTier.voltage());
+            data.putInt(DATA_TRANSFORMER_RATING_RJ_PER_TICK, LVMVTransformerBlockEntity.ratedThroughputRJPerTick());
+            data.putDouble(DATA_TRANSFORMER_LV_RATED_AMPS, LVMVTransformerBlockEntity.lvRatedCurrentAmps());
+            data.putDouble(DATA_TRANSFORMER_MV_RATED_AMPS, LVMVTransformerBlockEntity.mvRatedCurrentAmps());
+        }
     }
 
     private static BlockEntity resolveEnergyBlockEntity(BlockAccessor accessor) {
@@ -90,9 +117,16 @@ public enum RJComponentProvider implements IBlockComponentProvider, IServerDataP
         }
 
         BlockState state = accessor.getBlockState();
-        return HeatingChamberBlock.getMasterBlockEntity(accessor.getLevel(), state, accessor.getPosition())
+        BlockEntity heatingChamber = HeatingChamberBlock.getMasterBlockEntity(accessor.getLevel(), state, accessor.getPosition())
                 .map(BlockEntity.class::cast)
-                .orElse(blockEntity);
+                .orElse(null);
+        if (heatingChamber instanceof RJEnergyInfo) {
+            return heatingChamber;
+        }
+
+        BlockPos masterPos = LVMVTransformerBlock.getMasterPos(state, accessor.getPosition());
+        BlockEntity transformer = accessor.getLevel().getBlockEntity(masterPos);
+        return transformer instanceof RJEnergyInfo ? transformer : blockEntity;
     }
 
     @Override
@@ -116,6 +150,19 @@ public enum RJComponentProvider implements IBlockComponentProvider, IServerDataP
 
         tooltip.add(energyBar(storedRJ, capacity));
 
+        String transformerMode = data.getString(DATA_TRANSFORMER_MODE);
+        if (!transformerMode.isBlank()) {
+            tooltip.add(Component.literal("Mode: " + transformerMode));
+            appendTransformerVoltageLine(tooltip, "Voltage In", data.getString(DATA_TRANSFORMER_INPUT_TIER), data.getInt(DATA_TRANSFORMER_INPUT_VOLTAGE));
+            appendTransformerVoltageLine(tooltip, "Voltage Out", data.getString(DATA_TRANSFORMER_OUTPUT_TIER), data.getInt(DATA_TRANSFORMER_OUTPUT_VOLTAGE));
+            tooltip.add(Component.literal("Rating: " + format(data.getInt(DATA_TRANSFORMER_RATING_RJ_PER_TICK)) + " " + EnergyUnits.UNIT_PER_TICK));
+            tooltip.add(Component.literal("Current Rating: "
+                    + formatAmps(data.getDouble(DATA_TRANSFORMER_LV_RATED_AMPS)) + "A LV / "
+                    + formatAmps(data.getDouble(DATA_TRANSFORMER_MV_RATED_AMPS)) + "A MV"));
+            tooltip.add(Component.literal("Status: " + (data.getBoolean(DATA_TRANSFORMER_ACTIVE) ? "Transforming" : "Idle")));
+            return;
+        }
+
         int generation = data.getInt(DATA_GENERATION_RJ_PER_TICK);
         if (generation > 0) {
             tooltip.add(Component.literal("Generating: " + format(generation) + " " + EnergyUnits.UNIT_PER_TICK));
@@ -137,8 +184,24 @@ public enum RJComponentProvider implements IBlockComponentProvider, IServerDataP
         }
     }
 
+    private static void appendTransformerVoltageLine(ITooltip tooltip, String label, String tierName, int voltage) {
+        if (tierName.isBlank() || voltage <= 0) {
+            return;
+        }
+
+        tooltip.add(Component.literal(label + ": " + voltage + " V " + tierName));
+    }
+
     private static String format(int value) {
         return NUMBER_FORMAT.format(value);
+    }
+
+    private static String formatAmps(double value) {
+        if (value == Math.rint(value)) {
+            return Integer.toString((int) value);
+        }
+
+        return compact(value);
     }
 
     private static IElement energyBar(int stored, int capacity) {

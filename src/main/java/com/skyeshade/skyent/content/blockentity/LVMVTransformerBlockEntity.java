@@ -39,8 +39,12 @@ import org.jetbrains.annotations.Nullable;
 public class LVMVTransformerBlockEntity extends BlockEntity implements RJEnergyInfo {
     public static final int MAX_TERMINAL_CONNECTIONS = 4;
     private static final boolean DEBUG_TRANSFORMER_POWER = false;
-    private static final int ENERGY_CAPACITY_RJ = 512_000;
-    private static final double MAX_INPUT_CURRENT_AMPS = 2.0D;
+    private static final int ENERGY_CAPACITY_RJ = 32_000;
+    private static final double LV_RATED_CURRENT_AMPS = 16.0D;
+    private static final double MV_RATED_CURRENT_AMPS = 4.0D;
+    private static final int LV_RATED_RJ_PER_TICK = ratedRJPerTick(ElectricalTier.LV, LV_RATED_CURRENT_AMPS);
+    private static final int MV_RATED_RJ_PER_TICK = ratedRJPerTick(ElectricalTier.MV, MV_RATED_CURRENT_AMPS);
+    private static final int MAX_THROUGHPUT_RJ_PER_TICK = LV_RATED_RJ_PER_TICK;
     private static final String TAG_MODE = "Mode";
     private static final String TAG_STORED_RJ = "StoredRJ";
     private static final String TAG_CONVERTED_OUTPUT_BUDGET_RJ = "ConvertedOutputBudgetRJ";
@@ -67,6 +71,12 @@ public class LVMVTransformerBlockEntity extends BlockEntity implements RJEnergyI
     private final Map<ConnectionKey, Double> terminalConnectionHeat = new HashMap<>();
     private int cachedSharedPackedLight;
     private int lightCheckTicks;
+
+    static {
+        if (LV_RATED_RJ_PER_TICK != MV_RATED_RJ_PER_TICK) {
+            throw new IllegalStateException("LV-MV Transformer ratings must conserve RJ/t");
+        }
+    }
 
     public LVMVTransformerBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.LV_MV_TRANSFORMER.get(), pos, blockState);
@@ -153,7 +163,11 @@ public class LVMVTransformerBlockEntity extends BlockEntity implements RJEnergyI
             return 0;
         }
         beginPowerAccountingTick();
-        return Math.min(rjStorage.getAvailableRJCapacity(), maxInputRJPerTick(tier));
+        return Math.max(0, min(
+                rjStorage.getAvailableRJCapacity(),
+                ratedRJPerTickForTier(tier),
+                remainingInputThroughputRJThisTick()
+        ));
     }
 
     public int receiveRJ(ElectricalTier tier, int maxAmount, boolean simulate) {
@@ -161,7 +175,13 @@ public class LVMVTransformerBlockEntity extends BlockEntity implements RJEnergyI
             return 0;
         }
         beginPowerAccountingTick();
-        int received = rjStorage.receiveRJ(Math.min(maxAmount, maxInputRJPerTick(tier)), simulate);
+        int accepted = Math.max(0, min(
+                maxAmount,
+                rjStorage.getAvailableRJCapacity(),
+                ratedRJPerTickForTier(tier),
+                remainingInputThroughputRJThisTick()
+        ));
+        int received = rjStorage.receiveRJ(accepted, simulate);
         if (received > 0 && !simulate) {
             convertedOutputBudgetRJ = Math.min(rjStorage.getStoredRJ(), convertedOutputBudgetRJ + received);
             currentInputRJPerTick += received;
@@ -176,7 +196,12 @@ public class LVMVTransformerBlockEntity extends BlockEntity implements RJEnergyI
             return 0;
         }
         beginPowerAccountingTick();
-        return Math.min(rjStorage.getStoredRJ(), convertedOutputBudgetRJ);
+        return Math.max(0, min(
+                rjStorage.getStoredRJ(),
+                convertedOutputBudgetRJ,
+                ratedRJPerTickForTier(tier),
+                remainingOutputThroughputRJThisTick()
+        ));
     }
 
     public int extractRJ(ElectricalTier tier, int maxAmount, boolean simulate) {
@@ -184,13 +209,20 @@ public class LVMVTransformerBlockEntity extends BlockEntity implements RJEnergyI
             return 0;
         }
         beginPowerAccountingTick();
-        int requested = Math.min(maxAmount, Math.min(rjStorage.getStoredRJ(), convertedOutputBudgetRJ));
+        int requested = Math.max(0, min(
+                maxAmount,
+                rjStorage.getStoredRJ(),
+                convertedOutputBudgetRJ,
+                ratedRJPerTickForTier(tier),
+                remainingOutputThroughputRJThisTick()
+        ));
         int extracted = rjStorage.extractRJ(requested, simulate);
         if (extracted > 0 && !simulate) {
             convertedOutputBudgetRJ = Math.max(0, convertedOutputBudgetRJ - extracted);
             currentOutputRJPerTick += extracted;
             lastTransformingTick = level == null ? Long.MIN_VALUE : level.getGameTime();
             setTransforming(true);
+            debugConversion(inputTier(), 0, tier, extracted);
             setChangedAndSync();
         }
         return extracted;
@@ -223,6 +255,18 @@ public class LVMVTransformerBlockEntity extends BlockEntity implements RJEnergyI
 
     public boolean isTransforming() {
         return transforming;
+    }
+
+    public static int ratedThroughputRJPerTick() {
+        return MAX_THROUGHPUT_RJ_PER_TICK;
+    }
+
+    public static double lvRatedCurrentAmps() {
+        return LV_RATED_CURRENT_AMPS;
+    }
+
+    public static double mvRatedCurrentAmps() {
+        return MV_RATED_CURRENT_AMPS;
     }
 
     public List<TerminalConnection> terminalConnections() {
@@ -476,28 +520,60 @@ public class LVMVTransformerBlockEntity extends BlockEntity implements RJEnergyI
         convertedOutputBudgetRJ = Math.min(convertedOutputBudgetRJ, rjStorage.getStoredRJ());
     }
 
+    private int maxThroughputRJPerTick() {
+        return MAX_THROUGHPUT_RJ_PER_TICK;
+    }
+
+    private int remainingInputThroughputRJThisTick() {
+        return Math.max(0, maxThroughputRJPerTick() - currentInputRJPerTick);
+    }
+
+    private int remainingOutputThroughputRJThisTick() {
+        return Math.max(0, maxThroughputRJPerTick() - currentOutputRJPerTick);
+    }
+
     private void debugConversion(ElectricalTier inputTier, int inputRJPerTick, ElectricalTier outputTier, int outputRJPerTick) {
         if (!DEBUG_TRANSFORMER_POWER) {
             return;
         }
 
-        double inputAmps = inputRJPerTick / (double) inputTier.voltage();
-        double outputAmps = outputRJPerTick / (double) outputTier.voltage();
+        double inputAmps = currentInputRJPerTick / (double) inputTier.voltage();
+        double outputAmps = currentOutputRJPerTick / (double) outputTier.voltage();
         SkyesNuclearTech.LOGGER.info(
-                "[LV-MV Transformer {}] mode={} input={}V {}A {}RJ/t -> output={}V {}A {}RJ/t",
+                "[LV-MV Transformer {}] mode={} inputTier={} outputTier={} input={}/{} RJ/t ({}A) output={}/{} RJ/t ({}A) lastInput={}RJ/t lastOutput={}RJ/t",
                 worldPosition,
                 mode.displayName(),
-                inputTier.voltage(),
+                inputTier.name(),
+                outputTier.name(),
+                currentInputRJPerTick,
+                maxThroughputRJPerTick(),
                 inputAmps,
-                inputRJPerTick,
-                outputTier.voltage(),
+                currentOutputRJPerTick,
+                maxThroughputRJPerTick(),
                 outputAmps,
+                inputRJPerTick,
                 outputRJPerTick
         );
     }
 
-    private static int maxInputRJPerTick(ElectricalTier tier) {
-        return (int) Math.round(tier.voltage() * MAX_INPUT_CURRENT_AMPS);
+    private static int ratedRJPerTickForTier(ElectricalTier tier) {
+        return switch (tier) {
+            case LV -> LV_RATED_RJ_PER_TICK;
+            case MV -> MV_RATED_RJ_PER_TICK;
+            default -> 0;
+        };
+    }
+
+    private static int ratedRJPerTick(ElectricalTier tier, double currentAmps) {
+        return (int) Math.round(tier.voltage() * currentAmps);
+    }
+
+    private static int min(int first, int... rest) {
+        int result = first;
+        for (int value : rest) {
+            result = Math.min(result, value);
+        }
+        return result;
     }
 
     private static void startClientTransformerLoop(Level level, BlockPos pos, Vec3 center) {

@@ -9,25 +9,27 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.block.Block;
 
 public class TooltipBlockItem extends BlockItem {
-    private final String firstLineKey;
-    private final String secondLineKey;
+    private final List<String> lineKeys;
 
     public TooltipBlockItem(Block block, Item.Properties properties, String firstLineKey, String secondLineKey) {
-        super(block, properties);
-        this.firstLineKey = firstLineKey;
-        this.secondLineKey = secondLineKey;
+        this(block, properties, secondLineKey == null ? new String[] {firstLineKey} : new String[] {firstLineKey, secondLineKey});
     }
 
     public TooltipBlockItem(Block block, Item.Properties properties, String firstLineKey) {
-        this(block, properties, firstLineKey, null);
+        this(block, properties, new String[] {firstLineKey});
+    }
+
+    public TooltipBlockItem(Block block, Item.Properties properties, String... lineKeys) {
+        super(block, properties);
+        this.lineKeys = List.of(lineKeys);
     }
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
-        tooltipComponents.add(Component.translatable(firstLineKey));
-
-        if (secondLineKey != null && !secondLineKey.isBlank()) {
-            tooltipComponents.add(Component.translatable(secondLineKey));
+        for (String lineKey : lineKeys) {
+            if (lineKey != null && !lineKey.isBlank()) {
+                tooltipComponents.add(Component.translatable(lineKey));
+            }
         }
     }
 }

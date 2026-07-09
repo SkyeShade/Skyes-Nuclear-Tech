@@ -501,9 +501,14 @@ public final class ModItems {
             )
     );
 
-    public static final DeferredItem<BlockItem> LV_MV_TRANSFORMER = ITEMS.registerSimpleBlockItem(
-            ModBlocks.LV_MV_TRANSFORMER,
-            new Item.Properties()
+    public static final DeferredItem<TooltipBlockItem> LV_MV_TRANSFORMER = ITEMS.register(
+            "lv_mv_transformer",
+            () -> new TooltipBlockItem(
+                    ModBlocks.LV_MV_TRANSFORMER.get(),
+                    new Item.Properties(),
+                    "tooltip.skyent.lv_mv_transformer.line1",
+                    "tooltip.skyent.lv_mv_transformer.line2"
+            )
     );
 
     private ModItems() {

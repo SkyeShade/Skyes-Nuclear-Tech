@@ -156,6 +156,8 @@
   "tooltip.skyent.mv_copper_wire_drum.voltage_drop": "Voltage Drop: 1 V/block",
   "tooltip.skyent.lv_rj_converter.line1": "Converts LV RJ into FE.",
   "tooltip.skyent.lv_fe_converter.line1": "Converts FE into LV RJ.",
+  "tooltip.skyent.lv_mv_transformer.line1": "Steps power between LV and MV.",
+  "tooltip.skyent.lv_mv_transformer.line2": "Rating: 16A LV / 4A MV.",
   "tooltip.skyent.radioactive": "[Radioactive]",
   "tooltip.skyent.radiation_strength": "Radiation: %s mSv/s",
   "tooltip.skyent.radiation_strength_each": "Radiation: %s mSv/s",
