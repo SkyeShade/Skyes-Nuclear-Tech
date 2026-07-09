@@ -94,9 +94,17 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
             double heat = connector.getConnectionHeat(connection);
             LVWireType wireType = connector.getConnectionWireType(connection);
             debugRenderedConnection(origin, connection, key, heat);
-            CableColor color = getCableHeatColor(wireType, heat).withAlpha(1.0F);
-            drawCable(buffer, pose, start, end, camera, color, getCableLight(packedLight, heat), wireType.cableHalfWidth());
+            renderCable(buffer, pose, start, end, camera, wireType, packedLight, heat);
         }
+    }
+
+    public static RenderType cableRenderType() {
+        return CABLE_RENDER_TYPE;
+    }
+
+    public static void renderCable(VertexConsumer buffer, Matrix4f pose, Vector3f start, Vector3f end, Vector3f camera, LVWireType wireType, int packedLight, double heat) {
+        CableColor color = getCableHeatColor(wireType, heat).withAlpha(1.0F);
+        drawCable(buffer, pose, start, end, camera, color, getCableLight(packedLight, heat), wireType.cableHalfWidth());
     }
 
     @Override
