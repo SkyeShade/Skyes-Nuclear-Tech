@@ -71,6 +71,7 @@ public class IndustrialPressBlockEntity extends BlockEntity implements RJEnergyI
     private static final String TAG_CAPTURED_ITEM_RELEASED = "CapturedItemReleased";
     private static final String TAG_IMPACT_SOUND_PLAYED = "ImpactSoundPlayed";
     private static final String TAG_PRESS_MODE = "PressMode";
+    private static final String TAG_ACTIVE_PRESS_MODE = "ActivePressMode";
     private static final int BOLTS_PER_ROD = 4;
 
     private final RJStorage rjStorage = new RJStorage(INDUSTRIAL_PRESS_ENERGY_CAPACITY_RJ);
@@ -79,7 +80,8 @@ public class IndustrialPressBlockEntity extends BlockEntity implements RJEnergyI
     private UUID capturedItemId;
     private boolean capturedItemReleased;
     private boolean impactSoundPlayed;
-    private PressMode pressMode = PressMode.PLATE;
+    private PressMode selectedMode = PressMode.PLATE;
+    private PressMode activeMode = PressMode.PLATE;
     private int stateTicks;
     private int currentEnergyUsage;
     private int cachedSharedPackedLight = -1;
@@ -224,18 +226,18 @@ public class IndustrialPressBlockEntity extends BlockEntity implements RJEnergyI
     }
 
     public String getModeDisplayName() {
-        return pressMode.displayName;
+        return selectedMode.displayName;
     }
 
     public boolean toggleMode(net.minecraft.world.entity.player.Player player) {
-        if (level == null || level.isClientSide || pressState != PressState.IDLE_INTAKE || capturedItemId != null) {
+        if (level == null || level.isClientSide) {
             return false;
         }
 
-        pressMode = pressMode.next();
+        selectedMode = selectedMode.next();
         Vec3 center = getMachineCenter();
         level.playSound(null, center.x, center.y, center.z, ModSounds.MECHANICAL_LEVER.get(), SoundSource.BLOCKS, 0.85F, 1.0F);
-        player.displayClientMessage(Component.literal("Industrial Press: " + pressMode.displayName + " Mode"), true);
+        player.displayClientMessage(Component.literal("Industrial Press: " + selectedMode.displayName + " Mode"), true);
         setChangedAndSync();
         return true;
     }
@@ -362,7 +364,7 @@ public class IndustrialPressBlockEntity extends BlockEntity implements RJEnergyI
         Direction direction = getInternalConveyorDirection();
         Vec3 holdPosition = getPressHoldPosition();
         for (ConveyorMovingItemEntity item : getInternalConveyorItems()) {
-            if (!canPress(item.getItemStack())) {
+            if (!canPress(item.getItemStack(), selectedMode)) {
                 continue;
             }
             if (!isCapturePointReached(item, holdPosition, direction)) {
@@ -370,6 +372,7 @@ public class IndustrialPressBlockEntity extends BlockEntity implements RJEnergyI
             }
 
             capturedItemId = item.getUUID();
+            activeMode = selectedMode;
             capturedItemReleased = false;
             impactSoundPlayed = false;
             item.setBlocked(true);
@@ -386,7 +389,7 @@ public class IndustrialPressBlockEntity extends BlockEntity implements RJEnergyI
             return false;
         }
 
-        ItemStack output = pressResult(item.getItemStack());
+        ItemStack output = pressResult(item.getItemStack(), activeMode);
         if (output.isEmpty()) {
             return false;
         }
@@ -521,7 +524,7 @@ public class IndustrialPressBlockEntity extends BlockEntity implements RJEnergyI
             return;
         }
 
-        if (pressResult(item.getItemStack()).isEmpty() && canSafelyReleaseStaleCapturedItem()) {
+        if (pressResult(item.getItemStack(), activeMode).isEmpty() && canSafelyReleaseStaleCapturedItem()) {
             item.setBlocked(false);
             capturedItemReleased = true;
             if (hasCapturedItemLeftPress()) {
@@ -581,14 +584,14 @@ public class IndustrialPressBlockEntity extends BlockEntity implements RJEnergyI
 
     private boolean canSafelyReleaseStaleCapturedItem() {
         return pressState == PressState.IDLE_INTAKE
-                || pressState == PressState.CAPTURING
-                || pressState == PressState.RELEASING;
+                || pressState == PressState.CAPTURING;
     }
 
     private void clearCapturedItem() {
         capturedItemId = null;
         capturedItemReleased = false;
         impactSoundPlayed = false;
+        activeMode = selectedMode;
     }
 
     private boolean isCapturePointReached(ConveyorMovingItemEntity item, Vec3 holdPosition, Direction direction) {
@@ -600,15 +603,15 @@ public class IndustrialPressBlockEntity extends BlockEntity implements RJEnergyI
         return forwardDelta >= -0.05D && lateralDelta <= 0.22D;
     }
 
-    private boolean canPress(ItemStack stack) {
-        return !pressResult(stack).isEmpty();
+    private boolean canPress(ItemStack stack, PressMode mode) {
+        return !pressResult(stack, mode).isEmpty();
     }
 
-    private ItemStack pressResult(ItemStack stack) {
+    private ItemStack pressResult(ItemStack stack, PressMode mode) {
         if (stack.isEmpty()) {
             return ItemStack.EMPTY;
         }
-        Item output = switch (pressMode) {
+        Item output = switch (mode) {
             case PLATE -> plateForIngot(stack);
             case ROD -> rodForIngot(stack);
             case BOLT -> boltForRod(stack);
@@ -619,7 +622,7 @@ public class IndustrialPressBlockEntity extends BlockEntity implements RJEnergyI
         if (!canPressCold(stack) && !HotItemUtil.isForgeReady(stack)) {
             return ItemStack.EMPTY;
         }
-        int outputCount = pressMode == PressMode.BOLT ? stack.getCount() * BOLTS_PER_ROD : stack.getCount();
+        int outputCount = mode == PressMode.BOLT ? stack.getCount() * BOLTS_PER_ROD : stack.getCount();
         return new ItemStack(output, outputCount);
     }
 
@@ -759,7 +762,8 @@ public class IndustrialPressBlockEntity extends BlockEntity implements RJEnergyI
         tag.putInt(TAG_STATE_TICKS, stateTicks);
         tag.putInt(TAG_STORED_RJ, rjStorage.getStoredRJ());
         tag.putInt(TAG_CURRENT_ENERGY_USAGE, currentEnergyUsage);
-        tag.putString(TAG_PRESS_MODE, pressMode.serializedName);
+        tag.putString(TAG_PRESS_MODE, selectedMode.serializedName);
+        tag.putString(TAG_ACTIVE_PRESS_MODE, activeMode.serializedName);
         if (capturedItemId != null) {
             tag.putUUID(TAG_CAPTURED_ITEM, capturedItemId);
         }
@@ -772,7 +776,10 @@ public class IndustrialPressBlockEntity extends BlockEntity implements RJEnergyI
         super.loadAdditional(tag, registries);
         pressState = PressState.byName(tag.getString(TAG_STATE));
         stateTicks = Math.max(0, tag.getInt(TAG_STATE_TICKS));
-        pressMode = PressMode.byName(tag.getString(TAG_PRESS_MODE));
+        selectedMode = PressMode.byName(tag.getString(TAG_PRESS_MODE));
+        activeMode = tag.contains(TAG_ACTIVE_PRESS_MODE)
+                ? PressMode.byName(tag.getString(TAG_ACTIVE_PRESS_MODE))
+                : selectedMode;
         rjStorage.setStoredRJ(tag.getInt(TAG_STORED_RJ));
         currentEnergyUsage = Math.max(0, tag.getInt(TAG_CURRENT_ENERGY_USAGE));
         capturedItemId = tag.hasUUID(TAG_CAPTURED_ITEM) ? tag.getUUID(TAG_CAPTURED_ITEM) : null;

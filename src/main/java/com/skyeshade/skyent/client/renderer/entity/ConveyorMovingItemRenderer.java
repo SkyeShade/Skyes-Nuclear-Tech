@@ -4,6 +4,8 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import com.skyeshade.skyent.content.conveyor.ConveyorRenderConstants;
 import com.skyeshade.skyent.content.entity.ConveyorMovingItemEntity;
+import com.skyeshade.skyent.content.item.HotItemUtil;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
@@ -44,6 +46,13 @@ public class ConveyorMovingItemRenderer extends EntityRenderer<ConveyorMovingIte
         poseStack.mulPose(Axis.YP.rotationDegrees(ITEM_ROT_Y));
         poseStack.mulPose(Axis.ZP.rotationDegrees(ITEM_ROT_Z));
         poseStack.scale(ITEM_RENDER_SCALE, ITEM_RENDER_SCALE, ITEM_RENDER_SCALE);
+        int itemLight = HotItemUtil.isForgeReady(stack) ? LightTexture.FULL_BRIGHT : packedLight;
+        renderItem(stack, itemLight, poseStack, bufferSource, entity);
+        poseStack.popPose();
+        super.render(entity, entityYaw, partialTick, poseStack, bufferSource, packedLight);
+    }
+
+    private void renderItem(ItemStack stack, int packedLight, PoseStack poseStack, MultiBufferSource bufferSource, ConveyorMovingItemEntity entity) {
         itemRenderer.renderStatic(
                 stack,
                 ItemDisplayContext.FIXED,
@@ -54,8 +63,6 @@ public class ConveyorMovingItemRenderer extends EntityRenderer<ConveyorMovingIte
                 entity.level(),
                 0
         );
-        poseStack.popPose();
-        super.render(entity, entityYaw, partialTick, poseStack, bufferSource, packedLight);
     }
 
     @Override
