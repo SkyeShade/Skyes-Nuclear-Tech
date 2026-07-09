@@ -68,5 +68,11 @@
       "skyent:heavy_moving_metal"
     ],
     "subtitle": "subtitle.skyent.heavy_moving_metal"
+  },
+  "industrial_press": {
+    "sounds": [
+      "skyent:industrial_press"
+    ],
+    "subtitle": "subtitle.skyent.industrial_press"
   }
 }

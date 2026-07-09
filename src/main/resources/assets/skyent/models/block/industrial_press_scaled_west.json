@@ -1,0 +1,24 @@
+{
+  "loader": "skyent:scaled_block_model",
+  "base": {
+    "parent": "skyent:block/industrial_press"
+  },
+  "scale": 2.0,
+  "origin": [0, 0, 0],
+  "translation": [-8, 0, -16],
+  "size": [2, 3, 1],
+  "facing_property": "facing",
+  "ambient_occlusion": false,
+  "shared_lighting": "controller",
+  "disable_diffuse_shading": true,
+  "force_uniform_light": false,
+  "ignore_neighbor_shading": true,
+  "ignore_cullface": true,
+  "force_general_quads": true,
+  "debug_force_white_fullbright": false,
+  "bake_static_fullbright": false,
+  "runtime_shared_light": true,
+  "shared_light_reduction": 0,
+  "render_brightness_multiplier": 0.8,
+  "render_brightness_floor": 0.3
+}

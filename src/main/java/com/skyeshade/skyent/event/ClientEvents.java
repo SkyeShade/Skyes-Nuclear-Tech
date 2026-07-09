@@ -15,6 +15,7 @@ import com.skyeshade.skyent.client.renderer.blockentity.CoalForgeRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.ForgingAnvilRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.GeigerCounterPlacedRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.HeatingChamberRenderer;
+import com.skyeshade.skyent.client.renderer.blockentity.IndustrialPressRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.LVMVTransformerRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.SteamForgeHammerRenderer;
 import com.skyeshade.skyent.client.renderer.entity.ConveyorMovingItemRenderer;
@@ -97,12 +98,14 @@ public final class ClientEvents {
         event.registerBlockEntityRenderer(ModBlockEntities.FORGING_ANVIL.get(), ForgingAnvilRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.STEAM_FORGE_HAMMER.get(), SteamForgeHammerRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.HEATING_CHAMBER.get(), HeatingChamberRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.INDUSTRIAL_PRESS.get(), IndustrialPressRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.LV_MV_TRANSFORMER.get(), LVMVTransformerRenderer::new);
     }
 
     public static void onRegisterAdditionalModels(ModelEvent.RegisterAdditional event) {
         event.register(SteamForgeHammerRenderer.PISTON_MODEL);
         event.register(HeatingChamberRenderer.CHAMBER_MODEL);
+        event.register(IndustrialPressRenderer.PRESS_HEAD_MODEL);
     }
 
     public static void onRegisterGeometryLoaders(ModelEvent.RegisterGeometryLoaders event) {
@@ -167,6 +170,14 @@ public final class ClientEvents {
         registerHotIngotProperty(ModItems.LEAD_INGOT.get(), hotProperty);
         registerHotIngotProperty(ModItems.TUNGSTEN_INGOT.get(), hotProperty);
         registerHotIngotProperty(ModItems.URANIUM_INGOT.get(), hotProperty);
+        registerHotIngotProperty(ModItems.IRON_ROD.get(), hotProperty);
+        registerHotIngotProperty(ModItems.COPPER_ROD.get(), hotProperty);
+        registerHotIngotProperty(ModItems.STEEL_ROD.get(), hotProperty);
+        registerHotIngotProperty(ModItems.ALUMINUM_ROD.get(), hotProperty);
+        registerHotIngotProperty(ModItems.TITANIUM_ROD.get(), hotProperty);
+        registerHotIngotProperty(ModItems.TUNGSTEN_ROD.get(), hotProperty);
+        registerHotIngotProperty(ModItems.COBALT_ROD.get(), hotProperty);
+        registerHotIngotProperty(ModItems.NICKEL_ROD.get(), hotProperty);
     }
 
     private static void registerHotIngotProperty(Item item, ResourceLocation property) {

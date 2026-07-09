@@ -155,7 +155,8 @@ public class LVConnectorBlock extends BaseEntityBlock {
         BlockState supportState = level.getBlockState(supportPos);
         return supportState.isFaceSturdy(level, supportPos, facing)
                 || LVMVTransformerBlock.isConnectorSupportCell(supportState)
-                || HeatingChamberBlock.isConnectorSupportCell(supportState);
+                || HeatingChamberBlock.isConnectorSupportCell(supportState)
+                || IndustrialPressBlock.isConnectorSupportCell(supportState);
     }
 
     @Override

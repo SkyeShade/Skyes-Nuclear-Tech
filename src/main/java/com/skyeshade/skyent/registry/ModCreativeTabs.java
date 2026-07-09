@@ -30,6 +30,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.FORGING_ANVIL.get());
                         output.accept(ModItems.STEAM_FORGE_HAMMER.get());
                         output.accept(ModItems.HEATING_CHAMBER.get());
+                        output.accept(ModItems.INDUSTRIAL_PRESS.get());
                         output.accept(ModItems.LV_ELECTRIC_PUMP.get());
                         output.accept(ModItems.LV_STEAM_TURBINE.get());
                         output.accept(ModItems.BASIC_FLUID_DUCT.get());
@@ -99,6 +100,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.GOLD_PLATE.get());
                         output.accept(ModItems.ALUMINUM_PLATE.get());
                         output.accept(ModItems.TITANIUM_PLATE.get());
+                        output.accept(ModItems.TUNGSTEN_PLATE.get());
                         output.accept(ModItems.COPPER_PLATE.get());
                         output.accept(ModItems.COBALT_PLATE.get());
                         output.accept(ModItems.NICKEL_PLATE.get());
@@ -127,6 +129,14 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.NICKEL_BOLT.get());
                         output.accept(ModItems.ALUMINUM_BOLT.get());
                         output.accept(ModItems.TITANIUM_BOLT.get());
+                        output.accept(ModItems.IRON_ROD.get());
+                        output.accept(ModItems.COPPER_ROD.get());
+                        output.accept(ModItems.STEEL_ROD.get());
+                        output.accept(ModItems.ALUMINUM_ROD.get());
+                        output.accept(ModItems.TITANIUM_ROD.get());
+                        output.accept(ModItems.TUNGSTEN_ROD.get());
+                        output.accept(ModItems.COBALT_ROD.get());
+                        output.accept(ModItems.NICKEL_ROD.get());
                         output.accept(ModItems.COPPER_WIRE.get());
                         output.accept(ModItems.TIN_WIRE.get());
                         output.accept(ModItems.STEEL_WIRE.get());

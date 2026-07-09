@@ -51,7 +51,7 @@ public class HeatingChamberBlockEntity extends BlockEntity implements RJEnergyIn
     private static final int MAX_INSIDE_ITEMS = 4;
     private static final int COLLECT_TICKS = 5;
     private static final int CLOSE_TICKS = 25;
-    private static final int MIN_HEAT_TICKS = 100;
+    private static final int MIN_HEAT_TICKS = 200;
     private static final int MAX_HEAT_TICKS = 1000;
     private static final int MAX_BATCH_ITEMS = BATCH_SIZE * 64;
     private static final int OPEN_TICKS = 25;

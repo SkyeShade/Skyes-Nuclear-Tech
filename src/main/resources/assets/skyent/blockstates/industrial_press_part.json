@@ -1,0 +1,9 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "skyent:block/industrial_press_part"
+      }
+    }
+  ]
+}

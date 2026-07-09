@@ -4,6 +4,8 @@ import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.block.ElectricFurnaceBlock;
 import com.skyeshade.skyent.content.block.HeatingChamberBlock;
 import com.skyeshade.skyent.content.block.HeatingChamberPartBlock;
+import com.skyeshade.skyent.content.block.IndustrialPressBlock;
+import com.skyeshade.skyent.content.block.IndustrialPressPartBlock;
 import com.skyeshade.skyent.content.block.LVMVTransformerBlock;
 import com.skyeshade.skyent.content.block.LVMVTransformerPartBlock;
 import com.skyeshade.skyent.content.block.LVCrusherBlock;
@@ -24,6 +26,8 @@ public final class SkyentJadePlugin implements IWailaPlugin {
         registration.registerBlockDataProvider(RJComponentProvider.INSTANCE, LVSteamTurbineBlock.class);
         registration.registerBlockDataProvider(RJComponentProvider.INSTANCE, HeatingChamberBlock.class);
         registration.registerBlockDataProvider(RJComponentProvider.INSTANCE, HeatingChamberPartBlock.class);
+        registration.registerBlockDataProvider(RJComponentProvider.INSTANCE, IndustrialPressBlock.class);
+        registration.registerBlockDataProvider(RJComponentProvider.INSTANCE, IndustrialPressPartBlock.class);
         registration.registerBlockDataProvider(RJComponentProvider.INSTANCE, LVMVTransformerBlock.class);
         registration.registerBlockDataProvider(RJComponentProvider.INSTANCE, LVMVTransformerPartBlock.class);
     }
@@ -36,6 +40,8 @@ public final class SkyentJadePlugin implements IWailaPlugin {
         registration.registerBlockComponent(RJComponentProvider.INSTANCE, LVSteamTurbineBlock.class);
         registration.registerBlockComponent(RJComponentProvider.INSTANCE, HeatingChamberBlock.class);
         registration.registerBlockComponent(RJComponentProvider.INSTANCE, HeatingChamberPartBlock.class);
+        registration.registerBlockComponent(RJComponentProvider.INSTANCE, IndustrialPressBlock.class);
+        registration.registerBlockComponent(RJComponentProvider.INSTANCE, IndustrialPressPartBlock.class);
         registration.registerBlockComponent(RJComponentProvider.INSTANCE, LVMVTransformerBlock.class);
         registration.registerBlockComponent(RJComponentProvider.INSTANCE, LVMVTransformerPartBlock.class);
     }

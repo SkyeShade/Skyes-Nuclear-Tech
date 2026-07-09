@@ -2,8 +2,10 @@ package com.skyeshade.skyent.event.systems;
 
 import com.skyeshade.skyent.content.block.LVMVTransformerBlock;
 import com.skyeshade.skyent.content.block.HeatingChamberBlock;
+import com.skyeshade.skyent.content.block.IndustrialPressBlock;
 import com.skyeshade.skyent.content.blockentity.ElectricFurnaceBlockEntity;
 import com.skyeshade.skyent.content.blockentity.HeatingChamberBlockEntity;
+import com.skyeshade.skyent.content.blockentity.IndustrialPressBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVCrusherBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVElectricPumpBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVSteamTurbineBlockEntity;
@@ -240,6 +242,9 @@ public final class LVElectricalNetworkSystem {
             HeatingChamberBlockEntity heatingChamber = attachedConnector != null && attachedConnector.getConnectorTier() == ElectricalTier.MV
                     ? resolveHeatingChamber(level, endpointState, endpointPos)
                     : null;
+            IndustrialPressBlockEntity industrialPress = attachedConnector != null && attachedConnector.getConnectorTier() == ElectricalTier.MV
+                    ? resolveIndustrialPress(level, endpointState, endpointPos)
+                    : null;
             LVMVTransformerBlockEntity transformerBody = attachedConnector != null
                     ? resolveTransformerBody(level, endpointState, endpointPos)
                     : null;
@@ -313,6 +318,18 @@ public final class LVElectricalNetworkSystem {
                     @Override
                     public int receiveRJ(int amount, boolean simulate) {
                         return heatingChamber.receiveRJ(attachedConnector.getConnectorTier(), amount, simulate);
+                    }
+                }));
+            } else if (industrialPress != null) {
+                consumers.add(new Consumer(connectorPos, new NetworkConsumer() {
+                    @Override
+                    public int availableRJCapacity() {
+                        return industrialPress.getAvailableRJCapacity();
+                    }
+
+                    @Override
+                    public int receiveRJ(int amount, boolean simulate) {
+                        return industrialPress.receiveRJ(attachedConnector.getConnectorTier(), amount, simulate);
                     }
                 }));
             } else if (blockEntity instanceof LVSteamTurbineBlockEntity turbine) {
@@ -412,6 +429,14 @@ public final class LVElectricalNetworkSystem {
             return chamber;
         }
         return HeatingChamberBlock.getMasterBlockEntity(level, state, pos).orElse(null);
+    }
+
+    @Nullable
+    private static IndustrialPressBlockEntity resolveIndustrialPress(ServerLevel level, BlockState state, BlockPos pos) {
+        if (level.getBlockEntity(pos) instanceof IndustrialPressBlockEntity press) {
+            return press;
+        }
+        return IndustrialPressBlock.getMasterBlockEntity(level, state, pos).orElse(null);
     }
 
     @Nullable

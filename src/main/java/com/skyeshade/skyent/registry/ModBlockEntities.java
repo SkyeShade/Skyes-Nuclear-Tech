@@ -15,6 +15,7 @@ import com.skyeshade.skyent.content.blockentity.ElectricFurnaceBlockEntity;
 import com.skyeshade.skyent.content.blockentity.ForgingAnvilBlockEntity;
 import com.skyeshade.skyent.content.blockentity.GeigerCounterPlacedBlockEntity;
 import com.skyeshade.skyent.content.blockentity.HeatingChamberBlockEntity;
+import com.skyeshade.skyent.content.blockentity.IndustrialPressBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVCrusherBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVFEConverterBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVElectricPumpBlockEntity;
@@ -81,6 +82,12 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("heating_chamber", () -> BlockEntityType.Builder.of(
                     HeatingChamberBlockEntity::new,
                     ModBlocks.HEATING_CHAMBER.get()
+            ).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<IndustrialPressBlockEntity>> INDUSTRIAL_PRESS =
+            BLOCK_ENTITIES.register("industrial_press", () -> BlockEntityType.Builder.of(
+                    IndustrialPressBlockEntity::new,
+                    ModBlocks.INDUSTRIAL_PRESS.get()
             ).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<LVElectricPumpBlockEntity>> LV_ELECTRIC_PUMP =

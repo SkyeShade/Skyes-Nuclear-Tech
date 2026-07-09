@@ -7,13 +7,13 @@
   ],
   "key": {
     "I": {
-      "item": "skyent:cobalt_plate"
+      "item": "minecraft:copper_ingot"
     },
     "H": {
       "item": "skyent:forging_hammer"
     }
   },
   "result": {
-    "id": "skyent:cobalt_bolt"
+    "id": "skyent:copper_rod"
   }
 }

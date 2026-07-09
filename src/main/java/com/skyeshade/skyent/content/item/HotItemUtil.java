@@ -70,13 +70,13 @@ public final class HotItemUtil {
         if (stack.is(ModItems.LEAD_INGOT.get())) {
             return 25.0D;
         }
-        if (stack.is(ModItems.ALUMINUM_INGOT.get())) {
+        if (stack.is(ModItems.ALUMINUM_INGOT.get()) || stack.is(ModItems.ALUMINUM_ROD.get())) {
             return 400.0D;
         }
         if (stack.is(Items.GOLD_INGOT)) {
             return 650.0D;
         }
-        if (stack.is(Items.COPPER_INGOT)) {
+        if (stack.is(Items.COPPER_INGOT) || stack.is(ModItems.COPPER_ROD.get())) {
             return 800.0D;
         }
         if (stack.is(ModItems.COBALT_BRONZE_INGOT.get())) {
@@ -85,25 +85,25 @@ public final class HotItemUtil {
         if (stack.is(ModItems.CUPRONICKEL_INGOT.get())) {
             return 950.0D;
         }
-        if (stack.is(ModItems.COBALT_INGOT.get())) {
+        if (stack.is(ModItems.COBALT_INGOT.get()) || stack.is(ModItems.COBALT_ROD.get())) {
             return 1250.0D;
         }
-        if (stack.is(ModItems.NICKEL_INGOT.get())) {
+        if (stack.is(ModItems.NICKEL_INGOT.get()) || stack.is(ModItems.NICKEL_ROD.get())) {
             return 1150.0D;
         }
         if (stack.is(ModItems.URANIUM_INGOT.get())) {
             return 600.0D;
         }
-        if (stack.is(Items.IRON_INGOT)) {
+        if (stack.is(Items.IRON_INGOT) || stack.is(ModItems.IRON_ROD.get())) {
             return 1200.0D;
         }
-        if (stack.is(ModItems.STEEL_INGOT.get())) {
+        if (stack.is(ModItems.STEEL_INGOT.get()) || stack.is(ModItems.STEEL_ROD.get())) {
             return 1100.0D;
         }
-        if (stack.is(ModItems.TITANIUM_INGOT.get())) {
+        if (stack.is(ModItems.TITANIUM_INGOT.get()) || stack.is(ModItems.TITANIUM_ROD.get())) {
             return 950.0D;
         }
-        if (stack.is(ModItems.TUNGSTEN_INGOT.get())) {
+        if (stack.is(ModItems.TUNGSTEN_INGOT.get()) || stack.is(ModItems.TUNGSTEN_ROD.get())) {
             return 1600.0D;
         }
         return Double.POSITIVE_INFINITY;

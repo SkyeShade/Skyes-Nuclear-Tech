@@ -7,13 +7,13 @@
   ],
   "key": {
     "I": {
-      "item": "skyent:aluminum_plate"
+      "item": "skyent:titanium_ingot"
     },
     "H": {
       "item": "skyent:forging_hammer"
     }
   },
   "result": {
-    "id": "skyent:aluminum_bolt"
+    "id": "skyent:titanium_rod"
   }
 }

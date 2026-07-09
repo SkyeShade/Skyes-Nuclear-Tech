@@ -79,6 +79,15 @@ public final class ModItems {
             new Item.Properties()
     );
 
+    public static final DeferredItem<TooltipBlockItem> INDUSTRIAL_PRESS = ITEMS.register(
+            "industrial_press",
+            () -> new TooltipBlockItem(
+                    ModBlocks.INDUSTRIAL_PRESS.get(),
+                    new Item.Properties(),
+                    "tooltip.skyent.industrial_press.dies"
+            )
+    );
+
     public static final DeferredItem<BlockItem> LV_ELECTRIC_PUMP = ITEMS.registerSimpleBlockItem(
             ModBlocks.LV_ELECTRIC_PUMP,
             new Item.Properties()
@@ -342,6 +351,7 @@ public final class ModItems {
     public static final DeferredItem<Item> GOLD_PLATE = simpleItem("gold_plate");
     public static final DeferredItem<Item> ALUMINUM_PLATE = simpleItem("aluminum_plate");
     public static final DeferredItem<Item> TITANIUM_PLATE = simpleItem("titanium_plate");
+    public static final DeferredItem<Item> TUNGSTEN_PLATE = simpleItem("tungsten_plate");
     public static final DeferredItem<Item> COPPER_PLATE = simpleItem("copper_plate");
     public static final DeferredItem<Item> COBALT_PLATE = simpleItem("cobalt_plate");
     public static final DeferredItem<Item> NICKEL_PLATE = simpleItem("nickel_plate");
@@ -379,6 +389,14 @@ public final class ModItems {
     public static final DeferredItem<Item> NICKEL_BOLT = simpleItem("nickel_bolt");
     public static final DeferredItem<Item> ALUMINUM_BOLT = simpleItem("aluminum_bolt");
     public static final DeferredItem<Item> TITANIUM_BOLT = simpleItem("titanium_bolt");
+    public static final DeferredItem<Item> IRON_ROD = simpleItem("iron_rod");
+    public static final DeferredItem<Item> COPPER_ROD = simpleItem("copper_rod");
+    public static final DeferredItem<Item> STEEL_ROD = simpleItem("steel_rod");
+    public static final DeferredItem<Item> ALUMINUM_ROD = simpleItem("aluminum_rod");
+    public static final DeferredItem<Item> TITANIUM_ROD = simpleItem("titanium_rod");
+    public static final DeferredItem<Item> TUNGSTEN_ROD = simpleItem("tungsten_rod");
+    public static final DeferredItem<Item> COBALT_ROD = simpleItem("cobalt_rod");
+    public static final DeferredItem<Item> NICKEL_ROD = simpleItem("nickel_rod");
     public static final DeferredItem<Item> COPPER_WIRE = simpleItem("copper_wire");
     public static final DeferredItem<Item> TIN_WIRE = simpleItem("tin_wire");
     public static final DeferredItem<Item> STEEL_WIRE = simpleItem("steel_wire");

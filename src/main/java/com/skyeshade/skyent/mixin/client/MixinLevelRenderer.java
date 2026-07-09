@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.mixin.client;
 
 import com.skyeshade.skyent.client.render.HeatingChamberLightRefreshTracker;
+import com.skyeshade.skyent.client.render.IndustrialPressLightRefreshTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.LevelRenderer;
@@ -16,6 +17,7 @@ public class MixinLevelRenderer {
         ClientLevel level = Minecraft.getInstance().level;
         if (level != null) {
             HeatingChamberLightRefreshTracker.refreshForDirtySection(level, sectionX, sectionY, sectionZ);
+            IndustrialPressLightRefreshTracker.refreshForDirtySection(level, sectionX, sectionY, sectionZ);
         }
     }
 }

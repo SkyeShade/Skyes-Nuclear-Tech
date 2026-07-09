@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.content.item;
 
 import java.util.List;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -28,7 +29,7 @@ public class TooltipBlockItem extends BlockItem {
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         for (String lineKey : lineKeys) {
             if (lineKey != null && !lineKey.isBlank()) {
-                tooltipComponents.add(Component.translatable(lineKey));
+                tooltipComponents.add(Component.translatable(lineKey).withStyle(ChatFormatting.GRAY));
             }
         }
     }

@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "skyent:block/industrial_press_scaled_north" },
+    "facing=east": { "model": "skyent:block/industrial_press_scaled_east", "y": 90 },
+    "facing=south": { "model": "skyent:block/industrial_press_scaled_south", "y": 180 },
+    "facing=west": { "model": "skyent:block/industrial_press_scaled_west", "y": 270 }
+  }
+}

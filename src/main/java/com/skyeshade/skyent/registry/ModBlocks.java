@@ -19,6 +19,8 @@ import com.skyeshade.skyent.content.block.ForgingAnvilBlock;
 import com.skyeshade.skyent.content.block.GeigerCounterPlacedBlock;
 import com.skyeshade.skyent.content.block.HeatingChamberBlock;
 import com.skyeshade.skyent.content.block.HeatingChamberPartBlock;
+import com.skyeshade.skyent.content.block.IndustrialPressBlock;
+import com.skyeshade.skyent.content.block.IndustrialPressPartBlock;
 import com.skyeshade.skyent.content.block.LVCrusherBlock;
 import com.skyeshade.skyent.content.block.LVConverterBlock;
 import com.skyeshade.skyent.content.block.LVConnectorBlock;
@@ -125,6 +127,24 @@ public final class ModBlocks {
             BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
                     .strength(5.0F, 12.0F)
                     .requiresCorrectToolForDrops()
+    );
+
+    public static final DeferredBlock<IndustrialPressBlock> INDUSTRIAL_PRESS = BLOCKS.registerBlock(
+            "industrial_press",
+            IndustrialPressBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 12.0F)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
+    );
+
+    public static final DeferredBlock<IndustrialPressPartBlock> INDUSTRIAL_PRESS_PART = BLOCKS.registerBlock(
+            "industrial_press_part",
+            IndustrialPressPartBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 12.0F)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
     );
 
     public static final DeferredBlock<LVElectricPumpBlock> LV_ELECTRIC_PUMP = BLOCKS.registerBlock(
