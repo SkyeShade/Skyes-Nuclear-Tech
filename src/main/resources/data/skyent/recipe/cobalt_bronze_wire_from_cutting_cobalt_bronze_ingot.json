@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "skyent:cobalt_bronze_ingot"
+    },
+    {
+      "item": "skyent:wire_cutters"
+    }
+  ],
+  "result": {
+    "id": "skyent:cobalt_bronze_wire",
+    "count": 2
+  }
+}

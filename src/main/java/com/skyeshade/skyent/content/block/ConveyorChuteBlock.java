@@ -4,6 +4,7 @@ import com.mojang.serialization.MapCodec;
 import com.skyeshade.skyent.content.blockentity.ConveyorChuteBlockEntity;
 import com.skyeshade.skyent.content.conveyor.ConveyorBeltSurface;
 import com.skyeshade.skyent.content.conveyor.ConveyorGateSurface;
+import com.skyeshade.skyent.content.conveyor.ConveyorItemAcceptor;
 import com.skyeshade.skyent.content.conveyor.ConveyorLogicConstants;
 import com.skyeshade.skyent.content.conveyor.ConveyorTravelDirectionProvider;
 import com.skyeshade.skyent.content.conveyor.ConveyorVisualFeeder;
@@ -15,6 +16,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -39,7 +41,7 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.neoforged.neoforge.items.IItemHandler;
 
-public class ConveyorChuteBlock extends BaseEntityBlock implements ConveyorBeltSurface, ConveyorGateSurface, ConveyorTravelDirectionProvider, ConveyorVisualFeeder {
+public class ConveyorChuteBlock extends BaseEntityBlock implements ConveyorBeltSurface, ConveyorGateSurface, ConveyorTravelDirectionProvider, ConveyorVisualFeeder, ConveyorItemAcceptor {
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     public static final EnumProperty<ConveyorChuteSegment> SEGMENT = EnumProperty.create("segment", ConveyorChuteSegment.class);
     public static final MapCodec<ConveyorChuteBlock> CODEC = simpleCodec(ConveyorChuteBlock::new);
@@ -174,6 +176,20 @@ public class ConveyorChuteBlock extends BaseEntityBlock implements ConveyorBeltS
     @Override
     public boolean skyent$canConveyorItemEnter(Level level, BlockPos pos, BlockState state, Direction fromDirection) {
         return isInputSegment(level, pos, state) && fromDirection == getFacing(state);
+    }
+
+    @Override
+    public ItemStack insertConveyorItem(Level level, BlockPos pos, BlockState state, ItemStack stack, Direction fromDirection, boolean simulate) {
+        if (level.isClientSide || stack.isEmpty() || !isInputSegment(level, pos, state) || fromDirection != getFacing(state)) {
+            return stack;
+        }
+        if (!(level.getBlockEntity(pos) instanceof ConveyorChuteBlockEntity chute) || !chute.canAcceptEntry()) {
+            return stack;
+        }
+        if (!simulate && !chute.enqueue(stack)) {
+            return stack;
+        }
+        return ItemStack.EMPTY;
     }
 
     @Override

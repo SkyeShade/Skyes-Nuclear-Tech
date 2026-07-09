@@ -62,12 +62,13 @@ public class LVConnectorBlockEntity extends BlockEntity {
 
     public boolean canConnectTo(LVConnectorBlockEntity other, LVWireType wireType) {
         return other != null
+                && getConnectorTier() == other.getConnectorTier()
                 && canAddConnection(other.getBlockPos(), wireType)
                 && other.canAddConnection(getBlockPos(), wireType);
     }
 
     public boolean canAcceptWireType(LVWireType wireType) {
-        return wireType.isTier(getConnectorTier());
+        return wireType.canConnectToTier(getConnectorTier());
     }
 
     public ElectricalTier getConnectorTier() {

@@ -162,6 +162,7 @@ public final class ClientEvents {
         registerHotIngotProperty(ModItems.TITANIUM_INGOT.get(), hotProperty);
         registerHotIngotProperty(ModItems.COBALT_INGOT.get(), hotProperty);
         registerHotIngotProperty(ModItems.NICKEL_INGOT.get(), hotProperty);
+        registerHotIngotProperty(ModItems.COBALT_BRONZE_INGOT.get(), hotProperty);
         registerHotIngotProperty(ModItems.LEAD_INGOT.get(), hotProperty);
         registerHotIngotProperty(ModItems.TUNGSTEN_INGOT.get(), hotProperty);
         registerHotIngotProperty(ModItems.URANIUM_INGOT.get(), hotProperty);

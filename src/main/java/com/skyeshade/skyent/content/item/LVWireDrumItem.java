@@ -6,6 +6,7 @@ import com.skyeshade.skyent.content.energy.LVWireType;
 import com.skyeshade.skyent.content.energy.ElectricalTier;
 import com.skyeshade.skyent.event.systems.LVElectricalNetworkSystem;
 import java.util.List;
+import java.util.Locale;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
@@ -34,7 +35,7 @@ public class LVWireDrumItem extends Item {
     private final String tooltipPrefix;
 
     public LVWireDrumItem(Properties properties) {
-        this(properties, LVWireType.COPPER, "tooltip.skyent.lv_copper_wire_drum");
+        this(properties, LVWireType.COPPER, "tooltip.skyent.copper_wire_drum");
     }
 
     public LVWireDrumItem(Properties properties, LVWireType wireType, String tooltipPrefix) {
@@ -46,10 +47,9 @@ public class LVWireDrumItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         tooltipComponents.add(Component.translatable(tooltipPrefix + ".description").withStyle(ChatFormatting.GRAY));
-        tooltipComponents.add(Component.translatable(tooltipPrefix + ".voltage").withStyle(ChatFormatting.GRAY));
-        tooltipComponents.add(Component.translatable(tooltipPrefix + ".current").withStyle(ChatFormatting.GRAY));
-        tooltipComponents.add(Component.translatable(tooltipPrefix + ".max_transfer").withStyle(ChatFormatting.GRAY));
-        tooltipComponents.add(Component.translatable(tooltipPrefix + ".voltage_drop").withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.literal("Max Current: " + formatCurrent(wireType.maxCurrentAmps()) + " A").withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.literal("Resistance: " + formatDecimal(wireType.resistance())).withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(Component.literal("Max Range: " + wireType.maxLengthBlocks() + " blocks").withStyle(ChatFormatting.GRAY));
     }
 
     @Override
@@ -119,8 +119,8 @@ public class LVWireDrumItem extends Item {
             return InteractionResult.CONSUME;
         }
 
-        if (selectedPos.distSqr(clickedPos) > MAX_CONNECTION_DISTANCE * MAX_CONNECTION_DISTANCE) {
-            message(player, "Connectors are too far apart.");
+        if (selectedPos.distSqr(clickedPos) > wireType.maxLengthBlocks() * wireType.maxLengthBlocks()) {
+            message(player, "Cable is too short for this connection.");
             return InteractionResult.CONSUME;
         }
 
@@ -227,13 +227,19 @@ public class LVWireDrumItem extends Item {
     }
 
     private String incompatibleConnectorMessage() {
-        return wireType == LVWireType.MV_COPPER
-                ? "MV copper cable can only connect MV connectors or transformer MV terminals."
-                : "LV cable cannot connect to MV connectors.";
+        return "Cable material is not compatible with this connector.";
     }
 
     private static void message(Player player, String message) {
         player.displayClientMessage(Component.literal(message), true);
+    }
+
+    private static String formatCurrent(double value) {
+        return value == Math.rint(value) ? Integer.toString((int) value) : formatDecimal(value);
+    }
+
+    private static String formatDecimal(double value) {
+        return String.format(Locale.ROOT, "%.1f", value);
     }
 
     private record WireEndpoint(BlockPos pos, ElectricalTier tier, LVConnectorBlockEntity connector, com.skyeshade.skyent.content.blockentity.LVMVTransformerBlockEntity transformer) {
@@ -242,10 +248,13 @@ public class LVWireDrumItem extends Item {
         }
 
         private boolean canAccept(LVWireType wireType) {
-            return wireType.isTier(tier);
+            return wireType.canConnectToTier(tier);
         }
 
         private boolean canConnectTo(WireEndpoint other, LVWireType wireType) {
+            if (tier != other.tier) {
+                return false;
+            }
             if (!canAccept(wireType) || !other.canAccept(wireType)) {
                 return false;
             }

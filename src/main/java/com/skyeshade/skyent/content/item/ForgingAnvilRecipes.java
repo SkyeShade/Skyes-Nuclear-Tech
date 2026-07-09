@@ -22,6 +22,9 @@ public final class ForgingAnvilRecipes {
         if (input.is(ModItems.NICKEL_INGOT.get())) {
             return Optional.of(new ItemStack(ModItems.NICKEL_PLATE.get()));
         }
+        if (input.is(ModItems.COBALT_BRONZE_INGOT.get())) {
+            return Optional.of(new ItemStack(ModItems.COBALT_BRONZE_PLATE.get()));
+        }
         if (input.is(Items.GOLD_INGOT)) {
             return Optional.of(new ItemStack(ModItems.GOLD_PLATE.get()));
         }

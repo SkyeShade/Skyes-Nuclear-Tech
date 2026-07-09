@@ -542,8 +542,9 @@ public final class LVElectricalNetworkSystem {
             LVWireType wireType = previousNode == null ? LVWireType.COPPER : previousNode.wireType(current);
             double edgeDistance = Math.sqrt(previousPos.distSqr(current));
             pathDistance += edgeDistance;
-            voltageDrop += edgeDistance * wireType.voltageDropPerBlock();
-            maxTransferRJPerTick = Math.min(maxTransferRJPerTick, wireType.maxTransferRJPerTick());
+            voltageDrop += edgeDistance * wireType.resistancePerBlock();
+            ElectricalTier edgeTier = previousNode == null ? ElectricalTier.LV : previousNode.tier();
+            maxTransferRJPerTick = Math.min(maxTransferRJPerTick, wireType.maxTransferRJPerTick(edgeTier));
             current = previousPos;
         }
 
@@ -577,7 +578,7 @@ public final class LVElectricalNetworkSystem {
 
                 int transferred = node.currentTickTransferredRJ(connection);
                 LVWireType wireType = node.wireType(connection);
-                double current = transferred / (double) wireType.tier().voltage();
+                double current = transferred / (double) node.tier().voltage();
                 double heat = Math.max(node.connectionHeat(connection), other.connectionHeat(node.pos()));
                 if (current <= 0.0D && heat <= 0.0D) {
                     continue;

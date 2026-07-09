@@ -1,6 +1,0 @@
-{
-  "parent": "minecraft:item/generated",
-  "textures": {
-    "layer0": "skyent:item/mv_copper_wire_drum"
-  }
-}

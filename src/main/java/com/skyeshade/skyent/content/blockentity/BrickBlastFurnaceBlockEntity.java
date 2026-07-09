@@ -105,7 +105,8 @@ public class BrickBlastFurnaceBlockEntity extends BlockEntity implements MenuPro
         furnace.active = false;
         boolean changed = furnace.consumeFuelItemIfPossible();
 
-        if (!furnace.hasValidSteelRecipe() || !furnace.canOutputSteel()) {
+        FurnaceRecipe recipe = furnace.findRecipe();
+        if (recipe == null || !furnace.canOutputRecipe(recipe)) {
             if (furnace.progress != 0) {
                 furnace.progress = 0;
                 changed = true;
@@ -117,7 +118,7 @@ public class BrickBlastFurnaceBlockEntity extends BlockEntity implements MenuPro
             changed = true;
 
             if (furnace.progress >= furnace.maxProgress) {
-                furnace.completeSteelRecipe();
+                furnace.completeRecipe(recipe);
                 furnace.progress = 0;
             }
         }
@@ -176,31 +177,46 @@ public class BrickBlastFurnaceBlockEntity extends BlockEntity implements MenuPro
         return true;
     }
 
-    private boolean hasValidSteelRecipe() {
+    @Nullable
+    private FurnaceRecipe findRecipe() {
         // TODO: Replace with a data-driven brick_blast_furnace recipe type.
         ItemStack top = inventory.getStackInSlot(TOP_INPUT_SLOT);
         ItemStack bottom = inventory.getStackInSlot(BOTTOM_INPUT_SLOT);
-        return top.is(Items.IRON_INGOT) && bottom.is(Items.COAL)
-                || top.is(Items.COAL) && bottom.is(Items.IRON_INGOT);
+        if (top.is(Items.IRON_INGOT) && bottom.is(Items.COAL)) {
+            return new FurnaceRecipe(TOP_INPUT_SLOT, 1, BOTTOM_INPUT_SLOT, 1, new ItemStack(ModItems.STEEL_INGOT.get()));
+        }
+        if (top.is(Items.COAL) && bottom.is(Items.IRON_INGOT)) {
+            return new FurnaceRecipe(TOP_INPUT_SLOT, 1, BOTTOM_INPUT_SLOT, 1, new ItemStack(ModItems.STEEL_INGOT.get()));
+        }
+        if (top.is(ModItems.COBALT_INGOT.get()) && bottom.is(Items.COPPER_INGOT) && bottom.getCount() >= 4) {
+            return new FurnaceRecipe(TOP_INPUT_SLOT, 1, BOTTOM_INPUT_SLOT, 4, new ItemStack(ModItems.COBALT_BRONZE_INGOT.get(), 2));
+        }
+        if (top.is(Items.COPPER_INGOT) && top.getCount() >= 4 && bottom.is(ModItems.COBALT_INGOT.get())) {
+            return new FurnaceRecipe(TOP_INPUT_SLOT, 4, BOTTOM_INPUT_SLOT, 1, new ItemStack(ModItems.COBALT_BRONZE_INGOT.get(), 2));
+        }
+        return null;
     }
 
-    private boolean canOutputSteel() {
+    private boolean canOutputRecipe(FurnaceRecipe recipe) {
         ItemStack output = inventory.getStackInSlot(OUTPUT_SLOT);
-        ItemStack result = ModItems.STEEL_INGOT.get().getDefaultInstance();
+        ItemStack result = recipe.output();
         return output.isEmpty() || ItemStack.isSameItemSameComponents(output, result) && output.getCount() + result.getCount() <= output.getMaxStackSize();
     }
 
-    private void completeSteelRecipe() {
-        inventory.extractItem(TOP_INPUT_SLOT, 1, false);
-        inventory.extractItem(BOTTOM_INPUT_SLOT, 1, false);
+    private void completeRecipe(FurnaceRecipe recipe) {
+        inventory.extractItem(recipe.firstSlot(), recipe.firstCount(), false);
+        inventory.extractItem(recipe.secondSlot(), recipe.secondCount(), false);
 
         ItemStack output = inventory.getStackInSlot(OUTPUT_SLOT);
         if (output.isEmpty()) {
-            inventory.setStackInSlot(OUTPUT_SLOT, ModItems.STEEL_INGOT.get().getDefaultInstance());
+            inventory.setStackInSlot(OUTPUT_SLOT, recipe.output().copy());
         } else {
-            output.grow(1);
+            output.grow(recipe.output().getCount());
             inventory.setStackInSlot(OUTPUT_SLOT, output);
         }
+    }
+
+    private record FurnaceRecipe(int firstSlot, int firstCount, int secondSlot, int secondCount, ItemStack output) {
     }
 
     public ItemStackHandler getInventory() {

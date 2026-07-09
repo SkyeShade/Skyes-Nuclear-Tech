@@ -4,6 +4,7 @@ import com.mojang.serialization.MapCodec;
 import com.skyeshade.skyent.content.blockentity.ConveyorSplitterBlockEntity;
 import com.skyeshade.skyent.content.conveyor.ConveyorBeltSurface;
 import com.skyeshade.skyent.content.conveyor.ConveyorGateSurface;
+import com.skyeshade.skyent.content.conveyor.ConveyorItemAcceptor;
 import com.skyeshade.skyent.content.conveyor.ConveyorLogicConstants;
 import com.skyeshade.skyent.content.conveyor.ConveyorTravelDirectionProvider;
 import com.skyeshade.skyent.content.conveyor.ConveyorVisualFeeder;
@@ -13,6 +14,7 @@ import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -33,7 +35,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-public class ConveyorSplitterBlock extends BaseEntityBlock implements ConveyorBeltSurface, ConveyorGateSurface, ConveyorTravelDirectionProvider, ConveyorVisualFeeder {
+public class ConveyorSplitterBlock extends BaseEntityBlock implements ConveyorBeltSurface, ConveyorGateSurface, ConveyorTravelDirectionProvider, ConveyorVisualFeeder, ConveyorItemAcceptor {
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     public static final MapCodec<ConveyorSplitterBlock> CODEC = simpleCodec(ConveyorSplitterBlock::new);
     private static final VoxelShape SHAPE = Block.box(0.0D, 0.0D, 0.0D, 16.0D, 16.0D, 16.0D);
@@ -68,6 +70,14 @@ public class ConveyorSplitterBlock extends BaseEntityBlock implements ConveyorBe
     @Override
     protected RenderShape getRenderShape(BlockState state) {
         return RenderShape.MODEL;
+    }
+
+    @Override
+    protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
+        if (!state.is(newState.getBlock()) && !level.isClientSide && level.getBlockEntity(pos) instanceof ConveyorSplitterBlockEntity splitter) {
+            splitter.dropBufferedItems();
+        }
+        super.onRemove(state, level, pos, newState, movedByPiston);
     }
 
     @Nullable
@@ -129,6 +139,19 @@ public class ConveyorSplitterBlock extends BaseEntityBlock implements ConveyorBe
     @Override
     public boolean skyent$canConveyorItemEnter(Level level, BlockPos pos, BlockState state, Direction fromDirection) {
         return fromDirection == getTravelDirection(state).getOpposite();
+    }
+
+    @Override
+    public ItemStack insertConveyorItem(Level level, BlockPos pos, BlockState state, ItemStack stack, Direction fromDirection, boolean simulate) {
+        if (level.isClientSide || stack.isEmpty() || fromDirection != getTravelDirection(state).getOpposite()) {
+            return stack;
+        }
+
+        if (level.getBlockEntity(pos) instanceof ConveyorSplitterBlockEntity splitter) {
+            return splitter.insertConveyorItem(stack, simulate);
+        }
+
+        return stack;
     }
 
     @Override

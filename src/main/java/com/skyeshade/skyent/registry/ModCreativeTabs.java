@@ -92,6 +92,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.COBALT_INGOT.get());
                         output.accept(ModItems.NICKEL_INGOT.get());
                         output.accept(ModItems.TIN_INGOT.get());
+                        output.accept(ModItems.COBALT_BRONZE_INGOT.get());
                         output.accept(ModItems.IRON_PLATE.get());
                         output.accept(ModItems.STEEL_PLATE.get());
                         output.accept(ModItems.GOLD_PLATE.get());
@@ -100,6 +101,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.COPPER_PLATE.get());
                         output.accept(ModItems.COBALT_PLATE.get());
                         output.accept(ModItems.NICKEL_PLATE.get());
+                        output.accept(ModItems.COBALT_BRONZE_PLATE.get());
                         output.accept(ModItems.LEAD_PLATE.get());
                         output.accept(ModItems.IRON_POWDER.get());
                         output.accept(ModItems.GOLD_POWDER.get());
@@ -127,6 +129,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.COPPER_WIRE.get());
                         output.accept(ModItems.TIN_WIRE.get());
                         output.accept(ModItems.STEEL_WIRE.get());
+                        output.accept(ModItems.COBALT_BRONZE_WIRE.get());
                         output.accept(ModItems.STEEL_BEARING.get());
                         output.accept(ModItems.TITANIUM_TURBINE_BLADE.get());
                         output.accept(ModItems.ELECTRIC_MOTOR.get());
@@ -146,9 +149,9 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.TUNGSTEN_AXE.get());
                         output.accept(ModItems.TUNGSTEN_SHOVEL.get());
                         output.accept(ModItems.TUNGSTEN_HOE.get());
-                        output.accept(ModItems.LV_COPPER_WIRE_DRUM.get());
-                        output.accept(ModItems.LV_STEEL_WIRE_DRUM.get());
-                        output.accept(ModItems.MV_COPPER_WIRE_DRUM.get());
+                        output.accept(ModItems.COPPER_WIRE_DRUM.get());
+                        output.accept(ModItems.STEEL_WIRE_DRUM.get());
+                        output.accept(ModItems.COBALT_BRONZE_WIRE_DRUM.get());
                         output.accept(ModItems.LV_RJ_CONVERTER.get());
                         output.accept(ModItems.LV_FE_CONVERTER.get());
                         output.accept(ModItems.LV_MV_TRANSFORMER.get());

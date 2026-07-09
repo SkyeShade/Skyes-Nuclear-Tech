@@ -273,7 +273,7 @@ public class LVMVTransformerBlockEntity extends BlockEntity implements RJEnergyI
         List<TerminalConnection> connections = new ArrayList<>();
         for (Map.Entry<BlockPos, Set<BlockPos>> entry : terminalConnections.entrySet()) {
             for (BlockPos connection : entry.getValue()) {
-                connections.add(new TerminalConnection(entry.getKey(), connection, terminalWireTypes.getOrDefault(new ConnectionKey(entry.getKey(), connection), LVWireType.MV_COPPER)));
+                connections.add(new TerminalConnection(entry.getKey(), connection, terminalWireTypes.getOrDefault(new ConnectionKey(entry.getKey(), connection), LVWireType.COBALT_BRONZE)));
             }
         }
         return List.copyOf(connections);
@@ -284,11 +284,11 @@ public class LVMVTransformerBlockEntity extends BlockEntity implements RJEnergyI
     }
 
     public LVWireType getTerminalConnectionWireType(BlockPos terminalPos, BlockPos connectionPos) {
-        return terminalWireTypes.getOrDefault(new ConnectionKey(terminalPos, connectionPos), LVWireType.MV_COPPER);
+        return terminalWireTypes.getOrDefault(new ConnectionKey(terminalPos, connectionPos), LVWireType.COBALT_BRONZE);
     }
 
     public boolean canAddTerminalConnection(BlockPos terminalPos, BlockPos connectionPos, LVWireType wireType) {
-        if (level == null || !wireType.isTier(ElectricalTier.MV) || terminalPos.equals(connectionPos)) {
+        if (level == null || !wireType.canConnectToTier(ElectricalTier.MV) || terminalPos.equals(connectionPos)) {
             return false;
         }
         if (!LVMVTransformerBlock.isMVTerminal(level.getBlockState(terminalPos))) {
@@ -475,7 +475,7 @@ public class LVMVTransformerBlockEntity extends BlockEntity implements RJEnergyI
                 CompoundTag connectionTag = new CompoundTag();
                 connectionTag.putLong(TAG_TERMINAL, entry.getKey().asLong());
                 connectionTag.putLong(TAG_CONNECTION, connection.asLong());
-                connectionTag.putString(TAG_WIRE_TYPE, terminalWireTypes.getOrDefault(new ConnectionKey(entry.getKey(), connection), LVWireType.MV_COPPER).serializedName());
+                connectionTag.putString(TAG_WIRE_TYPE, terminalWireTypes.getOrDefault(new ConnectionKey(entry.getKey(), connection), LVWireType.COBALT_BRONZE).serializedName());
                 list.add(connectionTag);
             }
         }
@@ -493,7 +493,7 @@ public class LVMVTransformerBlockEntity extends BlockEntity implements RJEnergyI
             BlockPos terminal = BlockPos.of(connectionTag.getLong(TAG_TERMINAL)).immutable();
             BlockPos connection = BlockPos.of(connectionTag.getLong(TAG_CONNECTION)).immutable();
             LVWireType wireType = LVWireType.byName(connectionTag.getString(TAG_WIRE_TYPE));
-            if (!wireType.isTier(ElectricalTier.MV) || terminal.equals(connection)) {
+            if (!wireType.canConnectToTier(ElectricalTier.MV) || terminal.equals(connection)) {
                 continue;
             }
             Set<BlockPos> connections = terminalConnections.computeIfAbsent(terminal, ignored -> new LinkedHashSet<>());

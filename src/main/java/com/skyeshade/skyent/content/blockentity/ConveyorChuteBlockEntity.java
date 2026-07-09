@@ -2,6 +2,7 @@ package com.skyeshade.skyent.content.blockentity;
 
 import com.skyeshade.skyent.content.block.ConveyorChuteBlock;
 import com.skyeshade.skyent.content.conveyor.ConveyorBeltSurface;
+import com.skyeshade.skyent.content.conveyor.ConveyorDirectTransfer;
 import com.skyeshade.skyent.content.conveyor.ConveyorGateSurface;
 import com.skyeshade.skyent.content.conveyor.ConveyorInsertionUtil;
 import com.skyeshade.skyent.content.conveyor.ConveyorLogicConstants;
@@ -136,6 +137,15 @@ public class ConveyorChuteBlockEntity extends BlockEntity {
         Direction outputFacing = ConveyorChuteBlock.getFacing(bottomState);
         BlockPos outputPos = bottomPos.relative(outputFacing);
         BlockState outputState = level.getBlockState(outputPos);
+        var directRemainder = ConveyorDirectTransfer.tryInsert(level, outputPos, stack, outputFacing.getOpposite(), false);
+        if (directRemainder.isPresent()) {
+            if (directRemainder.get().isEmpty()) {
+                debug("output entry directly into conveyor acceptor at {} stack={}", outputPos, stack);
+                return true;
+            }
+            return false;
+        }
+
         IItemHandler handler = level.getCapability(Capabilities.ItemHandler.BLOCK, outputPos, outputFacing.getOpposite());
         if (handler != null) {
             ItemStack remainder = ConveyorInsertionUtil.insertIntoHandler(handler, stack, false);

@@ -2,6 +2,7 @@ package com.skyeshade.skyent.content.blockentity;
 
 import com.skyeshade.skyent.content.block.ConveyorExporterBlock;
 import com.skyeshade.skyent.content.conveyor.ConveyorBeltSurface;
+import com.skyeshade.skyent.content.conveyor.ConveyorDirectTransfer;
 import com.skyeshade.skyent.content.conveyor.ConveyorInsertionUtil;
 import com.skyeshade.skyent.content.menu.ConveyorExporterMenu;
 import com.skyeshade.skyent.registry.ModBlockEntities;
@@ -91,12 +92,10 @@ public class ConveyorExporterBlockEntity extends BlockEntity implements MenuProv
         Direction facing = getBlockState().getValue(ConveyorExporterBlock.FACING);
         BlockPos frontPos = worldPosition.relative(facing);
         BlockState frontState = level.getBlockState(frontPos);
-        if (!(frontState.getBlock() instanceof ConveyorBeltSurface)) {
-            return false;
-        }
-
-        IItemHandler conveyor = level.getCapability(Capabilities.ItemHandler.BLOCK, frontPos, facing.getOpposite());
-        if (conveyor == null) {
+        Direction fromDirection = facing.getOpposite();
+        boolean hasDirectAcceptor = frontState.getBlock() instanceof com.skyeshade.skyent.content.conveyor.ConveyorItemAcceptor;
+        IItemHandler conveyor = level.getCapability(Capabilities.ItemHandler.BLOCK, frontPos, fromDirection);
+        if (!hasDirectAcceptor && !(frontState.getBlock() instanceof ConveyorBeltSurface) && conveyor == null) {
             return false;
         }
 
@@ -111,7 +110,7 @@ public class ConveyorExporterBlockEntity extends BlockEntity implements MenuProv
                 continue;
             }
 
-            ItemStack simulatedRemainder = ConveyorInsertionUtil.insertIntoHandler(conveyor, candidate, true);
+            ItemStack simulatedRemainder = insertIntoOutput(frontPos, fromDirection, conveyor, candidate, true);
             if (!simulatedRemainder.isEmpty()) {
                 continue;
             }
@@ -121,7 +120,7 @@ public class ConveyorExporterBlockEntity extends BlockEntity implements MenuProv
                 continue;
             }
 
-            ItemStack remainder = ConveyorInsertionUtil.insertIntoHandler(conveyor, extracted, false);
+            ItemStack remainder = insertIntoOutput(frontPos, fromDirection, conveyor, extracted, false);
             if (!remainder.isEmpty()) {
                 source.insertItem(slot, remainder, false);
             }
@@ -129,6 +128,19 @@ public class ConveyorExporterBlockEntity extends BlockEntity implements MenuProv
         }
 
         return false;
+    }
+
+    private ItemStack insertIntoOutput(BlockPos outputPos, Direction fromDirection, @Nullable IItemHandler fallbackHandler, ItemStack stack, boolean simulate) {
+        if (level == null) {
+            return stack;
+        }
+
+        var directRemainder = ConveyorDirectTransfer.tryInsert(level, outputPos, stack, fromDirection, simulate);
+        if (directRemainder.isPresent()) {
+            return directRemainder.get();
+        }
+
+        return fallbackHandler == null ? stack : ConveyorInsertionUtil.insertIntoHandler(fallbackHandler, stack, simulate);
     }
 
     public boolean matchesFilter(ItemStack stack) {

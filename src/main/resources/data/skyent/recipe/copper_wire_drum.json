@@ -2,19 +2,19 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "pattern": [
-    "CCC",
-    "CBC",
-    "CCC"
+    " C ",
+    "CSC",
+    " C "
   ],
   "key": {
     "C": {
       "item": "skyent:copper_wire"
     },
-    "B": {
-      "item": "skyent:cobalt_ingot"
+    "S": {
+      "item": "skyent:steel_ingot"
     }
   },
   "result": {
-    "id": "skyent:mv_copper_wire_drum"
+    "id": "skyent:copper_wire_drum"
   }
 }
