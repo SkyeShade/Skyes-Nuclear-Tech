@@ -23,6 +23,7 @@ import com.skyeshade.skyent.content.blockentity.LVMVTransformerBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVSteamTurbineBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVRJConverterBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVConnectorBlockEntity;
+import com.skyeshade.skyent.content.blockentity.RollingMillBlockEntity;
 import com.skyeshade.skyent.content.blockentity.SteamForgeHammerBlockEntity;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -82,6 +83,12 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("heating_chamber", () -> BlockEntityType.Builder.of(
                     HeatingChamberBlockEntity::new,
                     ModBlocks.HEATING_CHAMBER.get()
+            ).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<RollingMillBlockEntity>> ROLLING_MILL =
+            BLOCK_ENTITIES.register("rolling_mill", () -> BlockEntityType.Builder.of(
+                    RollingMillBlockEntity::new,
+                    ModBlocks.ROLLING_MILL.get()
             ).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<IndustrialPressBlockEntity>> INDUSTRIAL_PRESS =

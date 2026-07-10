@@ -30,6 +30,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.FORGING_ANVIL.get());
                         output.accept(ModItems.STEAM_FORGE_HAMMER.get());
                         output.accept(ModItems.HEATING_CHAMBER.get());
+                        output.accept(ModItems.ROLLING_MILL.get());
                         output.accept(ModItems.INDUSTRIAL_PRESS.get());
                         output.accept(ModItems.LV_ELECTRIC_PUMP.get());
                         output.accept(ModItems.LV_STEAM_TURBINE.get());

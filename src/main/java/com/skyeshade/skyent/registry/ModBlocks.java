@@ -31,6 +31,8 @@ import com.skyeshade.skyent.content.block.LVSteamTurbineBlock;
 import com.skyeshade.skyent.content.block.MoltenCoriumBlock;
 import com.skyeshade.skyent.content.block.RadioactiveBlock;
 import com.skyeshade.skyent.content.block.RadioactiveScrapMetalBlock;
+import com.skyeshade.skyent.content.block.RollingMillBlock;
+import com.skyeshade.skyent.content.block.RollingMillPartBlock;
 import com.skyeshade.skyent.content.block.SiltBlock;
 import com.skyeshade.skyent.content.block.SteamForgeHammerBlock;
 import com.skyeshade.skyent.content.block.SteamForgeHammerPartBlock;
@@ -124,6 +126,23 @@ public final class ModBlocks {
     public static final DeferredBlock<HeatingChamberPartBlock> HEATING_CHAMBER_PART = BLOCKS.registerBlock(
             "heating_chamber_part",
             HeatingChamberPartBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 12.0F)
+                    .requiresCorrectToolForDrops()
+    );
+
+    public static final DeferredBlock<RollingMillBlock> ROLLING_MILL = BLOCKS.registerBlock(
+            "rolling_mill",
+            RollingMillBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 12.0F)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
+    );
+
+    public static final DeferredBlock<RollingMillPartBlock> ROLLING_MILL_PART = BLOCKS.registerBlock(
+            "rolling_mill_part",
+            RollingMillPartBlock::new,
             BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
                     .strength(5.0F, 12.0F)
                     .requiresCorrectToolForDrops()

@@ -79,6 +79,11 @@ public final class ModItems {
             new Item.Properties()
     );
 
+    public static final DeferredItem<BlockItem> ROLLING_MILL = ITEMS.registerSimpleBlockItem(
+            ModBlocks.ROLLING_MILL,
+            new Item.Properties()
+    );
+
     public static final DeferredItem<TooltipBlockItem> INDUSTRIAL_PRESS = ITEMS.register(
             "industrial_press",
             () -> new TooltipBlockItem(
