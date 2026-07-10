@@ -74,6 +74,13 @@ public class IndustrialPressBlockEntity extends BlockEntity implements RJEnergyI
     private static final String TAG_PRESS_MODE = "PressMode";
     private static final String TAG_ACTIVE_PRESS_MODE = "ActivePressMode";
     private static final int BOLTS_PER_ROD = 4;
+    private static final double CAPTURE_FORWARD_MIN = -0.05D;
+    private static final double CAPTURE_FORWARD_MAX = 0.08D;
+    private static final double CAPTURE_LATERAL_TOLERANCE = 0.22D;
+    private static final double EJECTION_FORWARD_MAX = 0.72D;
+    private static final double EJECTION_LATERAL_TOLERANCE = 0.35D;
+    private static final double EJECTION_VERTICAL_TOLERANCE = 0.35D;
+    private static final double EJECTION_SCAN_INFLATE = 0.45D;
 
     private final RJStorage rjStorage = new RJStorage(INDUSTRIAL_PRESS_ENERGY_CAPACITY_RJ);
     private PressState pressState = PressState.IDLE_INTAKE;
@@ -146,6 +153,7 @@ public class IndustrialPressBlockEntity extends BlockEntity implements RJEnergyI
 
         int previousEnergyUsage = press.currentEnergyUsage;
         press.currentEnergyUsage = 0;
+        press.ejectUntrackedItemsPastLockPoint();
         press.pruneCapturedItem();
         press.tickStateMachine();
         if (previousEnergyUsage != press.currentEnergyUsage) {
@@ -161,11 +169,17 @@ public class IndustrialPressBlockEntity extends BlockEntity implements RJEnergyI
         if (capturedItemId != null && capturedItemId.equals(item.getUUID())) {
             return pressState == PressState.RELEASING && capturedItemReleased;
         }
+        if (isUntrackedPressItemPastLockPoint(item)) {
+            return true;
+        }
         return pressState == PressState.IDLE_INTAKE;
     }
 
     public boolean canInternalConveyorOutput(ConveyorMovingItemEntity item) {
         if (capturedItemId == null || !capturedItemId.equals(item.getUUID())) {
+            if (isUntrackedPressItemPastLockPoint(item)) {
+                return true;
+            }
             return pressState == PressState.IDLE_INTAKE;
         }
         return pressState == PressState.RELEASING
@@ -601,7 +615,86 @@ public class IndustrialPressBlockEntity extends BlockEntity implements RJEnergyI
         double lateralDelta = direction.getAxis() == Direction.Axis.X
                 ? Math.abs(item.getZ() - holdPosition.z)
                 : Math.abs(item.getX() - holdPosition.x);
-        return forwardDelta >= -0.05D && lateralDelta <= 0.22D;
+        return forwardDelta >= CAPTURE_FORWARD_MIN
+                && forwardDelta <= CAPTURE_FORWARD_MAX
+                && lateralDelta <= CAPTURE_LATERAL_TOLERANCE;
+    }
+
+    private void ejectUntrackedItemsPastLockPoint() {
+        if (level == null) {
+            return;
+        }
+
+        for (ConveyorMovingItemEntity item : findPressItemsNearInternalConveyor()) {
+            if (!isUntrackedPressItemPastLockPoint(item)) {
+                continue;
+            }
+            forceItemAlongInternalConveyor(item);
+        }
+    }
+
+    private List<ConveyorMovingItemEntity> findPressItemsNearInternalConveyor() {
+        List<ConveyorMovingItemEntity> items = new ArrayList<>();
+        if (level == null) {
+            return items;
+        }
+
+        BlockPos pressPos = getPressConveyorBlockPos();
+        AABB searchBox = new AABB(pressPos).inflate(EJECTION_SCAN_INFLATE, EJECTION_SCAN_INFLATE, EJECTION_SCAN_INFLATE);
+        for (ConveyorMovingItemEntity item : level.getEntitiesOfClass(ConveyorMovingItemEntity.class, searchBox, entity -> !entity.isRemoved())) {
+            if (isNearPressConveyorPath(item)) {
+                items.add(item);
+            }
+        }
+        return items;
+    }
+
+    private boolean isUntrackedPressItemPastLockPoint(ConveyorMovingItemEntity item) {
+        return (capturedItemId == null || !capturedItemId.equals(item.getUUID()))
+                && isNearPressConveyorPath(item)
+                && getForwardDistanceFromHold(item) > CAPTURE_FORWARD_MAX;
+    }
+
+    private boolean isNearPressConveyorPath(ConveyorMovingItemEntity item) {
+        Vec3 hold = getPressHoldPosition();
+        Direction direction = getInternalConveyorDirection();
+        double forward = getForwardDistanceFromHold(item);
+        double lateral = direction.getAxis() == Direction.Axis.X
+                ? Math.abs(item.getZ() - hold.z)
+                : Math.abs(item.getX() - hold.x);
+        double vertical = Math.abs(item.getY() - hold.y);
+        return forward >= CAPTURE_FORWARD_MIN
+                && forward <= EJECTION_FORWARD_MAX
+                && lateral <= EJECTION_LATERAL_TOLERANCE
+                && vertical <= EJECTION_VERTICAL_TOLERANCE;
+    }
+
+    private void forceItemAlongInternalConveyor(ConveyorMovingItemEntity item) {
+        Direction direction = getInternalConveyorDirection();
+        Vec3 hold = getPressHoldPosition();
+        double forward = Mth.clamp(
+                getForwardDistanceFromHold(item) + ConveyorMovingItemEntity.BELT_ITEM_SPEED,
+                CAPTURE_FORWARD_MAX,
+                EJECTION_FORWARD_MAX
+        );
+
+        double x = direction.getAxis() == Direction.Axis.X
+                ? hold.x + direction.getStepX() * forward
+                : hold.x;
+        double z = direction.getAxis() == Direction.Axis.Z
+                ? hold.z + direction.getStepZ() * forward
+                : hold.z;
+
+        item.setBlocked(false);
+        item.suppressSpacingFor(2);
+        item.setPos(x, hold.y, z);
+    }
+
+    private double getForwardDistanceFromHold(ConveyorMovingItemEntity item) {
+        Direction direction = getInternalConveyorDirection();
+        Vec3 hold = getPressHoldPosition();
+        return (item.getX() - hold.x) * direction.getStepX()
+                + (item.getZ() - hold.z) * direction.getStepZ();
     }
 
     private boolean canPress(ItemStack stack, PressMode mode) {
