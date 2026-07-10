@@ -2,6 +2,7 @@ package com.skyeshade.skyent.content.blockentity;
 
 import com.skyeshade.skyent.content.block.CoalForgeBedType;
 import com.skyeshade.skyent.content.block.CoalForgeBlock;
+import com.skyeshade.skyent.content.item.HotMetalItems;
 import com.skyeshade.skyent.content.item.HotItemUtil;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
@@ -287,7 +288,7 @@ public class CoalForgeBlockEntity extends BlockEntity {
             double targetTemperature = Math.min(MAX_TEMPERATURE_C, HotItemUtil.getForgingTemperature(stack));
             if (Double.isFinite(targetTemperature) && temperature < targetTemperature) {
                 HotItemUtil.setTemperature(stack, Math.min(targetTemperature, temperature + INGOT_HEAT_PER_TICK_C));
-                ingots.setStackInSlot(slot, stack);
+                ingots.setStackInSlot(slot, HotMetalItems.toHotVariantIfForgeReady(stack));
             }
         }
     }

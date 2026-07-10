@@ -8,13 +8,13 @@
   ],
   "key": {
     "S": {
-      "item": "minecraft:iron_ingot"
+      "item": "skyent:steel_ingot"
     },
     "B": {
-      "item": "minecraft:iron_block"
+      "item": "skyent:steel_block"
     },
     "T": {
-      "item": "skyent:tungsten_ingot"
+      "item": "skyent:steel_ingot"
     }
   },
   "result": {

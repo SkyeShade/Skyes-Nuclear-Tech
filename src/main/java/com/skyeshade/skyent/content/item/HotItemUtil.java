@@ -6,6 +6,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.CustomData;
@@ -63,47 +64,48 @@ public final class HotItemUtil {
     }
 
     public static boolean isHot(ItemStack stack) {
-        return getTemperature(stack) > AMBIENT_TEMPERATURE_C;
+        return HotMetalItems.isHotVariant(stack) || getTemperature(stack) > AMBIENT_TEMPERATURE_C;
     }
 
     public static double getForgingTemperature(ItemStack stack) {
-        if (stack.is(ModItems.LEAD_INGOT.get())) {
+        Item item = HotMetalItems.getLookupItem(stack.getItem());
+        if (item == ModItems.LEAD_INGOT.get()) {
             return 25.0D;
         }
-        if (stack.is(ModItems.ALUMINUM_INGOT.get()) || stack.is(ModItems.ALUMINUM_ROD.get())) {
+        if (item == ModItems.ALUMINUM_INGOT.get() || item == ModItems.ALUMINUM_ROD.get()) {
             return 400.0D;
         }
-        if (stack.is(Items.GOLD_INGOT)) {
+        if (item == Items.GOLD_INGOT) {
             return 650.0D;
         }
-        if (stack.is(Items.COPPER_INGOT) || stack.is(ModItems.COPPER_ROD.get())) {
+        if (item == Items.COPPER_INGOT || item == ModItems.COPPER_ROD.get()) {
             return 800.0D;
         }
-        if (stack.is(ModItems.COBALT_BRONZE_INGOT.get())) {
+        if (item == ModItems.COBALT_BRONZE_INGOT.get()) {
             return 1000.0D;
         }
-        if (stack.is(ModItems.CUPRONICKEL_INGOT.get())) {
+        if (item == ModItems.CUPRONICKEL_INGOT.get()) {
             return 950.0D;
         }
-        if (stack.is(ModItems.COBALT_INGOT.get()) || stack.is(ModItems.COBALT_ROD.get())) {
+        if (item == ModItems.COBALT_INGOT.get() || item == ModItems.COBALT_ROD.get()) {
             return 1250.0D;
         }
-        if (stack.is(ModItems.NICKEL_INGOT.get()) || stack.is(ModItems.NICKEL_ROD.get())) {
+        if (item == ModItems.NICKEL_INGOT.get() || item == ModItems.NICKEL_ROD.get()) {
             return 1150.0D;
         }
-        if (stack.is(ModItems.URANIUM_INGOT.get())) {
+        if (item == ModItems.URANIUM_INGOT.get()) {
             return 600.0D;
         }
-        if (stack.is(Items.IRON_INGOT) || stack.is(ModItems.IRON_ROD.get())) {
+        if (item == Items.IRON_INGOT || item == ModItems.IRON_ROD.get()) {
             return 1200.0D;
         }
-        if (stack.is(ModItems.STEEL_INGOT.get()) || stack.is(ModItems.STEEL_ROD.get())) {
+        if (item == ModItems.STEEL_INGOT.get() || item == ModItems.STEEL_ROD.get()) {
             return 1100.0D;
         }
-        if (stack.is(ModItems.TITANIUM_INGOT.get()) || stack.is(ModItems.TITANIUM_ROD.get())) {
+        if (item == ModItems.TITANIUM_INGOT.get() || item == ModItems.TITANIUM_ROD.get()) {
             return 950.0D;
         }
-        if (stack.is(ModItems.TUNGSTEN_INGOT.get()) || stack.is(ModItems.TUNGSTEN_ROD.get())) {
+        if (item == ModItems.TUNGSTEN_INGOT.get() || item == ModItems.TUNGSTEN_ROD.get()) {
             return 1600.0D;
         }
         return Double.POSITIVE_INFINITY;
@@ -114,7 +116,7 @@ public final class HotItemUtil {
     }
 
     public static boolean isForgeReady(ItemStack stack) {
-        return isForgeableIngot(stack) && getTemperature(stack) >= getForgingTemperature(stack);
+        return isForgeableIngot(stack) && (HotMetalItems.isHotVariant(stack) || getTemperature(stack) >= getForgingTemperature(stack));
     }
 
     public static void appendTooltip(ItemStack stack, List<Component> tooltipComponents) {
@@ -122,7 +124,9 @@ public final class HotItemUtil {
             return;
         }
 
-        double temperature = getTemperature(stack);
+        double temperature = HotMetalItems.isHotVariant(stack) && !hasTemperature(stack)
+                ? getForgingTemperature(stack)
+                : getTemperature(stack);
         tooltipComponents.add(Component.translatable("tooltip.skyent.temperature", Math.round(temperature)).withStyle(ChatFormatting.GOLD));
         if (isForgeReady(stack)) {
             tooltipComponents.add(Component.translatable("tooltip.skyent.forgeable").withStyle(ChatFormatting.YELLOW));

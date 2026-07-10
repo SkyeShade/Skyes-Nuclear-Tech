@@ -45,7 +45,7 @@ public class BrickBlastFurnaceScreen extends AbstractContainerScreen<BrickBlastF
     public static final int PROGRESS_ARROW_WIDTH = 22;
     public static final int PROGRESS_ARROW_HEIGHT = 16;
 
-    private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(
+    public static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(
             SkyesNuclearTech.MOD_ID,
             "textures/gui/blast_furnace.png"
     );

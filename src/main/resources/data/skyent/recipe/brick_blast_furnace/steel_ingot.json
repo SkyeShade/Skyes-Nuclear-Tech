@@ -1,0 +1,12 @@
+{
+  "type": "skyent:brick_blast_furnace",
+  "input1": {
+    "item": "minecraft:iron_ingot"
+  },
+  "input2": {
+    "item": "minecraft:coal"
+  },
+  "result": {
+    "id": "skyent:steel_ingot"
+  }
+}

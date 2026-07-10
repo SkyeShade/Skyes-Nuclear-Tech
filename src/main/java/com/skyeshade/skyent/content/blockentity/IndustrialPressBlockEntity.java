@@ -12,6 +12,7 @@ import com.skyeshade.skyent.content.entity.ConveyorMovingItemEntity;
 import com.skyeshade.skyent.content.energy.ElectricalTier;
 import com.skyeshade.skyent.content.energy.RJEnergyInfo;
 import com.skyeshade.skyent.content.energy.RJStorage;
+import com.skyeshade.skyent.content.item.HotMetalItems;
 import com.skyeshade.skyent.content.item.HotItemUtil;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import com.skyeshade.skyent.registry.ModBlocks;
@@ -628,43 +629,46 @@ public class IndustrialPressBlockEntity extends BlockEntity implements RJEnergyI
 
     @Nullable
     private static Item plateForIngot(ItemStack stack) {
-        if (stack.is(Items.COPPER_INGOT)) return ModItems.COPPER_PLATE.get();
-        if (stack.is(Items.IRON_INGOT)) return ModItems.IRON_PLATE.get();
-        if (stack.is(Items.GOLD_INGOT)) return ModItems.GOLD_PLATE.get();
-        if (stack.is(ModItems.STEEL_INGOT.get())) return ModItems.STEEL_PLATE.get();
-        if (stack.is(ModItems.ALUMINUM_INGOT.get())) return ModItems.ALUMINUM_PLATE.get();
-        if (stack.is(ModItems.TITANIUM_INGOT.get())) return ModItems.TITANIUM_PLATE.get();
-        if (stack.is(ModItems.TUNGSTEN_INGOT.get())) return ModItems.TUNGSTEN_PLATE.get();
-        if (stack.is(ModItems.COBALT_INGOT.get())) return ModItems.COBALT_PLATE.get();
-        if (stack.is(ModItems.NICKEL_INGOT.get())) return ModItems.NICKEL_PLATE.get();
-        if (stack.is(ModItems.LEAD_INGOT.get())) return ModItems.LEAD_PLATE.get();
-        if (stack.is(ModItems.COBALT_BRONZE_INGOT.get())) return ModItems.COBALT_BRONZE_PLATE.get();
+        Item item = HotMetalItems.getLookupItem(stack.getItem());
+        if (item == Items.COPPER_INGOT) return ModItems.COPPER_PLATE.get();
+        if (item == Items.IRON_INGOT) return ModItems.IRON_PLATE.get();
+        if (item == Items.GOLD_INGOT) return ModItems.GOLD_PLATE.get();
+        if (item == ModItems.STEEL_INGOT.get()) return ModItems.STEEL_PLATE.get();
+        if (item == ModItems.ALUMINUM_INGOT.get()) return ModItems.ALUMINUM_PLATE.get();
+        if (item == ModItems.TITANIUM_INGOT.get()) return ModItems.TITANIUM_PLATE.get();
+        if (item == ModItems.TUNGSTEN_INGOT.get()) return ModItems.TUNGSTEN_PLATE.get();
+        if (item == ModItems.COBALT_INGOT.get()) return ModItems.COBALT_PLATE.get();
+        if (item == ModItems.NICKEL_INGOT.get()) return ModItems.NICKEL_PLATE.get();
+        if (item == ModItems.LEAD_INGOT.get()) return ModItems.LEAD_PLATE.get();
+        if (item == ModItems.COBALT_BRONZE_INGOT.get()) return ModItems.COBALT_BRONZE_PLATE.get();
         return null;
     }
 
     @Nullable
     private static Item rodForIngot(ItemStack stack) {
-        if (stack.is(Items.COPPER_INGOT)) return ModItems.COPPER_ROD.get();
-        if (stack.is(Items.IRON_INGOT)) return ModItems.IRON_ROD.get();
-        if (stack.is(ModItems.STEEL_INGOT.get())) return ModItems.STEEL_ROD.get();
-        if (stack.is(ModItems.ALUMINUM_INGOT.get())) return ModItems.ALUMINUM_ROD.get();
-        if (stack.is(ModItems.TITANIUM_INGOT.get())) return ModItems.TITANIUM_ROD.get();
-        if (stack.is(ModItems.COBALT_INGOT.get())) return ModItems.COBALT_ROD.get();
-        if (stack.is(ModItems.TUNGSTEN_INGOT.get())) return ModItems.TUNGSTEN_ROD.get();
-        if (stack.is(ModItems.NICKEL_INGOT.get())) return ModItems.NICKEL_ROD.get();
+        Item item = HotMetalItems.getLookupItem(stack.getItem());
+        if (item == Items.COPPER_INGOT) return ModItems.COPPER_ROD.get();
+        if (item == Items.IRON_INGOT) return ModItems.IRON_ROD.get();
+        if (item == ModItems.STEEL_INGOT.get()) return ModItems.STEEL_ROD.get();
+        if (item == ModItems.ALUMINUM_INGOT.get()) return ModItems.ALUMINUM_ROD.get();
+        if (item == ModItems.TITANIUM_INGOT.get()) return ModItems.TITANIUM_ROD.get();
+        if (item == ModItems.COBALT_INGOT.get()) return ModItems.COBALT_ROD.get();
+        if (item == ModItems.TUNGSTEN_INGOT.get()) return ModItems.TUNGSTEN_ROD.get();
+        if (item == ModItems.NICKEL_INGOT.get()) return ModItems.NICKEL_ROD.get();
         return null;
     }
 
     @Nullable
     private static Item boltForRod(ItemStack stack) {
-        if (stack.is(ModItems.COPPER_ROD.get())) return ModItems.COPPER_BOLT.get();
-        if (stack.is(ModItems.IRON_ROD.get())) return ModItems.IRON_BOLT.get();
-        if (stack.is(ModItems.STEEL_ROD.get())) return ModItems.STEEL_BOLT.get();
-        if (stack.is(ModItems.ALUMINUM_ROD.get())) return ModItems.ALUMINUM_BOLT.get();
-        if (stack.is(ModItems.TITANIUM_ROD.get())) return ModItems.TITANIUM_BOLT.get();
-        if (stack.is(ModItems.COBALT_ROD.get())) return ModItems.COBALT_BOLT.get();
-        if (stack.is(ModItems.TUNGSTEN_ROD.get())) return ModItems.TUNGSTEN_BOLT.get();
-        if (stack.is(ModItems.NICKEL_ROD.get())) return ModItems.NICKEL_BOLT.get();
+        Item item = HotMetalItems.getLookupItem(stack.getItem());
+        if (item == ModItems.COPPER_ROD.get()) return ModItems.COPPER_BOLT.get();
+        if (item == ModItems.IRON_ROD.get()) return ModItems.IRON_BOLT.get();
+        if (item == ModItems.STEEL_ROD.get()) return ModItems.STEEL_BOLT.get();
+        if (item == ModItems.ALUMINUM_ROD.get()) return ModItems.ALUMINUM_BOLT.get();
+        if (item == ModItems.TITANIUM_ROD.get()) return ModItems.TITANIUM_BOLT.get();
+        if (item == ModItems.COBALT_ROD.get()) return ModItems.COBALT_BOLT.get();
+        if (item == ModItems.TUNGSTEN_ROD.get()) return ModItems.TUNGSTEN_BOLT.get();
+        if (item == ModItems.NICKEL_ROD.get()) return ModItems.NICKEL_BOLT.get();
         return null;
     }
 

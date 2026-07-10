@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.block.Blocks;
 
@@ -93,6 +94,17 @@ public final class LVCrusherRecipes {
         return getRecipe(input).isPresent();
     }
 
+    public static List<CrusherRecipeDisplay> getAllRecipes() {
+        return RECIPES.stream()
+                .map(entry -> new CrusherRecipeDisplay(
+                        Ingredient.of(entry.input()),
+                        entry.output() == null ? ItemStack.EMPTY : new ItemStack(entry.output(), entry.count()),
+                        entry.secondaryOutput() == null ? ItemStack.EMPTY : new ItemStack(entry.secondaryOutput(), entry.secondaryCount()),
+                        entry.secondaryChance()
+                ))
+                .toList();
+    }
+
     private static Entry raw(ItemLike input, ItemLike output) {
         return new Entry(input, output, 2, null, 0, 0.0D);
     }
@@ -126,6 +138,16 @@ public final class LVCrusherRecipes {
     }
 
     public record CrusherRecipe(ItemStack primaryOutput, ItemStack secondaryOutput, double secondaryChance) {
+        public boolean hasPrimaryOutput() {
+            return !primaryOutput.isEmpty();
+        }
+
+        public boolean hasSecondaryOutput() {
+            return !secondaryOutput.isEmpty() && secondaryChance > 0.0D;
+        }
+    }
+
+    public record CrusherRecipeDisplay(Ingredient input, ItemStack primaryOutput, ItemStack secondaryOutput, double secondaryChance) {
         public boolean hasPrimaryOutput() {
             return !primaryOutput.isEmpty();
         }

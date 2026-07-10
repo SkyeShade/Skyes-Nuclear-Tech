@@ -140,7 +140,7 @@ dependencies {
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
     compileOnly "curse.maven:jei-238222:6614392"
-    runtimeOnly "curse.maven:jei-238222:6614392"
+    localRuntime "curse.maven:jei-238222:6614392"
     runtimeOnly "curse.maven:selene-499980:7007381"
     runtimeOnly "curse.maven:mmmmmmmmmmmm-225738:6826533"
     runtimeOnly "curse.maven:overloaded-armor-bar-314002:5537850"

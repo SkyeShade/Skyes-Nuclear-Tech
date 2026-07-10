@@ -14,6 +14,7 @@ import com.skyeshade.skyent.content.entity.ConveyorMovingItemEntity;
 import com.skyeshade.skyent.content.energy.ElectricalTier;
 import com.skyeshade.skyent.content.energy.RJEnergyInfo;
 import com.skyeshade.skyent.content.energy.RJStorage;
+import com.skyeshade.skyent.content.item.HotMetalItems;
 import com.skyeshade.skyent.content.item.HotItemUtil;
 import com.skyeshade.skyent.content.particle.StreakParticleOptions;
 import com.skyeshade.skyent.registry.ModBlockEntities;
@@ -770,7 +771,7 @@ public class HeatingChamberBlockEntity extends BlockEntity implements RJEnergyIn
 
         ItemStack heated = stack.copy();
         HotItemUtil.setTemperature(heated, HotItemUtil.getForgingTemperature(heated));
-        return heated;
+        return HotMetalItems.toHotVariantIfForgeReady(heated);
     }
 
     private List<ConveyorMovingItemEntity> getCapturedItemsInside() {

@@ -32,7 +32,7 @@ public class LVCrusherScreen extends AbstractContainerScreen<LVCrusherMenu> {
     public static final int PROGRESS_WIDTH = 22;
     public static final int PROGRESS_HEIGHT = 51;
 
-    private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(
+    public static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(
             SkyesNuclearTech.MOD_ID,
             "textures/gui/crusher.png"
     );
