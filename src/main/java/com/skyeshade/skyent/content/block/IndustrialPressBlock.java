@@ -2,9 +2,11 @@ package com.skyeshade.skyent.content.block;
 
 import com.mojang.serialization.MapCodec;
 import com.skyeshade.skyent.content.blockentity.IndustrialPressBlockEntity;
+import com.skyeshade.skyent.content.shape.MultiblockShapeRegistry;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import com.skyeshade.skyent.registry.ModBlocks;
 import com.skyeshade.skyent.registry.ModItems;
+import com.skyeshade.skyent.registry.ModMultiblockShapes;
 import com.skyeshade.skyent.content.item.WrenchUtil;
 import java.util.Optional;
 import javax.annotation.Nullable;
@@ -132,12 +134,12 @@ public class IndustrialPressBlock extends BaseEntityBlock {
 
     @Override
     protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return MASTER_SHAPE;
+        return shapeForLocal(0, 0, state.getValue(FACING));
     }
 
     @Override
     protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return MASTER_SHAPE;
+        return shapeForLocal(0, 0, state.getValue(FACING));
     }
 
     @Override
@@ -266,6 +268,17 @@ public class IndustrialPressBlock extends BaseEntityBlock {
 
     public static BlockPos localToWorld(BlockPos origin, Direction facing, int x, int y, int z) {
         return origin.offset(rotateLocalOffset(new BlockPos(x, y, z), facing));
+    }
+
+    public static VoxelShape shapeForLocal(int x, int y, Direction facing) {
+        return MultiblockShapeRegistry.getShape(
+                ModMultiblockShapes.INDUSTRIAL_PRESS,
+                facing,
+                x,
+                y,
+                0,
+                (fallbackFacing, fallbackX, fallbackY, fallbackZ) -> MASTER_SHAPE
+        );
     }
 
     public static void requestSharedLightUpdate(Level level, BlockPos masterPos) {

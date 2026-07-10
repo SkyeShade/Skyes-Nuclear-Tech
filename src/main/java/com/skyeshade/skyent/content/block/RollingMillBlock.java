@@ -2,9 +2,11 @@ package com.skyeshade.skyent.content.block;
 
 import com.mojang.serialization.MapCodec;
 import com.skyeshade.skyent.content.blockentity.RollingMillBlockEntity;
+import com.skyeshade.skyent.content.shape.MultiblockShapeRegistry;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import com.skyeshade.skyent.registry.ModBlocks;
 import com.skyeshade.skyent.registry.ModItems;
+import com.skyeshade.skyent.registry.ModMultiblockShapes;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
@@ -43,7 +45,6 @@ public class RollingMillBlock extends BaseEntityBlock {
     public static final int SIZE_Y = 3;
     public static final int SIZE_Z = 2;
     private static final ThreadLocal<Boolean> REMOVING = ThreadLocal.withInitial(() -> false);
-    private static final VoxelShape MASTER_SHAPE = Shapes.block();
 
     public RollingMillBlock(BlockBehaviour.Properties properties) {
         super(properties);
@@ -129,12 +130,12 @@ public class RollingMillBlock extends BaseEntityBlock {
 
     @Override
     protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return MASTER_SHAPE;
+        return shapeForLocal(0, 0, 0, state.getValue(FACING));
     }
 
     @Override
     protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return MASTER_SHAPE;
+        return shapeForLocal(0, 0, 0, state.getValue(FACING));
     }
 
     @Override
@@ -238,6 +239,17 @@ public class RollingMillBlock extends BaseEntityBlock {
 
     public static BlockPos localToWorld(BlockPos origin, Direction facing, int x, int y, int z) {
         return origin.offset(rotateLocalOffset(new BlockPos(x, y, z), facing));
+    }
+
+    public static VoxelShape shapeForLocal(int x, int y, int z, Direction facing) {
+        return MultiblockShapeRegistry.getShape(
+                ModMultiblockShapes.ROLLING_MILL,
+                facing,
+                x,
+                y,
+                z,
+                (fallbackFacing, fallbackX, fallbackY, fallbackZ) -> RollingMillShapes.shapeForLocal(fallbackX, fallbackY, fallbackZ, fallbackFacing)
+        );
     }
 
     public static BlockPos rotateLocalOffset(BlockPos local, Direction facing) {

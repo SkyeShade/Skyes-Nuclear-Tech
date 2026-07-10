@@ -33,7 +33,6 @@ public class RollingMillPartBlock extends Block {
     public static final IntegerProperty PART_Z = IntegerProperty.create("part_z", 0, RollingMillBlock.SIZE_Z - 1);
     public static final BooleanProperty LIGHT_BLOCKING = BooleanProperty.create("light_blocking");
     public static final MapCodec<RollingMillPartBlock> CODEC = simpleCodec(RollingMillPartBlock::new);
-    private static final VoxelShape PART_SHAPE = Shapes.block();
 
     public RollingMillPartBlock(BlockBehaviour.Properties properties) {
         super(properties);
@@ -79,32 +78,32 @@ public class RollingMillPartBlock extends Block {
 
     @Override
     protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return PART_SHAPE;
+        return RollingMillBlock.shapeForLocal(state.getValue(PART_X), state.getValue(PART_Y), state.getValue(PART_Z), state.getValue(FACING));
     }
 
     @Override
     protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return PART_SHAPE;
+        return RollingMillBlock.shapeForLocal(state.getValue(PART_X), state.getValue(PART_Y), state.getValue(PART_Z), state.getValue(FACING));
     }
 
     @Override
     protected VoxelShape getOcclusionShape(BlockState state, BlockGetter level, BlockPos pos) {
-        return shouldBlockLight(state) ? PART_SHAPE : Shapes.empty();
+        return Shapes.empty();
     }
 
     @Override
     protected boolean useShapeForLightOcclusion(BlockState state) {
-        return true;
+        return false;
     }
 
     @Override
     protected boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) {
-        return !shouldBlockLight(state);
+        return true;
     }
 
     @Override
     protected int getLightBlock(BlockState state, BlockGetter level, BlockPos pos) {
-        return shouldBlockLight(state) ? 15 : 0;
+        return 0;
     }
 
     public static boolean shouldBlockLight(BlockState state) {

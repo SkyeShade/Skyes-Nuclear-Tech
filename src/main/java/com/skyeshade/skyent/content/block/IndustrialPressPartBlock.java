@@ -43,7 +43,6 @@ public class IndustrialPressPartBlock extends Block implements ConveyorBeltSurfa
     public static final IntegerProperty PART_X = IntegerProperty.create("part_x", 0, 1);
     public static final IntegerProperty PART_Y = IntegerProperty.create("part_y", 0, 2);
     public static final MapCodec<IndustrialPressPartBlock> CODEC = simpleCodec(IndustrialPressPartBlock::new);
-    private static final VoxelShape PART_SHAPE = Shapes.block();
 
     public IndustrialPressPartBlock(BlockBehaviour.Properties properties) {
         super(properties);
@@ -101,12 +100,12 @@ public class IndustrialPressPartBlock extends Block implements ConveyorBeltSurfa
 
     @Override
     protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return PART_SHAPE;
+        return IndustrialPressBlock.shapeForLocal(state.getValue(PART_X), state.getValue(PART_Y), state.getValue(FACING));
     }
 
     @Override
     protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return PART_SHAPE;
+        return IndustrialPressBlock.shapeForLocal(state.getValue(PART_X), state.getValue(PART_Y), state.getValue(FACING));
     }
 
     @Override

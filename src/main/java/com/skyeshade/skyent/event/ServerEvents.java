@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.event;
 
 import com.skyeshade.skyent.content.radiation.ModDamageSources;
+import com.skyeshade.skyent.content.shape.MultiblockShapeRegistry;
 import com.skyeshade.skyent.event.systems.BootstrapSystem;
 import com.skyeshade.skyent.event.systems.CraftingSoundSystem;
 import com.skyeshade.skyent.event.systems.HotItemSystem;
@@ -14,6 +15,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.level.ChunkEvent;
@@ -27,6 +29,7 @@ public final class ServerEvents {
     }
 
     public static void register() {
+        NeoForge.EVENT_BUS.addListener(ServerEvents::onAddReloadListeners);
         NeoForge.EVENT_BUS.addListener(ServerEvents::onServerStarting);
         NeoForge.EVENT_BUS.addListener(ServerEvents::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(ServerEvents::onPlayerLoggedOut);
@@ -40,6 +43,14 @@ public final class ServerEvents {
 
     public static void onServerStarting(ServerStartingEvent event) {
         BootstrapSystem.onServerStarting(event);
+    }
+
+    public static void onAddReloadListeners(AddReloadListenerEvent event) {
+        event.addListener((barrier, resourceManager, preparationsProfiler, reloadProfiler, backgroundExecutor, gameExecutor) ->
+                java.util.concurrent.CompletableFuture.supplyAsync(() -> resourceManager, backgroundExecutor)
+                        .thenCompose(barrier::wait)
+                        .thenAcceptAsync(MultiblockShapeRegistry::reload, gameExecutor)
+        );
     }
 
     public static void onRegisterCommands(RegisterCommandsEvent event) {

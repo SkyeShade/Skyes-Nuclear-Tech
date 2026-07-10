@@ -16,6 +16,7 @@ import com.skyeshade.skyent.network.RadiationRaysDebugPayload;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import com.skyeshade.skyent.registry.ModBlocks;
 import com.skyeshade.skyent.registry.ModItems;
+import com.skyeshade.skyent.registry.ModMultiblockShapes;
 import net.minecraft.core.Direction;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
@@ -34,6 +35,7 @@ public final class CommonEvents {
     }
 
     public static void onCommonSetup(FMLCommonSetupEvent event) {
+        ModMultiblockShapes.registerDefaults();
         BootstrapSystem.onCommonSetup(event);
     }
 

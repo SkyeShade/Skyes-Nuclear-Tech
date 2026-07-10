@@ -24,6 +24,7 @@ import com.skyeshade.skyent.client.renderer.LVElectricPumpRenderer;
 import com.skyeshade.skyent.client.render.RadiationFeedbackClient;
 import com.skyeshade.skyent.client.sound.ConveyorSoundHandler;
 import com.skyeshade.skyent.client.sound.MachineSoundManager;
+import com.skyeshade.skyent.content.shape.MultiblockShapeRegistry;
 import com.skyeshade.skyent.content.item.HotItemUtil;
 import com.skyeshade.skyent.client.screen.BrickBlastFurnaceScreen;
 import com.skyeshade.skyent.client.screen.CombustionGeneratorScreen;
@@ -49,6 +50,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.ModelEvent;
 import net.neoforged.neoforge.client.event.RegisterItemDecorationsEvent;
+import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
@@ -68,6 +70,7 @@ public final class ClientEvents {
         modEventBus.addListener(ClientEvents::onRegisterGeometryLoaders);
         modEventBus.addListener(ClientEvents::onRegisterItemDecorations);
         modEventBus.addListener(ClientEvents::onRegisterParticleProviders);
+        modEventBus.addListener(ClientEvents::onRegisterClientReloadListeners);
         NeoForge.EVENT_BUS.addListener(ClientEvents::onClientTick);
         NeoForge.EVENT_BUS.addListener(ClientEvents::onRenderGui);
         NeoForge.EVENT_BUS.addListener(ClientEvents::onRenderLevel);
@@ -111,6 +114,14 @@ public final class ClientEvents {
     public static void onRegisterGeometryLoaders(ModelEvent.RegisterGeometryLoaders event) {
         event.register(ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "scaled_block_model"), ScaledBlockModel.Loader.INSTANCE);
         event.register(ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "sliced_scaled_block_model"), SlicedScaledBlockModel.Loader.INSTANCE);
+    }
+
+    public static void onRegisterClientReloadListeners(RegisterClientReloadListenersEvent event) {
+        event.registerReloadListener((barrier, resourceManager, preparationsProfiler, reloadProfiler, backgroundExecutor, gameExecutor) ->
+                java.util.concurrent.CompletableFuture.supplyAsync(() -> resourceManager, backgroundExecutor)
+                        .thenCompose(barrier::wait)
+                        .thenAcceptAsync(MultiblockShapeRegistry::reload, gameExecutor)
+        );
     }
 
     public static void onRegisterItemDecorations(RegisterItemDecorationsEvent event) {
