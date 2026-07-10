@@ -429,6 +429,10 @@ public class IndustrialPressBlockEntity extends BlockEntity implements RJEnergyI
 
         if (capturedItemReleased) {
             item.setBlocked(false);
+            if (!isItemInCaptureLockZone(item)) {
+                clearCapturedItem();
+                transitionTo(PressState.IDLE_INTAKE);
+            }
             return;
         }
 
@@ -439,6 +443,11 @@ public class IndustrialPressBlockEntity extends BlockEntity implements RJEnergyI
 
         capturedItemReleased = true;
         item.setBlocked(false);
+        if (!isItemInCaptureLockZone(item)) {
+            clearCapturedItem();
+            transitionTo(PressState.IDLE_INTAKE);
+            return;
+        }
         setChangedAndSync();
     }
 
@@ -620,6 +629,10 @@ public class IndustrialPressBlockEntity extends BlockEntity implements RJEnergyI
                 && lateralDelta <= CAPTURE_LATERAL_TOLERANCE;
     }
 
+    private boolean isItemInCaptureLockZone(ConveyorMovingItemEntity item) {
+        return isCapturePointReached(item, getPressHoldPosition(), getInternalConveyorDirection());
+    }
+
     private void ejectUntrackedItemsPastLockPoint() {
         if (level == null) {
             return;
@@ -629,7 +642,7 @@ public class IndustrialPressBlockEntity extends BlockEntity implements RJEnergyI
             if (!isUntrackedPressItemPastLockPoint(item)) {
                 continue;
             }
-            forceItemAlongInternalConveyor(item);
+            recoverUntrackedItemPastLockPoint(item);
         }
     }
 
@@ -669,14 +682,32 @@ public class IndustrialPressBlockEntity extends BlockEntity implements RJEnergyI
                 && vertical <= EJECTION_VERTICAL_TOLERANCE;
     }
 
-    private void forceItemAlongInternalConveyor(ConveyorMovingItemEntity item) {
+    private void recoverUntrackedItemPastLockPoint(ConveyorMovingItemEntity item) {
+        if (!item.isBlocked() && isItemOnInternalConveyorPath(item)) {
+            return;
+        }
+
+        item.setBlocked(false);
+        if (!isItemOnInternalConveyorPath(item) && !hasItemAheadTooClose(item)) {
+            snapItemToInternalConveyorPath(item);
+        }
+    }
+
+    private boolean isItemOnInternalConveyorPath(ConveyorMovingItemEntity item) {
+        Vec3 hold = getPressHoldPosition();
+        Direction direction = getInternalConveyorDirection();
+        double lateral = direction.getAxis() == Direction.Axis.X
+                ? Math.abs(item.getZ() - hold.z)
+                : Math.abs(item.getX() - hold.x);
+        double vertical = Math.abs(item.getY() - hold.y);
+        return lateral <= CAPTURE_LATERAL_TOLERANCE
+                && vertical <= 0.05D;
+    }
+
+    private void snapItemToInternalConveyorPath(ConveyorMovingItemEntity item) {
         Direction direction = getInternalConveyorDirection();
         Vec3 hold = getPressHoldPosition();
-        double forward = Mth.clamp(
-                getForwardDistanceFromHold(item) + ConveyorMovingItemEntity.BELT_ITEM_SPEED,
-                CAPTURE_FORWARD_MAX,
-                EJECTION_FORWARD_MAX
-        );
+        double forward = Mth.clamp(getForwardDistanceFromHold(item), CAPTURE_FORWARD_MAX, EJECTION_FORWARD_MAX);
 
         double x = direction.getAxis() == Direction.Axis.X
                 ? hold.x + direction.getStepX() * forward
@@ -685,9 +716,36 @@ public class IndustrialPressBlockEntity extends BlockEntity implements RJEnergyI
                 ? hold.z + direction.getStepZ() * forward
                 : hold.z;
 
-        item.setBlocked(false);
-        item.suppressSpacingFor(2);
         item.setPos(x, hold.y, z);
+    }
+
+    private boolean hasItemAheadTooClose(ConveyorMovingItemEntity item) {
+        if (level == null) {
+            return false;
+        }
+
+        Direction direction = getInternalConveyorDirection();
+        double itemForward = getForwardDistanceFromHold(item);
+        AABB searchBox = item.getBoundingBox().inflate(ConveyorMovingItemEntity.ITEM_SPACING_SEARCH_RADIUS);
+        for (ConveyorMovingItemEntity other : level.getEntitiesOfClass(ConveyorMovingItemEntity.class, searchBox, entity -> entity != item && !entity.isRemoved())) {
+            if (!isNearPressConveyorPath(other)) {
+                continue;
+            }
+
+            double forwardDistance = getForwardDistanceFromHold(other) - itemForward;
+            if (forwardDistance <= 0.0D || forwardDistance >= ConveyorMovingItemEntity.ITEM_SPACING_DISTANCE) {
+                continue;
+            }
+
+            Vec3 hold = getPressHoldPosition();
+            double lateral = direction.getAxis() == Direction.Axis.X
+                    ? Math.abs(other.getZ() - hold.z)
+                    : Math.abs(other.getX() - hold.x);
+            if (lateral <= ConveyorMovingItemEntity.ITEM_SPACING_SEARCH_RADIUS) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private double getForwardDistanceFromHold(ConveyorMovingItemEntity item) {
