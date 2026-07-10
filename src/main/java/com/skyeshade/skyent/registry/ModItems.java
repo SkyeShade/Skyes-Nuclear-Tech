@@ -84,13 +84,9 @@ public final class ModItems {
             new Item.Properties()
     );
 
-    public static final DeferredItem<TooltipBlockItem> INDUSTRIAL_PRESS = ITEMS.register(
-            "industrial_press",
-            () -> new TooltipBlockItem(
-                    ModBlocks.INDUSTRIAL_PRESS.get(),
-                    new Item.Properties(),
-                    "tooltip.skyent.industrial_press.dies"
-            )
+    public static final DeferredItem<BlockItem> INDUSTRIAL_PRESS = ITEMS.registerSimpleBlockItem(
+            ModBlocks.INDUSTRIAL_PRESS,
+            new Item.Properties()
     );
 
     public static final DeferredItem<BlockItem> LV_ELECTRIC_PUMP = ITEMS.registerSimpleBlockItem(

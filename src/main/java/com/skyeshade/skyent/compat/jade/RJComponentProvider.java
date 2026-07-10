@@ -4,8 +4,10 @@ import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.block.HeatingChamberBlock;
 import com.skyeshade.skyent.content.block.IndustrialPressBlock;
 import com.skyeshade.skyent.content.block.LVMVTransformerBlock;
+import com.skyeshade.skyent.content.block.RollingMillBlock;
 import com.skyeshade.skyent.content.blockentity.IndustrialPressBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVMVTransformerBlockEntity;
+import com.skyeshade.skyent.content.blockentity.RollingMillBlockEntity;
 import com.skyeshade.skyent.content.energy.ElectricalTier;
 import com.skyeshade.skyent.content.energy.EnergyUnits;
 import com.skyeshade.skyent.content.energy.RJEnergyInfo;
@@ -56,7 +58,6 @@ public enum RJComponentProvider implements IBlockComponentProvider, IServerDataP
     private static final String DATA_TRANSFORMER_LV_RATED_AMPS = "SkyentTransformerLVRatedAmps";
     private static final String DATA_TRANSFORMER_MV_RATED_AMPS = "SkyentTransformerMVRatedAmps";
     private static final String DATA_MACHINE_STATUS = "SkyentMachineStatus";
-    private static final String DATA_INDUSTRIAL_PRESS_MODE = "SkyentIndustrialPressMode";
     private static final NumberFormat NUMBER_FORMAT = NumberFormat.getIntegerInstance(Locale.US);
     private static final int ENERGY_BAR_WIDTH = 120;
     private static final int ENERGY_BAR_HEIGHT = 14;
@@ -113,7 +114,8 @@ public enum RJComponentProvider implements IBlockComponentProvider, IServerDataP
             data.putDouble(DATA_TRANSFORMER_MV_RATED_AMPS, LVMVTransformerBlockEntity.mvRatedCurrentAmps());
         } else if (blockEntity instanceof IndustrialPressBlockEntity press) {
             data.putString(DATA_MACHINE_STATUS, press.getStatusText());
-            data.putString(DATA_INDUSTRIAL_PRESS_MODE, press.getModeDisplayName());
+        } else if (blockEntity instanceof RollingMillBlockEntity rollingMill) {
+            data.putString(DATA_MACHINE_STATUS, rollingMill.getStatusText());
         }
     }
 
@@ -136,6 +138,13 @@ public enum RJComponentProvider implements IBlockComponentProvider, IServerDataP
                 .orElse(null);
         if (industrialPress instanceof RJEnergyInfo) {
             return industrialPress;
+        }
+
+        BlockEntity rollingMill = RollingMillBlock.getMasterBlockEntity(accessor.getLevel(), state, accessor.getPosition())
+                .map(BlockEntity.class::cast)
+                .orElse(null);
+        if (rollingMill instanceof RJEnergyInfo) {
+            return rollingMill;
         }
 
         BlockPos masterPos = LVMVTransformerBlock.getMasterPos(state, accessor.getPosition());
@@ -200,11 +209,6 @@ public enum RJComponentProvider implements IBlockComponentProvider, IServerDataP
         String status = data.getString(DATA_MACHINE_STATUS);
         if (!status.isBlank()) {
             tooltip.add(Component.literal("Status: " + status));
-        }
-
-        String industrialPressMode = data.getString(DATA_INDUSTRIAL_PRESS_MODE);
-        if (!industrialPressMode.isBlank()) {
-            tooltip.add(Component.literal("Mode: " + industrialPressMode));
         }
     }
 

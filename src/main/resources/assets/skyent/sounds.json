@@ -57,6 +57,12 @@
     ],
     "subtitle": "subtitle.skyent.transformer_loop"
   },
+  "heavy_electric_motor_loop": {
+    "sounds": [
+      "skyent:heavy_electric_motor"
+    ],
+    "subtitle": "subtitle.skyent.heavy_electric_motor_loop"
+  },
   "mechanical_lever": {
     "sounds": [
       "skyent:mechanical_lever"

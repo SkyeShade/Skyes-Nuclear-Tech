@@ -1,10 +1,19 @@
 package com.skyeshade.skyent.content.block;
 
 import com.mojang.serialization.MapCodec;
+import com.skyeshade.skyent.content.blockentity.RollingMillBlockEntity;
+import com.skyeshade.skyent.content.conveyor.ConveyorBeltSurface;
+import com.skyeshade.skyent.content.conveyor.ConveyorGateSurface;
+import com.skyeshade.skyent.content.conveyor.ConveyorLogicConstants;
+import com.skyeshade.skyent.content.conveyor.ConveyorTravelDirectionProvider;
+import com.skyeshade.skyent.content.conveyor.ConveyorVisualFeeder;
+import com.skyeshade.skyent.content.entity.ConveyorMovingItemEntity;
 import com.skyeshade.skyent.registry.ModBlocks;
 import com.skyeshade.skyent.registry.ModItems;
+import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -22,11 +31,13 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-public class RollingMillPartBlock extends Block {
+public class RollingMillPartBlock extends Block implements ConveyorBeltSurface, ConveyorTravelDirectionProvider, ConveyorVisualFeeder, ConveyorGateSurface {
+    private static final double ROLLING_ITEM_SPEED = 0.015D;
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     public static final IntegerProperty PART_X = IntegerProperty.create("part_x", 0, RollingMillBlock.SIZE_X - 1);
     public static final IntegerProperty PART_Y = IntegerProperty.create("part_y", 0, RollingMillBlock.SIZE_Y - 1);
@@ -72,8 +83,7 @@ public class RollingMillPartBlock extends Block {
 
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
-        BlockPos masterPos = RollingMillBlock.getMasterPos(state, pos);
-        return level.getBlockState(masterPos).is(ModBlocks.ROLLING_MILL.get()) ? InteractionResult.SUCCESS : InteractionResult.PASS;
+        return InteractionResult.PASS;
     }
 
     @Override
@@ -128,5 +138,124 @@ public class RollingMillPartBlock extends Block {
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(FACING, PART_X, PART_Y, PART_Z, LIGHT_BLOCKING);
+    }
+
+    @Override
+    public boolean canItemStay(Level level, BlockPos pos, Vec3 itemPos) {
+        BlockState state = level.getBlockState(pos);
+        return isInternalConveyorPart(state) && level.getBlockState(RollingMillBlock.getMasterPos(state, pos)).is(ModBlocks.ROLLING_MILL.get());
+    }
+
+    @Override
+    public Vec3 getTravelLocation(Level level, BlockPos pos, Vec3 itemPos, double speed) {
+        Direction direction = skyent$getConveyorTravelDirection(level, pos, level.getBlockState(pos));
+        if (direction == null) {
+            return itemPos;
+        }
+
+        Vec3 snap = getClosestSnappingPosition(level, pos, itemPos);
+        Vec3 destination = snap.add(direction.getStepX() * 0.5D, 0.0D, direction.getStepZ() * 0.5D);
+        Vec3 motion = destination.subtract(itemPos);
+        if (motion.lengthSqr() <= 1.0E-6D) {
+            return itemPos;
+        }
+        double travelSpeed = Math.min(speed, ROLLING_ITEM_SPEED);
+        return itemPos.add(motion.normalize().scale(Math.min(travelSpeed, motion.length())));
+    }
+
+    @Override
+    public Vec3 getClosestSnappingPosition(Level level, BlockPos pos, Vec3 itemPos) {
+        Direction direction = skyent$getConveyorTravelDirection(level, pos, level.getBlockState(pos));
+        if (direction == null) {
+            return itemPos;
+        }
+
+        double x = pos.getX() + 0.5D;
+        double y = pos.getY() + ConveyorLogicConstants.ITEM_PATH_Y_OFFSET;
+        double z = pos.getZ() + 0.5D;
+
+        if (direction.getAxis() == Direction.Axis.X) {
+            x = Mth.clamp(itemPos.x, pos.getX(), pos.getX() + 1.0D);
+            z = Mth.lerp(BasicConveyorBeltBlock.ITEM_CENTER_PULL, itemPos.z, z);
+        } else {
+            x = Mth.lerp(BasicConveyorBeltBlock.ITEM_CENTER_PULL, itemPos.x, x);
+            z = Mth.clamp(itemPos.z, pos.getZ(), pos.getZ() + 1.0D);
+        }
+
+        return new Vec3(x, y, z);
+    }
+
+    @Nullable
+    @Override
+    public Direction skyent$getConveyorTravelDirection(Level level, BlockPos pos, BlockState state) {
+        if (!isInternalConveyorPart(state)) {
+            return null;
+        }
+        Direction facing = state.hasProperty(FACING) ? state.getValue(FACING) : Direction.NORTH;
+        return RollingMillBlock.getInternalConveyorDirection(facing);
+    }
+
+    @Override
+    public boolean skyent$feedsConveyorToward(BlockState state, Direction direction) {
+        if (!isInternalConveyorPart(state)) {
+            return false;
+        }
+        Direction facing = state.hasProperty(FACING) ? state.getValue(FACING) : Direction.NORTH;
+        return RollingMillBlock.getInternalConveyorDirection(facing) == direction;
+    }
+
+    @Override
+    public boolean skyent$canConveyorItemEnter(Level level, BlockPos pos, BlockState state, Direction fromDirection) {
+        if (!isInternalConveyorPart(state)) {
+            return false;
+        }
+        RollingMillBlockEntity rollingMill = getController(level, pos, state);
+        return rollingMill != null && rollingMill.canInternalConveyorAccept();
+    }
+
+    @Override
+    public boolean skyent$canConveyorItemMove(Level level, BlockPos pos, BlockState state) {
+        return isInternalConveyorPart(state);
+    }
+
+    @Override
+    public boolean skyent$canConveyorItemMove(Level level, BlockPos pos, BlockState state, ConveyorMovingItemEntity item) {
+        if (!isInternalConveyorPart(state)) {
+            return false;
+        }
+        RollingMillBlockEntity rollingMill = getController(level, pos, state);
+        return rollingMill != null && rollingMill.canInternalConveyorMove(item);
+    }
+
+    @Override
+    public boolean skyent$canConveyorItemOutput(Level level, BlockPos pos, BlockState state, Direction outputDirection) {
+        return isInternalConveyorPart(state);
+    }
+
+    @Override
+    public boolean skyent$canConveyorItemOutput(Level level, BlockPos pos, BlockState state, ConveyorMovingItemEntity item, Direction outputDirection) {
+        if (!isInternalConveyorPart(state)) {
+            return false;
+        }
+        RollingMillBlockEntity rollingMill = getController(level, pos, state);
+        return rollingMill != null && rollingMill.canInternalConveyorOutput(item);
+    }
+
+    private static boolean isInternalConveyorPart(BlockState state) {
+        return state.is(ModBlocks.ROLLING_MILL_PART.get())
+                && state.hasProperty(PART_X)
+                && state.hasProperty(PART_Y)
+                && state.hasProperty(PART_Z)
+                && RollingMillBlock.isInternalConveyorLocalPos(new BlockPos(
+                state.getValue(PART_X),
+                state.getValue(PART_Y),
+                state.getValue(PART_Z)
+        ));
+    }
+
+    @Nullable
+    private static RollingMillBlockEntity getController(Level level, BlockPos pos, BlockState state) {
+        BlockPos masterPos = RollingMillBlock.getMasterPos(state, pos);
+        return level.getBlockEntity(masterPos) instanceof RollingMillBlockEntity rollingMill ? rollingMill : null;
     }
 }

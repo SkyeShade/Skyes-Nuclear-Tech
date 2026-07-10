@@ -8,7 +8,6 @@ import com.skyeshade.skyent.content.conveyor.ConveyorLogicConstants;
 import com.skyeshade.skyent.content.conveyor.ConveyorTravelDirectionProvider;
 import com.skyeshade.skyent.content.conveyor.ConveyorVisualFeeder;
 import com.skyeshade.skyent.content.entity.ConveyorMovingItemEntity;
-import com.skyeshade.skyent.content.item.WrenchUtil;
 import com.skyeshade.skyent.registry.ModBlocks;
 import com.skyeshade.skyent.registry.ModItems;
 import javax.annotation.Nullable;
@@ -82,20 +81,12 @@ public class IndustrialPressPartBlock extends Block implements ConveyorBeltSurfa
 
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
-        BlockPos masterPos = IndustrialPressBlock.getMasterPos(state, pos);
-        return level.getBlockState(masterPos).is(ModBlocks.INDUSTRIAL_PRESS.get()) ? InteractionResult.SUCCESS : InteractionResult.PASS;
+        return InteractionResult.PASS;
     }
 
     @Override
     protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult) {
-        if (!WrenchUtil.isWrench(stack)) {
-            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
-        }
-
-        BlockPos masterPos = IndustrialPressBlock.getMasterPos(state, pos);
-        return IndustrialPressBlock.toggleMode(level, masterPos, player).consumesAction()
-                ? ItemInteractionResult.sidedSuccess(level.isClientSide)
-                : ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
     }
 
     @Override

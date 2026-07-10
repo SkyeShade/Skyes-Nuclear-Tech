@@ -12,7 +12,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.item.crafting.Ingredient;
 
 public final class IndustrialPressRecipeCategory extends ConveyorMachineRecipeCategory<IndustrialPressRecipeCategory.PressRecipeDisplay> {
@@ -49,31 +48,22 @@ public final class IndustrialPressRecipeCategory extends ConveyorMachineRecipeCa
         return List.of(
                 recipe(ModItems.HOT_COPPER_INGOT.get(), ModItems.COPPER_PLATE.get()),
                 recipe(ModItems.HOT_IRON_INGOT.get(), ModItems.IRON_PLATE.get()),
-                recipe(Items.GOLD_INGOT, ModItems.GOLD_PLATE.get()),
+                recipe(ModItems.HOT_GOLD_INGOT.get(), ModItems.GOLD_PLATE.get()),
                 recipe(ModItems.HOT_STEEL_INGOT.get(), ModItems.STEEL_PLATE.get()),
                 recipe(ModItems.HOT_ALUMINUM_INGOT.get(), ModItems.ALUMINUM_PLATE.get()),
                 recipe(ModItems.HOT_TITANIUM_INGOT.get(), ModItems.TITANIUM_PLATE.get()),
                 recipe(ModItems.HOT_TUNGSTEN_INGOT.get(), ModItems.TUNGSTEN_PLATE.get()),
                 recipe(ModItems.HOT_COBALT_INGOT.get(), ModItems.COBALT_PLATE.get()),
                 recipe(ModItems.HOT_NICKEL_INGOT.get(), ModItems.NICKEL_PLATE.get()),
-                recipe(ModItems.LEAD_INGOT.get(), ModItems.LEAD_PLATE.get()),
                 recipe(ModItems.HOT_COBALT_BRONZE_INGOT.get(), ModItems.COBALT_BRONZE_PLATE.get()),
-                recipe(ModItems.HOT_COPPER_INGOT.get(), ModItems.COPPER_ROD.get()),
-                recipe(ModItems.HOT_IRON_INGOT.get(), ModItems.IRON_ROD.get()),
-                recipe(ModItems.HOT_STEEL_INGOT.get(), ModItems.STEEL_ROD.get()),
-                recipe(ModItems.HOT_ALUMINUM_INGOT.get(), ModItems.ALUMINUM_ROD.get()),
-                recipe(ModItems.HOT_TITANIUM_INGOT.get(), ModItems.TITANIUM_ROD.get()),
-                recipe(ModItems.HOT_COBALT_INGOT.get(), ModItems.COBALT_ROD.get()),
-                recipe(ModItems.HOT_TUNGSTEN_INGOT.get(), ModItems.TUNGSTEN_ROD.get()),
-                recipe(ModItems.HOT_NICKEL_INGOT.get(), ModItems.NICKEL_ROD.get()),
-                recipe(ModItems.HOT_COPPER_ROD.get(), new ItemStack(ModItems.COPPER_BOLT.get(), 4)),
-                recipe(ModItems.HOT_IRON_ROD.get(), new ItemStack(ModItems.IRON_BOLT.get(), 4)),
-                recipe(ModItems.HOT_STEEL_ROD.get(), new ItemStack(ModItems.STEEL_BOLT.get(), 4)),
-                recipe(ModItems.HOT_ALUMINUM_ROD.get(), new ItemStack(ModItems.ALUMINUM_BOLT.get(), 4)),
-                recipe(ModItems.HOT_TITANIUM_ROD.get(), new ItemStack(ModItems.TITANIUM_BOLT.get(), 4)),
-                recipe(ModItems.HOT_COBALT_ROD.get(), new ItemStack(ModItems.COBALT_BOLT.get(), 4)),
-                recipe(ModItems.HOT_TUNGSTEN_ROD.get(), new ItemStack(ModItems.TUNGSTEN_BOLT.get(), 4)),
-                recipe(ModItems.HOT_NICKEL_ROD.get(), new ItemStack(ModItems.NICKEL_BOLT.get(), 4))
+                recipe(ModItems.HOT_COPPER_ROD.get(), ModItems.COPPER_BOLT.get()),
+                recipe(ModItems.HOT_IRON_ROD.get(), ModItems.IRON_BOLT.get()),
+                recipe(ModItems.HOT_STEEL_ROD.get(), ModItems.STEEL_BOLT.get()),
+                recipe(ModItems.HOT_ALUMINUM_ROD.get(), ModItems.ALUMINUM_BOLT.get()),
+                recipe(ModItems.HOT_TITANIUM_ROD.get(), ModItems.TITANIUM_BOLT.get()),
+                recipe(ModItems.HOT_COBALT_ROD.get(), ModItems.COBALT_BOLT.get()),
+                recipe(ModItems.HOT_TUNGSTEN_ROD.get(), ModItems.TUNGSTEN_BOLT.get()),
+                recipe(ModItems.HOT_NICKEL_ROD.get(), ModItems.NICKEL_BOLT.get())
         );
     }
 

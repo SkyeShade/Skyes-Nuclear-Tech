@@ -88,8 +88,7 @@ public class HeatingChamberPartBlock extends Block implements ConveyorBeltSurfac
 
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
-        BlockPos masterPos = HeatingChamberBlock.getMasterPos(state, pos);
-        return level.getBlockState(masterPos).is(ModBlocks.HEATING_CHAMBER.get()) ? InteractionResult.SUCCESS : InteractionResult.PASS;
+        return InteractionResult.PASS;
     }
 
     @Override

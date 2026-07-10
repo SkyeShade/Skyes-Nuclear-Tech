@@ -7,7 +7,6 @@ import com.skyeshade.skyent.registry.ModBlockEntities;
 import com.skyeshade.skyent.registry.ModBlocks;
 import com.skyeshade.skyent.registry.ModItems;
 import com.skyeshade.skyent.registry.ModMultiblockShapes;
-import com.skyeshade.skyent.content.item.WrenchUtil;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
@@ -169,12 +168,7 @@ public class IndustrialPressBlock extends BaseEntityBlock {
 
     @Override
     protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult) {
-        if (!WrenchUtil.isWrench(stack)) {
-            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
-        }
-        return toggleMode(level, pos, player).consumesAction()
-                ? ItemInteractionResult.sidedSuccess(level.isClientSide)
-                : ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
     }
 
     @Override
@@ -246,16 +240,6 @@ public class IndustrialPressBlock extends BaseEntityBlock {
         return level.getBlockEntity(masterPos) instanceof IndustrialPressBlockEntity press
                 ? Optional.of(press)
                 : Optional.empty();
-    }
-
-    public static net.minecraft.world.InteractionResult toggleMode(Level level, BlockPos masterPos, Player player) {
-        if (level.isClientSide) {
-            return net.minecraft.world.InteractionResult.SUCCESS;
-        }
-        if (level.getBlockEntity(masterPos) instanceof IndustrialPressBlockEntity press && press.toggleMode(player)) {
-            return net.minecraft.world.InteractionResult.CONSUME;
-        }
-        return net.minecraft.world.InteractionResult.PASS;
     }
 
     public static boolean isInternalConveyorLocalPos(BlockPos local) {

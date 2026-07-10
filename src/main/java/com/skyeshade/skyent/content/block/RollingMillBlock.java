@@ -65,7 +65,9 @@ public class RollingMillBlock extends BaseEntityBlock {
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> blockEntityType) {
-        return null;
+        return level.isClientSide
+                ? createTickerHelper(blockEntityType, ModBlockEntities.ROLLING_MILL.get(), RollingMillBlockEntity::clientTick)
+                : createTickerHelper(blockEntityType, ModBlockEntities.ROLLING_MILL.get(), RollingMillBlockEntity::serverTick);
     }
 
     @Nullable
@@ -197,6 +199,9 @@ public class RollingMillBlock extends BaseEntityBlock {
         try {
             BlockState state = level.getBlockState(masterPos);
             Direction facing = state.hasProperty(FACING) ? state.getValue(FACING) : Direction.NORTH;
+            if (level.getBlockEntity(masterPos) instanceof RollingMillBlockEntity rollingMill) {
+                rollingMill.dropInternalConveyorItems();
+            }
             spawnDestroyParticles(level, masterPos, facing);
             removeParts(level, masterPos, facing);
             if (level.getBlockState(masterPos).is(ModBlocks.ROLLING_MILL.get())) {
@@ -250,6 +255,47 @@ public class RollingMillBlock extends BaseEntityBlock {
                 z,
                 (fallbackFacing, fallbackX, fallbackY, fallbackZ) -> RollingMillShapes.shapeForLocal(fallbackX, fallbackY, fallbackZ, fallbackFacing)
         );
+    }
+
+    public static boolean isInternalConveyorLocalPos(BlockPos local) {
+        return local.getX() == 1 && local.getY() == 1 && (local.getZ() == 0 || local.getZ() == 1);
+    }
+
+    public static BlockPos getInternalConveyorInputLocalPos() {
+        return new BlockPos(1, 1, 1);
+    }
+
+    public static Direction getInternalConveyorDirection(Direction machineFacing) {
+        return machineFacing;
+    }
+
+    public static boolean isConnectorSupportCell(LevelReader level, BlockState state, BlockPos pos, Direction clickedFace) {
+        Direction facing;
+        BlockPos local;
+        if (state.is(ModBlocks.ROLLING_MILL.get()) && state.hasProperty(FACING)) {
+            facing = state.getValue(FACING);
+            local = BlockPos.ZERO;
+        } else if (state.is(ModBlocks.ROLLING_MILL_PART.get())
+                && state.hasProperty(RollingMillPartBlock.FACING)
+                && state.hasProperty(RollingMillPartBlock.PART_X)
+                && state.hasProperty(RollingMillPartBlock.PART_Y)
+                && state.hasProperty(RollingMillPartBlock.PART_Z)) {
+            facing = state.getValue(RollingMillPartBlock.FACING);
+            local = new BlockPos(
+                    state.getValue(RollingMillPartBlock.PART_X),
+                    state.getValue(RollingMillPartBlock.PART_Y),
+                    state.getValue(RollingMillPartBlock.PART_Z)
+            );
+        } else {
+            return false;
+        }
+
+        return level.getBlockState(getMasterPos(state, pos)).is(ModBlocks.ROLLING_MILL.get())
+                && local.getX() == SIZE_X - 1
+                && local.getY() <= 1
+                && local.getZ() >= 0
+                && local.getZ() < SIZE_Z
+                && clickedFace == facing.getClockWise();
     }
 
     public static BlockPos rotateLocalOffset(BlockPos local, Direction facing) {

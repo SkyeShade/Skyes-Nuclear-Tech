@@ -3,6 +3,7 @@ package com.skyeshade.skyent.event.systems;
 import com.skyeshade.skyent.content.block.LVMVTransformerBlock;
 import com.skyeshade.skyent.content.block.HeatingChamberBlock;
 import com.skyeshade.skyent.content.block.IndustrialPressBlock;
+import com.skyeshade.skyent.content.block.RollingMillBlock;
 import com.skyeshade.skyent.content.blockentity.ElectricFurnaceBlockEntity;
 import com.skyeshade.skyent.content.blockentity.HeatingChamberBlockEntity;
 import com.skyeshade.skyent.content.blockentity.IndustrialPressBlockEntity;
@@ -12,6 +13,7 @@ import com.skyeshade.skyent.content.blockentity.LVSteamTurbineBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVRJConverterBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVConnectorBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVMVTransformerBlockEntity;
+import com.skyeshade.skyent.content.blockentity.RollingMillBlockEntity;
 import com.skyeshade.skyent.content.energy.CopperWireConstants;
 import com.skyeshade.skyent.content.energy.ElectricalTier;
 import com.skyeshade.skyent.content.energy.LVWireType;
@@ -245,6 +247,9 @@ public final class LVElectricalNetworkSystem {
             IndustrialPressBlockEntity industrialPress = attachedConnector != null && attachedConnector.getConnectorTier() == ElectricalTier.MV
                     ? resolveIndustrialPress(level, endpointState, endpointPos)
                     : null;
+            RollingMillBlockEntity rollingMill = attachedConnector != null && attachedConnector.getConnectorTier() == ElectricalTier.MV
+                    ? resolveRollingMill(level, endpointState, endpointPos, direction.getOpposite())
+                    : null;
             LVMVTransformerBlockEntity transformerBody = attachedConnector != null
                     ? resolveTransformerBody(level, endpointState, endpointPos)
                     : null;
@@ -330,6 +335,18 @@ public final class LVElectricalNetworkSystem {
                     @Override
                     public int receiveRJ(int amount, boolean simulate) {
                         return industrialPress.receiveRJ(attachedConnector.getConnectorTier(), amount, simulate);
+                    }
+                }));
+            } else if (rollingMill != null) {
+                consumers.add(new Consumer(connectorPos, new NetworkConsumer() {
+                    @Override
+                    public int availableRJCapacity() {
+                        return rollingMill.getAvailableRJCapacity();
+                    }
+
+                    @Override
+                    public int receiveRJ(int amount, boolean simulate) {
+                        return rollingMill.receiveRJ(attachedConnector.getConnectorTier(), amount, simulate);
                     }
                 }));
             } else if (blockEntity instanceof LVSteamTurbineBlockEntity turbine) {
@@ -437,6 +454,14 @@ public final class LVElectricalNetworkSystem {
             return press;
         }
         return IndustrialPressBlock.getMasterBlockEntity(level, state, pos).orElse(null);
+    }
+
+    @Nullable
+    private static RollingMillBlockEntity resolveRollingMill(ServerLevel level, BlockState state, BlockPos pos, Direction supportFace) {
+        if (!RollingMillBlock.isConnectorSupportCell(level, state, pos, supportFace)) {
+            return null;
+        }
+        return RollingMillBlock.getMasterBlockEntity(level, state, pos).orElse(null);
     }
 
     @Nullable

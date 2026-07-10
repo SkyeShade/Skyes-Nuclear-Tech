@@ -62,6 +62,7 @@ public final class SkyentJeiPlugin implements IModPlugin {
                 new CoalForgeRecipeCategory(registration.getJeiHelpers().getGuiHelper()),
                 new HeatingChamberRecipeCategory(registration.getJeiHelpers().getGuiHelper()),
                 new IndustrialPressRecipeCategory(registration.getJeiHelpers().getGuiHelper()),
+                new RollingMillRecipeCategory(registration.getJeiHelpers().getGuiHelper()),
                 new BrickBlastFurnaceRecipeCategory(registration.getJeiHelpers().getGuiHelper()),
                 new CrusherRecipeCategory(registration.getJeiHelpers().getGuiHelper())
         );
@@ -72,6 +73,7 @@ public final class SkyentJeiPlugin implements IModPlugin {
         registration.addRecipes(CoalForgeRecipeCategory.RECIPE_TYPE, CoalForgeRecipeCategory.getAllRecipes());
         registration.addRecipes(HeatingChamberRecipeCategory.RECIPE_TYPE, HeatingChamberRecipeCategory.getAllRecipes());
         registration.addRecipes(IndustrialPressRecipeCategory.RECIPE_TYPE, IndustrialPressRecipeCategory.getAllRecipes());
+        registration.addRecipes(RollingMillRecipeCategory.RECIPE_TYPE, RollingMillRecipeCategory.getAllRecipes());
         registration.addRecipes(CrusherRecipeCategory.RECIPE_TYPE, LVCrusherRecipes.getAllRecipes());
 
         Level level = Minecraft.getInstance().level;
@@ -92,6 +94,7 @@ public final class SkyentJeiPlugin implements IModPlugin {
         registration.addRecipeCatalyst(ModItems.COAL_FORGE.get(), CoalForgeRecipeCategory.RECIPE_TYPE);
         registration.addRecipeCatalyst(ModItems.HEATING_CHAMBER.get(), HeatingChamberRecipeCategory.RECIPE_TYPE);
         registration.addRecipeCatalyst(ModItems.INDUSTRIAL_PRESS.get(), IndustrialPressRecipeCategory.RECIPE_TYPE);
+        registration.addRecipeCatalyst(ModItems.ROLLING_MILL.get(), RollingMillRecipeCategory.RECIPE_TYPE);
         registration.addRecipeCatalyst(ModItems.BRICK_BLAST_FURNACE.get(), BrickBlastFurnaceRecipeCategory.RECIPE_TYPE);
         registration.addRecipeCatalyst(ModItems.LV_CRUSHER.get(), CrusherRecipeCategory.RECIPE_TYPE);
     }

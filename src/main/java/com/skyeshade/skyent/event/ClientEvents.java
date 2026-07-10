@@ -17,6 +17,7 @@ import com.skyeshade.skyent.client.renderer.blockentity.GeigerCounterPlacedRende
 import com.skyeshade.skyent.client.renderer.blockentity.HeatingChamberRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.IndustrialPressRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.LVMVTransformerRenderer;
+import com.skyeshade.skyent.client.renderer.blockentity.RollingMillRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.SteamForgeHammerRenderer;
 import com.skyeshade.skyent.client.renderer.entity.ConveyorMovingItemRenderer;
 import com.skyeshade.skyent.client.renderer.LVConnectorRenderer;
@@ -102,6 +103,7 @@ public final class ClientEvents {
         event.registerBlockEntityRenderer(ModBlockEntities.STEAM_FORGE_HAMMER.get(), SteamForgeHammerRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.HEATING_CHAMBER.get(), HeatingChamberRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.INDUSTRIAL_PRESS.get(), IndustrialPressRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.ROLLING_MILL.get(), RollingMillRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.LV_MV_TRANSFORMER.get(), LVMVTransformerRenderer::new);
     }
 
@@ -109,6 +111,7 @@ public final class ClientEvents {
         event.register(SteamForgeHammerRenderer.PISTON_MODEL);
         event.register(HeatingChamberRenderer.CHAMBER_MODEL);
         event.register(IndustrialPressRenderer.PRESS_HEAD_MODEL);
+        event.register(RollingMillRenderer.ROLLERS_MODEL);
     }
 
     public static void onRegisterGeometryLoaders(ModelEvent.RegisterGeometryLoaders event) {
