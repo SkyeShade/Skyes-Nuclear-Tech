@@ -241,6 +241,17 @@ public class RollingMillPartBlock extends Block implements ConveyorBeltSurface, 
         return rollingMill != null && rollingMill.canInternalConveyorOutput(item);
     }
 
+    @Override
+    public void skyent$onConveyorItemMoved(Level level, BlockPos pos, BlockState state, ConveyorMovingItemEntity item, Vec3 from, Vec3 to) {
+        if (!isInternalConveyorPart(state)) {
+            return;
+        }
+        RollingMillBlockEntity rollingMill = getController(level, pos, state);
+        if (rollingMill != null) {
+            rollingMill.markInternalItemMoved(item);
+        }
+    }
+
     private static boolean isInternalConveyorPart(BlockState state) {
         return state.is(ModBlocks.ROLLING_MILL_PART.get())
                 && state.hasProperty(PART_X)

@@ -49,7 +49,9 @@ public class RollingMillBlockEntity extends BlockEntity implements RJEnergyInfo 
     private final RJStorage rjStorage = new RJStorage(ENERGY_CAPACITY_RJ);
     private int currentEnergyUsage;
     private boolean poweredThisTick;
-    private boolean hasRollableItemInside;
+    private boolean hasRelevantItemInside;
+    private boolean movementSinceLastServerTick;
+    private boolean blockedThisTick;
     private boolean running;
 
     public RollingMillBlockEntity(BlockPos pos, BlockState blockState) {
@@ -59,9 +61,12 @@ public class RollingMillBlockEntity extends BlockEntity implements RJEnergyInfo 
     public static void serverTick(Level level, BlockPos pos, BlockState state, RollingMillBlockEntity rollingMill) {
         int previousEnergyUsage = rollingMill.currentEnergyUsage;
         boolean previousRunning = rollingMill.running;
+        boolean movedSinceLastServerTick = rollingMill.movementSinceLastServerTick;
+        rollingMill.movementSinceLastServerTick = false;
         rollingMill.currentEnergyUsage = 0;
-        rollingMill.updatePowerState();
-        rollingMill.transformEligibleItems();
+        rollingMill.updatePowerAvailability();
+        boolean processedThisTick = rollingMill.transformEligibleItems();
+        rollingMill.updateRunningState(movedSinceLastServerTick || processedThisTick);
         if (previousEnergyUsage != rollingMill.currentEnergyUsage || previousRunning != rollingMill.running) {
             rollingMill.setChangedAndSync();
         }
@@ -79,7 +84,7 @@ public class RollingMillBlockEntity extends BlockEntity implements RJEnergyInfo 
     }
 
     public boolean canInternalConveyorMove(ConveyorMovingItemEntity item) {
-        return !isRollableInput(item.getItemStack()) || poweredThisTick;
+        return !isRelevantRollingItem(item.getItemStack()) || poweredThisTick;
     }
 
     public boolean canInternalConveyorOutput(ConveyorMovingItemEntity item) {
@@ -123,11 +128,14 @@ public class RollingMillBlockEntity extends BlockEntity implements RJEnergyInfo 
     }
 
     public String getStatusText() {
-        if (hasRollableItemInside && !poweredThisTick) {
+        if (hasRelevantItemInside && !poweredThisTick) {
             return "Needs MV Power";
         }
         if (running) {
             return "Rolling";
+        }
+        if (blockedThisTick) {
+            return "Blocked";
         }
         return "Idle";
     }
@@ -163,14 +171,21 @@ public class RollingMillBlockEntity extends BlockEntity implements RJEnergyInfo 
         }
     }
 
-    private void transformEligibleItems() {
+    public void markInternalItemMoved(ConveyorMovingItemEntity item) {
+        if (isRelevantRollingItem(item.getItemStack())) {
+            movementSinceLastServerTick = true;
+        }
+    }
+
+    private boolean transformEligibleItems() {
         if (level == null || level.isClientSide) {
-            return;
+            return false;
         }
         if (!poweredThisTick) {
-            return;
+            return false;
         }
 
+        boolean transformed = false;
         Direction direction = getInternalConveyorDirection();
         Vec3 inputCenter = getInputCenter();
         for (ConveyorMovingItemEntity item : getInternalConveyorItems()) {
@@ -181,19 +196,41 @@ public class RollingMillBlockEntity extends BlockEntity implements RJEnergyInfo 
             ItemStack result = RollingMillRecipes.getRollingResult(item.getItemStack());
             if (!result.isEmpty()) {
                 item.setItemStack(result);
+                transformed = true;
             }
         }
+        return transformed;
     }
 
-    private void updatePowerState() {
-        hasRollableItemInside = getInternalConveyorItems().stream().anyMatch(item -> isRollableInput(item.getItemStack()));
-        if (!hasRollableItemInside) {
+    private void updatePowerAvailability() {
+        hasRelevantItemInside = getInternalConveyorItems().stream().anyMatch(item -> isRelevantRollingItem(item.getItemStack()));
+        if (!hasRelevantItemInside) {
             poweredThisTick = true;
-            running = false;
+            blockedThisTick = false;
             return;
         }
         if (rjStorage.getStoredRJ() < ROLLING_MILL_MV_RJ_PER_TICK) {
             poweredThisTick = false;
+            return;
+        }
+
+        poweredThisTick = true;
+    }
+
+    private void updateRunningState(boolean activeThisTick) {
+        if (!hasRelevantItemInside) {
+            blockedThisTick = false;
+            running = false;
+            return;
+        }
+        if (!poweredThisTick) {
+            blockedThisTick = false;
+            currentEnergyUsage = 0;
+            running = false;
+            return;
+        }
+        if (!activeThisTick) {
+            blockedThisTick = true;
             currentEnergyUsage = 0;
             running = false;
             return;
@@ -201,13 +238,13 @@ public class RollingMillBlockEntity extends BlockEntity implements RJEnergyInfo 
 
         rjStorage.consumeRJ(ROLLING_MILL_MV_RJ_PER_TICK);
         currentEnergyUsage = ROLLING_MILL_MV_RJ_PER_TICK;
-        poweredThisTick = true;
+        blockedThisTick = false;
         running = true;
         setChanged();
     }
 
-    private static boolean isRollableInput(ItemStack stack) {
-        return !RollingMillRecipes.getRollingResult(stack).isEmpty();
+    private static boolean isRelevantRollingItem(ItemStack stack) {
+        return RollingMillRecipes.isRollingInput(stack) || RollingMillRecipes.isRollingOutput(stack);
     }
 
     private List<ConveyorMovingItemEntity> getInternalConveyorItems() {

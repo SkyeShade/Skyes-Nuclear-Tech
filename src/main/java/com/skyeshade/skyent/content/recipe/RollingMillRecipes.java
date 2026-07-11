@@ -37,6 +37,22 @@ public final class RollingMillRecipes {
         return ItemStack.EMPTY;
     }
 
+    public static boolean isRollingInput(ItemStack stack) {
+        return !getRollingResult(stack).isEmpty();
+    }
+
+    public static boolean isRollingOutput(ItemStack stack) {
+        if (stack.isEmpty()) {
+            return false;
+        }
+        for (RollingRecipe recipe : RECIPES) {
+            if (stack.is(recipe.output())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static RollingRecipe recipe(ItemLike input, ItemLike output) {
         return new RollingRecipe(input.asItem(), output.asItem());
     }

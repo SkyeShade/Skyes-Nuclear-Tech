@@ -242,6 +242,17 @@ public class IndustrialPressBlock extends BaseEntityBlock {
                 : Optional.empty();
     }
 
+    public static BlockPos resolveDestroyProgressPos(Level level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        if (state.is(ModBlocks.INDUSTRIAL_PRESS_PART.get())) {
+            BlockPos masterPos = getMasterPos(state, pos);
+            if (level.getBlockState(masterPos).is(ModBlocks.INDUSTRIAL_PRESS.get())) {
+                return masterPos;
+            }
+        }
+        return pos;
+    }
+
     public static boolean isInternalConveyorLocalPos(BlockPos local) {
         return local.getX() == 0 && local.getY() == 1 && local.getZ() == 0;
     }

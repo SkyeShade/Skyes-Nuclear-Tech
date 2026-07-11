@@ -33,4 +33,7 @@ public interface ConveyorGateSurface {
     default Vec3 skyent$getConveyorHoldPosition(Level level, BlockPos pos, BlockState state, ConveyorMovingItemEntity item, Direction outputDirection) {
         return null;
     }
+
+    default void skyent$onConveyorItemMoved(Level level, BlockPos pos, BlockState state, ConveyorMovingItemEntity item, Vec3 from, Vec3 to) {
+    }
 }

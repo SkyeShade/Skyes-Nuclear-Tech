@@ -3,7 +3,9 @@ package com.skyeshade.skyent.mixin.client;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.skyeshade.skyent.content.block.HeatingChamberBlock;
+import com.skyeshade.skyent.content.block.IndustrialPressBlock;
 import com.skyeshade.skyent.content.block.LVMVTransformerBlock;
+import com.skyeshade.skyent.content.block.RollingMillBlock;
 import com.skyeshade.skyent.content.block.SteamForgeHammerBlock;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.MultiPlayerGameMode;
@@ -34,6 +36,8 @@ public abstract class MixinMultiPlayerGameMode {
     ) {
         BlockPos visualPos = SteamForgeHammerBlock.resolveDestroyProgressPos(level, pos);
         visualPos = HeatingChamberBlock.resolveDestroyProgressPos(level, visualPos);
+        visualPos = IndustrialPressBlock.resolveDestroyProgressPos(level, visualPos);
+        visualPos = RollingMillBlock.resolveDestroyProgressPos(level, visualPos);
         visualPos = LVMVTransformerBlock.resolveDestroyProgressPos(level, visualPos);
         original.call(level, breakerId, visualPos, progress);
 

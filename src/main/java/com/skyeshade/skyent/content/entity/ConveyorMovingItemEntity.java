@@ -182,8 +182,20 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
         }
 
         setBlocked(false);
+        Vec3 previous = position();
         setPos(next.x, next.y, next.z);
+        notifyMovedOnBelt(belt, previous, next);
         tickMergeSpacing();
+    }
+
+    private void notifyMovedOnBelt(BeltContext belt, Vec3 previous, Vec3 next) {
+        if (previous.distanceToSqr(next) <= 1.0E-8D) {
+            return;
+        }
+        BlockState state = level().getBlockState(belt.pos());
+        if (belt.surface() instanceof ConveyorGateSurface gate) {
+            gate.skyent$onConveyorItemMoved(level(), belt.pos(), state, this, previous, next);
+        }
     }
     private boolean shouldPreHandleOutput(BeltContext belt) {
         if (!canOutputFromBelt(belt)) {

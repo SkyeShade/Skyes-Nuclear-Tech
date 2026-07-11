@@ -242,6 +242,17 @@ public class RollingMillBlock extends BaseEntityBlock {
                 : Optional.empty();
     }
 
+    public static BlockPos resolveDestroyProgressPos(Level level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        if (state.is(ModBlocks.ROLLING_MILL_PART.get())) {
+            BlockPos masterPos = getMasterPos(state, pos);
+            if (level.getBlockState(masterPos).is(ModBlocks.ROLLING_MILL.get())) {
+                return masterPos;
+            }
+        }
+        return pos;
+    }
+
     public static BlockPos localToWorld(BlockPos origin, Direction facing, int x, int y, int z) {
         return origin.offset(rotateLocalOffset(new BlockPos(x, y, z), facing));
     }
