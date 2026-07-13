@@ -260,6 +260,9 @@ public class LVConnectorBlockEntity extends BlockEntity {
     }
 
     private void loadConnections(CompoundTag tag) {
+        if (!tag.contains(CONNECTIONS_TAG, Tag.TAG_LIST)) {
+            return;
+        }
         Map<BlockPos, Integer> previousLoads = new HashMap<>(currentTickTransferredRJ);
         connections.clear();
         connectionHeat.clear();

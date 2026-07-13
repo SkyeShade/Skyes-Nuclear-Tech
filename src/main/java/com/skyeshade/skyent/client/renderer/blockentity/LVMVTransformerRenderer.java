@@ -6,8 +6,6 @@ import com.skyeshade.skyent.client.renderer.LVConnectorRenderer;
 import com.skyeshade.skyent.content.block.LVMVTransformerBlock;
 import com.skyeshade.skyent.content.blockentity.LVMVTransformerBlockEntity;
 import com.skyeshade.skyent.content.item.LVWireDrumItem;
-import java.util.HashSet;
-import java.util.Set;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
@@ -19,9 +17,6 @@ import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
 public class LVMVTransformerRenderer implements BlockEntityRenderer<LVMVTransformerBlockEntity> {
-    private static long renderedConnectionFrame = Long.MIN_VALUE;
-    private static final Set<ConnectionKey> RENDERED_CONNECTIONS = new HashSet<>();
-
     public LVMVTransformerRenderer(BlockEntityRendererProvider.Context context) {
     }
 
@@ -35,7 +30,6 @@ public class LVMVTransformerRenderer implements BlockEntityRenderer<LVMVTransfor
         VertexConsumer buffer = bufferSource.getBuffer(LVConnectorRenderer.cableRenderType());
         Matrix4f pose = poseStack.last().pose();
         BlockPos origin = transformer.getBlockPos();
-        beginFrame(Minecraft.getInstance().getFrameTimeNs());
         Vec3 cameraWorld = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
         Vector3f camera = new Vector3f(
                 (float) (cameraWorld.x - origin.getX()),
@@ -50,9 +44,7 @@ public class LVMVTransformerRenderer implements BlockEntityRenderer<LVMVTransfor
             if (!LVMVTransformerBlock.isMVTerminal(level.getBlockState(connection.connectionPos()))) {
                 continue;
             }
-
-            ConnectionKey key = new ConnectionKey(connection.terminalPos(), connection.connectionPos());
-            if (!RENDERED_CONNECTIONS.add(key)) {
+            if (!shouldRenderFromTerminal(connection.terminalPos(), connection.connectionPos())) {
                 continue;
             }
 
@@ -83,16 +75,7 @@ public class LVMVTransformerRenderer implements BlockEntityRenderer<LVMVTransfor
         return LVWireDrumItem.MAX_CONNECTION_DISTANCE * 2;
     }
 
-    private static void beginFrame(long frame) {
-        if (renderedConnectionFrame != frame) {
-            renderedConnectionFrame = frame;
-            RENDERED_CONNECTIONS.clear();
-        }
-    }
-
-    private record ConnectionKey(long first, long second) {
-        private ConnectionKey(BlockPos a, BlockPos b) {
-            this(Math.min(a.asLong(), b.asLong()), Math.max(a.asLong(), b.asLong()));
-        }
+    private static boolean shouldRenderFromTerminal(BlockPos terminal, BlockPos connection) {
+        return !terminal.equals(connection) && terminal.asLong() < connection.asLong();
     }
 }

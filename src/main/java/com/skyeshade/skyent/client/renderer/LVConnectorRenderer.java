@@ -11,8 +11,7 @@ import com.skyeshade.skyent.content.energy.CopperWireConstants;
 import com.skyeshade.skyent.content.energy.LVWireType;
 import com.skyeshade.skyent.content.item.LVWireDrumItem;
 import com.skyeshade.skyent.event.systems.LVElectricalNetworkSystem;
-import java.util.HashSet;
-import java.util.Set;
+import com.skyeshade.skyent.registry.ModBlocks;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -31,8 +30,6 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
 
     private static final float CABLE_ALPHA = 1.0F;
     private static final boolean DEBUG_RENDERED_CONNECTIONS = false;
-    private static long renderedConnectionFrame = Long.MIN_VALUE;
-    private static final Set<ConnectionKey> RENDERED_CONNECTIONS = new HashSet<>();
     private static final RenderType CABLE_RENDER_TYPE = RenderType.create(
             "skyent_lv_cable_quads",
             DefaultVertexFormat.POSITION_COLOR_LIGHTMAP,
@@ -63,7 +60,6 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
         Matrix4f pose = poseStack.last().pose();
         BlockPos origin = connector.getBlockPos();
         Level level = connector.getLevel();
-        beginFrame(Minecraft.getInstance().getFrameTimeNs());
         Vec3 cameraWorld = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
         Vector3f camera = new Vector3f(
                 (float) (cameraWorld.x - origin.getX()),
@@ -78,8 +74,7 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
         );
 
         for (BlockPos connection : connector.getConnections()) {
-            ConnectionKey key = new ConnectionKey(origin, connection);
-            if (!RENDERED_CONNECTIONS.add(key)) {
+            if (!shouldRenderFromConnector(level, origin, connection)) {
                 continue;
             }
 
@@ -93,7 +88,7 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
             );
             double heat = connector.getConnectionHeat(connection);
             LVWireType wireType = connector.getConnectionWireType(connection);
-            debugRenderedConnection(origin, connection, key, heat);
+            debugRenderedConnection(origin, connection, heat);
             renderCable(buffer, pose, start, end, camera, wireType, packedLight, heat);
         }
     }
@@ -117,11 +112,20 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
         return LVWireDrumItem.MAX_CONNECTION_DISTANCE * 2;
     }
 
-    private static void beginFrame(long frame) {
-        if (renderedConnectionFrame != frame) {
-            renderedConnectionFrame = frame;
-            RENDERED_CONNECTIONS.clear();
+    private static boolean shouldRenderFromConnector(Level level, BlockPos origin, BlockPos connection) {
+        if (origin.equals(connection)) {
+            return false;
         }
+        if (level != null) {
+            var connectionState = level.getBlockState(connection);
+            if (LVMVTransformerBlock.isMVTerminal(connectionState)) {
+                return true;
+            }
+            if (connectionState.is(ModBlocks.LV_CONNECTOR.get()) || connectionState.is(ModBlocks.MV_CONNECTOR.get())) {
+                return origin.asLong() < connection.asLong();
+            }
+        }
+        return origin.asLong() < connection.asLong();
     }
 
     private static Vec3 anchor(Level level, net.minecraft.world.level.block.state.BlockState state, BlockPos pos) {
@@ -133,9 +137,9 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
                 : LVConnectorBlockEntity.anchor(state, pos);
     }
 
-    private static void debugRenderedConnection(BlockPos origin, BlockPos connection, ConnectionKey key, double heat) {
+    private static void debugRenderedConnection(BlockPos origin, BlockPos connection, double heat) {
         if (DEBUG_RENDERED_CONNECTIONS) {
-            SkyesNuclearTech.LOGGER.info("LV cable render origin={} target={} key={}:{} heat={}", origin, connection, key.first, key.second, heat);
+            SkyesNuclearTech.LOGGER.info("LV cable render origin={} target={} heat={}", origin, connection, heat);
         }
     }
 
@@ -292,11 +296,5 @@ public class LVConnectorRenderer implements BlockEntityRenderer<LVConnectorBlock
     }
 
     private record ColorStop(float position, CableColor color) {
-    }
-
-    private record ConnectionKey(long first, long second) {
-        private ConnectionKey(BlockPos first, BlockPos second) {
-            this(Math.min(first.asLong(), second.asLong()), Math.max(first.asLong(), second.asLong()));
-        }
     }
 }

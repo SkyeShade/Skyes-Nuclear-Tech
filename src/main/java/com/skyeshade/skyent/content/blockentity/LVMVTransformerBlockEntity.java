@@ -483,6 +483,9 @@ public class LVMVTransformerBlockEntity extends BlockEntity implements RJEnergyI
     }
 
     private void loadTerminalConnections(CompoundTag tag) {
+        if (!tag.contains(TAG_TERMINAL_CONNECTIONS, Tag.TAG_LIST)) {
+            return;
+        }
         terminalConnections.clear();
         terminalWireTypes.clear();
         terminalCurrentTickTransferredRJ.clear();
