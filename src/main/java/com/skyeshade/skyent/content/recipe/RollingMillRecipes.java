@@ -15,7 +15,9 @@ public final class RollingMillRecipes {
             recipe(ModItems.HOT_TITANIUM_INGOT.get(), ModItems.TITANIUM_ROD.get()),
             recipe(ModItems.HOT_TUNGSTEN_INGOT.get(), ModItems.TUNGSTEN_ROD.get()),
             recipe(ModItems.HOT_COBALT_INGOT.get(), ModItems.COBALT_ROD.get()),
-            recipe(ModItems.HOT_NICKEL_INGOT.get(), ModItems.NICKEL_ROD.get())
+            recipe(ModItems.HOT_NICKEL_INGOT.get(), ModItems.NICKEL_ROD.get()),
+            recipe(ModItems.HOT_COBALT_BRONZE_INGOT.get(), ModItems.COBALT_BRONZE_ROD.get()),
+            recipe(ModItems.HOT_CUPRONICKEL_INGOT.get(), ModItems.CUPRONICKEL_ROD.get())
     );
 
     private RollingMillRecipes() {

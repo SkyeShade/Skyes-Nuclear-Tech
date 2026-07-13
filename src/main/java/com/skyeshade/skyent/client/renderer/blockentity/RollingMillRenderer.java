@@ -94,8 +94,9 @@ public class RollingMillRenderer implements BlockEntityRenderer<RollingMillBlock
         VertexConsumer consumer = bufferSource.getBuffer(RenderType.cutout());
         ModelTransform transform = ModelTransform.forFacing(facing);
 
+        int sharedLight = rollingMill.getSharedPackedLight();
         for (RollerCuboid roller : ROLLERS) {
-            renderRoller(roller, angle, transform, poseStack, consumer, sprite, packedLight);
+            renderRoller(roller, angle, transform, poseStack, consumer, sprite, sharedLight);
         }
     }
 

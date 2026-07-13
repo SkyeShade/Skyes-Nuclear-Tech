@@ -72,6 +72,9 @@ public final class HotItemUtil {
         if (item == ModItems.LEAD_INGOT.get()) {
             return 25.0D;
         }
+        if (item == ModItems.TIN_ROD.get()) {
+            return 250.0D;
+        }
         if (item == ModItems.ALUMINUM_INGOT.get() || item == ModItems.ALUMINUM_ROD.get()) {
             return 400.0D;
         }
@@ -81,10 +84,10 @@ public final class HotItemUtil {
         if (item == Items.COPPER_INGOT || item == ModItems.COPPER_ROD.get()) {
             return 800.0D;
         }
-        if (item == ModItems.COBALT_BRONZE_INGOT.get()) {
+        if (item == ModItems.COBALT_BRONZE_INGOT.get() || item == ModItems.COBALT_BRONZE_ROD.get()) {
             return 1000.0D;
         }
-        if (item == ModItems.CUPRONICKEL_INGOT.get()) {
+        if (item == ModItems.CUPRONICKEL_INGOT.get() || item == ModItems.CUPRONICKEL_ROD.get()) {
             return 950.0D;
         }
         if (item == ModItems.COBALT_INGOT.get() || item == ModItems.COBALT_ROD.get()) {

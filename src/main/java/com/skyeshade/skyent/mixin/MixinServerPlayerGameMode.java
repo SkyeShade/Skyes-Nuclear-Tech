@@ -7,6 +7,7 @@ import com.skyeshade.skyent.content.block.IndustrialPressBlock;
 import com.skyeshade.skyent.content.block.LVMVTransformerBlock;
 import com.skyeshade.skyent.content.block.RollingMillBlock;
 import com.skyeshade.skyent.content.block.SteamForgeHammerBlock;
+import com.skyeshade.skyent.content.block.WireMillBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayerGameMode;
@@ -37,6 +38,7 @@ public abstract class MixinServerPlayerGameMode {
         visualPos = HeatingChamberBlock.resolveDestroyProgressPos(this.level, visualPos);
         visualPos = IndustrialPressBlock.resolveDestroyProgressPos(this.level, visualPos);
         visualPos = RollingMillBlock.resolveDestroyProgressPos(this.level, visualPos);
+        visualPos = WireMillBlock.resolveDestroyProgressPos(this.level, visualPos);
         visualPos = LVMVTransformerBlock.resolveDestroyProgressPos(this.level, visualPos);
         original.call(level, breakerId, visualPos, progress);
 

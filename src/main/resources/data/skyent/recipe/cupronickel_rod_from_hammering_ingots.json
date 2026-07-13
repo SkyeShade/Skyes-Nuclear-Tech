@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "IH",
+    "I "
+  ],
+  "key": {
+    "I": {
+      "item": "skyent:cupronickel_ingot"
+    },
+    "H": {
+      "item": "skyent:forging_hammer"
+    }
+  },
+  "result": {
+    "id": "skyent:cupronickel_rod"
+  }
+}

@@ -89,6 +89,11 @@ public final class ModItems {
             new Item.Properties()
     );
 
+    public static final DeferredItem<BlockItem> WIRE_MILL = ITEMS.registerSimpleBlockItem(
+            ModBlocks.WIRE_MILL,
+            new Item.Properties()
+    );
+
     public static final DeferredItem<BlockItem> LV_ELECTRIC_PUMP = ITEMS.registerSimpleBlockItem(
             ModBlocks.LV_ELECTRIC_PUMP,
             new Item.Properties()
@@ -397,6 +402,7 @@ public final class ModItems {
     public static final DeferredItem<Item> IRON_BOLT = simpleItem("iron_bolt");
     public static final DeferredItem<Item> COPPER_BOLT = simpleItem("copper_bolt");
     public static final DeferredItem<Item> STEEL_BOLT = simpleItem("steel_bolt");
+    public static final DeferredItem<Item> COBALT_WIRE = simpleItem("cobalt_wire");
     public static final DeferredItem<Item> TUNGSTEN_BOLT = simpleItem("tungsten_bolt");
     public static final DeferredItem<Item> COBALT_BOLT = simpleItem("cobalt_bolt");
     public static final DeferredItem<Item> NICKEL_BOLT = simpleItem("nickel_bolt");
@@ -404,20 +410,26 @@ public final class ModItems {
     public static final DeferredItem<Item> TITANIUM_BOLT = simpleItem("titanium_bolt");
     public static final DeferredItem<Item> IRON_ROD = simpleItem("iron_rod");
     public static final DeferredItem<Item> COPPER_ROD = simpleItem("copper_rod");
+    public static final DeferredItem<Item> TIN_ROD = simpleItem("tin_rod");
     public static final DeferredItem<Item> STEEL_ROD = simpleItem("steel_rod");
     public static final DeferredItem<Item> ALUMINUM_ROD = simpleItem("aluminum_rod");
     public static final DeferredItem<Item> TITANIUM_ROD = simpleItem("titanium_rod");
     public static final DeferredItem<Item> TUNGSTEN_ROD = simpleItem("tungsten_rod");
     public static final DeferredItem<Item> COBALT_ROD = simpleItem("cobalt_rod");
     public static final DeferredItem<Item> NICKEL_ROD = simpleItem("nickel_rod");
+    public static final DeferredItem<Item> COBALT_BRONZE_ROD = simpleItem("cobalt_bronze_rod");
+    public static final DeferredItem<Item> CUPRONICKEL_ROD = simpleItem("cupronickel_rod");
     public static final DeferredItem<Item> HOT_IRON_ROD = simpleItem("hot_iron_rod");
     public static final DeferredItem<Item> HOT_COPPER_ROD = simpleItem("hot_copper_rod");
+    public static final DeferredItem<Item> HOT_TIN_ROD = simpleItem("hot_tin_rod");
     public static final DeferredItem<Item> HOT_STEEL_ROD = simpleItem("hot_steel_rod");
     public static final DeferredItem<Item> HOT_ALUMINUM_ROD = simpleItem("hot_aluminum_rod");
     public static final DeferredItem<Item> HOT_TITANIUM_ROD = simpleItem("hot_titanium_rod");
     public static final DeferredItem<Item> HOT_TUNGSTEN_ROD = simpleItem("hot_tungsten_rod");
     public static final DeferredItem<Item> HOT_COBALT_ROD = simpleItem("hot_cobalt_rod");
     public static final DeferredItem<Item> HOT_NICKEL_ROD = simpleItem("hot_nickel_rod");
+    public static final DeferredItem<Item> HOT_COBALT_BRONZE_ROD = simpleItem("hot_cobalt_bronze_rod");
+    public static final DeferredItem<Item> HOT_CUPRONICKEL_ROD = simpleItem("hot_cupronickel_rod");
     public static final DeferredItem<Item> COPPER_WIRE = simpleItem("copper_wire");
     public static final DeferredItem<Item> TIN_WIRE = simpleItem("tin_wire");
     public static final DeferredItem<Item> STEEL_WIRE = simpleItem("steel_wire");

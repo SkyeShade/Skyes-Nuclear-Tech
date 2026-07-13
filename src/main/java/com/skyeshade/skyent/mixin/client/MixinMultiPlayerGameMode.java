@@ -7,6 +7,7 @@ import com.skyeshade.skyent.content.block.IndustrialPressBlock;
 import com.skyeshade.skyent.content.block.LVMVTransformerBlock;
 import com.skyeshade.skyent.content.block.RollingMillBlock;
 import com.skyeshade.skyent.content.block.SteamForgeHammerBlock;
+import com.skyeshade.skyent.content.block.WireMillBlock;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.MultiPlayerGameMode;
 import net.minecraft.core.BlockPos;
@@ -38,6 +39,7 @@ public abstract class MixinMultiPlayerGameMode {
         visualPos = HeatingChamberBlock.resolveDestroyProgressPos(level, visualPos);
         visualPos = IndustrialPressBlock.resolveDestroyProgressPos(level, visualPos);
         visualPos = RollingMillBlock.resolveDestroyProgressPos(level, visualPos);
+        visualPos = WireMillBlock.resolveDestroyProgressPos(level, visualPos);
         visualPos = LVMVTransformerBlock.resolveDestroyProgressPos(level, visualPos);
         original.call(level, breakerId, visualPos, progress);
 

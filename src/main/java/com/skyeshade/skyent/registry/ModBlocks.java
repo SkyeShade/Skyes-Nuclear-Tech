@@ -37,6 +37,8 @@ import com.skyeshade.skyent.content.block.SiltBlock;
 import com.skyeshade.skyent.content.block.SteamForgeHammerBlock;
 import com.skyeshade.skyent.content.block.SteamForgeHammerPartBlock;
 import com.skyeshade.skyent.content.block.UraniumBlock;
+import com.skyeshade.skyent.content.block.WireMillBlock;
+import com.skyeshade.skyent.content.block.WireMillPartBlock;
 import com.skyeshade.skyent.content.radiation.EnvironmentalRadiationMode;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -164,6 +166,23 @@ public final class ModBlocks {
                     .strength(5.0F, 12.0F)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()
+    );
+
+    public static final DeferredBlock<WireMillBlock> WIRE_MILL = BLOCKS.registerBlock(
+            "wire_mill",
+            WireMillBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 12.0F)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
+    );
+
+    public static final DeferredBlock<WireMillPartBlock> WIRE_MILL_PART = BLOCKS.registerBlock(
+            "wire_mill_part",
+            WireMillPartBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 12.0F)
+                    .requiresCorrectToolForDrops()
     );
 
     public static final DeferredBlock<LVElectricPumpBlock> LV_ELECTRIC_PUMP = BLOCKS.registerBlock(

@@ -157,7 +157,8 @@ public class LVConnectorBlock extends BaseEntityBlock {
                 || LVMVTransformerBlock.isConnectorSupportCell(supportState)
                 || HeatingChamberBlock.isConnectorSupportCell(supportState)
                 || IndustrialPressBlock.isConnectorSupportCell(supportState)
-                || RollingMillBlock.isConnectorSupportCell(level, supportState, supportPos, facing);
+                || RollingMillBlock.isConnectorSupportCell(level, supportState, supportPos, facing)
+                || WireMillBlock.isConnectorSupportCell(supportState);
     }
 
     @Override

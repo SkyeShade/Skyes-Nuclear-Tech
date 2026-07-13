@@ -25,6 +25,7 @@ import com.skyeshade.skyent.content.blockentity.LVRJConverterBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVConnectorBlockEntity;
 import com.skyeshade.skyent.content.blockentity.RollingMillBlockEntity;
 import com.skyeshade.skyent.content.blockentity.SteamForgeHammerBlockEntity;
+import com.skyeshade.skyent.content.blockentity.WireMillBlockEntity;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.bus.api.IEventBus;
@@ -95,6 +96,12 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("industrial_press", () -> BlockEntityType.Builder.of(
                     IndustrialPressBlockEntity::new,
                     ModBlocks.INDUSTRIAL_PRESS.get()
+            ).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<WireMillBlockEntity>> WIRE_MILL =
+            BLOCK_ENTITIES.register("wire_mill", () -> BlockEntityType.Builder.of(
+                    WireMillBlockEntity::new,
+                    ModBlocks.WIRE_MILL.get()
             ).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<LVElectricPumpBlockEntity>> LV_ELECTRIC_PUMP =

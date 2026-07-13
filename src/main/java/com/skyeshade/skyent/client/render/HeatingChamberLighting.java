@@ -20,13 +20,22 @@ public final class HeatingChamberLighting {
     private HeatingChamberLighting() {
     }
 
+    @FunctionalInterface
+    public interface LocalToWorld {
+        BlockPos map(BlockPos controllerPos, Direction facing, int x, int y, int z);
+    }
+
     public static int computeMaxPackedLight(BlockAndTintGetter level, BlockPos controllerPos, Direction facing) {
+        return computeMaxPackedLight(level, controllerPos, facing, SIZE_X, SIZE_Y, SIZE_Z, HeatingChamberBlock::localToWorld);
+    }
+
+    public static int computeMaxPackedLight(BlockAndTintGetter level, BlockPos controllerPos, Direction facing, int sizeX, int sizeY, int sizeZ, LocalToWorld localToWorld) {
         int sky = 0;
         int block = 0;
-        for (int y = 0; y < SIZE_Y; y++) {
-            for (int x = 0; x < SIZE_X; x++) {
-                for (int z = 0; z < SIZE_Z; z++) {
-                    BlockPos cellPos = HeatingChamberBlock.localToWorld(controllerPos, facing, x, y, z);
+        for (int y = 0; y < sizeY; y++) {
+            for (int x = 0; x < sizeX; x++) {
+                for (int z = 0; z < sizeZ; z++) {
+                    BlockPos cellPos = localToWorld.map(controllerPos, facing, x, y, z);
                     int light = sampleCellAndAdjacentLight(level, cellPos);
                     sky = Math.max(sky, LightTexture.sky(light));
                     block = Math.max(block, LightTexture.block(light));

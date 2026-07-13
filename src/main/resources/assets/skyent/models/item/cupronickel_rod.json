@@ -1,0 +1,14 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "skyent:item/cupronickel_rod"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "skyent:hot": 1.0
+      },
+      "model": "skyent:item/heated_rod"
+    }
+  ]
+}

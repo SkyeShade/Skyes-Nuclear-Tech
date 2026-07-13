@@ -6,6 +6,7 @@ import com.skyeshade.skyent.content.block.ConveyorElevatorBlock;
 import com.skyeshade.skyent.content.block.HeatingChamberPartBlock;
 import com.skyeshade.skyent.content.block.SteamForgeHammerBlock;
 import com.skyeshade.skyent.content.block.SteamForgeHammerPartBlock;
+import com.skyeshade.skyent.content.block.WireMillPartBlock;
 import com.skyeshade.skyent.content.fluid.SteelFluidBarrelFluidHandler;
 import com.skyeshade.skyent.network.ClientPayloadHandlers;
 import com.skyeshade.skyent.network.GeigerExposurePayload;
@@ -110,6 +111,12 @@ public final class CommonEvents {
                 Capabilities.ItemHandler.BLOCK,
                 (level, pos, state, blockEntity, side) -> HeatingChamberPartBlock.getItemHandler(level, pos, state, side),
                 ModBlocks.HEATING_CHAMBER_PART.get()
+        );
+
+        event.registerBlock(
+                Capabilities.ItemHandler.BLOCK,
+                (level, pos, state, blockEntity, side) -> WireMillPartBlock.getItemHandler(level, pos, state, side),
+                ModBlocks.WIRE_MILL_PART.get()
         );
 
         event.registerBlock(

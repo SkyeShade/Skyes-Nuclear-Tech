@@ -5,9 +5,11 @@ import com.skyeshade.skyent.content.block.HeatingChamberBlock;
 import com.skyeshade.skyent.content.block.IndustrialPressBlock;
 import com.skyeshade.skyent.content.block.LVMVTransformerBlock;
 import com.skyeshade.skyent.content.block.RollingMillBlock;
+import com.skyeshade.skyent.content.block.WireMillBlock;
 import com.skyeshade.skyent.content.blockentity.IndustrialPressBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVMVTransformerBlockEntity;
 import com.skyeshade.skyent.content.blockentity.RollingMillBlockEntity;
+import com.skyeshade.skyent.content.blockentity.WireMillBlockEntity;
 import com.skyeshade.skyent.content.energy.ElectricalTier;
 import com.skyeshade.skyent.content.energy.EnergyUnits;
 import com.skyeshade.skyent.content.energy.RJEnergyInfo;
@@ -116,6 +118,8 @@ public enum RJComponentProvider implements IBlockComponentProvider, IServerDataP
             data.putString(DATA_MACHINE_STATUS, press.getStatusText());
         } else if (blockEntity instanceof RollingMillBlockEntity rollingMill) {
             data.putString(DATA_MACHINE_STATUS, rollingMill.getStatusText());
+        } else if (blockEntity instanceof WireMillBlockEntity wireMill) {
+            data.putString(DATA_MACHINE_STATUS, wireMill.getStatusText());
         }
     }
 
@@ -145,6 +149,13 @@ public enum RJComponentProvider implements IBlockComponentProvider, IServerDataP
                 .orElse(null);
         if (rollingMill instanceof RJEnergyInfo) {
             return rollingMill;
+        }
+
+        BlockEntity wireMill = WireMillBlock.getMasterBlockEntity(accessor.getLevel(), state, accessor.getPosition())
+                .map(BlockEntity.class::cast)
+                .orElse(null);
+        if (wireMill instanceof RJEnergyInfo) {
+            return wireMill;
         }
 
         BlockPos masterPos = LVMVTransformerBlock.getMasterPos(state, accessor.getPosition());

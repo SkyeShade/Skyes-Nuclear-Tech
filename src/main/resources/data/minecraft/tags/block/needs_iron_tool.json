@@ -25,6 +25,8 @@
     "skyent:industrial_press_part",
     "skyent:rolling_mill",
     "skyent:rolling_mill_part",
+    "skyent:wire_mill",
+    "skyent:wire_mill_part",
     "skyent:lv_mv_transformer",
     "skyent:lv_mv_transformer_part",
     "skyent:lv_steam_turbine",

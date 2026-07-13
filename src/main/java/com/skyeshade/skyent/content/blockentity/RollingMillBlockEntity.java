@@ -1,5 +1,8 @@
 package com.skyeshade.skyent.content.blockentity;
 
+import com.skyeshade.skyent.client.model.SkyentModelData;
+import com.skyeshade.skyent.client.render.HeatingChamberLighting;
+import com.skyeshade.skyent.client.render.RollingMillLightRefreshTracker;
 import com.skyeshade.skyent.content.block.RollingMillBlock;
 import com.skyeshade.skyent.content.entity.ConveyorMovingItemEntity;
 import com.skyeshade.skyent.content.energy.ElectricalTier;
@@ -22,13 +25,16 @@ import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.client.model.data.ModelData;
 import org.jetbrains.annotations.Nullable;
 
 public class RollingMillBlockEntity extends BlockEntity implements RJEnergyInfo {
+    private static final int LIGHT_CHECK_INTERVAL_TICKS = 40;
     private static final int ENERGY_CAPACITY_RJ = 512_000;
     private static final ElectricalTier REQUIRED_TIER = ElectricalTier.MV;
     private static final double RUNNING_CURRENT_AMPS = 0.5D;
@@ -53,6 +59,8 @@ public class RollingMillBlockEntity extends BlockEntity implements RJEnergyInfo 
     private boolean movementSinceLastServerTick;
     private boolean blockedThisTick;
     private boolean running;
+    private int cachedSharedPackedLight = -1;
+    private int lightCheckTicks;
 
     public RollingMillBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.ROLLING_MILL.get(), pos, blockState);
@@ -77,6 +85,11 @@ public class RollingMillBlockEntity extends BlockEntity implements RJEnergyInfo 
             return;
         }
         rollingMill.tickClientMotorLoop();
+        rollingMill.lightCheckTicks++;
+        if (rollingMill.lightCheckTicks >= LIGHT_CHECK_INTERVAL_TICKS) {
+            rollingMill.lightCheckTicks = 0;
+            rollingMill.refreshSharedLight(false);
+        }
     }
 
     public boolean canInternalConveyorAccept() {
@@ -145,9 +158,29 @@ public class RollingMillBlockEntity extends BlockEntity implements RJEnergyInfo 
     }
 
     @Override
+    public ModelData getModelData() {
+        if (level == null && cachedSharedPackedLight < 0) {
+            return ModelData.EMPTY;
+        }
+
+        int packedLight = cachedSharedPackedLight >= 0 ? cachedSharedPackedLight : computePackedLight(level);
+        return ModelData.of(SkyentModelData.SHARED_PACKED_LIGHT, packedLight);
+    }
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        if (level != null && level.isClientSide) {
+            RollingMillLightRefreshTracker.register(worldPosition);
+        }
+        refreshSharedLight(true);
+    }
+
+    @Override
     public void onChunkUnloaded() {
         super.onChunkUnloaded();
         if (level != null && level.isClientSide) {
+            RollingMillLightRefreshTracker.unregister(worldPosition);
             stopClientMotorLoop(level, worldPosition);
         }
     }
@@ -155,9 +188,48 @@ public class RollingMillBlockEntity extends BlockEntity implements RJEnergyInfo 
     @Override
     public void setRemoved() {
         if (level != null && level.isClientSide) {
+            RollingMillLightRefreshTracker.unregister(worldPosition);
             stopClientMotorLoop(level, worldPosition);
         }
         super.setRemoved();
+    }
+
+    public int getSharedPackedLight() {
+        if (level == null && cachedSharedPackedLight < 0) {
+            return 0;
+        }
+        return cachedSharedPackedLight >= 0 ? cachedSharedPackedLight : computePackedLight(level);
+    }
+
+    public void refreshSharedLight(boolean forceRenderUpdate) {
+        if (level == null || !level.isClientSide) {
+            return;
+        }
+
+        int packedLight = computePackedLight(level);
+        if (!forceRenderUpdate && packedLight == cachedSharedPackedLight) {
+            return;
+        }
+
+        cachedSharedPackedLight = packedLight;
+        requestModelDataUpdate();
+        BlockState state = getBlockState();
+        level.sendBlockUpdated(worldPosition, state, state, Block.UPDATE_CLIENTS);
+    }
+
+    private int computePackedLight(Level level) {
+        Direction facing = getBlockState().hasProperty(RollingMillBlock.FACING)
+                ? getBlockState().getValue(RollingMillBlock.FACING)
+                : Direction.NORTH;
+        return HeatingChamberLighting.computeMaxPackedLight(
+                level,
+                worldPosition,
+                facing,
+                RollingMillBlock.SIZE_X,
+                RollingMillBlock.SIZE_Y,
+                RollingMillBlock.SIZE_Z,
+                RollingMillBlock::localToWorld
+        );
     }
 
     public void dropInternalConveyorItems() {

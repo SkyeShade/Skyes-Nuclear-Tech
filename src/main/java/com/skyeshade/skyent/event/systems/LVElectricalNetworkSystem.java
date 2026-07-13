@@ -4,6 +4,7 @@ import com.skyeshade.skyent.content.block.LVMVTransformerBlock;
 import com.skyeshade.skyent.content.block.HeatingChamberBlock;
 import com.skyeshade.skyent.content.block.IndustrialPressBlock;
 import com.skyeshade.skyent.content.block.RollingMillBlock;
+import com.skyeshade.skyent.content.block.WireMillBlock;
 import com.skyeshade.skyent.content.blockentity.ElectricFurnaceBlockEntity;
 import com.skyeshade.skyent.content.blockentity.HeatingChamberBlockEntity;
 import com.skyeshade.skyent.content.blockentity.IndustrialPressBlockEntity;
@@ -14,6 +15,7 @@ import com.skyeshade.skyent.content.blockentity.LVRJConverterBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVConnectorBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVMVTransformerBlockEntity;
 import com.skyeshade.skyent.content.blockentity.RollingMillBlockEntity;
+import com.skyeshade.skyent.content.blockentity.WireMillBlockEntity;
 import com.skyeshade.skyent.content.energy.CopperWireConstants;
 import com.skyeshade.skyent.content.energy.ElectricalTier;
 import com.skyeshade.skyent.content.energy.LVWireType;
@@ -250,6 +252,9 @@ public final class LVElectricalNetworkSystem {
             RollingMillBlockEntity rollingMill = attachedConnector != null && attachedConnector.getConnectorTier() == ElectricalTier.MV
                     ? resolveRollingMill(level, endpointState, endpointPos, direction.getOpposite())
                     : null;
+            WireMillBlockEntity wireMill = attachedConnector != null && attachedConnector.getConnectorTier() == ElectricalTier.MV
+                    ? resolveWireMill(level, endpointState, endpointPos)
+                    : null;
             LVMVTransformerBlockEntity transformerBody = attachedConnector != null
                     ? resolveTransformerBody(level, endpointState, endpointPos)
                     : null;
@@ -347,6 +352,18 @@ public final class LVElectricalNetworkSystem {
                     @Override
                     public int receiveRJ(int amount, boolean simulate) {
                         return rollingMill.receiveRJ(attachedConnector.getConnectorTier(), amount, simulate);
+                    }
+                }));
+            } else if (wireMill != null) {
+                consumers.add(new Consumer(connectorPos, new NetworkConsumer() {
+                    @Override
+                    public int availableRJCapacity() {
+                        return wireMill.getAvailableRJCapacity();
+                    }
+
+                    @Override
+                    public int receiveRJ(int amount, boolean simulate) {
+                        return wireMill.receiveRJ(attachedConnector.getConnectorTier(), amount, simulate);
                     }
                 }));
             } else if (blockEntity instanceof LVSteamTurbineBlockEntity turbine) {
@@ -462,6 +479,14 @@ public final class LVElectricalNetworkSystem {
             return null;
         }
         return RollingMillBlock.getMasterBlockEntity(level, state, pos).orElse(null);
+    }
+
+    @Nullable
+    private static WireMillBlockEntity resolveWireMill(ServerLevel level, BlockState state, BlockPos pos) {
+        if (!WireMillBlock.isConnectorSupportCell(state)) {
+            return null;
+        }
+        return WireMillBlock.getMasterBlockEntity(level, state, pos).orElse(null);
     }
 
     @Nullable
