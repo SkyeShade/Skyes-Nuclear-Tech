@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "skyent:item/steel_bearing"
+    "layer0": "skyent:item/cupronickel_plate"
   }
 }

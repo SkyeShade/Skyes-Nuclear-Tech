@@ -27,6 +27,9 @@ public final class ForgingAnvilRecipes {
         if (item == ModItems.COBALT_BRONZE_INGOT.get()) {
             return Optional.of(new ItemStack(ModItems.COBALT_BRONZE_PLATE.get()));
         }
+        if (item == ModItems.CUPRONICKEL_INGOT.get()) {
+            return Optional.of(new ItemStack(ModItems.CUPRONICKEL_PLATE.get()));
+        }
         if (item == Items.GOLD_INGOT) {
             return Optional.of(new ItemStack(ModItems.GOLD_PLATE.get()));
         }

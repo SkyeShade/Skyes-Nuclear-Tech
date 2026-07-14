@@ -2,19 +2,22 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "pattern": [
-    "SWS",
-    "WIW",
-    "SWS"
+    "SBS",
+    "WRW",
+    "SBS"
   ],
   "key": {
     "S": {
       "item": "skyent:steel_plate"
     },
-    "W": {
-      "item": "skyent:copper_wire"
+    "B": {
+      "item": "skyent:steel_bearing"
     },
-    "I": {
-      "item": "skyent:nickel_rod"
+    "W": {
+      "item": "skyent:copper_coil"
+    },
+    "R": {
+      "item": "skyent:iron_rod"
     }
   },
   "result": {

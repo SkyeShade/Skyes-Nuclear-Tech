@@ -2,16 +2,16 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "pattern": [
-    "STS",
-    "TBT",
+    "SNS",
+    "NBN",
     "SFS"
   ],
   "key": {
     "S": {
       "item": "skyent:steel_plate"
     },
-    "T": {
-      "item": "skyent:titanium_plate"
+    "N": {
+      "item": "skyent:nickel_plate"
     },
     "F": {
       "item": "skyent:steel_fluid_barrel"

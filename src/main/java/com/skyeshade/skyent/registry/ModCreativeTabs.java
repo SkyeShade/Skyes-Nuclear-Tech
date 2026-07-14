@@ -107,6 +107,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.COBALT_PLATE.get());
                         output.accept(ModItems.NICKEL_PLATE.get());
                         output.accept(ModItems.COBALT_BRONZE_PLATE.get());
+                        output.accept(ModItems.CUPRONICKEL_PLATE.get());
                         output.accept(ModItems.LEAD_PLATE.get());
                         output.accept(ModItems.IRON_POWDER.get());
                         output.accept(ModItems.GOLD_POWDER.get());
@@ -151,7 +152,9 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.COBALT_WIRE.get());
                         output.accept(ModItems.COBALT_BRONZE_WIRE.get());
                         output.accept(ModItems.CUPRONICKEL_WIRE.get());
+                        output.accept(ModItems.COPPER_COIL.get());
                         output.accept(ModItems.STEEL_BEARING.get());
+                        output.accept(ModItems.NICKEL_TURBINE.get());
                         output.accept(ModItems.TITANIUM_TURBINE_BLADE.get());
                         output.accept(ModItems.ELECTRIC_MOTOR.get());
                         output.accept(ModItems.HYDRAULIC_COMPONENT.get());

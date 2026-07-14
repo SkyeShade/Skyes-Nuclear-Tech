@@ -3,14 +3,14 @@
   "category": "misc",
   "ingredients": [
     {
-      "item": "skyent:steel_plate"
+      "item": "skyent:cupronickel_plate"
     },
     {
       "item": "skyent:wire_cutters"
     }
   ],
   "result": {
-    "id": "skyent:steel_wire",
+    "id": "skyent:cupronickel_wire",
     "count": 1
   }
 }

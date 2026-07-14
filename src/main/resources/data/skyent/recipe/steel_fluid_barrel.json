@@ -2,16 +2,16 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "pattern": [
-    "SAS",
+    "SNS",
     "S S",
-    "SAS"
+    "SNS"
   ],
   "key": {
     "S": {
       "item": "skyent:steel_plate"
     },
-    "A": {
-      "item": "skyent:aluminum_plate"
+    "N": {
+      "item": "skyent:iron_plate"
     }
   },
   "result": {

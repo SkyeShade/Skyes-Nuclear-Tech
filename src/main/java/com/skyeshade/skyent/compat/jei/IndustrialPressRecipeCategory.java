@@ -56,6 +56,7 @@ public final class IndustrialPressRecipeCategory extends ConveyorMachineRecipeCa
                 recipe(ModItems.HOT_COBALT_INGOT.get(), ModItems.COBALT_PLATE.get()),
                 recipe(ModItems.HOT_NICKEL_INGOT.get(), ModItems.NICKEL_PLATE.get()),
                 recipe(ModItems.HOT_COBALT_BRONZE_INGOT.get(), ModItems.COBALT_BRONZE_PLATE.get()),
+                recipe(ModItems.HOT_CUPRONICKEL_INGOT.get(), ModItems.CUPRONICKEL_PLATE.get()),
                 recipe(ModItems.HOT_COPPER_ROD.get(), ModItems.COPPER_BOLT.get()),
                 recipe(ModItems.HOT_IRON_ROD.get(), ModItems.IRON_BOLT.get()),
                 recipe(ModItems.HOT_STEEL_ROD.get(), ModItems.STEEL_BOLT.get()),

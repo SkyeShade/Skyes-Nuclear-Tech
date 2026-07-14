@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "WWW",
+    "WRW",
+    "WWW"
+  ],
+  "key": {
+    "W": {
+      "item": "skyent:copper_wire"
+    },
+    "R": {
+      "item": "skyent:iron_rod"
+    }
+  },
+  "result": {
+    "id": "skyent:copper_coil"
+  }
+}

@@ -2,18 +2,19 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "pattern": [
-    "SNS"
+    "NNN",
+    "NBN",
+    "NNN"
   ],
   "key": {
-    "S": {
-      "item": "skyent:steel_plate"
-    },
     "N": {
       "item": "skyent:nickel_plate"
+    },
+    "B": {
+      "item": "skyent:steel_bearing"
     }
   },
   "result": {
-    "id": "skyent:basic_fluid_duct",
-    "count": 8
+    "id": "skyent:nickel_turbine"
   }
 }

@@ -767,6 +767,7 @@ public class IndustrialPressBlockEntity extends BlockEntity implements RJEnergyI
         if (item == ModItems.COBALT_INGOT.get()) return ModItems.COBALT_PLATE.get();
         if (item == ModItems.NICKEL_INGOT.get()) return ModItems.NICKEL_PLATE.get();
         if (item == ModItems.COBALT_BRONZE_INGOT.get()) return ModItems.COBALT_BRONZE_PLATE.get();
+        if (item == ModItems.CUPRONICKEL_INGOT.get()) return ModItems.CUPRONICKEL_PLATE.get();
         return null;
     }
 
