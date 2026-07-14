@@ -3,6 +3,8 @@ package com.skyeshade.skyent.event;
 import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.client.debug.RadiationDebugOverlayClient;
 import com.skyeshade.skyent.client.debug.RadiationRayDebugClient;
+import com.skyeshade.skyent.client.effect.CameraShakeSystem;
+import com.skyeshade.skyent.client.effect.NukeDetonationEffectsClient;
 import com.skyeshade.skyent.client.item.GeigerCounterClientState;
 import com.skyeshade.skyent.client.item.GeigerCounterSoundManager;
 import com.skyeshade.skyent.client.item.PlacedGeigerCounterSoundManager;
@@ -10,6 +12,7 @@ import com.skyeshade.skyent.client.item.SteelFluidBarrelFluidDecorator;
 import com.skyeshade.skyent.client.item.SteelTongsHeldItemDecorator;
 import com.skyeshade.skyent.client.model.ScaledBlockModel;
 import com.skyeshade.skyent.client.model.SlicedScaledBlockModel;
+import com.skyeshade.skyent.client.particle.NukeCloudParticle;
 import com.skyeshade.skyent.client.particle.StreakParticle;
 import com.skyeshade.skyent.client.renderer.blockentity.CoalForgeRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.ForgingAnvilRenderer;
@@ -20,6 +23,7 @@ import com.skyeshade.skyent.client.renderer.blockentity.LVMVTransformerRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.RollingMillRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.SteamForgeHammerRenderer;
 import com.skyeshade.skyent.client.renderer.entity.ConveyorMovingItemRenderer;
+import com.skyeshade.skyent.client.renderer.entity.NuclearExplosionRenderer;
 import com.skyeshade.skyent.client.renderer.LVConnectorRenderer;
 import com.skyeshade.skyent.client.renderer.LVElectricPumpRenderer;
 import com.skyeshade.skyent.client.render.RadiationFeedbackClient;
@@ -103,6 +107,7 @@ public final class ClientEvents {
 
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(ModEntities.CONVEYOR_MOVING_ITEM.get(), ConveyorMovingItemRenderer::new);
+        event.registerEntityRenderer(ModEntities.NUCLEAR_EXPLOSION.get(), NuclearExplosionRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.LV_CONNECTOR.get(), LVConnectorRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.LV_ELECTRIC_PUMP.get(), LVElectricPumpRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.GEIGER_COUNTER_PLACED.get(), GeigerCounterPlacedRenderer::new);
@@ -142,6 +147,7 @@ public final class ClientEvents {
 
     public static void onRegisterParticleProviders(RegisterParticleProvidersEvent event) {
         event.registerSpriteSet(ModParticles.SPARK_STREAK.get(), StreakParticle.Factory::new);
+        event.registerSpriteSet(ModParticles.NUKE_CLOUD.get(), NukeCloudParticle.Provider::new);
     }
 
     public static void onClientTick(ClientTickEvent.Post event) {
@@ -151,7 +157,9 @@ public final class ClientEvents {
         PlacedGeigerCounterSoundManager.clientTick();
         ConveyorSoundHandler.clientTick();
         MachineSoundManager.tick();
+        CameraShakeSystem.onClientTick(event);
         RadiationRayDebugClient.onClientTick(event);
+        NukeDetonationEffectsClient.onClientTick(event);
     }
 
     private static void tickRadiationFeedback() {
@@ -167,10 +175,12 @@ public final class ClientEvents {
 
     public static void onRenderLevel(RenderLevelStageEvent event) {
         RadiationRayDebugClient.onRenderLevel(event);
+        NukeDetonationEffectsClient.onRenderLevel(event);
     }
 
     public static void onRenderGui(RenderGuiEvent.Post event) {
         RadiationDebugOverlayClient.onRenderGui(event);
+        NukeDetonationEffectsClient.onRenderGui(event);
     }
 
     public static void onItemTooltip(ItemTooltipEvent event) {

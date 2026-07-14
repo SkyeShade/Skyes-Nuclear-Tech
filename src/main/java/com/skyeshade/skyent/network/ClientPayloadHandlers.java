@@ -28,6 +28,14 @@ public final class ClientPayloadHandlers {
         context.enqueueWork(() -> playLocalSound(payload));
     }
 
+    public static void handleNukeDetonationEffects(NukeDetonationEffectsPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> startNukeDetonationEffects(payload));
+    }
+
+    public static void handleCameraShake(CameraShakeS2CPacket payload, IPayloadContext context) {
+        context.enqueueWork(() -> addCameraShake(payload));
+    }
+
     private static void setClientRadiationRays(boolean enabled) {
         if (FMLEnvironment.dist != Dist.CLIENT) {
             return;
@@ -91,6 +99,32 @@ public final class ClientPayloadHandlers {
             localSound.getMethod("handlePayload", PlayLocalSoundPayload.class).invoke(null, payload);
         } catch (ReflectiveOperationException exception) {
             throw new IllegalStateException("Unable to play local client sound", exception);
+        }
+    }
+
+    private static void startNukeDetonationEffects(NukeDetonationEffectsPayload payload) {
+        if (FMLEnvironment.dist != Dist.CLIENT) {
+            return;
+        }
+
+        try {
+            Class<?> effects = Class.forName("com.skyeshade.skyent.client.effect.NukeDetonationEffectsClient");
+            effects.getMethod("handlePayload", NukeDetonationEffectsPayload.class).invoke(null, payload);
+        } catch (ReflectiveOperationException exception) {
+            throw new IllegalStateException("Unable to start client nuke detonation effects", exception);
+        }
+    }
+
+    private static void addCameraShake(CameraShakeS2CPacket payload) {
+        if (FMLEnvironment.dist != Dist.CLIENT) {
+            return;
+        }
+
+        try {
+            Class<?> cameraShake = Class.forName("com.skyeshade.skyent.client.effect.CameraShakeManager");
+            cameraShake.getMethod("addShake", float.class, int.class).invoke(null, payload.strength(), payload.duration());
+        } catch (ReflectiveOperationException exception) {
+            throw new IllegalStateException("Unable to add client camera shake", exception);
         }
     }
 }

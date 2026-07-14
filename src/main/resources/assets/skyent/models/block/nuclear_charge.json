@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "bottom": "skyent:block/nuclear_charge",
+    "side": "skyent:block/nuclear_charge",
+    "top": "skyent:block/nuclear_charge_top",
+    "particle": "skyent:block/nuclear_charge"
+  }
+}

@@ -8,6 +8,7 @@ import com.skyeshade.skyent.content.item.LVWireDrumItem;
 import com.skyeshade.skyent.content.item.RadioactiveBlockItem;
 import com.skyeshade.skyent.content.item.RadioactiveItem;
 import com.skyeshade.skyent.content.item.RadioactiveToxicItem;
+import com.skyeshade.skyent.content.item.RemoteDetonatorItem;
 import com.skyeshade.skyent.content.item.ShieldingBlockItem;
 import com.skyeshade.skyent.content.item.SkyentToolTier;
 import com.skyeshade.skyent.content.item.SteelFluidBarrelItem;
@@ -91,6 +92,11 @@ public final class ModItems {
 
     public static final DeferredItem<BlockItem> WIRE_MILL = ITEMS.registerSimpleBlockItem(
             ModBlocks.WIRE_MILL,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> NUCLEAR_CHARGE = ITEMS.registerSimpleBlockItem(
+            ModBlocks.NUCLEAR_CHARGE,
             new Item.Properties()
     );
 
@@ -457,6 +463,10 @@ public final class ModItems {
     public static final DeferredItem<SteelTongsItem> STEEL_TONGS = ITEMS.register(
             "steel_tongs",
             () -> new SteelTongsItem(new Item.Properties().stacksTo(1))
+    );
+    public static final DeferredItem<RemoteDetonatorItem> REMOTE_DETONATOR = ITEMS.register(
+            "remote_detonator",
+            () -> new RemoteDetonatorItem(new Item.Properties())
     );
     public static final DeferredItem<Item> HOT_PLATE_FORGING_STAGE_1 = simpleItem("hot_plate_forging_stage_1");
     public static final DeferredItem<Item> HOT_PLATE_FORGING_STAGE_2 = simpleItem("hot_plate_forging_stage_2");

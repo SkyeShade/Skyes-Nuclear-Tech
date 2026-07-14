@@ -29,6 +29,7 @@ import com.skyeshade.skyent.content.block.LVMVTransformerBlock;
 import com.skyeshade.skyent.content.block.LVMVTransformerPartBlock;
 import com.skyeshade.skyent.content.block.LVSteamTurbineBlock;
 import com.skyeshade.skyent.content.block.MoltenCoriumBlock;
+import com.skyeshade.skyent.content.block.NuclearChargeBlock;
 import com.skyeshade.skyent.content.block.RadioactiveBlock;
 import com.skyeshade.skyent.content.block.RadioactiveScrapMetalBlock;
 import com.skyeshade.skyent.content.block.RollingMillBlock;
@@ -180,6 +181,14 @@ public final class ModBlocks {
     public static final DeferredBlock<WireMillPartBlock> WIRE_MILL_PART = BLOCKS.registerBlock(
             "wire_mill_part",
             WireMillPartBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 12.0F)
+                    .requiresCorrectToolForDrops()
+    );
+
+    public static final DeferredBlock<NuclearChargeBlock> NUCLEAR_CHARGE = BLOCKS.registerBlock(
+            "nuclear_charge",
+            NuclearChargeBlock::new,
             BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
                     .strength(5.0F, 12.0F)
                     .requiresCorrectToolForDrops()

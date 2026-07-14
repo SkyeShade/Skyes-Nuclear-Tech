@@ -33,6 +33,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.ROLLING_MILL.get());
                         output.accept(ModItems.INDUSTRIAL_PRESS.get());
                         output.accept(ModItems.WIRE_MILL.get());
+                        output.accept(ModItems.NUCLEAR_CHARGE.get());
                         output.accept(ModItems.LV_ELECTRIC_PUMP.get());
                         output.accept(ModItems.LV_STEAM_TURBINE.get());
                         output.accept(ModItems.BASIC_FLUID_DUCT.get());
@@ -162,6 +163,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.WRENCH.get());
                         output.accept(ModItems.FORGING_HAMMER.get());
                         output.accept(ModItems.STEEL_TONGS.get());
+                        output.accept(ModItems.REMOTE_DETONATOR.get());
                         output.accept(ModItems.GEIGER_COUNTER.get());
                         output.accept(ModItems.TITANIUM_SWORD.get());
                         output.accept(ModItems.TITANIUM_PICKAXE.get());

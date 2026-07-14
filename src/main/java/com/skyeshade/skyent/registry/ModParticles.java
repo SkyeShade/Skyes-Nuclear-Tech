@@ -3,6 +3,7 @@ package com.skyeshade.skyent.registry;
 import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.particle.StreakParticleOptions;
 import net.minecraft.core.particles.ParticleType;
+import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -26,6 +27,9 @@ public final class ModParticles {
                     return StreakParticleOptions.STREAM_CODEC;
                 }
             });
+
+    public static final DeferredHolder<ParticleType<?>, SimpleParticleType> NUKE_CLOUD =
+            PARTICLES.register("nuke_cloud", () -> new SimpleParticleType(false));
 
     private ModParticles() {
     }

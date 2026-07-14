@@ -8,8 +8,10 @@ import com.skyeshade.skyent.content.block.SteamForgeHammerBlock;
 import com.skyeshade.skyent.content.block.SteamForgeHammerPartBlock;
 import com.skyeshade.skyent.content.block.WireMillPartBlock;
 import com.skyeshade.skyent.content.fluid.SteelFluidBarrelFluidHandler;
+import com.skyeshade.skyent.network.CameraShakeS2CPacket;
 import com.skyeshade.skyent.network.ClientPayloadHandlers;
 import com.skyeshade.skyent.network.GeigerExposurePayload;
+import com.skyeshade.skyent.network.NukeDetonationEffectsPayload;
 import com.skyeshade.skyent.network.PlayLocalSoundPayload;
 import com.skyeshade.skyent.network.RadiationDebugOverlayPayload;
 import com.skyeshade.skyent.network.RadiationRayBatchPayload;
@@ -198,6 +200,16 @@ public final class CommonEvents {
                         PlayLocalSoundPayload.TYPE,
                         PlayLocalSoundPayload.STREAM_CODEC,
                         ClientPayloadHandlers::handlePlayLocalSound
+                )
+                .playToClient(
+                        NukeDetonationEffectsPayload.TYPE,
+                        NukeDetonationEffectsPayload.STREAM_CODEC,
+                        ClientPayloadHandlers::handleNukeDetonationEffects
+                )
+                .playToClient(
+                        CameraShakeS2CPacket.TYPE,
+                        CameraShakeS2CPacket.STREAM_CODEC,
+                        ClientPayloadHandlers::handleCameraShake
                 );
     }
 }
