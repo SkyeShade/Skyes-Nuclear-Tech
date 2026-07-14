@@ -28,7 +28,7 @@ public final class RadiationShieldingTooltip {
             return;
         }
 
-        tooltipComponents.add(severity(shieldFraction).withStyle(ChatFormatting.GRAY));
+        tooltipComponents.add(severity(shieldFraction).withStyle(ChatFormatting.DARK_GREEN));
     }
 
     private static MutableComponent severity(double shieldFraction) {

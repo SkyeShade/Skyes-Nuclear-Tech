@@ -213,6 +213,7 @@
   "tooltip.skyent.radiation_shielding.medium": "[Medium Radiation Shielding]",
   "tooltip.skyent.radiation_shielding.high": "[High Radiation Shielding]",
   "tooltip.skyent.radiation_shielding.extreme": "[Extreme Radiation Shielding]",
+  "tooltip.skyent.blast_resistance": "[Blast Resistance] %s",
   "tooltip.skyent.temperature": "Temperature: %s°C",
   "tooltip.skyent.forgeable": "Forgeable",
   "tooltip.skyent.steel_tongs.empty": "Empty",

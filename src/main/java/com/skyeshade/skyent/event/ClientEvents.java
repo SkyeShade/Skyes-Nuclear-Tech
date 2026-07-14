@@ -27,6 +27,9 @@ import com.skyeshade.skyent.client.sound.ConveyorSoundHandler;
 import com.skyeshade.skyent.client.sound.MachineSoundManager;
 import com.skyeshade.skyent.content.shape.MultiblockShapeRegistry;
 import com.skyeshade.skyent.content.item.HotItemUtil;
+import com.skyeshade.skyent.content.item.RadiationShieldingTooltip;
+import com.skyeshade.skyent.content.item.RadioactiveTooltip;
+import com.skyeshade.skyent.content.item.ToxicityTooltip;
 import com.skyeshade.skyent.client.screen.BrickBlastFurnaceScreen;
 import com.skyeshade.skyent.client.screen.CombustionGeneratorScreen;
 import com.skyeshade.skyent.client.screen.ConveyorExporterScreen;
@@ -40,11 +43,16 @@ import com.skyeshade.skyent.registry.ModEntities;
 import com.skyeshade.skyent.registry.ModItems;
 import com.skyeshade.skyent.registry.ModMenus;
 import com.skyeshade.skyent.registry.ModParticles;
+import java.util.Locale;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.item.ItemProperties;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
@@ -166,7 +174,28 @@ public final class ClientEvents {
     }
 
     public static void onItemTooltip(ItemTooltipEvent event) {
-        HotItemUtil.appendTooltip(event.getItemStack(), event.getToolTip());
+        ItemStack stack = event.getItemStack();
+        HotItemUtil.appendTooltip(stack, event.getToolTip());
+        appendBottomMaterialInfoTooltips(stack, event);
+    }
+
+    private static void appendBottomMaterialInfoTooltips(ItemStack stack, ItemTooltipEvent event) {
+        RadiationShieldingTooltip.append(stack, event.getToolTip());
+        RadioactiveTooltip.append(stack, event.getToolTip());
+        ToxicityTooltip.append(stack, event.getToolTip());
+        appendBlastResistanceTooltip(stack, event);
+    }
+
+    private static void appendBlastResistanceTooltip(ItemStack stack, ItemTooltipEvent event) {
+        if (!(stack.getItem() instanceof BlockItem blockItem)) {
+            return;
+        }
+
+        float resistance = blockItem.getBlock().getExplosionResistance();
+        String value = Float.isInfinite(resistance) || resistance >= Float.MAX_VALUE
+                ? "Immune"
+                : String.format(Locale.ROOT, "%.1f", resistance);
+        event.getToolTip().add(Component.translatable("tooltip.skyent.blast_resistance", value).withStyle(ChatFormatting.GOLD));
     }
 
     private static void registerHotIngotItemProperties() {
