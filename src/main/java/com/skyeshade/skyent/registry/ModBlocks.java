@@ -50,6 +50,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 
 public final class ModBlocks {
     private static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(SkyesNuclearTech.MOD_ID);
+    private static final float OBSIDIAN_BLAST_RESISTANCE = 1200.0F;
 
     public static final DeferredBlock<CombustionGeneratorBlock> COMBUSTION_GENERATOR = BLOCKS.registerBlock(
             "combustion_generator",
@@ -88,6 +89,34 @@ public final class ModBlocks {
             "fire_bricks",
             BlockBehaviour.Properties.ofFullCopy(Blocks.BRICKS)
                     .strength(3.5F, 6.0F)
+                    .requiresCorrectToolForDrops()
+    );
+
+    public static final DeferredBlock<?> CONCRETE_BRICKS = BLOCKS.registerSimpleBlock(
+            "concrete_bricks",
+            BlockBehaviour.Properties.ofFullCopy(Blocks.GRAY_CONCRETE)
+                    .strength(8.0F, OBSIDIAN_BLAST_RESISTANCE * 2.0F)
+                    .requiresCorrectToolForDrops()
+    );
+
+    public static final DeferredBlock<?> REINFORCED_CONCRETE = BLOCKS.registerSimpleBlock(
+            "reinforced_concrete",
+            BlockBehaviour.Properties.ofFullCopy(Blocks.GRAY_CONCRETE)
+                    .strength(12.0F, OBSIDIAN_BLAST_RESISTANCE * 4.0F)
+                    .requiresCorrectToolForDrops()
+    );
+
+    public static final DeferredBlock<?> TUNGSTEN_REINFORCED_CONCRETE = BLOCKS.registerSimpleBlock(
+            "tungsten_reinforced_concrete",
+            BlockBehaviour.Properties.ofFullCopy(Blocks.GRAY_CONCRETE)
+                    .strength(18.0F, OBSIDIAN_BLAST_RESISTANCE * 8.0F)
+                    .requiresCorrectToolForDrops()
+    );
+
+    public static final DeferredBlock<?> PLATED_CONCRETE = BLOCKS.registerSimpleBlock(
+            "plated_concrete",
+            BlockBehaviour.Properties.ofFullCopy(Blocks.GRAY_CONCRETE)
+                    .strength(30.0F, OBSIDIAN_BLAST_RESISTANCE * 32.0F)
                     .requiresCorrectToolForDrops()
     );
 

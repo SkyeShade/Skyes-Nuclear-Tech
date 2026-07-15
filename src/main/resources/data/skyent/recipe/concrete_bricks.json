@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "B": {
+      "item": "minecraft:clay_ball"
+    },
+    "C": {
+      "tag": "skyent:concrete_blocks"
+    }
+  },
+  "pattern": [
+    " C ",
+    "CBC",
+    " C "
+  ],
+  "result": {
+    "id": "skyent:concrete_bricks"
+  }
+}

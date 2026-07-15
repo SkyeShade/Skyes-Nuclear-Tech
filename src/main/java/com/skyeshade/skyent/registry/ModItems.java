@@ -65,6 +65,26 @@ public final class ModItems {
             new Item.Properties()
     );
 
+    public static final DeferredItem<BlockItem> CONCRETE_BRICKS = ITEMS.registerSimpleBlockItem(
+            ModBlocks.CONCRETE_BRICKS,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> REINFORCED_CONCRETE = ITEMS.registerSimpleBlockItem(
+            ModBlocks.REINFORCED_CONCRETE,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> TUNGSTEN_REINFORCED_CONCRETE = ITEMS.registerSimpleBlockItem(
+            ModBlocks.TUNGSTEN_REINFORCED_CONCRETE,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> PLATED_CONCRETE = ITEMS.registerSimpleBlockItem(
+            ModBlocks.PLATED_CONCRETE,
+            new Item.Properties()
+    );
+
     public static final DeferredItem<BlockItem> FORGING_ANVIL = ITEMS.registerSimpleBlockItem(
             ModBlocks.FORGING_ANVIL,
             new Item.Properties()

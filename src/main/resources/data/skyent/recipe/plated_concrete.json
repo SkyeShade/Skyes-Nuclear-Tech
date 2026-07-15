@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "B": {
+      "item": "skyent:tungsten_bolt"
+    },
+    "C": {
+      "item": "skyent:tungsten_reinforced_concrete"
+    },
+    "P": {
+      "item": "skyent:steel_plate"
+    }
+  },
+  "pattern": [
+    "BPB",
+    "PCP",
+    "BPB"
+  ],
+  "result": {
+    "id": "skyent:plated_concrete"
+  }
+}

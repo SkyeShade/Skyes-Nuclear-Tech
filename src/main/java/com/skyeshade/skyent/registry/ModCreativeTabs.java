@@ -27,6 +27,10 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.BRICK_BLAST_FURNACE.get());
                         output.accept(ModItems.COAL_FORGE.get());
                         output.accept(ModItems.FIRE_BRICKS.get());
+                        output.accept(ModItems.CONCRETE_BRICKS.get());
+                        output.accept(ModItems.REINFORCED_CONCRETE.get());
+                        output.accept(ModItems.TUNGSTEN_REINFORCED_CONCRETE.get());
+                        output.accept(ModItems.PLATED_CONCRETE.get());
                         output.accept(ModItems.FORGING_ANVIL.get());
                         output.accept(ModItems.STEAM_FORGE_HAMMER.get());
                         output.accept(ModItems.HEATING_CHAMBER.get());

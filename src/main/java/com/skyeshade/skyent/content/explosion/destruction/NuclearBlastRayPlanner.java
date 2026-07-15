@@ -32,6 +32,11 @@ public final class NuclearBlastRayPlanner {
     private static final double NUKE_RAY_DISTANCE_DECAY_PER_BLOCK = 0.0015D;
     private static final double NUKE_MATERIAL_PENETRATION_STACKING_GROWTH = 895.00D;
     private static final double NUKE_RESISTANCE_MIN_SOLID_COST = 0.0D;
+    private static final double NUKE_SMALL_RADIUS_DISTANCE_PROGRESS_EXPONENT = 0.25D;
+    private static final double NUKE_SMALL_RADIUS_PROGRESS_BOOST_MAX = 4.0D;
+    private static final double NUKE_CLOSE_RANGE_FRACTION_RADIUS_POWER = 0.25D;
+    private static final double NUKE_CLOSE_RANGE_COST_RADIUS_POWER = 0.35D;
+    private static final double NUKE_MATERIAL_STACKING_RADIUS_POWER = 0.25D;
 
     private final ServerLevel level;
     private final Vec3 center;
@@ -46,11 +51,14 @@ public final class NuclearBlastRayPlanner {
     private final double initialRayEnergy;
     private final double radiusScale;
     private final double inverseRadiusScale;
+    private final double smallRadiusProgressBoost;
     private final double scaledDistanceResistanceGrowth;
     private final double scaledDistanceDecayPerBlock;
     private final double scaledMaterialPenetrationStackingGrowth;
     private final double closeRangeArmorPiercingRadiusFraction;
     private final double closeRangeResistanceCostMultiplier;
+    private final double scaledCloseRangeArmorPiercingRadiusFraction;
+    private final double scaledCloseRangeResistanceCostMultiplier;
     private final long seed;
 
     private int rayIndex;
@@ -110,13 +118,27 @@ public final class NuclearBlastRayPlanner {
         );
         this.totalRays = Mth.clamp(Mth.ceil(this.baseRayCount * extraRayCountMultiplier), MIN_RAYS, MAX_RAYS);
         this.initialRayEnergy = this.strength * initialRayEnergyMultiplier;
-        this.radiusScale = Math.max(0.05D, this.radius / NUKE_BASELINE_RADIUS);
+        this.radiusScale = Math.max(0.01D, this.radius / NUKE_BASELINE_RADIUS);
         this.inverseRadiusScale = 1.0D / this.radiusScale;
+        this.smallRadiusProgressBoost = Math.min(
+                NUKE_SMALL_RADIUS_PROGRESS_BOOST_MAX,
+                Math.pow(this.inverseRadiusScale, NUKE_SMALL_RADIUS_DISTANCE_PROGRESS_EXPONENT)
+        );
         this.scaledDistanceResistanceGrowth = NUKE_DISTANCE_RESISTANCE_GROWTH * Math.pow(this.inverseRadiusScale, 0.75D);
         this.scaledDistanceDecayPerBlock = NUKE_RAY_DISTANCE_DECAY_PER_BLOCK * Math.pow(this.inverseRadiusScale, 0.65D);
-        this.scaledMaterialPenetrationStackingGrowth = NUKE_MATERIAL_PENETRATION_STACKING_GROWTH * Math.pow(this.inverseRadiusScale, 0.85D);
+        this.scaledMaterialPenetrationStackingGrowth = Math.min(
+                NUKE_MATERIAL_PENETRATION_STACKING_GROWTH * 4.0D,
+                NUKE_MATERIAL_PENETRATION_STACKING_GROWTH * Math.pow(this.inverseRadiusScale, NUKE_MATERIAL_STACKING_RADIUS_POWER)
+        );
         this.closeRangeArmorPiercingRadiusFraction = closeRangeArmorPiercingRadiusFraction;
         this.closeRangeResistanceCostMultiplier = closeRangeResistanceCostMultiplier;
+        this.scaledCloseRangeArmorPiercingRadiusFraction = closeRangeArmorPiercingRadiusFraction
+                * Mth.clamp(Math.pow(this.radiusScale, NUKE_CLOSE_RANGE_FRACTION_RADIUS_POWER), 0.35D, 1.5D);
+        this.scaledCloseRangeResistanceCostMultiplier = Mth.clamp(
+                closeRangeResistanceCostMultiplier * Math.pow(this.inverseRadiusScale, NUKE_CLOSE_RANGE_COST_RADIUS_POWER),
+                closeRangeResistanceCostMultiplier,
+                1.0D
+        );
         this.seed = seed;
     }
 
@@ -252,9 +274,9 @@ public final class NuclearBlastRayPlanner {
                     double materialStackMultiplier = 1.0D + materialBlocksPierced * scaledMaterialPenetrationStackingGrowth;
                     double rawCost = resistanceCost(resistance, distanceProgress, distanceCostMultiplier, materialStackMultiplier);
                     double cost = rawCost;
-                    boolean closeRangeApplied = distanceProgress < closeRangeArmorPiercingRadiusFraction;
-                    if (distanceProgress < closeRangeArmorPiercingRadiusFraction) {
-                        cost *= closeRangeResistanceCostMultiplier;
+                    boolean closeRangeApplied = distanceProgress < scaledCloseRangeArmorPiercingRadiusFraction;
+                    if (closeRangeApplied) {
+                        cost *= scaledCloseRangeResistanceCostMultiplier;
                     }
                     double rayEnergyBefore = rayEnergy;
                     rayEnergy -= cost;
@@ -324,10 +346,10 @@ public final class NuclearBlastRayPlanner {
         obsidianDebugHitLogs++;
         double distanceProgress = Mth.clamp(traveled / radius, 0.0D, 1.0D);
         double effectivePower = effectiveResistancePower(distanceProgress);
-        boolean closeRangeApplied = distanceProgress < closeRangeArmorPiercingRadiusFraction;
+        boolean closeRangeApplied = distanceProgress < scaledCloseRangeArmorPiercingRadiusFraction;
         double finalCost = Math.max(0.0D, rayEnergyBefore - rayEnergyAfter);
         SkyesNuclearTech.LOGGER.info(
-                "Nuke obsidian/high-res ray hit: ray={} pos={} traveled={} distanceProgress={} effectivePower={} block={} state={} rawResistance={} effectiveResistance={} rayBlocking={} canMark={} hasBlockEntity={} rayEnergyBefore={} rawCost={} closeRangeApplied={} closeMultiplier={} finalCost={} rayEnergyAfter={} markSucceeded={} stopReason={}",
+                "Nuke obsidian/high-res ray hit: ray={} pos={} traveled={} distanceProgress={} effectivePower={} block={} state={} rawResistance={} effectiveResistance={} rayBlocking={} canMark={} hasBlockEntity={} rayEnergyBefore={} rawCost={} closeRangeApplied={} baseCloseFraction={} baseCloseMultiplier={} scaledCloseFraction={} scaledCloseMultiplier={} finalCost={} rayEnergyAfter={} markSucceeded={} stopReason={}",
                 rayIndex,
                 pos,
                 traveled,
@@ -343,7 +365,10 @@ public final class NuclearBlastRayPlanner {
                 rayEnergyBefore,
                 rawCost,
                 closeRangeApplied,
+                closeRangeArmorPiercingRadiusFraction,
                 closeRangeResistanceCostMultiplier,
+                scaledCloseRangeArmorPiercingRadiusFraction,
+                scaledCloseRangeResistanceCostMultiplier,
                 finalCost,
                 rayEnergyAfter,
                 markSucceeded,
@@ -418,7 +443,7 @@ public final class NuclearBlastRayPlanner {
     }
 
     private double scaledDistanceProgress(double distanceProgress) {
-        return Mth.clamp(distanceProgress * Math.pow(inverseRadiusScale, 0.35D), 0.0D, 1.0D);
+        return Mth.clamp(distanceProgress * smallRadiusProgressBoost, 0.0D, 1.0D);
     }
 
     private Vec3 fibonacciDirection(int index) {
@@ -472,6 +497,14 @@ public final class NuclearBlastRayPlanner {
 
     public double radiusScale() {
         return radiusScale;
+    }
+
+    public double inverseRadiusScale() {
+        return inverseRadiusScale;
+    }
+
+    public double smallRadiusProgressBoost() {
+        return smallRadiusProgressBoost;
     }
 
     public double resistanceCostMultiplier() {
@@ -530,6 +563,14 @@ public final class NuclearBlastRayPlanner {
         return closeRangeResistanceCostMultiplier;
     }
 
+    public double scaledCloseRangeArmorPiercingRadiusFraction() {
+        return scaledCloseRangeArmorPiercingRadiusFraction;
+    }
+
+    public double scaledCloseRangeResistanceCostMultiplier() {
+        return scaledCloseRangeResistanceCostMultiplier;
+    }
+
     public String resistanceCostSamples() {
         return "r0.6[" + sampleResistanceCosts(0.6D)
                 + "] r6[" + sampleResistanceCosts(6.0D)
@@ -568,7 +609,7 @@ public final class NuclearBlastRayPlanner {
     }
 
     private double sampleCloseResistanceCost(double resistance) {
-        return resistanceCost(resistance, 0.0D, 1.0D, 1.0D) * closeRangeResistanceCostMultiplier;
+        return resistanceCost(resistance, 0.0D, 1.0D, 1.0D) * scaledCloseRangeResistanceCostMultiplier;
     }
 
     private double estimatedCloseBlocksDestroyed(double resistance) {

@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "C": {
+      "item": "skyent:reinforced_concrete"
+    },
+    "T": {
+      "item": "skyent:tungsten_rod"
+    }
+  },
+  "pattern": [
+    "TTT",
+    "TCT",
+    "TTT"
+  ],
+  "result": {
+    "id": "skyent:tungsten_reinforced_concrete"
+  }
+}

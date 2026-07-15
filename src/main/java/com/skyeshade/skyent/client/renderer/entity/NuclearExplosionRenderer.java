@@ -57,7 +57,7 @@ public class NuclearExplosionRenderer extends EntityRenderer<NuclearExplosionEnt
         float growProgress = Mth.clamp(age / NuclearExplosionEntity.RAY_GROW_TICKS, 0.0F, 1.0F);
         float easedGrow = 1.0F - (1.0F - growProgress) * (1.0F - growProgress);
         float fadeProgress = age < NuclearExplosionEntity.RAY_GROW_TICKS ? 0.0F : Mth.clamp((age - NuclearExplosionEntity.RAY_GROW_TICKS) / NuclearExplosionEntity.RAY_FADE_TICKS, 0.0F, 1.0F);
-        float scale = (age < NuclearExplosionEntity.RAY_GROW_TICKS ? easedGrow : 1.0F) * NuclearExplosionEntity.RAY_SCALE;
+        float scale = (age < NuclearExplosionEntity.RAY_GROW_TICKS ? easedGrow : 1.0F) * entity.getVisualRayScale();
         float alpha = 1.0F - fadeProgress;
         if (scale <= 0.0F || alpha <= 0.0F) {
             return;

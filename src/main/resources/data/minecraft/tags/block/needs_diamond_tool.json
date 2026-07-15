@@ -1,6 +1,8 @@
 {
   "replace": false,
   "values": [
-    "skyent:titanium_block"
+    "skyent:titanium_block",
+    "skyent:tungsten_reinforced_concrete",
+    "skyent:plated_concrete"
   ]
 }
