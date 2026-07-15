@@ -32,6 +32,7 @@ public final class NuclearMushroomCloudSimulation {
     private static final int STEM_LIFETIME_RANDOM_TICKS = 300;
     private static final int STEM_BASE_SIZE_BOOST_FADE_TICKS = 60;
     private static final float STEM_BASE_SIZE_BOOST = 2.0F;
+    private static final double STEM_BASE_DEPTH_BELOW_EXPLOSION = 50.0D;
     private static final int INITIAL_TORUS_FILL_COUNT = 900;
     private static final boolean ENABLE_INITIAL_TORUS_FILL = true;
     private static final float CLOUDLET_SIZE_MULTIPLIER = 0.60F;
@@ -75,6 +76,7 @@ public final class NuclearMushroomCloudSimulation {
     private double stemBottomY;
     private double stemTopY;
     private double stemHeight = 1.0D;
+    private double scaledStemDepth;
     private int sourceSpawnCountThisTick;
     private double sourceSpawnRadialOffsetSum;
     private double sourceSpawnVerticalOffsetSum;
@@ -136,7 +138,8 @@ public final class NuclearMushroomCloudSimulation {
         double baseTorusCenterY = Mth.lerp(riseProgress, TORUS_INITIAL_CENTER_Y * visualScale, finalTorusCenterY);
         torusCenterY = baseY + baseTorusCenterY * cloudScale;
         secondaryCenterY = torusCenterY - minorRadius * 2.25D;
-        stemBottomY = baseY + 1.0D;
+        scaledStemDepth = STEM_BASE_DEPTH_BELOW_EXPLOSION * visualScale;
+        stemBottomY = -scaledStemDepth;
         stemTopY = torusCenterY - minorRadius * 0.25D;
         stemHeight = Math.max(1.0D, stemTopY - stemBottomY);
         heat = Math.pow(1.0D - Mth.clamp(age / (double) MAX_AGE_TICKS, 0.0D, 1.0D), 0.8D);
@@ -469,11 +472,12 @@ public final class NuclearMushroomCloudSimulation {
         }
 
         SkyesNuclearTech.LOGGER.info(
-                "Nuke mushroom debug: age={} cloudlets={} groundY={} groundYInitialized={} cloudScale={} finalHeightScale={} growTicks={} riseTicks={} filledInitialTorus={} initialTorusFillCount={} majorRadius={} minorRadius={} torusCenterY={} torusBottomY={} torusTopY={} secondaryMajorRadius={} secondaryMinorRadius={} secondaryCenterY={} stemBottomY={} stemTopY={} stemHeight={} stemRadius0={} stemRadius030={} stemRadius075={} stemRadius1={} globalHeat={} stemHotSpawnHeatFactor={} stemHotSpawnChance={} torusSpawnTicks={} stemExtraSpawnTicks={} stemSpawnTicks={} torusSpawnRate={} secondarySpawnRate={} stemSpawnRate={} stemLifetimeMin={} stemLifetimeRandom={} airRingHeightExtraY={} airRingLowerDelay={} airRingUpperDelay={} airRingLowerLifetime={} airRingUpperLifetime={} lowerAirRingSpawnY={} upperAirRingSpawnY={} sourceAvgRadialOffset={} sourceAvgVerticalOffset={} torusScale={} angularSpeed={} targetTubeSpeed={} maxSpeed={} spawnedLowerAirRing={} spawnedUpperAirRing={} TORUS_FIREBALL={} SECONDARY_TORUS={} STEM={} WHITE_AIR_RING={} hotSTEM={}",
+                "Nuke mushroom debug: age={} cloudlets={} groundY={} groundYInitialized={} visualScale={} cloudScale={} finalHeightScale={} growTicks={} riseTicks={} filledInitialTorus={} initialTorusFillCount={} majorRadius={} minorRadius={} torusCenterY={} torusBottomY={} torusTopY={} secondaryMajorRadius={} secondaryMinorRadius={} secondaryCenterY={} stemBaseDepthBelowExplosion={} scaledStemDepth={} stemBottomY={} stemTopY={} stemHeight={} stemRadius0={} stemRadius030={} stemRadius075={} stemRadius1={} globalHeat={} stemHotSpawnHeatFactor={} stemHotSpawnChance={} torusSpawnTicks={} stemExtraSpawnTicks={} stemSpawnTicks={} torusSpawnRate={} secondarySpawnRate={} stemSpawnRate={} stemLifetimeMin={} stemLifetimeRandom={} airRingHeightExtraY={} airRingLowerDelay={} airRingUpperDelay={} airRingLowerLifetime={} airRingUpperLifetime={} lowerAirRingSpawnY={} upperAirRingSpawnY={} sourceAvgRadialOffset={} sourceAvgVerticalOffset={} torusScale={} angularSpeed={} targetTubeSpeed={} maxSpeed={} spawnedLowerAirRing={} spawnedUpperAirRing={} TORUS_FIREBALL={} SECONDARY_TORUS={} STEM={} WHITE_AIR_RING={} hotSTEM={}",
                 age,
                 cloudlets.size(),
                 groundY,
                 groundYInitialized,
+                visualScale,
                 cloudScale,
                 CLOUD_FINAL_HEIGHT_SCALE,
                 TORUS_GROW_TICKS,
@@ -488,6 +492,8 @@ public final class NuclearMushroomCloudSimulation {
                 secondaryMajorRadius,
                 secondaryMinorRadius,
                 secondaryCenterY,
+                STEM_BASE_DEPTH_BELOW_EXPLOSION,
+                scaledStemDepth,
                 stemBottomY,
                 stemTopY,
                 stemHeight,
