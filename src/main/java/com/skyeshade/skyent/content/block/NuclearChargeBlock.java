@@ -1,14 +1,22 @@
 package com.skyeshade.skyent.content.block;
 
 import com.skyeshade.skyent.content.explosion.NuclearExplosion;
+import com.skyeshade.skyent.content.entity.NuclearExplosionEntity;
 import com.skyeshade.skyent.registry.ModBlocks;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
 
 public class NuclearChargeBlock extends Block {
     public NuclearChargeBlock(Properties properties) {
@@ -43,5 +51,13 @@ public class NuclearChargeBlock extends Block {
         level.removeBlock(pos, false);
         NuclearExplosion.explode(level, pos.getCenter(), source, true, true, true, true);
         return true;
+    }
+
+    @Override
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
+        tooltipComponents.add(Component.translatable(
+                "tooltip.skyent.nuclear_charge.blast_radius",
+                Math.round(NuclearExplosionEntity.DEFAULT_NUKE_RADIUS)
+        ).withStyle(ChatFormatting.GRAY));
     }
 }

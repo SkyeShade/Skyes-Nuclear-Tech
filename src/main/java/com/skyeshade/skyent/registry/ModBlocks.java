@@ -42,6 +42,7 @@ import com.skyeshade.skyent.content.block.WireMillBlock;
 import com.skyeshade.skyent.content.block.WireMillPartBlock;
 import com.skyeshade.skyent.content.radiation.EnvironmentalRadiationMode;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredBlock;
@@ -269,6 +270,13 @@ public final class ModBlocks {
             "dead_tall_grass",
             DeadPlantBlock::new,
             BlockBehaviour.Properties.ofFullCopy(Blocks.SHORT_GRASS)
+    );
+
+    public static final DeferredBlock<RotatedPillarBlock> CHARRED_LOG = BLOCKS.registerBlock(
+            "charred_log",
+            RotatedPillarBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.OAK_LOG)
+                    .strength(1.5F, 2.0F)
     );
 
     public static final DeferredBlock<DeadLeavesBlock> DEAD_OAK_LEAVES = deadLeaves("dead_oak_leaves", Blocks.OAK_LEAVES);

@@ -1,21 +1,4 @@
 {
   "type": "minecraft:block",
-  "pools": [
-    {
-      "bonus_rolls": 0.0,
-      "entries": [
-        {
-          "type": "minecraft:item",
-          "functions": [
-            {
-              "function": "minecraft:explosion_decay"
-            }
-          ],
-          "name": "skyent:dead_jungle_leaves"
-        }
-      ],
-      "rolls": 1.0
-    }
-  ],
-  "random_sequence": "skyent:blocks/dead_jungle_leaves"
+  "pools": []
 }

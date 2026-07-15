@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "axis=y": {
+      "model": "skyent:block/charred_log"
+    },
+    "axis=z": {
+      "model": "skyent:block/charred_log_horizontal",
+      "x": 90
+    },
+    "axis=x": {
+      "model": "skyent:block/charred_log_horizontal",
+      "x": 90,
+      "y": 90
+    }
+  }
+}

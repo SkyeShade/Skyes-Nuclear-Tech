@@ -23,11 +23,8 @@ public class DeadLeavesBlock extends LeavesBlock {
     @Override
     public void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
         if (canRecover(level, pos, random)) {
-            level.setBlock(pos, copyLeafProperties(state, livingLeaves.get().defaultBlockState()), Block.UPDATE_CLIENTS);
-            return;
+            level.setBlock(pos, copyLeafProperties(state, livingLeaves.get().defaultBlockState()), Block.UPDATE_CLIENTS | Block.UPDATE_SUPPRESS_DROPS);
         }
-
-        super.randomTick(state, level, pos, random);
     }
 
     private boolean canRecover(ServerLevel level, BlockPos pos, RandomSource random) {

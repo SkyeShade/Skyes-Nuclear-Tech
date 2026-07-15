@@ -160,6 +160,11 @@ public final class ModItems {
             new Item.Properties()
     );
 
+    public static final DeferredItem<BlockItem> CHARRED_LOG = ITEMS.registerSimpleBlockItem(
+            ModBlocks.CHARRED_LOG,
+            new Item.Properties()
+    );
+
     public static final DeferredItem<BlockItem> DEAD_OAK_LEAVES = ITEMS.registerSimpleBlockItem(
             ModBlocks.DEAD_OAK_LEAVES,
             new Item.Properties()

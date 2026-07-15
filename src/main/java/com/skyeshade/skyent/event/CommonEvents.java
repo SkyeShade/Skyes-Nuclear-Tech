@@ -21,6 +21,8 @@ import com.skyeshade.skyent.registry.ModBlocks;
 import com.skyeshade.skyent.registry.ModItems;
 import com.skyeshade.skyent.registry.ModMultiblockShapes;
 import net.minecraft.core.Direction;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.FireBlock;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.bus.api.IEventBus;
@@ -40,6 +42,22 @@ public final class CommonEvents {
     public static void onCommonSetup(FMLCommonSetupEvent event) {
         ModMultiblockShapes.registerDefaults();
         BootstrapSystem.onCommonSetup(event);
+        event.enqueueWork(CommonEvents::registerDeadLeavesFlammability);
+    }
+
+    private static void registerDeadLeavesFlammability() {
+        FireBlock fire = (FireBlock) Blocks.FIRE;
+        fire.setFlammable(ModBlocks.CHARRED_LOG.get(), 1, 1);
+        fire.setFlammable(ModBlocks.DEAD_OAK_LEAVES.get(), 30, 60);
+        fire.setFlammable(ModBlocks.DEAD_BIRCH_LEAVES.get(), 30, 60);
+        fire.setFlammable(ModBlocks.DEAD_SPRUCE_LEAVES.get(), 30, 60);
+        fire.setFlammable(ModBlocks.DEAD_JUNGLE_LEAVES.get(), 30, 60);
+        fire.setFlammable(ModBlocks.DEAD_ACACIA_LEAVES.get(), 30, 60);
+        fire.setFlammable(ModBlocks.DEAD_DARK_OAK_LEAVES.get(), 30, 60);
+        fire.setFlammable(ModBlocks.DEAD_MANGROVE_LEAVES.get(), 30, 60);
+        fire.setFlammable(ModBlocks.DEAD_CHERRY_LEAVES.get(), 30, 60);
+        fire.setFlammable(ModBlocks.DEAD_AZALEA_LEAVES.get(), 30, 60);
+        fire.setFlammable(ModBlocks.DEAD_FLOWERING_AZALEA_LEAVES.get(), 30, 60);
     }
 
     public static void onRegisterCapabilities(RegisterCapabilitiesEvent event) {
