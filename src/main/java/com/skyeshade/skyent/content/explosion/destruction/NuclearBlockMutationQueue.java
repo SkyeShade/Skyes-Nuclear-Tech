@@ -33,6 +33,8 @@ public final class NuclearBlockMutationQueue {
     private long prunedAirSections;
     private long initiallyPrunedEmptySections;
     private long initiallyPrunedAirSections;
+    private long obsidianBlocksRemoved;
+    private long highResistanceBlocksRemoved;
 
     public NuclearBlockMutationQueue(ServerLevel level, NuclearDestructionMask mask, Vec3 center, NuclearSectionCompletionTracker sectionCompletionTracker) {
         this.level = level;
@@ -80,6 +82,12 @@ public final class NuclearBlockMutationQueue {
                 continue;
             }
 
+            if (state.is(Blocks.OBSIDIAN)) {
+                obsidianBlocksRemoved++;
+            }
+            if (state.getBlock().getExplosionResistance() >= 12.0F) {
+                highResistanceBlocksRemoved++;
+            }
             level.setBlock(pos, Blocks.AIR.defaultBlockState(), NUKE_BLOCK_UPDATE_FLAGS);
             blocksRemoved++;
             totalBlocksRemoved++;
@@ -164,6 +172,14 @@ public final class NuclearBlockMutationQueue {
 
     public long initiallyPrunedAirSections() {
         return initiallyPrunedAirSections;
+    }
+
+    public long obsidianBlocksRemoved() {
+        return obsidianBlocksRemoved;
+    }
+
+    public long highResistanceBlocksRemoved() {
+        return highResistanceBlocksRemoved;
     }
 
     public double processedRadius() {

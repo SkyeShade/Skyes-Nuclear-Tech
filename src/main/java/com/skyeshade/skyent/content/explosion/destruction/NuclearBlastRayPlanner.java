@@ -1,20 +1,36 @@
 package com.skyeshade.skyent.content.explosion.destruction;
 
+import com.skyeshade.skyent.SkyesNuclearTech;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
 public final class NuclearBlastRayPlanner {
+    private static final boolean DEBUG_NUKE_OBSIDIAN_RAYS = Boolean.getBoolean("skyent.debugNukeObsidianRays");
+    private static final int MAX_OBSIDIAN_DEBUG_HIT_LOGS = 200;
+    private static final int MAX_OBSIDIAN_DEBUG_STEP_LOGS = 20;
     private static final int MIN_RAYS = 512;
     private static final int MAX_RAYS = 320_000;
     private static final double GOLDEN_ANGLE = Math.PI * (3.0D - Math.sqrt(5.0D));
+    // Distance-shaped resistance model:
+    // - near power controls core vaporization; lower means hard blocks cost almost nothing near center.
+    // - far power controls outer resistance; higher means obsidian/concrete survive farther out.
+    // - distance curve controls how quickly resistance ramps up with radius.
+    // - material stacking growth controls how quickly rays lose energy through thick material.
+    // - starting energy controls total penetration budget.
     private static final double NUKE_RESISTANCE_COST_MULTIPLIER = 1.0D;
-    private static final double NUKE_RESISTANCE_COST_OFFSET = 0.20D;
-    private static final double NUKE_RESISTANCE_POWER = 3.65D;
+    private static final double NUKE_RESISTANCE_COST_OFFSET = 1.0D;
+    private static final double NUKE_RESISTANCE_POWER_NEAR = 0.05D;
+    private static final double NUKE_RESISTANCE_POWER_FAR = 20.50D;
+    private static final double NUKE_RESISTANCE_POWER_DISTANCE_CURVE = 1.01D;
     private static final double NUKE_DISTANCE_RESISTANCE_GROWTH = 2.0D;
-    private static final double NUKE_RESISTANCE_MIN_SOLID_COST = 0.02D;
+    private static final double NUKE_RAY_DISTANCE_DECAY_PER_BLOCK = 0.0015D;
+    private static final double NUKE_MATERIAL_PENETRATION_STACKING_GROWTH = 895.00D;
+    private static final double NUKE_RESISTANCE_MIN_SOLID_COST = 0.0D;
 
     private final ServerLevel level;
     private final Vec3 center;
@@ -46,6 +62,18 @@ public final class NuclearBlastRayPlanner {
     private long airBlocksSkipped;
     private long blockEntitySkips;
     private long unbreakableStops;
+    private long highResistanceBlocksHit;
+    private long highResistanceBlocksMarked;
+    private long highResistanceBlocksBlocked;
+    private long highResistanceBlocksStoppedByEnergy;
+    private long obsidianBlocksHit;
+    private long obsidianBlocksMarked;
+    private long obsidianBlocksBlocked;
+    private long obsidianBlocksStoppedByEnergy;
+    private int maxObsidianDepthMarkedOnSingleRay;
+    private int obsidianDebugHitLogs;
+    private int obsidianDebugStepLogs;
+    private int obsidianDebugTraceRayIndex = -1;
 
     public NuclearBlastRayPlanner(
             ServerLevel level,
@@ -131,6 +159,8 @@ public final class NuclearBlastRayPlanner {
 
         int steps = 0;
         int marked = 0;
+        int materialBlocksPierced = 0;
+        int obsidianBlocksMarkedThisRay = 0;
         double traveled = 0.0D;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
@@ -152,42 +182,90 @@ public final class NuclearBlastRayPlanner {
                 boolean fragile = resistanceCache.isFragile(state);
                 boolean fluid = !state.getFluidState().isEmpty();
                 boolean nonSolid = state.getCollisionShape(level, pos).isEmpty();
+                boolean obsidian = state.is(Blocks.OBSIDIAN);
                 float resistance = resistanceCache.resistanceFor(state, level, pos);
+                float rawResistance = state.getBlock().getExplosionResistance();
+                boolean highResistance = resistance >= 12.0F || rawResistance >= 12.0F;
+                if (highResistance) {
+                    highResistanceBlocksHit++;
+                }
+                if (obsidian) {
+                    obsidianBlocksHit++;
+                    if (DEBUG_NUKE_OBSIDIAN_RAYS && obsidianDebugTraceRayIndex < 0) {
+                        obsidianDebugTraceRayIndex = index;
+                    }
+                }
+                boolean rayBlocking = resistanceCache.isRayBlocking(resistance);
                 if (resistanceCache.isRayBlocking(resistance)) {
                     unbreakableStops++;
+                    if (highResistance) {
+                        highResistanceBlocksBlocked++;
+                    }
+                    if (obsidian) {
+                        obsidianBlocksBlocked++;
+                    }
+                    logHighResistanceHit(index, pos, state, traveled, rayEnergy, rawResistance, resistance, true, false, false, 0.0D, rayEnergy, StopReason.BLOCKED);
                     return new RayResult(steps, marked, StopReason.BLOCKED);
                 }
                 if (hasBlockEntity) {
                     blockEntitySkips++;
                 }
 
+                boolean canDestroy = !hasBlockEntity && resistanceCache.canMarkForDestruction(state);
+                boolean markSucceeded = false;
+                if (rayEnergy > 0.0D && canDestroy && mask.mark(blockX, blockY, blockZ)) {
+                    markSucceeded = true;
+                    marked++;
+                    if (fragile) {
+                        fragileBlocksMarked++;
+                    }
+                    if (nonSolid) {
+                        nonSolidBlocksMarked++;
+                    }
+                    if (fluid) {
+                        fluidBlocksMarked++;
+                    }
+                    if (highResistance) {
+                        highResistanceBlocksMarked++;
+                    }
+                    if (obsidian) {
+                        obsidianBlocksMarked++;
+                        obsidianBlocksMarkedThisRay++;
+                        maxObsidianDepthMarkedOnSingleRay = Math.max(maxObsidianDepthMarkedOnSingleRay, obsidianBlocksMarkedThisRay);
+                    }
+                }
+
                 if (resistance > 0.0F) {
                     double distanceProgress = Mth.clamp(traveled / radius, 0.0D, 1.0D);
                     double distanceCostMultiplier = 1.0D + distanceProgress * distanceProgress * NUKE_DISTANCE_RESISTANCE_GROWTH;
-                    double cost = resistanceCost(resistance, distanceCostMultiplier);
+                    double materialStackMultiplier = 1.0D + materialBlocksPierced * NUKE_MATERIAL_PENETRATION_STACKING_GROWTH;
+                    double rawCost = resistanceCost(resistance, distanceProgress, distanceCostMultiplier, materialStackMultiplier);
+                    double cost = rawCost;
+                    boolean closeRangeApplied = distanceProgress < closeRangeArmorPiercingRadiusFraction;
                     if (distanceProgress < closeRangeArmorPiercingRadiusFraction) {
                         cost *= closeRangeResistanceCostMultiplier;
                     }
+                    double rayEnergyBefore = rayEnergy;
                     rayEnergy -= cost;
+                    logHighResistanceHit(index, pos, state, traveled, rayEnergyBefore, rawResistance, resistance, rayBlocking, canDestroy, markSucceeded, rawCost, rayEnergy, rayEnergy <= 0.0D ? StopReason.ENERGY : null);
+                    logObsidianStepTrace(index, pos, state, traveled, rayEnergyBefore, rawResistance, resistance, closeRangeApplied, cost, rayEnergy, markSucceeded);
                     if (rayEnergy <= 0.0D) {
+                        if (highResistance) {
+                            highResistanceBlocksStoppedByEnergy++;
+                        }
+                        if (obsidian) {
+                            obsidianBlocksStoppedByEnergy++;
+                        }
                         return new RayResult(steps, marked, StopReason.ENERGY);
                     }
-                    if (!hasBlockEntity && resistanceCache.canMarkForDestruction(state) && mask.mark(blockX, blockY, blockZ)) {
-                        marked++;
-                        if (fragile) {
-                            fragileBlocksMarked++;
-                        }
-                        if (nonSolid) {
-                            nonSolidBlocksMarked++;
-                        }
-                        if (fluid) {
-                            fluidBlocksMarked++;
-                        }
+                    if (!fluid && !fragile && !nonSolid) {
+                        materialBlocksPierced++;
                     }
                 }
             }
 
             steps++;
+            double previousTraveled = traveled;
             if (tMaxX <= tMaxY && tMaxX <= tMaxZ) {
                 traveled = tMaxX;
                 tMaxX += tDeltaX;
@@ -201,21 +279,130 @@ public final class NuclearBlastRayPlanner {
                 tMaxZ += tDeltaZ;
                 blockZ += stepZ;
             }
+            rayEnergy -= distanceCost(previousTraveled, traveled);
+            if (rayEnergy <= 0.0D) {
+                return new RayResult(steps, marked, StopReason.ENERGY);
+            }
         }
 
         return new RayResult(steps, marked, StopReason.RADIUS);
     }
 
-    private static double resistanceCost(double resistance, double distanceCostMultiplier) {
+    private void logHighResistanceHit(
+            int rayIndex,
+            BlockPos pos,
+            BlockState state,
+            double traveled,
+            double rayEnergyBefore,
+            float rawResistance,
+            float effectiveResistance,
+            boolean rayBlocking,
+            boolean canDestroy,
+            boolean markSucceeded,
+            double rawCost,
+            double rayEnergyAfter,
+            StopReason stopReason
+    ) {
+        if (!DEBUG_NUKE_OBSIDIAN_RAYS || obsidianDebugHitLogs >= MAX_OBSIDIAN_DEBUG_HIT_LOGS) {
+            return;
+        }
+        if (!state.is(Blocks.OBSIDIAN) && rawResistance < 12.0F && effectiveResistance < 12.0F) {
+            return;
+        }
+
+        obsidianDebugHitLogs++;
+        double distanceProgress = Mth.clamp(traveled / radius, 0.0D, 1.0D);
+        double effectivePower = effectiveResistancePower(distanceProgress);
+        boolean closeRangeApplied = distanceProgress < closeRangeArmorPiercingRadiusFraction;
+        double finalCost = Math.max(0.0D, rayEnergyBefore - rayEnergyAfter);
+        SkyesNuclearTech.LOGGER.info(
+                "Nuke obsidian/high-res ray hit: ray={} pos={} traveled={} distanceProgress={} effectivePower={} block={} state={} rawResistance={} effectiveResistance={} rayBlocking={} canMark={} hasBlockEntity={} rayEnergyBefore={} rawCost={} closeRangeApplied={} closeMultiplier={} finalCost={} rayEnergyAfter={} markSucceeded={} stopReason={}",
+                rayIndex,
+                pos,
+                traveled,
+                distanceProgress,
+                effectivePower,
+                BuiltInRegistries.BLOCK.getKey(state.getBlock()),
+                state,
+                rawResistance,
+                effectiveResistance,
+                rayBlocking,
+                canDestroy,
+                level.getBlockEntity(pos) != null,
+                rayEnergyBefore,
+                rawCost,
+                closeRangeApplied,
+                closeRangeResistanceCostMultiplier,
+                finalCost,
+                rayEnergyAfter,
+                markSucceeded,
+                stopReason
+        );
+    }
+
+    private void logObsidianStepTrace(
+            int rayIndex,
+            BlockPos pos,
+            BlockState state,
+            double traveled,
+            double rayEnergyBefore,
+            float rawResistance,
+            float effectiveResistance,
+            boolean closeRangeApplied,
+            double finalCost,
+            double rayEnergyAfter,
+            boolean markSucceeded
+    ) {
+        if (!DEBUG_NUKE_OBSIDIAN_RAYS || rayIndex != obsidianDebugTraceRayIndex || obsidianDebugStepLogs >= MAX_OBSIDIAN_DEBUG_STEP_LOGS) {
+            return;
+        }
+
+        obsidianDebugStepLogs++;
+        SkyesNuclearTech.LOGGER.info(
+                "Nuke obsidian DDA trace: ray={} step={} pos={} block={} traveled={} rawResistance={} effectiveResistance={} closeRangeApplied={} energyBefore={} finalCost={} energyAfter={} markSucceeded={}",
+                rayIndex,
+                obsidianDebugStepLogs,
+                pos,
+                BuiltInRegistries.BLOCK.getKey(state.getBlock()),
+                traveled,
+                rawResistance,
+                effectiveResistance,
+                closeRangeApplied,
+                rayEnergyBefore,
+                finalCost,
+                rayEnergyAfter,
+                markSucceeded
+        );
+    }
+
+    private double distanceCost(double previousTraveled, double traveled) {
+        double distanceDelta = Math.max(0.0D, Math.min(traveled, radius) - Math.min(previousTraveled, radius));
+        if (distanceDelta <= 0.0D) {
+            return 0.0D;
+        }
+
+        double distanceProgress = Mth.clamp(traveled / radius, 0.0D, 1.0D);
+        double costPerBlock = initialRayEnergy * NUKE_RAY_DISTANCE_DECAY_PER_BLOCK / radius;
+        return costPerBlock * distanceDelta * (1.0D + distanceProgress * distanceProgress * 2.0D);
+    }
+
+    private static double resistanceCost(double resistance, double distanceProgress, double distanceCostMultiplier, double materialStackMultiplier) {
+        double effectivePower = effectiveResistancePower(distanceProgress);
         double baseCost = Math.pow(
                 Math.max(0.0D, resistance) + NUKE_RESISTANCE_COST_OFFSET,
-                NUKE_RESISTANCE_POWER
-        );
-        double cost = baseCost * NUKE_RESISTANCE_COST_MULTIPLIER * distanceCostMultiplier;
+                effectivePower
+        ) - 1.0D;
+        baseCost = Math.max(0.0D, baseCost);
+        double cost = baseCost * NUKE_RESISTANCE_COST_MULTIPLIER * distanceCostMultiplier * materialStackMultiplier;
         if (resistance > 0.0D) {
             cost = Math.max(cost, NUKE_RESISTANCE_MIN_SOLID_COST);
         }
         return cost;
+    }
+
+    private static double effectiveResistancePower(double distanceProgress) {
+        double curvedDistance = Math.pow(Mth.clamp(distanceProgress, 0.0D, 1.0D), NUKE_RESISTANCE_POWER_DISTANCE_CURVE);
+        return Mth.lerp(curvedDistance, NUKE_RESISTANCE_POWER_NEAR, NUKE_RESISTANCE_POWER_FAR);
     }
 
     private Vec3 fibonacciDirection(int index) {
@@ -268,7 +455,19 @@ public final class NuclearBlastRayPlanner {
     }
 
     public double resistanceNonlinearPower() {
-        return NUKE_RESISTANCE_POWER;
+        return NUKE_RESISTANCE_POWER_FAR;
+    }
+
+    public double resistancePowerNear() {
+        return NUKE_RESISTANCE_POWER_NEAR;
+    }
+
+    public double resistancePowerFar() {
+        return NUKE_RESISTANCE_POWER_FAR;
+    }
+
+    public double resistancePowerDistanceCurve() {
+        return NUKE_RESISTANCE_POWER_DISTANCE_CURVE;
     }
 
     public double resistanceCostOffset() {
@@ -279,25 +478,65 @@ public final class NuclearBlastRayPlanner {
         return NUKE_DISTANCE_RESISTANCE_GROWTH;
     }
 
+    public double distanceDecayPerBlock() {
+        return NUKE_RAY_DISTANCE_DECAY_PER_BLOCK;
+    }
+
+    public double materialPenetrationStackingGrowth() {
+        return NUKE_MATERIAL_PENETRATION_STACKING_GROWTH;
+    }
+
+    public double closeRangeArmorPiercingRadiusFraction() {
+        return closeRangeArmorPiercingRadiusFraction;
+    }
+
+    public double closeRangeResistanceCostMultiplier() {
+        return closeRangeResistanceCostMultiplier;
+    }
+
     public String resistanceCostSamples() {
-        return "r0.6[d0=" + formatCost(sampleResistanceCost(0.6D, 0.0D))
-                + ",d0.5=" + formatCost(sampleResistanceCost(0.6D, 0.5D))
-                + ",d1=" + formatCost(sampleResistanceCost(0.6D, 1.0D))
-                + "] r6[d0=" + formatCost(sampleResistanceCost(6.0D, 0.0D))
-                + ",d0.5=" + formatCost(sampleResistanceCost(6.0D, 0.5D))
-                + ",d1=" + formatCost(sampleResistanceCost(6.0D, 1.0D))
-                + "] r12[d0=" + formatCost(sampleResistanceCost(12.0D, 0.0D))
-                + ",d0.5=" + formatCost(sampleResistanceCost(12.0D, 0.5D))
-                + ",d1=" + formatCost(sampleResistanceCost(12.0D, 1.0D))
-                + "] r18[d0=" + formatCost(sampleResistanceCost(18.0D, 0.0D))
-                + ",d0.5=" + formatCost(sampleResistanceCost(18.0D, 0.5D))
-                + ",d1=" + formatCost(sampleResistanceCost(18.0D, 1.0D))
+        return "r0.6[" + sampleResistanceCosts(0.6D)
+                + "] r6[" + sampleResistanceCosts(6.0D)
+                + "] r18[" + sampleResistanceCosts(18.0D)
+                + "] r50[" + sampleResistanceCosts(50.0D)
+                + "] penetration[r18Raw="
+                + formatCost(sampleResistanceCost(18.0D, 0.0D))
+                + ",r18Close="
+                + formatCost(sampleCloseResistanceCost(18.0D))
+                + ",r18CloseDestroyed="
+                + formatCost(estimatedCloseBlocksDestroyed(18.0D))
+                + ",r6Close="
+                + formatCost(sampleCloseResistanceCost(6.0D))
+                + ",r6CloseDestroyed="
+                + formatCost(estimatedCloseBlocksDestroyed(6.0D))
                 + "]";
+    }
+
+    private static String sampleResistanceCosts(double resistance) {
+        return sampleResistanceCostEntry("d0", resistance, 0.0D)
+                + "," + sampleResistanceCostEntry("d0.1", resistance, 0.1D)
+                + "," + sampleResistanceCostEntry("d0.25", resistance, 0.25D)
+                + "," + sampleResistanceCostEntry("d0.5", resistance, 0.5D)
+                + "," + sampleResistanceCostEntry("d1", resistance, 1.0D);
+    }
+
+    private static String sampleResistanceCostEntry(String label, double resistance, double distanceProgress) {
+        return label + "=p" + formatCost(effectiveResistancePower(distanceProgress))
+                + "/c" + formatCost(sampleResistanceCost(resistance, distanceProgress));
     }
 
     private static double sampleResistanceCost(double resistance, double distanceProgress) {
         double distanceCostMultiplier = 1.0D + distanceProgress * distanceProgress * NUKE_DISTANCE_RESISTANCE_GROWTH;
-        return resistanceCost(resistance, distanceCostMultiplier);
+        return resistanceCost(resistance, distanceProgress, distanceCostMultiplier, 1.0D);
+    }
+
+    private double sampleCloseResistanceCost(double resistance) {
+        return resistanceCost(resistance, 0.0D, 1.0D, 1.0D) * closeRangeResistanceCostMultiplier;
+    }
+
+    private double estimatedCloseBlocksDestroyed(double resistance) {
+        double closeCost = sampleCloseResistanceCost(resistance);
+        return closeCost <= 0.0D ? 0.0D : initialRayEnergy / closeCost;
     }
 
     private static String formatCost(double cost) {
@@ -354,6 +593,42 @@ public final class NuclearBlastRayPlanner {
 
     public long unbreakableStops() {
         return unbreakableStops;
+    }
+
+    public long highResistanceBlocksHit() {
+        return highResistanceBlocksHit;
+    }
+
+    public long highResistanceBlocksMarked() {
+        return highResistanceBlocksMarked;
+    }
+
+    public long highResistanceBlocksBlocked() {
+        return highResistanceBlocksBlocked;
+    }
+
+    public long highResistanceBlocksStoppedByEnergy() {
+        return highResistanceBlocksStoppedByEnergy;
+    }
+
+    public long obsidianBlocksHit() {
+        return obsidianBlocksHit;
+    }
+
+    public long obsidianBlocksMarked() {
+        return obsidianBlocksMarked;
+    }
+
+    public long obsidianBlocksBlocked() {
+        return obsidianBlocksBlocked;
+    }
+
+    public long obsidianBlocksStoppedByEnergy() {
+        return obsidianBlocksStoppedByEnergy;
+    }
+
+    public int maxObsidianDepthMarkedOnSingleRay() {
+        return maxObsidianDepthMarkedOnSingleRay;
     }
 
     public record PlannerResult(int raysProcessed, int stepsProcessed, long blocksMarked, boolean complete) {
