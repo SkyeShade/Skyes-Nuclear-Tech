@@ -57,6 +57,7 @@ public final class NuclearMushroomCloudSimulation {
     private static final double CLOUD_FINAL_HEIGHT_SCALE = 1.5D;
     private static final double CLOUD_START_SCALE = 1.5D;
     private static final double CLOUD_END_SCALE = 1.0D;
+    private static final double CLOUD_BASELINE_RADIUS = 200.0D;
 
     private final List<MushroomCloudlet> cloudlets = new ArrayList<>();
     private final long seed;
@@ -88,7 +89,7 @@ public final class NuclearMushroomCloudSimulation {
 
     public NuclearMushroomCloudSimulation(long seed, float radius) {
         this.seed = seed;
-        this.visualScale = Mth.clamp(radius / NuclearExplosionEntity.DEFAULT_NUKE_RADIUS, 0.65F, 2.0F);
+        this.visualScale = (float) Math.max(0.25D, radius / CLOUD_BASELINE_RADIUS);
         this.majorRadius = TORUS_INITIAL_MAJOR_RADIUS * visualScale;
         this.minorRadius = TORUS_INITIAL_MINOR_RADIUS * visualScale;
         this.torusCenterY = TORUS_INITIAL_CENTER_Y * visualScale;

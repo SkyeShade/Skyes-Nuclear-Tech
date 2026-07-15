@@ -28,15 +28,28 @@ public final class NuclearExplosion {
             boolean flashSky,
             boolean playSounds
     ) {
+        explode(level, center, NuclearExplosionEntity.DEFAULT_NUKE_RADIUS, source, destroyBlocks, spawnCloud, flashSky, playSounds);
+    }
+
+    public static void explode(
+            ServerLevel level,
+            Vec3 center,
+            float radius,
+            @Nullable Entity source,
+            boolean destroyBlocks,
+            boolean spawnCloud,
+            boolean flashSky,
+            boolean playSounds
+    ) {
         UUID chunkLoadingOwnerUuid = UUID.randomUUID();
         NuclearExplosionChunkLoading.NuclearExplosionChunkLease chunkLoadLease = NuclearExplosionChunkLoading.forceImmediateChunks(
                 level,
                 center,
-                NuclearExplosionEntity.DEFAULT_NUKE_RADIUS,
+                radius,
                 chunkLoadingOwnerUuid
         );
         NuclearExplosionEntity explosion = new NuclearExplosionEntity(level, center);
-        explosion.configure(NuclearExplosionEntity.VANILLA_EXPLOSION_STRENGTH, destroyBlocks, spawnCloud, flashSky, playSounds, source);
+        explosion.configure(NuclearExplosionEntity.VANILLA_EXPLOSION_STRENGTH, radius, destroyBlocks, spawnCloud, flashSky, playSounds, source);
         explosion.adoptChunkLoadLease(chunkLoadLease);
         boolean spawned = level.addFreshEntity(explosion);
         if (!spawned) {

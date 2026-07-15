@@ -62,11 +62,15 @@ public class NuclearExplosionEntity extends Entity {
     public static final int ENTITY_LIFETIME_TICKS = 20 * 60 * 4;
     public static final float DEFAULT_NUKE_RADIUS = 200.0F;
     public static final double SHOCKWAVE_MAX_RADIUS_MULTIPLIER = 4.0D;
+    private static final double SHOCKWAVE_DAMAGE_RADIUS_MULTIPLIER = 1.20D;
     public static final double SHOCKWAVE_SPEED_BLOCKS_PER_TICK = 2.0D;
     public static final int SHOCKWAVE_VISUAL_INTERVAL_TICKS = 1;
     public static final int SHOCKWAVE_SOUND_TICKS = 5;
     public static final float SHOCKWAVE_SOUND_VOLUME = 2000.0F;
     private static final double SHOCKWAVE_DAMAGE_BAND_WIDTH = 5.0D;
+    private static final double SHOCKWAVE_DAMAGE_FALLOFF_POWER = 2.75D;
+    private static final double SHOCKWAVE_KNOCKBACK_FALLOFF_POWER = 2.0D;
+    private static final float SHOCKWAVE_MIN_DAMAGE = 2.0F;
     private static final int SHOCKWAVE_MIN_PUFFS = 32;
     private static final int SHOCKWAVE_MAX_PUFFS = 260;
     private static final int SHOCKWAVE_LIFETIME_MIN_TICKS = 18;
@@ -118,9 +122,11 @@ public class NuclearExplosionEntity extends Entity {
     private static final double FLUID_EVAPORATION_RADIUS_SCALE = 0.60D;
     private static final boolean NUKE_CLEANUP_DROPPED_ITEMS_IN_AFTERMATH = false;
     private static final double NUKE_ITEM_CLEANUP_RADIUS_SCALE = 3.0D;
+    private static final double NUKE_BASELINE_RADIUS = 200.0D;
     private static final double NUKE_DESTRUCTION_RADIUS_MULTIPLIER = 1.0D;
     private static final double NUKE_RAY_BASE_STARTING_ENERGY = 13_000_900_000.0D;
     private static final double NUKE_RAY_STARTING_ENERGY_PER_RADIUS = 100_250_500.0D;
+    private static final double NUKE_RAY_STARTING_ENERGY_RADIUS_POWER = 1.75D;
     private static final double NUKE_RAY_COUNT_MULTIPLIER = 4.0D;
     private static final double NUKE_RAY_COUNT_EXTRA_MULTIPLIER = 4.0D;
     private static final double NUKE_RAY_INITIAL_ENERGY_MULTIPLIER = 1.0D;
@@ -198,8 +204,12 @@ public class NuclearExplosionEntity extends Entity {
     }
 
     public void configure(float strength, boolean destroyBlocks, boolean spawnCloud, boolean flashSky, boolean playSounds, @Nullable Entity source) {
+        configure(strength, DEFAULT_NUKE_RADIUS, destroyBlocks, spawnCloud, flashSky, playSounds, source);
+    }
+
+    public void configure(float strength, float radius, boolean destroyBlocks, boolean spawnCloud, boolean flashSky, boolean playSounds, @Nullable Entity source) {
         this.strength = strength;
-        this.radius = DEFAULT_NUKE_RADIUS;
+        this.radius = Math.max(1.0F, radius);
         entityData.set(DATA_RADIUS, this.radius);
         this.destroyBlocks = destroyBlocks;
         entityData.set(DATA_SPAWN_CLOUD, spawnCloud);
@@ -332,22 +342,27 @@ public class NuclearExplosionEntity extends Entity {
                 destructionPhase = DestructionPhase.MUTATING;
                 mutationStartTick = tickCount;
                 SkyesNuclearTech.LOGGER.info(
-                        "Nuke destruction planning complete: id={} rays={}/{} baseRays={} rayMultiplier={} extraRayMultiplier={} initialRayEnergy={} distanceDecayPerBlock={} resistanceCostMultiplier={} resistanceCostOffset={} resistancePowerNear={} resistancePowerFar={} resistancePowerCurve={} distanceResistanceGrowth={} materialStackingGrowth={} closePierceFraction={} closeResistanceMultiplier={} resistanceSamples={} steps={} maskSections={} estimatedBlocks={} trackerPendingSections={} initiallyPrunedEmptySections={} initiallyPrunedAirSections={} mutationUpdateFlags={} suppressDrops=true unloadedStops={} energyStops={} blockedStops={} unbreakableStops={} outOfWorldStops={} fragileMarked={} nonSolidMarked={} fluidMarked={} airSkipped={} blockEntitySkips={} highResHit={} highResMarked={} highResBlocked={} highResEnergyStops={} obsidianHit={} obsidianMarked={} obsidianBlocked={} obsidianEnergyStops={} maxObsidianDepthMarkedOnSingleRay={}",
+                        "Nuke destruction planning complete: id={} rays={}/{} baseRays={} rayMultiplier={} extraRayMultiplier={} baselineRadius={} radiusScale={} initialRayEnergy={} distanceDecayPerBlock={} scaledDistanceDecayPerBlock={} resistanceCostMultiplier={} resistanceCostOffset={} resistancePowerNear={} resistancePowerFar={} resistancePowerCurve={} distanceResistanceGrowth={} scaledDistanceResistanceGrowth={} materialStackingGrowth={} scaledMaterialStackingGrowth={} closePierceFraction={} closeResistanceMultiplier={} resistanceSamples={} steps={} maskSections={} estimatedBlocks={} trackerPendingSections={} initiallyPrunedEmptySections={} initiallyPrunedAirSections={} mutationUpdateFlags={} suppressDrops=true unloadedStops={} energyStops={} blockedStops={} unbreakableStops={} outOfWorldStops={} fragileMarked={} nonSolidMarked={} fluidMarked={} airSkipped={} blockEntitySkips={} highResHit={} highResMarked={} highResBlocked={} highResEnergyStops={} obsidianHit={} obsidianMarked={} obsidianBlocked={} obsidianEnergyStops={} maxObsidianDepthMarkedOnSingleRay={}",
                         getId(),
                         rayPlanner.rayIndex(),
                         rayPlanner.totalRays(),
                         rayPlanner.baseRayCount(),
                         rayPlanner.rayCountMultiplier(),
                         rayPlanner.extraRayCountMultiplier(),
+                        rayPlanner.baselineRadius(),
+                        rayPlanner.radiusScale(),
                         rayPlanner.initialRayEnergy(),
                         rayPlanner.distanceDecayPerBlock(),
+                        rayPlanner.scaledDistanceDecayPerBlock(),
                         rayPlanner.resistanceCostMultiplier(),
                         rayPlanner.resistanceCostOffset(),
                         rayPlanner.resistancePowerNear(),
                         rayPlanner.resistancePowerFar(),
                         rayPlanner.resistancePowerDistanceCurve(),
                         rayPlanner.distanceResistanceGrowth(),
+                        rayPlanner.scaledDistanceResistanceGrowth(),
                         rayPlanner.materialPenetrationStackingGrowth(),
+                        rayPlanner.scaledMaterialPenetrationStackingGrowth(),
                         rayPlanner.closeRangeArmorPiercingRadiusFraction(),
                         rayPlanner.closeRangeResistanceCostMultiplier(),
                         rayPlanner.resistanceCostSamples(),
@@ -721,8 +736,11 @@ public class NuclearExplosionEntity extends Entity {
 
     private void startNuclearDestructionPlanning(ServerLevel serverLevel) {
         int destructionRadius = Mth.ceil(getRadius() * NUKE_DESTRUCTION_RADIUS_MULTIPLIER);
-        double destructionStrength = NUKE_RAY_BASE_STARTING_ENERGY
-                + getRadius() * NUKE_RAY_STARTING_ENERGY_PER_RADIUS;
+        double radiusScale = Math.max(0.05D, destructionRadius / NUKE_BASELINE_RADIUS);
+        double energyScale = Math.pow(radiusScale, NUKE_RAY_STARTING_ENERGY_RADIUS_POWER);
+        double baselineStartingEnergy = NUKE_RAY_BASE_STARTING_ENERGY
+                + NUKE_BASELINE_RADIUS * NUKE_RAY_STARTING_ENERGY_PER_RADIUS;
+        double destructionStrength = baselineStartingEnergy * energyScale;
         destructionCleanupLogged = false;
         aftermathStarted = false;
         aftermathStartTick = -1;
@@ -748,27 +766,35 @@ public class NuclearExplosionEntity extends Entity {
         mutationQueue = null;
         destructionPhase = DestructionPhase.PLANNING;
         SkyesNuclearTech.LOGGER.info(
-                "Nuke destruction planning started: id={} entityRadius={} destructionRadius={} chunkRadius={} strength={} rayBaseEnergy={} rayEnergyPerRadius={} baseRays={} totalRays={} rayMultiplier={} extraRayMultiplier={} initialRayEnergy={} distanceDecayPerBlock={} resistanceCostMultiplier={} resistanceCostOffset={} resistancePowerNear={} resistancePowerFar={} resistancePowerCurve={} distanceResistanceGrowth={} materialStackingGrowth={} closePierceFraction={} closeResistanceMultiplier={} resistanceSamples={} planOnly={}",
+                "Nuke destruction planning started: id={} entityRadius={} destructionRadius={} chunkRadius={} baselineRadius={} radiusScale={} energyScale={} baselineStartingEnergy={} strength={} rayBaseEnergy={} rayEnergyPerRadius={} energyRadiusPower={} baseRays={} totalRays={} rayMultiplier={} extraRayMultiplier={} initialRayEnergy={} distanceDecayPerBlock={} scaledDistanceDecayPerBlock={} resistanceCostMultiplier={} resistanceCostOffset={} resistancePowerNear={} resistancePowerFar={} resistancePowerCurve={} distanceResistanceGrowth={} scaledDistanceResistanceGrowth={} materialStackingGrowth={} scaledMaterialStackingGrowth={} closePierceFraction={} closeResistanceMultiplier={} resistanceSamples={} planOnly={}",
                 getId(),
                 getRadius(),
                 destructionRadius,
                 NuclearExplosionChunkLoading.computeChunkRadius(getRadius()),
+                NUKE_BASELINE_RADIUS,
+                radiusScale,
+                energyScale,
+                baselineStartingEnergy,
                 destructionStrength,
                 NUKE_RAY_BASE_STARTING_ENERGY,
                 NUKE_RAY_STARTING_ENERGY_PER_RADIUS,
+                NUKE_RAY_STARTING_ENERGY_RADIUS_POWER,
                 rayPlanner.baseRayCount(),
                 rayPlanner.totalRays(),
                 rayPlanner.rayCountMultiplier(),
                 rayPlanner.extraRayCountMultiplier(),
                 rayPlanner.initialRayEnergy(),
                 rayPlanner.distanceDecayPerBlock(),
+                rayPlanner.scaledDistanceDecayPerBlock(),
                 rayPlanner.resistanceCostMultiplier(),
                 rayPlanner.resistanceCostOffset(),
                 rayPlanner.resistancePowerNear(),
                 rayPlanner.resistancePowerFar(),
                 rayPlanner.resistancePowerDistanceCurve(),
                 rayPlanner.distanceResistanceGrowth(),
+                rayPlanner.scaledDistanceResistanceGrowth(),
                 rayPlanner.materialPenetrationStackingGrowth(),
+                rayPlanner.scaledMaterialPenetrationStackingGrowth(),
                 rayPlanner.closeRangeArmorPiercingRadiusFraction(),
                 rayPlanner.closeRangeResistanceCostMultiplier(),
                 rayPlanner.resistanceCostSamples(),
@@ -782,7 +808,7 @@ public class NuclearExplosionEntity extends Entity {
         }
 
         SkyesNuclearTech.LOGGER.info(
-                "Nuke ray planner debug: id={} tick={} phase={} rayIndex={}/{} baseRays={} rayMultiplier={} extraRayMultiplier={} initialRayEnergy={} distanceDecayPerBlock={} resistanceCostMultiplier={} resistanceCostOffset={} resistancePowerNear={} resistancePowerFar={} resistancePowerCurve={} distanceResistanceGrowth={} materialStackingGrowth={} closePierceFraction={} closeResistanceMultiplier={} resistanceSamples={} tickRays={} tickSteps={} totalRays={} totalSteps={} tickMarked={} totalMarked={} maskSections={} estimatedBlocks={} unloadedStops={} energyStops={} blockedStops={} unbreakableStops={} outOfWorldStops={} fragileMarked={} nonSolidMarked={} fluidMarked={} airSkipped={} blockEntitySkips={} highResHit={} highResMarked={} highResBlocked={} highResEnergyStops={} obsidianHit={} obsidianMarked={} obsidianBlocked={} obsidianEnergyStops={} maxObsidianDepthMarkedOnSingleRay={}",
+                "Nuke ray planner debug: id={} tick={} phase={} rayIndex={}/{} baseRays={} rayMultiplier={} extraRayMultiplier={} baselineRadius={} radiusScale={} initialRayEnergy={} distanceDecayPerBlock={} scaledDistanceDecayPerBlock={} resistanceCostMultiplier={} resistanceCostOffset={} resistancePowerNear={} resistancePowerFar={} resistancePowerCurve={} distanceResistanceGrowth={} scaledDistanceResistanceGrowth={} materialStackingGrowth={} scaledMaterialStackingGrowth={} closePierceFraction={} closeResistanceMultiplier={} resistanceSamples={} tickRays={} tickSteps={} totalRays={} totalSteps={} tickMarked={} totalMarked={} maskSections={} estimatedBlocks={} unloadedStops={} energyStops={} blockedStops={} unbreakableStops={} outOfWorldStops={} fragileMarked={} nonSolidMarked={} fluidMarked={} airSkipped={} blockEntitySkips={} highResHit={} highResMarked={} highResBlocked={} highResEnergyStops={} obsidianHit={} obsidianMarked={} obsidianBlocked={} obsidianEnergyStops={} maxObsidianDepthMarkedOnSingleRay={}",
                 getId(),
                 tickCount,
                 destructionPhase,
@@ -791,15 +817,20 @@ public class NuclearExplosionEntity extends Entity {
                 rayPlanner.baseRayCount(),
                 rayPlanner.rayCountMultiplier(),
                 rayPlanner.extraRayCountMultiplier(),
+                rayPlanner.baselineRadius(),
+                rayPlanner.radiusScale(),
                 rayPlanner.initialRayEnergy(),
                 rayPlanner.distanceDecayPerBlock(),
+                rayPlanner.scaledDistanceDecayPerBlock(),
                 rayPlanner.resistanceCostMultiplier(),
                 rayPlanner.resistanceCostOffset(),
                 rayPlanner.resistancePowerNear(),
                 rayPlanner.resistancePowerFar(),
                 rayPlanner.resistancePowerDistanceCurve(),
                 rayPlanner.distanceResistanceGrowth(),
+                rayPlanner.scaledDistanceResistanceGrowth(),
                 rayPlanner.materialPenetrationStackingGrowth(),
+                rayPlanner.scaledMaterialPenetrationStackingGrowth(),
                 rayPlanner.closeRangeArmorPiercingRadiusFraction(),
                 rayPlanner.closeRangeResistanceCostMultiplier(),
                 rayPlanner.resistanceCostSamples(),
@@ -1585,8 +1616,8 @@ public class NuclearExplosionEntity extends Entity {
 
     private void tickShockwaveServer() {
         double currentRadius = getShockwaveRadius();
-        double maxRadius = getShockwaveMaxRadius();
-        if (currentRadius <= 0.0D || currentRadius > maxRadius + SHOCKWAVE_DAMAGE_BAND_WIDTH) {
+        double damageRadius = getShockwaveDamageRadius();
+        if (currentRadius <= 0.0D || currentRadius > damageRadius + SHOCKWAVE_DAMAGE_BAND_WIDTH) {
             return;
         }
 
@@ -1595,7 +1626,8 @@ public class NuclearExplosionEntity extends Entity {
     }
 
     private void damageEntitiesInWavefront(double previousRadius, double currentRadius) {
-        double searchRadius = Math.min(currentRadius + SHOCKWAVE_DAMAGE_BAND_WIDTH, getShockwaveMaxRadius() + SHOCKWAVE_DAMAGE_BAND_WIDTH);
+        double damageRadius = getShockwaveDamageRadius();
+        double searchRadius = Math.min(currentRadius + SHOCKWAVE_DAMAGE_BAND_WIDTH, damageRadius + SHOCKWAVE_DAMAGE_BAND_WIDTH);
         AABB search = new AABB(
                 getX() - searchRadius,
                 getY() - 128.0D,
@@ -1608,6 +1640,8 @@ public class NuclearExplosionEntity extends Entity {
         Entity source = sourceUuid == null || level().getServer() == null
                 ? null
                 : level().getServer().getPlayerList().getPlayer(sourceUuid);
+        int damagedThisTick = 0;
+        float lastDamage = 0.0F;
         for (LivingEntity entity : level().getEntitiesOfClass(LivingEntity.class, search, entity -> !entity.isRemoved())) {
             if (shockwaveDamagedEntities.contains(entity.getUUID())) {
                 continue;
@@ -1617,21 +1651,42 @@ public class NuclearExplosionEntity extends Entity {
             }
 
             double distance = horizontalDistanceFromCenter(entity.position());
-            if (distance <= previousRadius || distance > currentRadius + SHOCKWAVE_DAMAGE_BAND_WIDTH || distance > getShockwaveMaxRadius()) {
+            if (distance <= previousRadius || distance > currentRadius + SHOCKWAVE_DAMAGE_BAND_WIDTH || distance > damageRadius + SHOCKWAVE_DAMAGE_BAND_WIDTH) {
                 continue;
             }
 
-            float falloff = 1.0F - (float) Mth.clamp(distance / getShockwaveMaxRadius(), 0.0D, 1.0D) * 0.5F;
-            entity.hurt(level().damageSources().explosion(this, source), 1000.0F * falloff);
+            double normalized = Mth.clamp(distance / damageRadius, 0.0D, 1.0D);
+            double damageFactor = Math.pow(1.0D - normalized, SHOCKWAVE_DAMAGE_FALLOFF_POWER);
+            float damage = (float) (1000.0D * damageFactor);
+            if (damage < SHOCKWAVE_MIN_DAMAGE) {
+                continue;
+            }
+
+            entity.hurt(level().damageSources().explosion(this, source), damage);
             Vec3 knockback = entity.position().subtract(position());
             Vec3 horizontal = new Vec3(knockback.x, 0.0D, knockback.z);
             if (horizontal.lengthSqr() > 1.0E-6D) {
                 Vec3 direction = horizontal.normalize();
-                double strength = 3.0D * falloff;
-                entity.push(direction.x * strength, 0.65D * falloff, direction.z * strength);
+                double knockbackFactor = Math.pow(1.0D - normalized, SHOCKWAVE_KNOCKBACK_FALLOFF_POWER);
+                double strength = 3.0D * knockbackFactor;
+                entity.push(direction.x * strength, 0.65D * knockbackFactor, direction.z * strength);
                 entity.hurtMarked = true;
             }
             shockwaveDamagedEntities.add(entity.getUUID());
+            damagedThisTick++;
+            lastDamage = damage;
+        }
+
+        if (DEBUG_SHOCKWAVE_VISUALS && (damagedThisTick > 0 || tickCount % 20 == 0)) {
+            SkyesNuclearTech.LOGGER.info(
+                    "Nuke shockwave damage tick: visualMaxRadius={} damageRadius={} currentRadius={} falloffPower={} entitiesDamaged={} lastDamage={}",
+                    getShockwaveMaxRadius(),
+                    damageRadius,
+                    currentRadius,
+                    SHOCKWAVE_DAMAGE_FALLOFF_POWER,
+                    damagedThisTick,
+                    lastDamage
+            );
         }
     }
 
@@ -1647,6 +1702,10 @@ public class NuclearExplosionEntity extends Entity {
 
     private double getShockwaveMaxRadius() {
         return getRadius() * SHOCKWAVE_MAX_RADIUS_MULTIPLIER;
+    }
+
+    private double getShockwaveDamageRadius() {
+        return getRadius() * SHOCKWAVE_DAMAGE_RADIUS_MULTIPLIER;
     }
 
     public List<NuclearCloudlet> getCloudlets() {

@@ -2,6 +2,8 @@ package com.skyeshade.skyent.event.systems;
 
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.BoolArgumentType;
+import com.mojang.brigadier.arguments.DoubleArgumentType;
+import com.skyeshade.skyent.content.explosion.NuclearExplosionTuning;
 import com.skyeshade.skyent.content.radiation.RadiationDebugRays;
 import com.skyeshade.skyent.network.RadiationRaysDebugPayload;
 import net.minecraft.commands.CommandSourceStack;
@@ -27,7 +29,37 @@ public final class RadiationDebugSystem {
                 .then(Commands.literal("radiation_debug")
                         .requires(source -> source.hasPermission(PERMISSION_LEVEL))
                         .then(Commands.argument("enabled", BoolArgumentType.bool())
-                                .executes(context -> setRadiationDebugOverlay(context.getSource(), BoolArgumentType.getBool(context, "enabled"))))));
+                                .executes(context -> setRadiationDebugOverlay(context.getSource(), BoolArgumentType.getBool(context, "enabled")))))
+                .then(Commands.literal("nuke_tuning")
+                        .requires(source -> source.hasPermission(PERMISSION_LEVEL))
+                        .then(Commands.literal("get")
+                                .then(Commands.literal("nuclearChargeRadius")
+                                        .executes(context -> getNuclearChargeRadius(context.getSource()))))
+                        .then(Commands.literal("set")
+                                .then(Commands.literal("nuclearChargeRadius")
+                                        .then(Commands.argument("value", DoubleArgumentType.doubleArg(
+                                                        NuclearExplosionTuning.MIN_NUCLEAR_CHARGE_RADIUS,
+                                                        NuclearExplosionTuning.MAX_NUCLEAR_CHARGE_RADIUS
+                                                ))
+                                                .executes(context -> setNuclearChargeRadius(
+                                                        context.getSource(),
+                                                        DoubleArgumentType.getDouble(context, "value")
+                                                ))))))
+                .then(Commands.literal("nuke_config")
+                        .requires(source -> source.hasPermission(PERMISSION_LEVEL))
+                        .then(Commands.literal("get")
+                                .then(Commands.literal("radius")
+                                        .executes(context -> getNuclearChargeRadius(context.getSource()))))
+                        .then(Commands.literal("set")
+                                .then(Commands.literal("radius")
+                                        .then(Commands.argument("value", DoubleArgumentType.doubleArg(
+                                                        NuclearExplosionTuning.MIN_NUCLEAR_CHARGE_RADIUS,
+                                                        NuclearExplosionTuning.MAX_NUCLEAR_CHARGE_RADIUS
+                                                ))
+                                                .executes(context -> setNuclearChargeRadius(
+                                                        context.getSource(),
+                                                        DoubleArgumentType.getDouble(context, "value")
+                                                )))))));
     }
 
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
@@ -54,5 +86,29 @@ public final class RadiationDebugSystem {
             RadiationExposureSystem.sendDebugOverlayDisabled(player);
         }
         return Command.SINGLE_SUCCESS;
+    }
+
+    private static int getNuclearChargeRadius(CommandSourceStack source) {
+        source.sendSuccess(
+                () -> Component.literal("Nuclear Charge radius is " + formatRadius(NuclearExplosionTuning.nuclearChargeRadius) + " blocks"),
+                false
+        );
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int setNuclearChargeRadius(CommandSourceStack source, double radius) {
+        double clampedRadius = NuclearExplosionTuning.setNuclearChargeRadius(radius);
+        source.sendSuccess(
+                () -> Component.literal("Nuclear Charge radius set to " + formatRadius(clampedRadius) + " blocks"),
+                true
+        );
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static String formatRadius(double radius) {
+        if (Math.rint(radius) == radius) {
+            return Long.toString(Math.round(radius));
+        }
+        return String.format(java.util.Locale.ROOT, "%.2f", radius);
     }
 }

@@ -1,7 +1,7 @@
 package com.skyeshade.skyent.content.block;
 
 import com.skyeshade.skyent.content.explosion.NuclearExplosion;
-import com.skyeshade.skyent.content.entity.NuclearExplosionEntity;
+import com.skyeshade.skyent.content.explosion.NuclearExplosionTuning;
 import com.skyeshade.skyent.registry.ModBlocks;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -49,7 +49,7 @@ public class NuclearChargeBlock extends Block {
         }
 
         level.removeBlock(pos, false);
-        NuclearExplosion.explode(level, pos.getCenter(), source, true, true, true, true);
+        NuclearExplosion.explode(level, pos.getCenter(), (float) NuclearExplosionTuning.nuclearChargeRadius, source, true, true, true, true);
         return true;
     }
 
@@ -57,7 +57,7 @@ public class NuclearChargeBlock extends Block {
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         tooltipComponents.add(Component.translatable(
                 "tooltip.skyent.nuclear_charge.blast_radius",
-                Math.round(NuclearExplosionEntity.DEFAULT_NUKE_RADIUS)
+                Math.round(NuclearExplosionTuning.nuclearChargeRadius)
         ).withStyle(ChatFormatting.GRAY));
     }
 }

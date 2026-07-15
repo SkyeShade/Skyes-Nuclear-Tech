@@ -16,6 +16,7 @@ public final class NuclearBlastRayPlanner {
     private static final int MIN_RAYS = 512;
     private static final int MAX_RAYS = 320_000;
     private static final double GOLDEN_ANGLE = Math.PI * (3.0D - Math.sqrt(5.0D));
+    private static final double NUKE_BASELINE_RADIUS = 200.0D;
     // Distance-shaped resistance model:
     // - near power controls core vaporization; lower means hard blocks cost almost nothing near center.
     // - far power controls outer resistance; higher means obsidian/concrete survive farther out.
@@ -43,6 +44,11 @@ public final class NuclearBlastRayPlanner {
     private final int baseRayCount;
     private final int totalRays;
     private final double initialRayEnergy;
+    private final double radiusScale;
+    private final double inverseRadiusScale;
+    private final double scaledDistanceResistanceGrowth;
+    private final double scaledDistanceDecayPerBlock;
+    private final double scaledMaterialPenetrationStackingGrowth;
     private final double closeRangeArmorPiercingRadiusFraction;
     private final double closeRangeResistanceCostMultiplier;
     private final long seed;
@@ -104,6 +110,11 @@ public final class NuclearBlastRayPlanner {
         );
         this.totalRays = Mth.clamp(Mth.ceil(this.baseRayCount * extraRayCountMultiplier), MIN_RAYS, MAX_RAYS);
         this.initialRayEnergy = this.strength * initialRayEnergyMultiplier;
+        this.radiusScale = Math.max(0.05D, this.radius / NUKE_BASELINE_RADIUS);
+        this.inverseRadiusScale = 1.0D / this.radiusScale;
+        this.scaledDistanceResistanceGrowth = NUKE_DISTANCE_RESISTANCE_GROWTH * Math.pow(this.inverseRadiusScale, 0.75D);
+        this.scaledDistanceDecayPerBlock = NUKE_RAY_DISTANCE_DECAY_PER_BLOCK * Math.pow(this.inverseRadiusScale, 0.65D);
+        this.scaledMaterialPenetrationStackingGrowth = NUKE_MATERIAL_PENETRATION_STACKING_GROWTH * Math.pow(this.inverseRadiusScale, 0.85D);
         this.closeRangeArmorPiercingRadiusFraction = closeRangeArmorPiercingRadiusFraction;
         this.closeRangeResistanceCostMultiplier = closeRangeResistanceCostMultiplier;
         this.seed = seed;
@@ -237,8 +248,8 @@ public final class NuclearBlastRayPlanner {
 
                 if (resistance > 0.0F) {
                     double distanceProgress = Mth.clamp(traveled / radius, 0.0D, 1.0D);
-                    double distanceCostMultiplier = 1.0D + distanceProgress * distanceProgress * NUKE_DISTANCE_RESISTANCE_GROWTH;
-                    double materialStackMultiplier = 1.0D + materialBlocksPierced * NUKE_MATERIAL_PENETRATION_STACKING_GROWTH;
+                    double distanceCostMultiplier = 1.0D + distanceProgress * distanceProgress * scaledDistanceResistanceGrowth;
+                    double materialStackMultiplier = 1.0D + materialBlocksPierced * scaledMaterialPenetrationStackingGrowth;
                     double rawCost = resistanceCost(resistance, distanceProgress, distanceCostMultiplier, materialStackMultiplier);
                     double cost = rawCost;
                     boolean closeRangeApplied = distanceProgress < closeRangeArmorPiercingRadiusFraction;
@@ -382,11 +393,11 @@ public final class NuclearBlastRayPlanner {
         }
 
         double distanceProgress = Mth.clamp(traveled / radius, 0.0D, 1.0D);
-        double costPerBlock = initialRayEnergy * NUKE_RAY_DISTANCE_DECAY_PER_BLOCK / radius;
+        double costPerBlock = initialRayEnergy * scaledDistanceDecayPerBlock / radius;
         return costPerBlock * distanceDelta * (1.0D + distanceProgress * distanceProgress * 2.0D);
     }
 
-    private static double resistanceCost(double resistance, double distanceProgress, double distanceCostMultiplier, double materialStackMultiplier) {
+    private double resistanceCost(double resistance, double distanceProgress, double distanceCostMultiplier, double materialStackMultiplier) {
         double effectivePower = effectiveResistancePower(distanceProgress);
         double baseCost = Math.pow(
                 Math.max(0.0D, resistance) + NUKE_RESISTANCE_COST_OFFSET,
@@ -400,9 +411,14 @@ public final class NuclearBlastRayPlanner {
         return cost;
     }
 
-    private static double effectiveResistancePower(double distanceProgress) {
-        double curvedDistance = Math.pow(Mth.clamp(distanceProgress, 0.0D, 1.0D), NUKE_RESISTANCE_POWER_DISTANCE_CURVE);
+    private double effectiveResistancePower(double distanceProgress) {
+        double scaledDistanceProgress = scaledDistanceProgress(distanceProgress);
+        double curvedDistance = Math.pow(scaledDistanceProgress, NUKE_RESISTANCE_POWER_DISTANCE_CURVE);
         return Mth.lerp(curvedDistance, NUKE_RESISTANCE_POWER_NEAR, NUKE_RESISTANCE_POWER_FAR);
+    }
+
+    private double scaledDistanceProgress(double distanceProgress) {
+        return Mth.clamp(distanceProgress * Math.pow(inverseRadiusScale, 0.35D), 0.0D, 1.0D);
     }
 
     private Vec3 fibonacciDirection(int index) {
@@ -450,6 +466,14 @@ public final class NuclearBlastRayPlanner {
         return initialRayEnergy;
     }
 
+    public double baselineRadius() {
+        return NUKE_BASELINE_RADIUS;
+    }
+
+    public double radiusScale() {
+        return radiusScale;
+    }
+
     public double resistanceCostMultiplier() {
         return NUKE_RESISTANCE_COST_MULTIPLIER;
     }
@@ -478,12 +502,24 @@ public final class NuclearBlastRayPlanner {
         return NUKE_DISTANCE_RESISTANCE_GROWTH;
     }
 
+    public double scaledDistanceResistanceGrowth() {
+        return scaledDistanceResistanceGrowth;
+    }
+
     public double distanceDecayPerBlock() {
         return NUKE_RAY_DISTANCE_DECAY_PER_BLOCK;
     }
 
+    public double scaledDistanceDecayPerBlock() {
+        return scaledDistanceDecayPerBlock;
+    }
+
     public double materialPenetrationStackingGrowth() {
         return NUKE_MATERIAL_PENETRATION_STACKING_GROWTH;
+    }
+
+    public double scaledMaterialPenetrationStackingGrowth() {
+        return scaledMaterialPenetrationStackingGrowth;
     }
 
     public double closeRangeArmorPiercingRadiusFraction() {
@@ -512,7 +548,7 @@ public final class NuclearBlastRayPlanner {
                 + "]";
     }
 
-    private static String sampleResistanceCosts(double resistance) {
+    private String sampleResistanceCosts(double resistance) {
         return sampleResistanceCostEntry("d0", resistance, 0.0D)
                 + "," + sampleResistanceCostEntry("d0.1", resistance, 0.1D)
                 + "," + sampleResistanceCostEntry("d0.25", resistance, 0.25D)
@@ -520,13 +556,14 @@ public final class NuclearBlastRayPlanner {
                 + "," + sampleResistanceCostEntry("d1", resistance, 1.0D);
     }
 
-    private static String sampleResistanceCostEntry(String label, double resistance, double distanceProgress) {
+    private String sampleResistanceCostEntry(String label, double resistance, double distanceProgress) {
         return label + "=p" + formatCost(effectiveResistancePower(distanceProgress))
+                + "/sp" + formatCost(scaledDistanceProgress(distanceProgress))
                 + "/c" + formatCost(sampleResistanceCost(resistance, distanceProgress));
     }
 
-    private static double sampleResistanceCost(double resistance, double distanceProgress) {
-        double distanceCostMultiplier = 1.0D + distanceProgress * distanceProgress * NUKE_DISTANCE_RESISTANCE_GROWTH;
+    private double sampleResistanceCost(double resistance, double distanceProgress) {
+        double distanceCostMultiplier = 1.0D + distanceProgress * distanceProgress * scaledDistanceResistanceGrowth;
         return resistanceCost(resistance, distanceProgress, distanceCostMultiplier, 1.0D);
     }
 
