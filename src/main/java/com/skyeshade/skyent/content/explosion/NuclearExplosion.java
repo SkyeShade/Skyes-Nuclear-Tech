@@ -13,7 +13,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.UUID;
 
 public final class NuclearExplosion {
-    private static final double EFFECT_RANGE = 256.0D;
+    private static final double EFFECT_RANGE = 1024.0D;
     private static final double EFFECT_RANGE_SQR = EFFECT_RANGE * EFFECT_RANGE;
 
     private NuclearExplosion() {

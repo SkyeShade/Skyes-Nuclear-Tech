@@ -28,8 +28,8 @@ public final class ModEntities {
             ENTITIES.register("nuclear_explosion", () -> EntityType.Builder
                     .of((EntityType.EntityFactory<NuclearExplosionEntity>) NuclearExplosionEntity::new, MobCategory.MISC)
                     .sized(0.1F, 0.1F)
-                    .clientTrackingRange(512)
-                    .updateInterval(10)
+                    .clientTrackingRange(1024)
+                    .updateInterval(1)
                     .build("nuclear_explosion"));
 
     private ModEntities() {

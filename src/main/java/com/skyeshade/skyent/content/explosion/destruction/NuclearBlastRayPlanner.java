@@ -40,6 +40,12 @@ public final class NuclearBlastRayPlanner {
     private long blockedRayStops;
     private long energyStops;
     private long outOfWorldStops;
+    private long fragileBlocksMarked;
+    private long nonSolidBlocksMarked;
+    private long fluidBlocksMarked;
+    private long airBlocksSkipped;
+    private long blockEntitySkips;
+    private long unbreakableStops;
 
     public NuclearBlastRayPlanner(
             ServerLevel level,
@@ -139,10 +145,20 @@ public final class NuclearBlastRayPlanner {
             }
 
             BlockState state = level.getBlockState(pos);
-            if (!state.isAir()) {
+            if (state.isAir()) {
+                airBlocksSkipped++;
+            } else {
+                boolean hasBlockEntity = level.getBlockEntity(pos) != null;
+                boolean fragile = resistanceCache.isFragile(state);
+                boolean fluid = !state.getFluidState().isEmpty();
+                boolean nonSolid = state.getCollisionShape(level, pos).isEmpty();
                 float resistance = resistanceCache.resistanceFor(state, level, pos);
                 if (resistanceCache.isRayBlocking(resistance)) {
+                    unbreakableStops++;
                     return new RayResult(steps, marked, StopReason.BLOCKED);
+                }
+                if (hasBlockEntity) {
+                    blockEntitySkips++;
                 }
 
                 if (resistance > 0.0F) {
@@ -156,8 +172,17 @@ public final class NuclearBlastRayPlanner {
                     if (rayEnergy <= 0.0D) {
                         return new RayResult(steps, marked, StopReason.ENERGY);
                     }
-                    if (resistanceCache.canMarkForDestruction(state) && mask.mark(blockX, blockY, blockZ)) {
+                    if (!hasBlockEntity && resistanceCache.canMarkForDestruction(state) && mask.mark(blockX, blockY, blockZ)) {
                         marked++;
+                        if (fragile) {
+                            fragileBlocksMarked++;
+                        }
+                        if (nonSolid) {
+                            nonSolidBlocksMarked++;
+                        }
+                        if (fluid) {
+                            fluidBlocksMarked++;
+                        }
                     }
                 }
             }
@@ -305,6 +330,30 @@ public final class NuclearBlastRayPlanner {
 
     public long outOfWorldStops() {
         return outOfWorldStops;
+    }
+
+    public long fragileBlocksMarked() {
+        return fragileBlocksMarked;
+    }
+
+    public long nonSolidBlocksMarked() {
+        return nonSolidBlocksMarked;
+    }
+
+    public long fluidBlocksMarked() {
+        return fluidBlocksMarked;
+    }
+
+    public long airBlocksSkipped() {
+        return airBlocksSkipped;
+    }
+
+    public long blockEntitySkips() {
+        return blockEntitySkips;
+    }
+
+    public long unbreakableStops() {
+        return unbreakableStops;
     }
 
     public record PlannerResult(int raysProcessed, int stepsProcessed, long blocksMarked, boolean complete) {

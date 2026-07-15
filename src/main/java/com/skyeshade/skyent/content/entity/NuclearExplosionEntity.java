@@ -331,7 +331,7 @@ public class NuclearExplosionEntity extends Entity {
                 destructionPhase = DestructionPhase.MUTATING;
                 mutationStartTick = tickCount;
                 SkyesNuclearTech.LOGGER.info(
-                        "Nuke destruction planning complete: id={} rays={}/{} baseRays={} rayMultiplier={} extraRayMultiplier={} initialRayEnergy={} resistanceCostMultiplier={} resistanceCostOffset={} resistancePower={} distanceResistanceGrowth={} resistanceSamples={} steps={} maskSections={} estimatedBlocks={} trackerPendingSections={} initiallyPrunedEmptySections={} initiallyPrunedAirSections={} mutationUpdateFlags={} suppressDrops=true unloadedStops={} energyStops={} blockedStops={} outOfWorldStops={}",
+                        "Nuke destruction planning complete: id={} rays={}/{} baseRays={} rayMultiplier={} extraRayMultiplier={} initialRayEnergy={} resistanceCostMultiplier={} resistanceCostOffset={} resistancePower={} distanceResistanceGrowth={} resistanceSamples={} steps={} maskSections={} estimatedBlocks={} trackerPendingSections={} initiallyPrunedEmptySections={} initiallyPrunedAirSections={} mutationUpdateFlags={} suppressDrops=true unloadedStops={} energyStops={} blockedStops={} unbreakableStops={} outOfWorldStops={} fragileMarked={} nonSolidMarked={} fluidMarked={} airSkipped={} blockEntitySkips={}",
                         getId(),
                         rayPlanner.rayIndex(),
                         rayPlanner.totalRays(),
@@ -354,7 +354,13 @@ public class NuclearExplosionEntity extends Entity {
                         rayPlanner.unloadedChunkStops(),
                         rayPlanner.energyStops(),
                         rayPlanner.blockedRayStops(),
-                        rayPlanner.outOfWorldStops()
+                        rayPlanner.unbreakableStops(),
+                        rayPlanner.outOfWorldStops(),
+                        rayPlanner.fragileBlocksMarked(),
+                        rayPlanner.nonSolidBlocksMarked(),
+                        rayPlanner.fluidBlocksMarked(),
+                        rayPlanner.airBlocksSkipped(),
+                        rayPlanner.blockEntitySkips()
                 );
             }
         }
@@ -749,7 +755,7 @@ public class NuclearExplosionEntity extends Entity {
         }
 
         SkyesNuclearTech.LOGGER.info(
-                "Nuke ray planner debug: id={} tick={} phase={} rayIndex={}/{} baseRays={} rayMultiplier={} extraRayMultiplier={} initialRayEnergy={} resistanceCostMultiplier={} resistanceCostOffset={} resistancePower={} distanceResistanceGrowth={} resistanceSamples={} tickRays={} tickSteps={} totalRays={} totalSteps={} tickMarked={} totalMarked={} maskSections={} estimatedBlocks={} unloadedStops={} energyStops={} blockedStops={} outOfWorldStops={}",
+                "Nuke ray planner debug: id={} tick={} phase={} rayIndex={}/{} baseRays={} rayMultiplier={} extraRayMultiplier={} initialRayEnergy={} resistanceCostMultiplier={} resistanceCostOffset={} resistancePower={} distanceResistanceGrowth={} resistanceSamples={} tickRays={} tickSteps={} totalRays={} totalSteps={} tickMarked={} totalMarked={} maskSections={} estimatedBlocks={} unloadedStops={} energyStops={} blockedStops={} unbreakableStops={} outOfWorldStops={} fragileMarked={} nonSolidMarked={} fluidMarked={} airSkipped={} blockEntitySkips={}",
                 getId(),
                 tickCount,
                 destructionPhase,
@@ -775,7 +781,13 @@ public class NuclearExplosionEntity extends Entity {
                 rayPlanner.unloadedChunkStops(),
                 rayPlanner.energyStops(),
                 rayPlanner.blockedRayStops(),
-                rayPlanner.outOfWorldStops()
+                rayPlanner.unbreakableStops(),
+                rayPlanner.outOfWorldStops(),
+                rayPlanner.fragileBlocksMarked(),
+                rayPlanner.nonSolidBlocksMarked(),
+                rayPlanner.fluidBlocksMarked(),
+                rayPlanner.airBlocksSkipped(),
+                rayPlanner.blockEntitySkips()
         );
     }
 
@@ -1704,18 +1716,18 @@ public class NuclearExplosionEntity extends Entity {
 
     @Override
     public boolean shouldRenderAtSqrDistance(double distance) {
-        return distance < 512.0D * 512.0D;
+        return distance < 2048.0D * 2048.0D;
     }
 
     @Override
     public AABB getBoundingBoxForCulling() {
-        double horizontalRange = getShockwaveMaxRadius() + 96.0D;
+        double horizontalRange = Math.max(getShockwaveMaxRadius() + 128.0D, 1024.0D);
         return new AABB(
                 getX() - horizontalRange,
-                getY() - 16.0D,
+                getY() - 64.0D,
                 getZ() - horizontalRange,
                 getX() + horizontalRange,
-                getY() + 240.0D,
+                getY() + 512.0D,
                 getZ() + horizontalRange
         );
     }

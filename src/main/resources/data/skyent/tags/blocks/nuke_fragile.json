@@ -1,0 +1,28 @@
+{
+  "replace": false,
+  "values": [
+    "skyent:dead_grass",
+    "skyent:dead_short_grass",
+    "skyent:dead_tall_grass",
+    "skyent:dead_oak_leaves",
+    "skyent:dead_birch_leaves",
+    "skyent:dead_spruce_leaves",
+    "skyent:dead_jungle_leaves",
+    "skyent:dead_acacia_leaves",
+    "skyent:dead_dark_oak_leaves",
+    "skyent:dead_mangrove_leaves",
+    "skyent:dead_cherry_leaves",
+    "skyent:dead_azalea_leaves",
+    "skyent:dead_flowering_azalea_leaves",
+    "minecraft:short_grass",
+    "minecraft:tall_grass",
+    "minecraft:fern",
+    "minecraft:large_fern",
+    "minecraft:dead_bush",
+    "minecraft:snow",
+    "minecraft:vine",
+    "minecraft:cobweb",
+    "#minecraft:flowers",
+    "#minecraft:leaves"
+  ]
+}

@@ -1,8 +1,10 @@
 package com.skyeshade.skyent.content.item;
 
 import com.skyeshade.skyent.content.block.NuclearChargeBlock;
+import com.skyeshade.skyent.content.entity.NuclearExplosionChunkLoading;
 import com.skyeshade.skyent.registry.ModBlocks;
 import java.util.List;
+import java.util.UUID;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
@@ -13,6 +15,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
@@ -99,19 +102,35 @@ public class RemoteDetonatorItem extends Item {
         }
 
         ServerLevel targetLevel = serverPlayer.server.getLevel(target.dimension());
-        if (targetLevel == null || !targetLevel.hasChunkAt(target.pos())) {
-            player.displayClientMessage(Component.literal("Target not loaded."), true);
+        if (targetLevel == null) {
+            player.displayClientMessage(Component.literal("Target dimension is not loaded."), true);
             return InteractionResultHolder.success(stack);
         }
 
-        BlockState state = targetLevel.getBlockState(target.pos());
-        if (!state.is(ModBlocks.NUCLEAR_CHARGE.get())) {
-            player.displayClientMessage(Component.literal("Target is not a valid receiver."), true);
-            return InteractionResultHolder.success(stack);
-        }
+        UUID ticketOwner = UUID.randomUUID();
+        ChunkPos targetChunk = new ChunkPos(target.pos());
+        NuclearExplosionChunkLoading.NuclearExplosionChunkLease lease = NuclearExplosionChunkLoading.forceTemporaryDetonationChunk(
+                targetLevel,
+                targetChunk,
+                ticketOwner
+        );
+        String releaseReason = "invalid_target";
+        try {
+            targetLevel.getChunkAt(target.pos());
+            BlockState state = targetLevel.getBlockState(target.pos());
+            boolean validCharge = state.is(ModBlocks.NUCLEAR_CHARGE.get());
+            NuclearExplosionChunkLoading.debugRemoteDetonationTarget(ticketOwner, targetChunk, validCharge);
+            if (!validCharge) {
+                player.displayClientMessage(Component.literal("Target is not a valid receiver."), true);
+                return InteractionResultHolder.success(stack);
+            }
 
-        NuclearChargeBlock.detonate(targetLevel, target.pos(), player);
-        return InteractionResultHolder.success(stack);
+            releaseReason = NuclearChargeBlock.detonate(targetLevel, target.pos(), player) ? "detonated" : "detonation_failed";
+            return InteractionResultHolder.success(stack);
+        } finally {
+            int released = NuclearExplosionChunkLoading.unforceExplosionChunks(targetLevel, lease.ownerUuid(), lease.chunks());
+            NuclearExplosionChunkLoading.debugTemporaryDetonationChunkReleased(ticketOwner, released, releaseReason);
+        }
     }
 
     private static Target readTarget(ItemStack stack) {

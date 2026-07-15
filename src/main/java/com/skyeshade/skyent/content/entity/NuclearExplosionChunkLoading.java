@@ -47,6 +47,22 @@ public final class NuclearExplosionChunkLoading {
         return new NuclearExplosionChunkLease(ownerUuid, forcedChunks);
     }
 
+    public static NuclearExplosionChunkLease forceTemporaryDetonationChunk(ServerLevel level, ChunkPos chunk, UUID ownerUuid) {
+        Set<ChunkPos> forcedChunks = new HashSet<>();
+        if (forcedChunks.add(chunk)) {
+            NUKE_TICKET_CONTROLLER.forceChunk(
+                    level,
+                    ownerUuid,
+                    chunk.x,
+                    chunk.z,
+                    true,
+                    NUKE_FORCE_TICKING_CHUNKS
+            );
+        }
+        debugTemporaryDetonationChunkForced(ownerUuid, chunk);
+        return new NuclearExplosionChunkLease(ownerUuid, forcedChunks);
+    }
+
     public static int forceExplosionChunks(ServerLevel level, UUID ownerUuid, ChunkPos center, int chunkRadius, Set<ChunkPos> forcedChunks) {
         int added = 0;
         int radiusSqr = chunkRadius * chunkRadius;
@@ -179,6 +195,44 @@ public final class NuclearExplosionChunkLoading {
                 entityId,
                 explosionUuid,
                 releasedCount
+        );
+    }
+
+    public static void debugTemporaryDetonationChunkForced(UUID ownerUuid, ChunkPos chunk) {
+        if (!DEBUG_NUKE_CHUNK_LOADING) {
+            return;
+        }
+
+        SkyesNuclearTech.LOGGER.info(
+                "Nuke detonation target chunk forced: uuid={} chunk={}",
+                ownerUuid,
+                chunk
+        );
+    }
+
+    public static void debugTemporaryDetonationChunkReleased(UUID ownerUuid, int releasedCount, String reason) {
+        if (!DEBUG_NUKE_CHUNK_LOADING) {
+            return;
+        }
+
+        SkyesNuclearTech.LOGGER.info(
+                "Nuke detonation target chunk released: uuid={} released={} reason={}",
+                ownerUuid,
+                releasedCount,
+                reason
+        );
+    }
+
+    public static void debugRemoteDetonationTarget(UUID ownerUuid, ChunkPos chunk, boolean validCharge) {
+        if (!DEBUG_NUKE_CHUNK_LOADING) {
+            return;
+        }
+
+        SkyesNuclearTech.LOGGER.info(
+                "Nuke remote detonation target checked: uuid={} chunk={} validCharge={}",
+                ownerUuid,
+                chunk,
+                validCharge
         );
     }
 

@@ -42,6 +42,8 @@ public final class NuclearMushroomCloudSimulation {
     private static final double SECONDARY_TORUS_SOURCE_ANGLE_SPREAD = 0.55D;
     private static final int AIR_RING_LOWER_COUNT = 360;
     private static final int AIR_RING_UPPER_COUNT = 260;
+    private static final int AIR_RING_LOWER_DELAY_TICKS = 20;
+    private static final int AIR_RING_UPPER_DELAY_TICKS = 60;
     private static final int AIR_RING_LOWER_LIFETIME = 320;
     private static final int AIR_RING_UPPER_LIFETIME = 260;
     private static final double AIR_RING_HEIGHT_EXTRA_Y = 40.0D;
@@ -76,7 +78,10 @@ public final class NuclearMushroomCloudSimulation {
     private int sourceSpawnCountThisTick;
     private double sourceSpawnRadialOffsetSum;
     private double sourceSpawnVerticalOffsetSum;
-    private boolean spawnedAirRings;
+    private boolean spawnedLowerAirRing;
+    private boolean spawnedUpperAirRing;
+    private double lowerAirRingSpawnY = Double.NaN;
+    private double upperAirRingSpawnY = Double.NaN;
     private boolean filledInitialTorus;
 
     public NuclearMushroomCloudSimulation(long seed, float radius) {
@@ -225,14 +230,23 @@ public final class NuclearMushroomCloudSimulation {
     }
 
     private void spawnAirRingsIfNeeded() {
-        if (spawnedAirRings) {
-            return;
+        if (!spawnedLowerAirRing && age >= AIR_RING_LOWER_DELAY_TICKS) {
+            spawnedLowerAirRing = true;
+            RandomSource random = RandomSource.create(seed ^ 0x6A09E667F3BCC909L);
+            double baseY = Double.isFinite(groundY) ? groundY : 0.0D;
+            lowerAirRingSpawnY = baseY + 35.0D * visualScale + AIR_RING_HEIGHT_EXTRA_Y;
+            spawnAirRing(random, AIR_RING_LOWER_COUNT, lowerAirRingSpawnY, 10.0D * visualScale, 180.0D * visualScale, AIR_RING_LOWER_LIFETIME, 1.35D * visualScale);
+            logAirRingSpawn("lower", lowerAirRingSpawnY);
         }
-        spawnedAirRings = true;
-        RandomSource random = RandomSource.create(seed ^ 0x6A09E667F3BCC909L);
-        double baseY = Double.isFinite(groundY) ? groundY : 0.0D;
-        spawnAirRing(random, AIR_RING_LOWER_COUNT, baseY + 35.0D * visualScale + AIR_RING_HEIGHT_EXTRA_Y, 10.0D * visualScale, 180.0D * visualScale, AIR_RING_LOWER_LIFETIME, 1.35D * visualScale);
-        spawnAirRing(random, AIR_RING_UPPER_COUNT, baseY + 60.0D * visualScale + AIR_RING_HEIGHT_EXTRA_Y, 6.0D * visualScale, 115.0D * visualScale, AIR_RING_UPPER_LIFETIME, 0.95D * visualScale);
+
+        if (!spawnedUpperAirRing && age >= AIR_RING_UPPER_DELAY_TICKS) {
+            spawnedUpperAirRing = true;
+            RandomSource random = RandomSource.create(seed ^ 0xBB67AE8584CAA73BL);
+            double baseY = Double.isFinite(groundY) ? groundY : 0.0D;
+            upperAirRingSpawnY = baseY + 60.0D * visualScale + AIR_RING_HEIGHT_EXTRA_Y;
+            spawnAirRing(random, AIR_RING_UPPER_COUNT, upperAirRingSpawnY, 6.0D * visualScale, 115.0D * visualScale, AIR_RING_UPPER_LIFETIME, 0.95D * visualScale);
+            logAirRingSpawn("upper", upperAirRingSpawnY);
+        }
     }
 
     private void spawnAirRing(RandomSource random, int count, double y, double initialRadius, double finalRadius, int lifetime, double expansionSpeed) {
@@ -263,6 +277,24 @@ public final class NuclearMushroomCloudSimulation {
                     radial.z * expansionSpeed
             ));
         }
+    }
+
+    private void logAirRingSpawn(String ringName, double y) {
+        if (!DEBUG_MUSHROOM) {
+            return;
+        }
+
+        SkyesNuclearTech.LOGGER.info(
+                "Nuke mushroom air ring spawned: ring={} age={} y={} lowerDelay={} upperDelay={} torusCenterY={} torusTopY={} visualScale={}",
+                ringName,
+                age,
+                y,
+                AIR_RING_LOWER_DELAY_TICKS,
+                AIR_RING_UPPER_DELAY_TICKS,
+                torusCenterY,
+                torusCenterY + minorRadius,
+                visualScale
+        );
     }
 
     private void spawnTorusCloudlet(RandomSource random) {
@@ -437,7 +469,7 @@ public final class NuclearMushroomCloudSimulation {
         }
 
         SkyesNuclearTech.LOGGER.info(
-                "Nuke mushroom debug: age={} cloudlets={} groundY={} groundYInitialized={} cloudScale={} finalHeightScale={} growTicks={} riseTicks={} filledInitialTorus={} initialTorusFillCount={} majorRadius={} minorRadius={} torusCenterY={} torusBottomY={} torusTopY={} secondaryMajorRadius={} secondaryMinorRadius={} secondaryCenterY={} stemBottomY={} stemTopY={} stemHeight={} stemRadius0={} stemRadius030={} stemRadius075={} stemRadius1={} globalHeat={} stemHotSpawnHeatFactor={} stemHotSpawnChance={} torusSpawnTicks={} stemExtraSpawnTicks={} stemSpawnTicks={} torusSpawnRate={} secondarySpawnRate={} stemSpawnRate={} stemLifetimeMin={} stemLifetimeRandom={} airRingHeightExtraY={} airRingLowerLifetime={} airRingUpperLifetime={} sourceAvgRadialOffset={} sourceAvgVerticalOffset={} torusScale={} angularSpeed={} targetTubeSpeed={} maxSpeed={} spawnedAirRings={} TORUS_FIREBALL={} SECONDARY_TORUS={} STEM={} WHITE_AIR_RING={} hotSTEM={}",
+                "Nuke mushroom debug: age={} cloudlets={} groundY={} groundYInitialized={} cloudScale={} finalHeightScale={} growTicks={} riseTicks={} filledInitialTorus={} initialTorusFillCount={} majorRadius={} minorRadius={} torusCenterY={} torusBottomY={} torusTopY={} secondaryMajorRadius={} secondaryMinorRadius={} secondaryCenterY={} stemBottomY={} stemTopY={} stemHeight={} stemRadius0={} stemRadius030={} stemRadius075={} stemRadius1={} globalHeat={} stemHotSpawnHeatFactor={} stemHotSpawnChance={} torusSpawnTicks={} stemExtraSpawnTicks={} stemSpawnTicks={} torusSpawnRate={} secondarySpawnRate={} stemSpawnRate={} stemLifetimeMin={} stemLifetimeRandom={} airRingHeightExtraY={} airRingLowerDelay={} airRingUpperDelay={} airRingLowerLifetime={} airRingUpperLifetime={} lowerAirRingSpawnY={} upperAirRingSpawnY={} sourceAvgRadialOffset={} sourceAvgVerticalOffset={} torusScale={} angularSpeed={} targetTubeSpeed={} maxSpeed={} spawnedLowerAirRing={} spawnedUpperAirRing={} TORUS_FIREBALL={} SECONDARY_TORUS={} STEM={} WHITE_AIR_RING={} hotSTEM={}",
                 age,
                 cloudlets.size(),
                 groundY,
@@ -475,15 +507,20 @@ public final class NuclearMushroomCloudSimulation {
                 STEM_LIFETIME_MIN_TICKS,
                 STEM_LIFETIME_RANDOM_TICKS,
                 AIR_RING_HEIGHT_EXTRA_Y,
+                AIR_RING_LOWER_DELAY_TICKS,
+                AIR_RING_UPPER_DELAY_TICKS,
                 AIR_RING_LOWER_LIFETIME,
                 AIR_RING_UPPER_LIFETIME,
+                lowerAirRingSpawnY,
+                upperAirRingSpawnY,
                 sourceSpawnCountThisTick == 0 ? 0.0D : sourceSpawnRadialOffsetSum / sourceSpawnCountThisTick,
                 sourceSpawnCountThisTick == 0 ? 0.0D : sourceSpawnVerticalOffsetSum / sourceSpawnCountThisTick,
                 torusScale,
                 torusAngularSpeed(),
                 targetTubeSpeedAtMinorRadius(),
                 maxTorusSpeed(),
-                spawnedAirRings,
+                spawnedLowerAirRing,
+                spawnedUpperAirRing,
                 countCloudlets(MushroomCloudletType.TORUS_FIREBALL),
                 countCloudlets(MushroomCloudletType.SECONDARY_TORUS),
                 countCloudlets(MushroomCloudletType.STEM),
