@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.content.explosion;
 
 import com.skyeshade.skyent.content.entity.NuclearExplosionEntity;
+import com.skyeshade.skyent.content.entity.NuclearExplosionChunkLoading;
 import com.skyeshade.skyent.network.NukeDetonationEffectsPayload;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -8,6 +9,8 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.UUID;
 
 public final class NuclearExplosion {
     private static final double EFFECT_RANGE = 256.0D;
@@ -25,9 +28,20 @@ public final class NuclearExplosion {
             boolean flashSky,
             boolean playSounds
     ) {
+        UUID chunkLoadingOwnerUuid = UUID.randomUUID();
+        NuclearExplosionChunkLoading.NuclearExplosionChunkLease chunkLoadLease = NuclearExplosionChunkLoading.forceImmediateChunks(
+                level,
+                center,
+                NuclearExplosionEntity.DEFAULT_NUKE_RADIUS,
+                chunkLoadingOwnerUuid
+        );
         NuclearExplosionEntity explosion = new NuclearExplosionEntity(level, center);
         explosion.configure(NuclearExplosionEntity.VANILLA_EXPLOSION_STRENGTH, destroyBlocks, spawnCloud, flashSky, playSounds, source);
-        level.addFreshEntity(explosion);
+        explosion.adoptChunkLoadLease(chunkLoadLease);
+        boolean spawned = level.addFreshEntity(explosion);
+        if (!spawned) {
+            NuclearExplosionChunkLoading.unforceExplosionChunks(level, chunkLoadLease.ownerUuid(), chunkLoadLease.chunks());
+        }
         if (flashSky) {
             sendScreenFlash(level, center);
         }

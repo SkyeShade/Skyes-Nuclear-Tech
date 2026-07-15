@@ -1,6 +1,7 @@
 package com.skyeshade.skyent;
 
 import com.mojang.logging.LogUtils;
+import com.skyeshade.skyent.content.entity.NuclearExplosionChunkLoading;
 import com.skyeshade.skyent.event.ClientEvents;
 import com.skyeshade.skyent.event.CommonEvents;
 import com.skyeshade.skyent.event.ServerEvents;
@@ -42,6 +43,7 @@ public final class SkyesNuclearTech {
         ModParticles.register(modEventBus);
         ModRecipes.register(modEventBus);
         ModCreativeTabs.register(modEventBus);
+        modEventBus.addListener(NuclearExplosionChunkLoading::registerTicketControllers);
 
         CommonEvents.register(modEventBus);
         ServerEvents.register();

@@ -26,6 +26,7 @@ import java.util.Map;
 
 public class NuclearExplosionRenderer extends EntityRenderer<NuclearExplosionEntity> {
     private static final int RAY_COUNT = 240;
+    private static final boolean RENDER_RAYS_OVER_CLOUDS = true;
     private static final boolean DEBUG_SHOCKWAVE_VISUALS = Boolean.getBoolean("skyent.debugNukeShockwave");
     private static final Map<Integer, Integer> LAST_DEBUG_RENDER_TICK = new HashMap<>();
     private static final ResourceLocation CLOUDLET_TEXTURE = ResourceLocation.fromNamespaceAndPath(
@@ -41,11 +42,14 @@ public class NuclearExplosionRenderer extends EntityRenderer<NuclearExplosionEnt
     @Override
     public void render(NuclearExplosionEntity entity, float entityYaw, float partialTick, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight) {
         float age = entity.tickCount + partialTick;
-        if (age < NuclearExplosionEntity.RAY_TOTAL_TICKS) {
+        if (!RENDER_RAYS_OVER_CLOUDS && age < NuclearExplosionEntity.RAY_TOTAL_TICKS) {
             renderRays(entity, age, poseStack, bufferSource);
         }
         renderMushroomCloudlets(entity, partialTick, poseStack, bufferSource);
         renderShockwaveCloudlets(entity, partialTick, poseStack, bufferSource);
+        if (RENDER_RAYS_OVER_CLOUDS && age < NuclearExplosionEntity.RAY_TOTAL_TICKS) {
+            renderRays(entity, age, poseStack, bufferSource);
+        }
         super.render(entity, entityYaw, partialTick, poseStack, bufferSource, packedLight);
     }
 

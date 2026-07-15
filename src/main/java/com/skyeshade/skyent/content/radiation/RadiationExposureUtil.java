@@ -87,6 +87,32 @@ public final class RadiationExposureUtil {
         );
     }
 
+    public static double calculateRayTransmission(ServerLevel level, Vec3 start, Vec3 end) {
+        return calculateTransmissionBetween(level, start, end, null);
+    }
+
+    public static PointSourceExposure calculatePointSourceExposure(
+            ServerLevel level,
+            Vec3 sourceCenter,
+            Vec3 entityPos,
+            double sourceMillisievertsPerSecond,
+            double radius
+    ) {
+        if (sourceMillisievertsPerSecond <= 0.0D || radius <= 0.0D) {
+            return PointSourceExposure.none(sourceCenter.distanceTo(entityPos));
+        }
+
+        double distance = sourceCenter.distanceTo(entityPos);
+        if (distance > radius) {
+            return PointSourceExposure.none(distance);
+        }
+
+        double clampedDistance = Math.max(1.0D, distance);
+        double baseExposure = sourceMillisievertsPerSecond / (clampedDistance * clampedDistance);
+        double transmission = calculateTransmissionBetween(level, sourceCenter, entityPos, null);
+        return new PointSourceExposure(distance, transmission, baseExposure * transmission);
+    }
+
     private static SourceScanResult findRadioactiveSources(ServerLevel level, Vec3 entityPos, double scanRadius, RadioactiveSourceRegistry registry) {
         List<SourceCandidate> sources = new ArrayList<>();
         List<BlockPos> candidates = registry.getSourcesNear(entityPos, scanRadius);
@@ -235,6 +261,16 @@ public final class RadiationExposureUtil {
             int registeredSources,
             int registryCandidates
     ) {
+    }
+
+    public record PointSourceExposure(
+            double distance,
+            double transmission,
+            double exposureMillisievertsPerSecond
+    ) {
+        private static PointSourceExposure none(double distance) {
+            return new PointSourceExposure(distance, 0.0D, 0.0D);
+        }
     }
 
     private record SourceScanResult(List<SourceCandidate> sources, int registryCandidates) {

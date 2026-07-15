@@ -21,6 +21,7 @@ import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
@@ -127,6 +128,160 @@ public final class RadiationExposureSystem {
         saveData(entity, data);
     }
 
+    public static void applyDirectEnvironmentalExposure(LivingEntity entity, double exposureMillisievertsPerSecond, int exposureTicks) {
+        if (exposureMillisievertsPerSecond <= 0.0D || exposureTicks <= 0 || !entity.isAlive() || entity.isRemoved()) {
+            return;
+        }
+        if (!(entity.level() instanceof ServerLevel level)) {
+            return;
+        }
+
+        long gameTime = level.getGameTime();
+        RadiationExposureData data = getOrLoadData(entity);
+        double inventoryExposure = data.getCurrentInventoryExposureMillisievertsPerSecond();
+        data.setCurrentEnvironmentalExposureMillisievertsPerSecond(Math.max(
+                data.getCurrentEnvironmentalExposureMillisievertsPerSecond(),
+                exposureMillisievertsPerSecond
+        ));
+        data.setCurrentTotalExposureMillisievertsPerSecond(Math.max(
+                data.getCurrentTotalExposureMillisievertsPerSecond(),
+                exposureMillisievertsPerSecond + inventoryExposure
+        ));
+        data.setLastExposureUpdateTick(gameTime);
+
+        if (isRadiationImmune(entity)) {
+            removeRadiationMaxHealthModifier(entity);
+            data.setLastSicknessUpdateTick(gameTime);
+            syncDirectPlayerExposure(entity, data);
+            return;
+        }
+
+        double elapsedSeconds = exposureTicks / 20.0D;
+        double sickness = data.getRadiationSickness();
+        sickness += exposureMillisievertsPerSecond * EXPOSURE_TO_SICKNESS_SCALE * elapsedSeconds;
+        data.setRadiationSickness(Mth.clamp(sickness, 0.0D, MAX_RADIATION_SICKNESS));
+        data.setLastSicknessUpdateTick(gameTime);
+        applyRadiationMaxHealthModifier(entity, data.getRadiationSickness());
+        applyRadiationSymptoms(entity, data, gameTime);
+
+        if (data.getRadiationSickness() >= LETHAL_THRESHOLD && entity.isAlive()) {
+            entity.invulnerableTime = 0;
+            entity.hurtTime = 0;
+            entity.hurt(ModDamageSources.radiation(level), 1.0E9F);
+        }
+
+        saveData(entity, data);
+        syncDirectPlayerExposure(entity, data);
+    }
+
+    public static PointSourceTickResult tickPointSource(
+            ServerLevel level,
+            Vec3 sourceCenter,
+            double sourceMillisievertsPerSecond,
+            double radius,
+            int exposureTicks,
+            boolean collectDebug
+    ) {
+        if (sourceMillisievertsPerSecond <= 0.0D || radius <= 0.0D || exposureTicks <= 0) {
+            return PointSourceTickResult.EMPTY;
+        }
+
+        double radiusSqr = radius * radius;
+        AABB bounds = new AABB(sourceCenter, sourceCenter).inflate(radius);
+        int checked = 0;
+        int exposed = 0;
+        int playersChecked = 0;
+        int playersExposed = 0;
+        int immunePlayersSkippedDamage = 0;
+        double maxEntityExposureMillisievertsPerSecond = 0.0D;
+        double maxPlayerExposureMillisievertsPerSecond = 0.0D;
+        double nearestPlayerDistance = Double.NaN;
+        double nearestPlayerExposureMillisievertsPerSecond = 0.0D;
+        double nearestPlayerDoseMillisievertsThisTick = 0.0D;
+        double nearestPlayerTransmission = 0.0D;
+        boolean nearestPlayerImmune = false;
+        String nearestPlayerName = "";
+        StringBuilder playerDetails = collectDebug ? new StringBuilder() : null;
+
+        for (LivingEntity entity : level.getEntitiesOfClass(LivingEntity.class, bounds, entity -> entity.isAlive() && !entity.isRemoved())) {
+            Vec3 samplePos = entity.getEyePosition();
+            if (samplePos.distanceToSqr(sourceCenter) > radiusSqr) {
+                continue;
+            }
+
+            checked++;
+            RadiationExposureUtil.PointSourceExposure exposure = RadiationExposureUtil.calculatePointSourceExposure(
+                    level,
+                    sourceCenter,
+                    samplePos,
+                    sourceMillisievertsPerSecond,
+                    radius
+            );
+            double exposureMillisievertsPerSecond = exposure.exposureMillisievertsPerSecond();
+            if (entity instanceof ServerPlayer player) {
+                playersChecked++;
+                boolean immune = isRadiationImmune(player);
+                if (immune) {
+                    immunePlayersSkippedDamage++;
+                }
+                if (Double.isNaN(nearestPlayerDistance) || exposure.distance() < nearestPlayerDistance) {
+                    nearestPlayerDistance = exposure.distance();
+                    nearestPlayerExposureMillisievertsPerSecond = exposureMillisievertsPerSecond;
+                    // Exposure is an mSv/s rate; direct dose for one tick is rate / 20.
+                    nearestPlayerDoseMillisievertsThisTick = exposureMillisievertsPerSecond * exposureTicks / 20.0D;
+                    nearestPlayerTransmission = exposure.transmission();
+                    nearestPlayerImmune = immune;
+                    nearestPlayerName = player.getGameProfile().getName();
+                }
+            }
+            if (exposureMillisievertsPerSecond <= 0.0D) {
+                continue;
+            }
+
+            applyDirectEnvironmentalExposure(entity, exposureMillisievertsPerSecond, exposureTicks);
+            exposed++;
+            maxEntityExposureMillisievertsPerSecond = Math.max(maxEntityExposureMillisievertsPerSecond, exposureMillisievertsPerSecond);
+            if (entity instanceof ServerPlayer player) {
+                playersExposed++;
+                maxPlayerExposureMillisievertsPerSecond = Math.max(maxPlayerExposureMillisievertsPerSecond, exposureMillisievertsPerSecond);
+                if (collectDebug && playersExposed <= 4) {
+                    if (playerDetails.length() > 0) {
+                        playerDetails.append("; ");
+                    }
+                    playerDetails.append(player.getGameProfile().getName())
+                            .append("=")
+                            .append(String.format("%.3f", exposureMillisievertsPerSecond))
+                            .append("mSv/s d=")
+                            .append(String.format("%.1f", exposure.distance()))
+                            .append(" t=")
+                            .append(String.format("%.3f", exposure.transmission()))
+                            .append(isRadiationImmune(player) ? " immune" : "");
+                }
+            }
+        }
+
+        return new PointSourceTickResult(
+                checked,
+                exposed,
+                playersChecked,
+                playersExposed,
+                immunePlayersSkippedDamage,
+                maxEntityExposureMillisievertsPerSecond,
+                maxPlayerExposureMillisievertsPerSecond,
+                nearestPlayerDistance,
+                nearestPlayerExposureMillisievertsPerSecond,
+                nearestPlayerDoseMillisievertsThisTick,
+                nearestPlayerTransmission,
+                nearestPlayerImmune,
+                nearestPlayerName,
+                playerDetails == null ? "" : playerDetails.toString()
+        );
+    }
+
+    public static boolean isImmuneToRadiationEffects(LivingEntity entity) {
+        return isRadiationImmune(entity);
+    }
+
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         ENTITY_DATA.remove(event.getEntity().getUUID());
         PLAYERS_WITH_DEBUG_OVERLAY.remove(event.getEntity().getUUID());
@@ -219,6 +374,39 @@ public final class RadiationExposureSystem {
         }
 
         PacketDistributor.sendToPlayer(player, payload);
+    }
+
+    private static void syncDirectPlayerExposure(LivingEntity entity, RadiationExposureData data) {
+        if (!(entity instanceof ServerPlayer player)) {
+            return;
+        }
+
+        PacketDistributor.sendToPlayer(player, new GeigerExposurePayload(data.getCurrentTotalExposureMillisievertsPerSecond(), data.getRadiationSickness()));
+        sendDirectExposureDebugOverlay(player, data, player.level().getGameTime());
+    }
+
+    private static void sendDirectExposureDebugOverlay(ServerPlayer player, RadiationExposureData data, long gameTime) {
+        if (!isDebugOverlayEnabled(player)) {
+            return;
+        }
+
+        if (gameTime - data.getLastDebugOverlayTick() < 10L) {
+            return;
+        }
+
+        data.setLastDebugOverlayTick(gameTime);
+        int hpLossPercent = radiationHealthLossPercent(data.getRadiationSickness(), player);
+        String line1 = String.format(
+                "Nuke burst: %.1f mSv/s | Total: %.1f mSv/s | Sick: %.0f/1000 | HP loss: %d%%",
+                data.getCurrentEnvironmentalExposureMillisievertsPerSecond(),
+                data.getCurrentTotalExposureMillisievertsPerSecond(),
+                data.getRadiationSickness(),
+                hpLossPercent
+        );
+        String line2 = isRadiationImmune(player)
+                ? "Nuke burst exposure visible | sickness/damage skipped by immunity"
+                : "Nuke burst exposure visible | shielding applied before dose";
+        PacketDistributor.sendToPlayer(player, new RadiationDebugOverlayPayload(true, line1, line2));
     }
 
     private static RadiationExposureData getOrLoadData(LivingEntity entity) {
@@ -395,5 +583,39 @@ public final class RadiationExposureSystem {
                 1.0D
         );
         return Mth.floor(t * 100.0D);
+    }
+
+    public record PointSourceTickResult(
+            int checkedEntities,
+            int exposedEntities,
+            int checkedPlayers,
+            int exposedPlayers,
+            int immunePlayersSkippedDamage,
+            double maxEntityExposureMillisievertsPerSecond,
+            double maxPlayerExposureMillisievertsPerSecond,
+            double nearestPlayerDistance,
+            double nearestPlayerExposureMillisievertsPerSecond,
+            double nearestPlayerDoseMillisievertsThisTick,
+            double nearestPlayerTransmission,
+            boolean nearestPlayerImmune,
+            String nearestPlayerName,
+            String playerDetails
+    ) {
+        private static final PointSourceTickResult EMPTY = new PointSourceTickResult(
+                0,
+                0,
+                0,
+                0,
+                0,
+                0.0D,
+                0.0D,
+                Double.NaN,
+                0.0D,
+                0.0D,
+                0.0D,
+                false,
+                "",
+                ""
+        );
     }
 }

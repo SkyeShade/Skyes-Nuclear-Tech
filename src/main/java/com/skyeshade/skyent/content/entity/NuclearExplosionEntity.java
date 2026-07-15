@@ -1,18 +1,21 @@
 package com.skyeshade.skyent.content.entity;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
+import com.skyeshade.skyent.event.systems.RadiationExposureSystem;
 import com.skyeshade.skyent.registry.ModEntities;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -61,6 +64,16 @@ public class NuclearExplosionEntity extends Entity {
     private static final double SHOCKWAVE_BAND_BEHIND_BLOCKS = 4.0D;
     private static final double SHOCKWAVE_BAND_AHEAD_BLOCKS = 1.0D;
     private static final int SHOCKWAVE_SURFACE_SCAN_PADDING = 8;
+    private static final int CENTER_RADIATION_DURATION_TICKS = 40;
+    private static final double CENTER_RADIATION_INITIAL_MSV_PER_SECOND = 504_250_000.0D;
+    private static final double CENTER_RADIATION_RADIUS = 512.0D;
+    private static final double BLAST_KNOCKBACK_RADIUS = 256.0D;
+    private static final double BLAST_CLOSE_FIRE_RADIUS = 64.0D;
+    private static final double BLAST_MAX_HORIZONTAL_KNOCKBACK = 6.0D;
+    private static final double BLAST_MAX_VERTICAL_KNOCKBACK = 1.8D;
+    private static final double BLAST_MIN_KNOCKBACK = 0.15D;
+    private static final int BLAST_CLOSE_FIRE_SECONDS = 12;
+    private static final int BLAST_FAR_FIRE_SECONDS = 4;
     public static final int MAX_CLOUDLETS = 5200;
     public static final int RAY_GROW_TICKS = 10;
     public static final int RAY_FADE_TICKS = 40;
@@ -68,6 +81,7 @@ public class NuclearExplosionEntity extends Entity {
     public static final float RAY_SCALE = 56.0F;
     private static final boolean DEBUG_SHOCKWAVE_VISUALS = Boolean.getBoolean("skyent.debugNukeShockwave");
     private static final boolean DEBUG_FORCE_SHOCKWAVE_TEST_CLOUDLET = Boolean.getBoolean("skyent.debugNukeShockwaveTestCloudlet");
+    private static final boolean DEBUG_CENTER_RADIATION = Boolean.getBoolean("skyent.debugNukeRadiation");
 
     private float strength = VANILLA_EXPLOSION_STRENGTH;
     private float radius = DEFAULT_NUKE_RADIUS;
@@ -80,6 +94,8 @@ public class NuclearExplosionEntity extends Entity {
     @Nullable
     private NuclearMushroomCloudSimulation mushroomCloudSimulation;
     private final Set<UUID> shockwaveDamagedEntities = new HashSet<>();
+    private final Set<ChunkPos> forcedExplosionChunks = new HashSet<>();
+    private UUID chunkLoadingOwnerUuid;
     private int shockwaveSpawnMethodCalls;
     private int shockwaveSpawnConditionPasses;
     private int shockwaveCloudletsAttempted;
@@ -93,6 +109,10 @@ public class NuclearExplosionEntity extends Entity {
     private int shockwaveFallbackHeightmap;
     private int shockwaveFallbackEntityY;
     private int shockwaveCloudletsSkipped;
+    private int centerRadiationTicks;
+    private boolean appliedEntityBlastImpulse;
+    private boolean chunksForced;
+    private boolean loggedInitialChunkLoadingState;
     private boolean debugShockwaveTestCloudletSpawned;
 
     public NuclearExplosionEntity(EntityType<NuclearExplosionEntity> entityType, Level level) {
@@ -118,6 +138,14 @@ public class NuclearExplosionEntity extends Entity {
         entityData.set(DATA_VISUAL_SEED, level().random.nextLong());
     }
 
+    public void adoptChunkLoadLease(NuclearExplosionChunkLoading.NuclearExplosionChunkLease lease) {
+        chunkLoadingOwnerUuid = lease.ownerUuid();
+        forcedExplosionChunks.clear();
+        forcedExplosionChunks.addAll(lease.chunks());
+        chunksForced = !forcedExplosionChunks.isEmpty();
+        NuclearExplosionChunkLoading.debugAdopted(getChunkLoadingOwnerUuid(), getId(), forcedExplosionChunks.size());
+    }
+
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         builder.define(DATA_SPAWN_CLOUD, true);
@@ -139,11 +167,20 @@ public class NuclearExplosionEntity extends Entity {
         }
 
         if (tickCount > ENTITY_LIFETIME_TICKS) {
+            unforceExplosionChunks();
             discard();
         }
     }
 
     private void tickServerEffects() {
+        if (!chunksForced) {
+            NuclearExplosionChunkLoading.debugFallbackForce(getChunkLoadingOwnerUuid(), getId());
+            forceExplosionChunks();
+        } else if (!loggedInitialChunkLoadingState) {
+            NuclearExplosionChunkLoading.debugAlreadyForced(getChunkLoadingOwnerUuid(), getId(), forcedExplosionChunks.size());
+        }
+        loggedInitialChunkLoadingState = true;
+
         if (!explosionDone) {
             explosionDone = true;
             Entity source = sourceUuid == null || level().getServer() == null
@@ -158,8 +195,159 @@ public class NuclearExplosionEntity extends Entity {
                     destroyBlocks ? Level.ExplosionInteraction.BLOCK : Level.ExplosionInteraction.NONE
             );
         }
+        if (!appliedEntityBlastImpulse) {
+            appliedEntityBlastImpulse = true;
+            applyEntityBlastImpulse();
+        }
 
         tickShockwaveServer();
+        if (centerRadiationTicks < CENTER_RADIATION_DURATION_TICKS) {
+            tickCenterRadiation();
+            centerRadiationTicks++;
+        }
+    }
+
+    private void tickCenterRadiation() {
+        if (!(level() instanceof ServerLevel serverLevel)) {
+            return;
+        }
+
+        double sourceMillisievertsPerSecond = centerRadiationSourceMsvPerSecond(centerRadiationTicks);
+        if (sourceMillisievertsPerSecond <= 0.0D) {
+            return;
+        }
+
+        RadiationExposureSystem.PointSourceTickResult result = RadiationExposureSystem.tickPointSource(
+                serverLevel,
+                position(),
+                sourceMillisievertsPerSecond,
+                CENTER_RADIATION_RADIUS,
+                1,
+                DEBUG_CENTER_RADIATION
+        );
+
+        if (DEBUG_CENTER_RADIATION && centerRadiationTicks % 10 == 0) {
+            SkyesNuclearTech.LOGGER.info(
+                    "Nuke center radiation point source: id={} age={} sourceMsvPerSecond={} checked={} exposed={} playersChecked={} playersExposed={} immunePlayersSkippedDamage={} maxEntityExposureMsvPerSecond={} maxPlayerExposureMsvPerSecond={} nearestPlayer={} nearestDistance={} nearestExposureMsvPerSecond={} nearestDoseMsvThisTick={} nearestTransmission={} nearestImmune={} players=[{}]",
+                    getId(),
+                    centerRadiationTicks,
+                    sourceMillisievertsPerSecond,
+                    result.checkedEntities(),
+                    result.exposedEntities(),
+                    result.checkedPlayers(),
+                    result.exposedPlayers(),
+                    result.immunePlayersSkippedDamage(),
+                    result.maxEntityExposureMillisievertsPerSecond(),
+                    result.maxPlayerExposureMillisievertsPerSecond(),
+                    result.nearestPlayerName(),
+                    result.nearestPlayerDistance(),
+                    result.nearestPlayerExposureMillisievertsPerSecond(),
+                    result.nearestPlayerDoseMillisievertsThisTick(),
+                    result.nearestPlayerTransmission(),
+                    result.nearestPlayerImmune(),
+                    result.playerDetails()
+            );
+        }
+    }
+
+    private static double centerRadiationSourceMsvPerSecond(int ageTicks) {
+        if (ageTicks >= CENTER_RADIATION_DURATION_TICKS) {
+            return 0.0D;
+        }
+
+        double progress = Mth.clamp(ageTicks / (double) CENTER_RADIATION_DURATION_TICKS, 0.0D, 1.0D);
+        double curve = 1.0D - Math.log1p(progress * 9.0D) / Math.log1p(9.0D);
+        return CENTER_RADIATION_INITIAL_MSV_PER_SECOND * Math.max(0.0D, curve);
+    }
+
+    private void forceExplosionChunks() {
+        if (!(level() instanceof ServerLevel serverLevel)) {
+            return;
+        }
+
+        ChunkPos centerChunk = chunkPosition();
+        int chunkRadius = NuclearExplosionChunkLoading.computeChunkRadius(getRadius());
+        int added = NuclearExplosionChunkLoading.forceExplosionChunks(serverLevel, getChunkLoadingOwnerUuid(), centerChunk, chunkRadius, forcedExplosionChunks);
+        chunksForced = !forcedExplosionChunks.isEmpty();
+        NuclearExplosionChunkLoading.debugForced(getChunkLoadingOwnerUuid(), getId(), centerChunk, chunkRadius, forcedExplosionChunks.size(), added);
+    }
+
+    private void unforceExplosionChunks() {
+        if (!chunksForced || forcedExplosionChunks.isEmpty()) {
+            chunksForced = false;
+            forcedExplosionChunks.clear();
+            return;
+        }
+        if (!(level() instanceof ServerLevel serverLevel)) {
+            return;
+        }
+
+        int released = NuclearExplosionChunkLoading.unforceExplosionChunks(serverLevel, getChunkLoadingOwnerUuid(), forcedExplosionChunks);
+        chunksForced = false;
+        NuclearExplosionChunkLoading.debugUnforced(getChunkLoadingOwnerUuid(), getId(), released);
+    }
+
+    private UUID getChunkLoadingOwnerUuid() {
+        if (chunkLoadingOwnerUuid == null) {
+            chunkLoadingOwnerUuid = getUUID();
+        }
+        return chunkLoadingOwnerUuid;
+    }
+
+    @Override
+    public void remove(RemovalReason reason) {
+        unforceExplosionChunks();
+        super.remove(reason);
+    }
+
+    private void applyEntityBlastImpulse() {
+        Vec3 center = position();
+        double radiusSqr = BLAST_KNOCKBACK_RADIUS * BLAST_KNOCKBACK_RADIUS;
+        AABB search = new AABB(center, center).inflate(BLAST_KNOCKBACK_RADIUS);
+
+        // TODO: Replace naive entity blast with a cover-aware blast pass.
+        // TODO: Hard blocks between explosion and entity should block or reduce damage and knockback.
+        // TODO: Add structural blast wave pass for weak and surface blocks.
+        // TODO: Add nuclear destruction pass using ray/occlusion and hardness/blast resistance.
+        // TODO: Add contamination pass for irradiated and charred crater blocks.
+        // TODO: Consider chunk-batched block mutation queue to avoid server stalls.
+        for (LivingEntity entity : level().getEntitiesOfClass(LivingEntity.class, search, entity -> entity.isAlive() && !entity.isRemoved())) {
+            if (entity instanceof Player player && (player.isCreative() || player.isSpectator())) {
+                continue;
+            }
+
+            Vec3 offset = entity.position().subtract(center);
+            double distanceSqr = offset.lengthSqr();
+            if (distanceSqr > radiusSqr) {
+                continue;
+            }
+
+            double distance = Math.max(1.0D, Math.sqrt(distanceSqr));
+            double normalizedDistance = Mth.clamp(distance / BLAST_KNOCKBACK_RADIUS, 0.0D, 1.0D);
+            double falloff = Math.pow(1.0D - normalizedDistance, 1.5D);
+            double horizontalStrength = BLAST_MIN_KNOCKBACK
+                    + (BLAST_MAX_HORIZONTAL_KNOCKBACK - BLAST_MIN_KNOCKBACK) * falloff;
+            double verticalFalloff = (1.0D - normalizedDistance) * (1.0D - normalizedDistance);
+            double verticalStrength = 0.15D + BLAST_MAX_VERTICAL_KNOCKBACK * verticalFalloff;
+
+            Vec3 horizontal = new Vec3(offset.x, 0.0D, offset.z);
+            Vec3 direction = horizontal.lengthSqr() > 1.0E-6D ? horizontal.normalize() : randomHorizontalDirection(entity);
+            entity.push(direction.x * horizontalStrength, verticalStrength, direction.z * horizontalStrength);
+            entity.hurtMarked = true;
+
+            if (distance <= BLAST_CLOSE_FIRE_RADIUS) {
+                int fireSeconds = distance <= BLAST_CLOSE_FIRE_RADIUS * 0.5D
+                        ? BLAST_CLOSE_FIRE_SECONDS + BLAST_FAR_FIRE_SECONDS
+                        : BLAST_CLOSE_FIRE_SECONDS;
+                entity.setRemainingFireTicks(Math.max(entity.getRemainingFireTicks(), fireSeconds * 20));
+            }
+        }
+    }
+
+    private Vec3 randomHorizontalDirection(Entity entity) {
+        RandomSource random = entity.getRandom();
+        double angle = random.nextDouble() * Math.PI * 2.0D;
+        return new Vec3(Math.cos(angle), 0.0D, Math.sin(angle));
     }
 
     private void tickClientEffects() {
@@ -583,6 +771,13 @@ public class NuclearExplosionEntity extends Entity {
         entityData.set(DATA_FLASH_SKY, !compound.contains("FlashSky") || compound.getBoolean("FlashSky"));
         playSounds = !compound.contains("PlaySounds") || compound.getBoolean("PlaySounds");
         explosionDone = compound.getBoolean("ExplosionDone");
+        centerRadiationTicks = compound.contains("CenterRadiationTicks") ? compound.getInt("CenterRadiationTicks") : 0;
+        appliedEntityBlastImpulse = compound.getBoolean("AppliedEntityBlastImpulse");
+        if (compound.hasUUID("ChunkLoadingOwnerUuid")) {
+            chunkLoadingOwnerUuid = compound.getUUID("ChunkLoadingOwnerUuid");
+        } else {
+            chunkLoadingOwnerUuid = null;
+        }
         entityData.set(DATA_VISUAL_SEED, compound.contains("VisualSeed") ? compound.getLong("VisualSeed") : level().random.nextLong());
         if (compound.hasUUID("SourceUuid")) {
             sourceUuid = compound.getUUID("SourceUuid");
@@ -600,6 +795,9 @@ public class NuclearExplosionEntity extends Entity {
         compound.putBoolean("FlashSky", shouldFlashSky());
         compound.putBoolean("PlaySounds", playSounds);
         compound.putBoolean("ExplosionDone", explosionDone);
+        compound.putInt("CenterRadiationTicks", centerRadiationTicks);
+        compound.putBoolean("AppliedEntityBlastImpulse", appliedEntityBlastImpulse);
+        compound.putUUID("ChunkLoadingOwnerUuid", getChunkLoadingOwnerUuid());
         compound.putLong("VisualSeed", getVisualSeed());
         if (sourceUuid != null) {
             compound.putUUID("SourceUuid", sourceUuid);
