@@ -32,6 +32,9 @@ public final class NuclearResistanceCache {
     );
 
     private final Map<BlockState, Float> cachedResistances = new HashMap<>();
+    private final Map<BlockState, RayBlockClassification> cachedClassifications = new HashMap<>();
+    private long classificationCacheHits;
+    private long classificationCacheMisses;
 
     public float resistanceFor(BlockState state, Level level, BlockPos pos) {
         if (state.isAir()) {
@@ -72,6 +75,40 @@ public final class NuclearResistanceCache {
                 || state.is(Blocks.COBWEB);
     }
 
+    public RayBlockClassification classify(BlockState state) {
+        RayBlockClassification cached = cachedClassifications.get(state);
+        if (cached != null) {
+            classificationCacheHits++;
+            return cached;
+        }
+
+        classificationCacheMisses++;
+        boolean air = state.isAir();
+        boolean fluid = !state.getFluidState().isEmpty();
+        boolean fragile = !air && isFragile(state);
+        boolean hasBlockEntity = state.hasBlockEntity();
+        boolean canMarkForDestruction = !air && !isUnbreakable(state);
+        boolean collisionShapeLookupNeeded = !air && !fluid && !fragile && !state.canOcclude();
+        RayBlockClassification classification = new RayBlockClassification(
+                air,
+                fluid,
+                fragile,
+                hasBlockEntity,
+                canMarkForDestruction,
+                collisionShapeLookupNeeded
+        );
+        cachedClassifications.put(state, classification);
+        return classification;
+    }
+
+    public long classificationCacheHits() {
+        return classificationCacheHits;
+    }
+
+    public long classificationCacheMisses() {
+        return classificationCacheMisses;
+    }
+
     public boolean isRayBlocking(float resistance) {
         return resistance >= UNBREAKABLE_RESISTANCE;
     }
@@ -104,5 +141,15 @@ public final class NuclearResistanceCache {
     private static boolean isUnbreakable(BlockState state) {
         return state.is(Blocks.BEDROCK)
                 || state.getBlock().getExplosionResistance() >= RAY_BLOCKING_RESISTANCE;
+    }
+
+    public record RayBlockClassification(
+            boolean air,
+            boolean fluid,
+            boolean fragile,
+            boolean hasBlockEntity,
+            boolean canMarkForDestruction,
+            boolean collisionShapeLookupNeeded
+    ) {
     }
 }

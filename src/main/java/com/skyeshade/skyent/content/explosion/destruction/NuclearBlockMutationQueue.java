@@ -19,6 +19,7 @@ import java.util.Queue;
 
 public final class NuclearBlockMutationQueue {
     public static final int NUKE_BLOCK_UPDATE_FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_SUPPRESS_DROPS;
+    private static final int TIME_BUDGET_CHECK_INTERVAL_OPERATIONS = 512;
 
     private final ServerLevel level;
     private final NuclearDestructionMask mask;
@@ -48,6 +49,11 @@ public final class NuclearBlockMutationQueue {
     private long blockEntitiesRemoved;
     private long protectedBlockEntitySkips;
     private long containerBlockEntitiesCleared;
+    private long mutationTicks;
+    private double totalMutationTickMs;
+    private double worstMutationTickMs;
+    private long maxBlocksChangedInSingleTick;
+    private long worstMutationTickIndex = -1L;
 
     public NuclearBlockMutationQueue(ServerLevel level, NuclearDestructionMask mask, Vec3 center, NuclearSectionCompletionTracker sectionCompletionTracker, NuclearResistanceCache resistanceCache) {
         this.level = level;
@@ -66,11 +72,21 @@ public final class NuclearBlockMutationQueue {
         this.complete = mask.isEmpty();
     }
 
-    public MutationResult tick(int maxSections, int maxBlocks) {
+    public MutationResult tick(int maxSections, int maxBlocks, double maxMilliseconds) {
+        long startNs = System.nanoTime();
+        long maxNs = Math.max(1L, (long) (Math.max(0.0D, maxMilliseconds) * 1_000_000.0D));
         int sectionsTouched = 0;
         int blocksChanged = 0;
+        int operationsSinceTimeCheck = 0;
 
         while (!complete && sectionsTouched < maxSections && blocksChanged < maxBlocks) {
+            if (++operationsSinceTimeCheck >= TIME_BUDGET_CHECK_INTERVAL_OPERATIONS) {
+                operationsSinceTimeCheck = 0;
+                if (System.nanoTime() - startNs >= maxNs && (blocksChanged > 0 || sectionsTouched > 0)) {
+                    break;
+                }
+            }
+
             if (currentMask == null && currentReplacements == null && !nextSection()) {
                 complete = true;
                 break;
@@ -117,7 +133,15 @@ public final class NuclearBlockMutationQueue {
             }
         }
 
-        return new MutationResult(sectionsTouched, blocksChanged, complete);
+        double elapsedMs = (System.nanoTime() - startNs) / 1_000_000.0D;
+        mutationTicks++;
+        totalMutationTickMs += elapsedMs;
+        if (elapsedMs > worstMutationTickMs) {
+            worstMutationTickMs = elapsedMs;
+            worstMutationTickIndex = mutationTicks;
+        }
+        maxBlocksChangedInSingleTick = Math.max(maxBlocksChangedInSingleTick, blocksChanged);
+        return new MutationResult(sectionsTouched, blocksChanged, complete, elapsedMs);
     }
 
     private boolean nextSection() {
@@ -273,6 +297,34 @@ public final class NuclearBlockMutationQueue {
         return containerBlockEntitiesCleared;
     }
 
+    public long mutationTicks() {
+        return mutationTicks;
+    }
+
+    public double totalMutationTickMs() {
+        return totalMutationTickMs;
+    }
+
+    public double averageMutationTickMs() {
+        return mutationTicks <= 0 ? 0.0D : totalMutationTickMs / mutationTicks;
+    }
+
+    public double worstMutationTickMs() {
+        return worstMutationTickMs;
+    }
+
+    public long maxBlocksChangedInSingleTick() {
+        return maxBlocksChangedInSingleTick;
+    }
+
+    public long worstMutationTickIndex() {
+        return worstMutationTickIndex;
+    }
+
+    public double averageBlocksChangedPerTick() {
+        return mutationTicks <= 0 ? 0.0D : (totalBlocksRemoved + totalBlocksReplaced) / (double) mutationTicks;
+    }
+
     public double processedRadius() {
         return farthestProcessedHorizontalDistance;
     }
@@ -406,6 +458,6 @@ public final class NuclearBlockMutationQueue {
         }
     }
 
-    public record MutationResult(int sectionsTouched, int blocksRemoved, boolean complete) {
+    public record MutationResult(int sectionsTouched, int blocksRemoved, boolean complete, double elapsedMs) {
     }
 }

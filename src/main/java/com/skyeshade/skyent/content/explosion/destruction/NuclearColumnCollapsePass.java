@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.content.explosion.destruction;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
+import com.skyeshade.skyent.config.SkyentNuclearExplosionConfig;
 import com.skyeshade.skyent.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
@@ -28,8 +29,6 @@ public final class NuclearColumnCollapsePass {
     private static final int COLUMN_COLLAPSE_MAX_RUNS_PER_COLUMN = 4;
     private static final int COLUMN_COLLAPSE_SCAN_DEPTH_BELOW_SURFACE = 96;
     private static final double CHARRED_LOG_RADIUS_SCALE = 0.85D;
-    private static final double NUKE_FIRE_CHARRING_RADIUS_MULTIPLIER = 2.0D;
-    private static final double NUKE_LEAF_EVAPORATION_INNER_FIRE_RADIUS_FRACTION = 0.5D;
     private static final double CONTAMINATED_GRASS_RADIUS_SCALE = 2.0D;
     private static final double CONTAMINATED_GRASS_FULL_RADIUS_SCALE = 1.65D;
     private static final double CONTAMINATED_GRASS_FEATHER_RADIUS_SCALE = 0.55D;
@@ -195,9 +194,9 @@ public final class NuclearColumnCollapsePass {
         this.centerZ = Mth.floor(center.z);
         this.collapseRadius = Math.max(0.0D, radius);
         this.collapseRadiusSqr = this.collapseRadius * this.collapseRadius;
-        this.charredLogRadius = this.collapseRadius * CHARRED_LOG_RADIUS_SCALE * NUKE_FIRE_CHARRING_RADIUS_MULTIPLIER;
+        this.charredLogRadius = this.collapseRadius * CHARRED_LOG_RADIUS_SCALE * SkyentNuclearExplosionConfig.fireCharringRadiusMultiplier();
         this.charredLogRadiusSqr = this.charredLogRadius * this.charredLogRadius;
-        this.leafEvaporationRadius = this.charredLogRadius * NUKE_LEAF_EVAPORATION_INNER_FIRE_RADIUS_FRACTION;
+        this.leafEvaporationRadius = this.charredLogRadius * SkyentNuclearExplosionConfig.fireCharringLeafEvaporationInnerFraction();
         this.leafEvaporationRadiusSqr = this.leafEvaporationRadius * this.leafEvaporationRadius;
         this.contaminatedGrassFullRadius = this.collapseRadius * CONTAMINATED_GRASS_FULL_RADIUS_SCALE;
         this.contaminatedGrassFeatherRadius = this.collapseRadius * CONTAMINATED_GRASS_FEATHER_RADIUS_SCALE;
@@ -979,7 +978,7 @@ public final class NuclearColumnCollapsePass {
     }
 
     private void logVitrificationFailure(ColumnKey column, double distance, int startY, int endY, int surfaceY, String reason) {
-        if (!Boolean.getBoolean("skyent.debugNukeColumnCollapse") || vitrificationDebugFailureLogs >= 20) {
+        if (!SkyentNuclearExplosionConfig.debugContamination() || vitrificationDebugFailureLogs >= 20) {
             return;
         }
         vitrificationDebugFailureLogs++;
@@ -1043,7 +1042,7 @@ public final class NuclearColumnCollapsePass {
             double edgeNoise,
             double noise
     ) {
-        if (!Boolean.getBoolean("skyent.debugNukeColumnCollapse")
+        if (!SkyentNuclearExplosionConfig.debugContamination()
                 || vitrificationBoundaryDebugLogs >= 20
                 || !isNearVitrificationDebugBoundary(distance)) {
             return;

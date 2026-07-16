@@ -113,6 +113,36 @@ public final class NuclearDestructionMask {
         estimatedReplacementCount = 0;
     }
 
+    public void mergeFrom(NuclearDestructionMask other) {
+        List<SectionKey> keys = other.sectionKeys();
+        keys.sort((left, right) -> {
+            int x = Integer.compare(left.sectionX(), right.sectionX());
+            if (x != 0) {
+                return x;
+            }
+            int y = Integer.compare(left.sectionY(), right.sectionY());
+            return y != 0 ? y : Integer.compare(left.sectionZ(), right.sectionZ());
+        });
+        for (SectionKey key : keys) {
+            BitSet deletionMask = other.getMask(key);
+            if (deletionMask != null) {
+                for (int bitIndex = deletionMask.nextSetBit(0); bitIndex >= 0; bitIndex = deletionMask.nextSetBit(bitIndex + 1)) {
+                    BlockPos pos = blockPosFromBit(key, bitIndex);
+                    mark(pos);
+                }
+            }
+            Map<Integer, BlockState> replacements = other.getReplacements(key);
+            if (replacements != null) {
+                List<Integer> replacementBits = new ArrayList<>(replacements.keySet());
+                replacementBits.sort(Integer::compareTo);
+                for (int bitIndex : replacementBits) {
+                    BlockPos pos = blockPosFromBit(key, bitIndex);
+                    markReplacement(pos.getX(), pos.getY(), pos.getZ(), replacements.get(bitIndex));
+                }
+            }
+        }
+    }
+
     public List<SectionKey> sectionKeysSortedByDistance(Vec3 center) {
         double centerSectionX = center.x / 16.0D;
         double centerSectionY = center.y / 16.0D;

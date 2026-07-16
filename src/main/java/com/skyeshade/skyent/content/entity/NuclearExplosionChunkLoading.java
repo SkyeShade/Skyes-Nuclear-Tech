@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.content.entity;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
+import com.skyeshade.skyent.config.SkyentNuclearExplosionConfig;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
@@ -16,15 +17,6 @@ import java.util.Set;
 import java.util.UUID;
 
 public final class NuclearExplosionChunkLoading {
-    private static final int NUKE_MIN_CHUNK_RADIUS = 4;
-    private static final int NUKE_MAX_CHUNK_RADIUS = 24;
-    private static final int NUKE_MAX_FORCED_CHUNKS = 2048;
-    private static final double NUKE_CHUNK_RADIUS_MULTIPLIER = 2.5D;
-    private static final boolean NUKE_FORCE_TICKING_CHUNKS = true;
-    private static final boolean DEBUG_NUKE_CHUNK_LOADING = Boolean.getBoolean("skyent.debugNukeChunkLoading");
-    private static final boolean DEBUG_NUKE_DETONATION_TIMING = Boolean.getBoolean("skyent.debugNukeDetonationTiming");
-    private static final int DEBUG_NUKE_FORCE_CHUNK_RADIUS_OVERRIDE = Integer.getInteger("skyent.debugNukeForceChunkRadiusOverride", -1);
-
     public static final TicketController NUKE_TICKET_CONTROLLER = new TicketController(
             ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "nuclear_explosions"),
             (level, ticketHelper) -> ticketHelper.getEntityTickets().keySet().forEach(ticketHelper::removeAllTickets)
@@ -38,22 +30,38 @@ public final class NuclearExplosionChunkLoading {
     }
 
     public static int computeChunkRadius(double nukeRadius) {
-        int radius = Mth.ceil((nukeRadius * NUKE_CHUNK_RADIUS_MULTIPLIER) / 16.0D);
-        int clamped = Mth.clamp(radius, NUKE_MIN_CHUNK_RADIUS, NUKE_MAX_CHUNK_RADIUS);
-        if (DEBUG_NUKE_FORCE_CHUNK_RADIUS_OVERRIDE >= 0) {
-            return Mth.clamp(DEBUG_NUKE_FORCE_CHUNK_RADIUS_OVERRIDE, 0, NUKE_MAX_CHUNK_RADIUS);
+        if (!SkyentNuclearExplosionConfig.chunkLoadingEnabled()) {
+            return 0;
+        }
+        double cappedNukeRadius = Math.min(nukeRadius, SkyentNuclearExplosionConfig.chunkLoadingMaxGameplayNukeRadius());
+        int radius = Mth.ceil((cappedNukeRadius * SkyentNuclearExplosionConfig.chunkLoadingImmediateRadiusMultiplier()) / 16.0D)
+                + SkyentNuclearExplosionConfig.chunkLoadingImmediateExtraChunks();
+        int minRadius = SkyentNuclearExplosionConfig.chunkLoadingImmediateMinChunkRadius();
+        int maxRadius = Math.max(minRadius, SkyentNuclearExplosionConfig.chunkLoadingImmediateMaxChunkRadius());
+        int clamped = Mth.clamp(radius, minRadius, maxRadius);
+        int override = SkyentNuclearExplosionConfig.chunkLoadingDebugForceChunkRadiusOverride();
+        if (override >= 0) {
+            return Mth.clamp(override, 0, maxRadius);
         }
         return clamped;
     }
 
     public static NuclearExplosionChunkLease forceImmediateChunks(ServerLevel level, Vec3 center, double nukeRadius, UUID ownerUuid) {
+        if (!SkyentNuclearExplosionConfig.chunkLoadingEnabled()) {
+            return new NuclearExplosionChunkLease(ownerUuid, Set.of());
+        }
         long totalStartNs = NuclearExplosionEntity.detonationTimingNowNs();
         Set<ChunkPos> forcedChunks = new HashSet<>();
         long computeStartNs = NuclearExplosionEntity.detonationTimingNowNs();
         ChunkPos centerChunk = new ChunkPos(Mth.floor(center.x) >> 4, Mth.floor(center.z) >> 4);
-        int requestedChunkRadius = Mth.ceil((nukeRadius * NUKE_CHUNK_RADIUS_MULTIPLIER) / 16.0D);
-        int cappedChunkRadius = Mth.clamp(requestedChunkRadius, NUKE_MIN_CHUNK_RADIUS, NUKE_MAX_CHUNK_RADIUS);
+        double cappedNukeRadius = Math.min(nukeRadius, SkyentNuclearExplosionConfig.chunkLoadingMaxGameplayNukeRadius());
+        int requestedChunkRadius = Mth.ceil((cappedNukeRadius * SkyentNuclearExplosionConfig.chunkLoadingImmediateRadiusMultiplier()) / 16.0D)
+                + SkyentNuclearExplosionConfig.chunkLoadingImmediateExtraChunks();
+        int minRadius = SkyentNuclearExplosionConfig.chunkLoadingImmediateMinChunkRadius();
+        int maxRadius = Math.max(minRadius, SkyentNuclearExplosionConfig.chunkLoadingImmediateMaxChunkRadius());
+        int cappedChunkRadius = Mth.clamp(requestedChunkRadius, minRadius, maxRadius);
         int chunkRadius = computeChunkRadius(nukeRadius);
+        int override = SkyentNuclearExplosionConfig.chunkLoadingDebugForceChunkRadiusOverride();
         double computeMs = NuclearExplosionEntity.detonationTimingElapsedMs(computeStartNs);
         long forceStartNs = NuclearExplosionEntity.detonationTimingNowNs();
         ForceChunksResult result = forceExplosionChunksDetailed(level, ownerUuid, centerChunk, chunkRadius, forcedChunks);
@@ -66,11 +74,14 @@ public final class NuclearExplosionChunkLoading {
                         + " center=" + center
                         + " centerChunk=" + centerChunk
                         + " nukeRadius=" + nukeRadius
+                        + " cappedNukeRadius=" + cappedNukeRadius
+                        + " radiusMultiplier=" + SkyentNuclearExplosionConfig.chunkLoadingImmediateRadiusMultiplier()
+                        + " extraChunks=" + SkyentNuclearExplosionConfig.chunkLoadingImmediateExtraChunks()
                         + " requestedChunkRadius=" + requestedChunkRadius
                         + " cappedChunkRadius=" + cappedChunkRadius
                         + " chunkRadius=" + chunkRadius
-                        + " overrideActive=" + (DEBUG_NUKE_FORCE_CHUNK_RADIUS_OVERRIDE >= 0)
-                        + " overrideValue=" + DEBUG_NUKE_FORCE_CHUNK_RADIUS_OVERRIDE
+                        + " overrideActive=" + (override >= 0)
+                        + " overrideValue=" + override
                         + " computeMs=" + computeMs
                         + " chunkListMs=" + result.chunkListMs()
                         + " forceLoopMs=" + forceLoopMs
@@ -100,7 +111,7 @@ public final class NuclearExplosionChunkLoading {
                     chunk.x,
                     chunk.z,
                     true,
-                    NUKE_FORCE_TICKING_CHUNKS
+                    SkyentNuclearExplosionConfig.chunkLoadingTickingTickets()
             );
             slowestForceNs = Math.max(slowestForceNs, NuclearExplosionEntity.detonationTimingNowNs() - chunkStartNs);
         }
@@ -117,6 +128,9 @@ public final class NuclearExplosionChunkLoading {
     }
 
     public static int forceExplosionChunks(ServerLevel level, UUID ownerUuid, ChunkPos center, int chunkRadius, Set<ChunkPos> forcedChunks) {
+        if (!SkyentNuclearExplosionConfig.chunkLoadingEnabled() || chunkRadius <= 0) {
+            return 0;
+        }
         return forceExplosionChunksDetailed(level, ownerUuid, center, chunkRadius, forcedChunks).added();
     }
 
@@ -132,7 +146,7 @@ public final class NuclearExplosionChunkLoading {
         int attempted = 0;
         long forceLoopStartNs = NuclearExplosionEntity.detonationTimingNowNs();
         for (ChunkPos chunk : chunks) {
-            if (forcedChunks.size() >= NUKE_MAX_FORCED_CHUNKS) {
+            if (forcedChunks.size() >= SkyentNuclearExplosionConfig.chunkLoadingMaxForcedChunks()) {
                 capped = true;
                 logForceLimit(center, chunkRadius, forcedChunks.size());
                 break;
@@ -146,7 +160,7 @@ public final class NuclearExplosionChunkLoading {
                         chunk.x,
                         chunk.z,
                         true,
-                        NUKE_FORCE_TICKING_CHUNKS
+                        SkyentNuclearExplosionConfig.chunkLoadingTickingTickets()
                 );
                 slowestForceNs = Math.max(slowestForceNs, NuclearExplosionEntity.detonationTimingNowNs() - chunkStartNs);
                 added++;
@@ -214,12 +228,12 @@ public final class NuclearExplosionChunkLoading {
         int removed = 0;
         for (ChunkPos chunk : forcedChunks) {
             if (NUKE_TICKET_CONTROLLER.forceChunk(
-                    level,
-                    ownerUuid,
-                    chunk.x,
-                    chunk.z,
-                    false,
-                    NUKE_FORCE_TICKING_CHUNKS
+                   level,
+                   ownerUuid,
+                   chunk.x,
+                   chunk.z,
+                   false,
+                    SkyentNuclearExplosionConfig.chunkLoadingTickingTickets()
             )) {
                 removed++;
             }
@@ -229,11 +243,11 @@ public final class NuclearExplosionChunkLoading {
     }
 
     public static boolean isDebugEnabled() {
-        return DEBUG_NUKE_CHUNK_LOADING;
+        return SkyentNuclearExplosionConfig.debugChunkLoading();
     }
 
     private static void logChunkLoadingTiming(String label, long startNs, String details) {
-        if (!DEBUG_NUKE_DETONATION_TIMING && !DEBUG_NUKE_CHUNK_LOADING) {
+        if (!SkyentNuclearExplosionConfig.debugDetonationTiming() && !SkyentNuclearExplosionConfig.debugChunkLoading()) {
             return;
         }
         double elapsedMs = NuclearExplosionEntity.detonationTimingElapsedMs(startNs);
@@ -255,7 +269,7 @@ public final class NuclearExplosionChunkLoading {
     }
 
     public static void debugDetonationForced(UUID explosionUuid, Vec3 center, ChunkPos centerChunk, int chunkRadius, int forcedCount, int addedCount) {
-        if (!DEBUG_NUKE_CHUNK_LOADING) {
+        if (!SkyentNuclearExplosionConfig.debugChunkLoading()) {
             return;
         }
 
@@ -271,7 +285,7 @@ public final class NuclearExplosionChunkLoading {
     }
 
     public static void debugAdopted(UUID explosionUuid, int entityId, int forcedCount) {
-        if (!DEBUG_NUKE_CHUNK_LOADING) {
+        if (!SkyentNuclearExplosionConfig.debugChunkLoading()) {
             return;
         }
 
@@ -284,7 +298,7 @@ public final class NuclearExplosionChunkLoading {
     }
 
     public static void debugFallbackForce(UUID explosionUuid, int entityId) {
-        if (!DEBUG_NUKE_CHUNK_LOADING) {
+        if (!SkyentNuclearExplosionConfig.debugChunkLoading()) {
             return;
         }
 
@@ -296,7 +310,7 @@ public final class NuclearExplosionChunkLoading {
     }
 
     public static void debugAlreadyForced(UUID explosionUuid, int entityId, int forcedCount) {
-        if (!DEBUG_NUKE_CHUNK_LOADING) {
+        if (!SkyentNuclearExplosionConfig.debugChunkLoading()) {
             return;
         }
 
@@ -309,7 +323,7 @@ public final class NuclearExplosionChunkLoading {
     }
 
     public static void debugForced(UUID explosionUuid, int entityId, ChunkPos center, int chunkRadius, int forcedCount, int addedCount) {
-        if (!DEBUG_NUKE_CHUNK_LOADING) {
+        if (!SkyentNuclearExplosionConfig.debugChunkLoading()) {
             return;
         }
 
@@ -325,7 +339,7 @@ public final class NuclearExplosionChunkLoading {
     }
 
     public static void debugUnforced(UUID explosionUuid, int entityId, int releasedCount) {
-        if (!DEBUG_NUKE_CHUNK_LOADING) {
+        if (!SkyentNuclearExplosionConfig.debugChunkLoading()) {
             return;
         }
 
@@ -338,7 +352,7 @@ public final class NuclearExplosionChunkLoading {
     }
 
     public static void debugTemporaryDetonationChunkForced(UUID ownerUuid, ChunkPos chunk) {
-        if (!DEBUG_NUKE_CHUNK_LOADING) {
+        if (!SkyentNuclearExplosionConfig.debugChunkLoading()) {
             return;
         }
 
@@ -350,7 +364,7 @@ public final class NuclearExplosionChunkLoading {
     }
 
     public static void debugTemporaryDetonationChunkReleased(UUID ownerUuid, int releasedCount, String reason) {
-        if (!DEBUG_NUKE_CHUNK_LOADING) {
+        if (!SkyentNuclearExplosionConfig.debugChunkLoading()) {
             return;
         }
 
@@ -363,7 +377,7 @@ public final class NuclearExplosionChunkLoading {
     }
 
     public static void debugRemoteDetonationTarget(UUID ownerUuid, ChunkPos chunk, boolean validCharge) {
-        if (!DEBUG_NUKE_CHUNK_LOADING) {
+        if (!SkyentNuclearExplosionConfig.debugChunkLoading()) {
             return;
         }
 
@@ -376,7 +390,7 @@ public final class NuclearExplosionChunkLoading {
     }
 
     private static void logForceLimit(ChunkPos center, int chunkRadius, int forcedCount) {
-        if (!DEBUG_NUKE_CHUNK_LOADING) {
+        if (!SkyentNuclearExplosionConfig.debugChunkLoading()) {
             return;
         }
 
@@ -385,7 +399,7 @@ public final class NuclearExplosionChunkLoading {
                 center,
                 chunkRadius,
                 forcedCount,
-                NUKE_MAX_FORCED_CHUNKS
+                SkyentNuclearExplosionConfig.chunkLoadingMaxForcedChunks()
         );
     }
 

@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.content.explosion.destruction;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
+import com.skyeshade.skyent.config.SkyentNuclearExplosionConfig;
 import com.skyeshade.skyent.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -10,8 +11,9 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 public final class NuclearBlastRayPlanner {
-    private static final boolean DEBUG_NUKE_OBSIDIAN_RAYS = Boolean.getBoolean("skyent.debugNukeObsidianRays");
     private static final int MAX_OBSIDIAN_DEBUG_HIT_LOGS = 200;
     private static final int MAX_OBSIDIAN_DEBUG_STEP_LOGS = 20;
     private static final int MIN_RAYS = 512;
@@ -72,32 +74,7 @@ public final class NuclearBlastRayPlanner {
 
     private int rayIndex;
     private boolean complete;
-    private long raysProcessedTotal;
-    private long stepsProcessedTotal;
-    private long blocksMarkedTotal;
-    private long unloadedChunkStops;
-    private long blockedRayStops;
-    private long energyStops;
-    private long outOfWorldStops;
-    private long fragileBlocksMarked;
-    private long nonSolidBlocksMarked;
-    private long fluidBlocksMarked;
-    private long airBlocksSkipped;
-    private long blockEntitySkips;
-    private long blockEntityBlocksHit;
-    private long blockEntityBlocksMarked;
-    private long protectedBlockEntitySkips;
-    private long unbreakableStops;
-    private long crackedConcreteBricksPlanned;
-    private long highResistanceBlocksHit;
-    private long highResistanceBlocksMarked;
-    private long highResistanceBlocksBlocked;
-    private long highResistanceBlocksStoppedByEnergy;
-    private long obsidianBlocksHit;
-    private long obsidianBlocksMarked;
-    private long obsidianBlocksBlocked;
-    private long obsidianBlocksStoppedByEnergy;
-    private int maxObsidianDepthMarkedOnSingleRay;
+    private final PlannerCounters globalCounters = new PlannerCounters();
     private int obsidianDebugHitLogs;
     private int obsidianDebugStepLogs;
     private int obsidianDebugTraceRayIndex = -1;
@@ -166,22 +143,31 @@ public final class NuclearBlastRayPlanner {
     public PlannerResult tickBudget(int maxRays, int maxSteps) {
         int raysThisTick = 0;
         int stepsThisTick = 0;
-        long markedBefore = blocksMarkedTotal;
+        long markedBefore = globalCounters.blocksMarkedTotal;
+        long blockStateReadsBefore = globalCounters.blockStateReadCount;
+        long blockEntityLookupsBefore = globalCounters.blockEntityLookupCount;
+        long collisionShapeLookupsBefore = globalCounters.collisionShapeLookupCount;
+        long duplicateMaskMarksBefore = globalCounters.duplicateMaskMarkAttempts;
+        long airFastPathBefore = globalCounters.airFastPathCount;
+        long fluidFastPathBefore = globalCounters.fluidFastPathCount;
+        long classificationHitsBefore = resistanceCache.classificationCacheHits();
+        long classificationMissesBefore = resistanceCache.classificationCacheMisses();
+        RayWorldView worldView = new LiveLevelRayWorldView();
 
         while (!complete && raysThisTick < maxRays && stepsThisTick < maxSteps) {
-            RayResult result = traceRay(rayIndex);
+            RayResult result = traceRay(rayIndex, mask, worldView, globalCounters);
             rayIndex++;
             raysThisTick++;
             stepsThisTick += result.steps();
-            raysProcessedTotal++;
-            stepsProcessedTotal += result.steps();
-            blocksMarkedTotal += result.blocksMarked();
+            globalCounters.raysProcessedTotal++;
+            globalCounters.stepsProcessedTotal += result.steps();
+            globalCounters.blocksMarkedTotal += result.blocksMarked();
 
             switch (result.stopReason()) {
-                case UNLOADED_CHUNK -> unloadedChunkStops++;
-                case BLOCKED -> blockedRayStops++;
-                case ENERGY -> energyStops++;
-                case OUT_OF_WORLD -> outOfWorldStops++;
+                case UNLOADED_CHUNK -> globalCounters.unloadedChunkStops++;
+                case BLOCKED -> globalCounters.blockedRayStops++;
+                case ENERGY -> globalCounters.energyStops++;
+                case OUT_OF_WORLD -> globalCounters.outOfWorldStops++;
                 case RADIUS -> {
                 }
             }
@@ -191,10 +177,70 @@ public final class NuclearBlastRayPlanner {
             }
         }
 
-        return new PlannerResult(raysThisTick, stepsThisTick, blocksMarkedTotal - markedBefore, complete);
+        return new PlannerResult(
+                raysThisTick,
+                stepsThisTick,
+                globalCounters.blocksMarkedTotal - markedBefore,
+                globalCounters.blockStateReadCount - blockStateReadsBefore,
+                globalCounters.blockEntityLookupCount - blockEntityLookupsBefore,
+                globalCounters.collisionShapeLookupCount - collisionShapeLookupsBefore,
+                globalCounters.duplicateMaskMarkAttempts - duplicateMaskMarksBefore,
+                globalCounters.airFastPathCount - airFastPathBefore,
+                globalCounters.fluidFastPathCount - fluidFastPathBefore,
+                resistanceCache.classificationCacheHits() - classificationHitsBefore,
+                resistanceCache.classificationCacheMisses() - classificationMissesBefore,
+                complete
+        );
     }
 
-    private RayResult traceRay(int index) {
+    public WorkerResult planRayRange(NuclearBlockSnapshot snapshot, int startRayInclusive, int endRayExclusive, AtomicBoolean canceled) {
+        NuclearDestructionMask localMask = new NuclearDestructionMask();
+        PlannerCounters localCounters = new PlannerCounters();
+        int raysProcessed = 0;
+        int stepsProcessed = 0;
+        long startNs = System.nanoTime();
+
+        for (int index = startRayInclusive; index < endRayExclusive && !canceled.get(); index++) {
+            RayResult result = traceRay(index, localMask, snapshot, localCounters);
+            raysProcessed++;
+            stepsProcessed += result.steps();
+            localCounters.raysProcessedTotal++;
+            localCounters.stepsProcessedTotal += result.steps();
+            localCounters.blocksMarkedTotal += result.blocksMarked();
+
+            switch (result.stopReason()) {
+                case UNLOADED_CHUNK -> localCounters.unloadedChunkStops++;
+                case BLOCKED -> localCounters.blockedRayStops++;
+                case ENERGY -> localCounters.energyStops++;
+                case OUT_OF_WORLD -> localCounters.outOfWorldStops++;
+                case RADIUS -> {
+                }
+            }
+        }
+
+        return new WorkerResult(
+                startRayInclusive,
+                endRayExclusive,
+                raysProcessed,
+                stepsProcessed,
+                localMask,
+                localCounters,
+                (System.nanoTime() - startNs) / 1_000_000.0D,
+                canceled.get()
+        );
+    }
+
+    public void mergeWorkerResult(WorkerResult result) {
+        mask.mergeFrom(result.mask());
+        globalCounters.add(result.counters());
+    }
+
+    public void finishAsyncPlanning() {
+        rayIndex = totalRays;
+        complete = true;
+    }
+
+    private RayResult traceRay(int index, NuclearDestructionMask targetMask, RayWorldView worldView, PlannerCounters counters) {
         Vec3 direction = fibonacciDirection(index);
         double rayEnergy = initialRayEnergy * rayEnergyJitterMultiplier(index);
         int blockX = Mth.floor(center.x);
@@ -217,84 +263,103 @@ public final class NuclearBlastRayPlanner {
         int obsidianBlocksMarkedThisRay = 0;
         double traveled = 0.0D;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        boolean allowSharedDebugLogging = counters == globalCounters;
 
         while (traveled <= radius) {
-            if (blockY < level.getMinBuildHeight() || blockY >= level.getMaxBuildHeight()) {
+            if (blockY < worldView.minBuildHeight() || blockY >= worldView.maxBuildHeight()) {
                 return new RayResult(steps, marked, StopReason.OUT_OF_WORLD);
             }
 
             pos.set(blockX, blockY, blockZ);
-            if (!level.hasChunkAt(pos)) {
+            NuclearBlockSnapshot.RayBlockSample sample = worldView.sample(pos, blockX, blockY, blockZ);
+            if (!sample.loaded()) {
                 return new RayResult(steps, marked, StopReason.UNLOADED_CHUNK);
             }
 
-            BlockState state = level.getBlockState(pos);
-            if (state.isAir()) {
-                airBlocksSkipped++;
+            counters.blockStateReadCount++;
+            BlockState state = sample.state();
+            if (sample.air()) {
+                counters.airBlocksSkipped++;
+                counters.airFastPathCount++;
             } else {
-                boolean hasBlockEntity = level.getBlockEntity(pos) != null;
-                boolean fragile = resistanceCache.isFragile(state);
-                boolean fluid = !state.getFluidState().isEmpty();
-                boolean nonSolid = state.getCollisionShape(level, pos).isEmpty();
+                boolean hasBlockEntity = sample.hasBlockEntity();
+                if (sample.blockEntityLookupCounted()) {
+                    counters.blockEntityLookupCount++;
+                }
+                boolean fragile = sample.fragile();
+                boolean fluid = sample.fluid();
+                if (fluid) {
+                    counters.fluidFastPathCount++;
+                }
+                boolean nonSolid = sample.nonSolid();
+                if (sample.collisionShapeLookupCounted()) {
+                    counters.collisionShapeLookupCount++;
+                }
                 boolean obsidian = state.is(Blocks.OBSIDIAN);
-                float resistance = resistanceCache.resistanceFor(state, level, pos);
-                float rawResistance = state.getBlock().getExplosionResistance();
+                float resistance = sample.resistance();
+                float rawResistance = sample.rawResistance();
                 boolean highResistance = resistance >= 12.0F || rawResistance >= 12.0F;
                 if (highResistance) {
-                    highResistanceBlocksHit++;
+                    counters.highResistanceBlocksHit++;
                 }
                 if (obsidian) {
-                    obsidianBlocksHit++;
-                    if (DEBUG_NUKE_OBSIDIAN_RAYS && obsidianDebugTraceRayIndex < 0) {
+                    counters.obsidianBlocksHit++;
+                    if (allowSharedDebugLogging && SkyentNuclearExplosionConfig.debugRayPlanner() && obsidianDebugTraceRayIndex < 0) {
                         obsidianDebugTraceRayIndex = index;
                     }
                 }
                 boolean rayBlocking = resistanceCache.isRayBlocking(resistance);
                 if (resistanceCache.isRayBlocking(resistance)) {
-                    unbreakableStops++;
+                    counters.unbreakableStops++;
                     if (highResistance) {
-                        highResistanceBlocksBlocked++;
+                        counters.highResistanceBlocksBlocked++;
                     }
                     if (obsidian) {
-                        obsidianBlocksBlocked++;
+                        counters.obsidianBlocksBlocked++;
                     }
-                    logHighResistanceHit(index, pos, state, traveled, rayEnergy, rawResistance, resistance, true, false, false, 0.0D, rayEnergy, StopReason.BLOCKED);
+                    if (allowSharedDebugLogging) {
+                        logHighResistanceHit(index, pos, state, traveled, rayEnergy, rawResistance, resistance, true, false, hasBlockEntity, false, 0.0D, rayEnergy, StopReason.BLOCKED);
+                    }
                     return new RayResult(steps, marked, StopReason.BLOCKED);
                 }
-                boolean protectedBlockEntity = hasBlockEntity && resistanceCache.isProtectedBlockEntity(state, level, pos);
+                boolean protectedBlockEntity = sample.protectedBlockEntity();
                 if (hasBlockEntity) {
-                    blockEntityBlocksHit++;
+                    counters.blockEntityBlocksHit++;
                 }
                 if (protectedBlockEntity) {
-                    blockEntitySkips++;
-                    protectedBlockEntitySkips++;
+                    counters.blockEntitySkips++;
+                    counters.protectedBlockEntitySkips++;
                 }
 
-                boolean canDestroy = !protectedBlockEntity && resistanceCache.canMarkForDestruction(state);
+                boolean canDestroy = sample.canDestroy();
                 boolean markSucceeded = false;
                 boolean concreteBricks = state.is(ModBlocks.CONCRETE_BRICKS.get());
-                if (!concreteBricks && rayEnergy > 0.0D && canDestroy && mask.mark(blockX, blockY, blockZ)) {
-                    markSucceeded = true;
-                    marked++;
-                    if (hasBlockEntity) {
-                        blockEntityBlocksMarked++;
-                    }
-                    if (fragile) {
-                        fragileBlocksMarked++;
-                    }
-                    if (nonSolid) {
-                        nonSolidBlocksMarked++;
-                    }
-                    if (fluid) {
-                        fluidBlocksMarked++;
-                    }
-                    if (highResistance) {
-                        highResistanceBlocksMarked++;
-                    }
-                    if (obsidian) {
-                        obsidianBlocksMarked++;
-                        obsidianBlocksMarkedThisRay++;
-                        maxObsidianDepthMarkedOnSingleRay = Math.max(maxObsidianDepthMarkedOnSingleRay, obsidianBlocksMarkedThisRay);
+                if (!concreteBricks && rayEnergy > 0.0D && canDestroy) {
+                    if (targetMask.mark(blockX, blockY, blockZ)) {
+                        markSucceeded = true;
+                        marked++;
+                        if (hasBlockEntity) {
+                            counters.blockEntityBlocksMarked++;
+                        }
+                        if (fragile) {
+                            counters.fragileBlocksMarked++;
+                        }
+                        if (nonSolid) {
+                            counters.nonSolidBlocksMarked++;
+                        }
+                        if (fluid) {
+                            counters.fluidBlocksMarked++;
+                        }
+                        if (highResistance) {
+                            counters.highResistanceBlocksMarked++;
+                        }
+                        if (obsidian) {
+                            counters.obsidianBlocksMarked++;
+                            obsidianBlocksMarkedThisRay++;
+                            counters.maxObsidianDepthMarkedOnSingleRay = Math.max(counters.maxObsidianDepthMarkedOnSingleRay, obsidianBlocksMarkedThisRay);
+                        }
+                    } else {
+                        counters.duplicateMaskMarkAttempts++;
                     }
                 }
 
@@ -311,30 +376,34 @@ public final class NuclearBlastRayPlanner {
                     double rayEnergyBefore = rayEnergy;
                     if (concreteBricks && rayEnergyBefore > 0.0D && canDestroy) {
                         if (rayEnergyBefore >= cost) {
-                            markSucceeded = mask.mark(blockX, blockY, blockZ);
+                            markSucceeded = targetMask.mark(blockX, blockY, blockZ);
                             if (markSucceeded) {
                                 marked++;
                                 if (hasBlockEntity) {
-                                    blockEntityBlocksMarked++;
+                                    counters.blockEntityBlocksMarked++;
                                 }
                                 if (highResistance) {
-                                    highResistanceBlocksMarked++;
+                                    counters.highResistanceBlocksMarked++;
                                 }
+                            } else {
+                                counters.duplicateMaskMarkAttempts++;
                             }
                         } else if (rayEnergyBefore >= cost * CONCRETE_BRICKS_CRACK_THRESHOLD_FRACTION
-                                && mask.markReplacement(blockX, blockY, blockZ, ModBlocks.CRACKED_CONCRETE_BRICKS.get().defaultBlockState())) {
-                            crackedConcreteBricksPlanned++;
+                                && targetMask.markReplacement(blockX, blockY, blockZ, ModBlocks.CRACKED_CONCRETE_BRICKS.get().defaultBlockState())) {
+                            counters.crackedConcreteBricksPlanned++;
                         }
                     }
                     rayEnergy -= cost;
-                    logHighResistanceHit(index, pos, state, traveled, rayEnergyBefore, rawResistance, resistance, rayBlocking, canDestroy, markSucceeded, rawCost, rayEnergy, rayEnergy <= 0.0D ? StopReason.ENERGY : null);
-                    logObsidianStepTrace(index, pos, state, traveled, rayEnergyBefore, rawResistance, resistance, closeRangeApplied, cost, rayEnergy, markSucceeded);
+                    if (allowSharedDebugLogging) {
+                        logHighResistanceHit(index, pos, state, traveled, rayEnergyBefore, rawResistance, resistance, rayBlocking, canDestroy, hasBlockEntity, markSucceeded, rawCost, rayEnergy, rayEnergy <= 0.0D ? StopReason.ENERGY : null);
+                        logObsidianStepTrace(index, pos, state, traveled, rayEnergyBefore, rawResistance, resistance, closeRangeApplied, cost, rayEnergy, markSucceeded);
+                    }
                     if (rayEnergy <= 0.0D) {
                         if (highResistance) {
-                            highResistanceBlocksStoppedByEnergy++;
+                            counters.highResistanceBlocksStoppedByEnergy++;
                         }
                         if (obsidian) {
-                            obsidianBlocksStoppedByEnergy++;
+                            counters.obsidianBlocksStoppedByEnergy++;
                         }
                         return new RayResult(steps, marked, StopReason.ENERGY);
                     }
@@ -378,12 +447,13 @@ public final class NuclearBlastRayPlanner {
             float effectiveResistance,
             boolean rayBlocking,
             boolean canDestroy,
+            boolean hasBlockEntity,
             boolean markSucceeded,
             double rawCost,
             double rayEnergyAfter,
             StopReason stopReason
     ) {
-        if (!DEBUG_NUKE_OBSIDIAN_RAYS || obsidianDebugHitLogs >= MAX_OBSIDIAN_DEBUG_HIT_LOGS) {
+        if (!SkyentNuclearExplosionConfig.debugRayPlanner() || obsidianDebugHitLogs >= MAX_OBSIDIAN_DEBUG_HIT_LOGS) {
             return;
         }
         if (!state.is(Blocks.OBSIDIAN) && rawResistance < 12.0F && effectiveResistance < 12.0F) {
@@ -408,7 +478,7 @@ public final class NuclearBlastRayPlanner {
                 effectiveResistance,
                 rayBlocking,
                 canDestroy,
-                level.getBlockEntity(pos) != null,
+                hasBlockEntity,
                 rayEnergyBefore,
                 rawCost,
                 closeRangeApplied,
@@ -436,7 +506,7 @@ public final class NuclearBlastRayPlanner {
             double rayEnergyAfter,
             boolean markSucceeded
     ) {
-        if (!DEBUG_NUKE_OBSIDIAN_RAYS || rayIndex != obsidianDebugTraceRayIndex || obsidianDebugStepLogs >= MAX_OBSIDIAN_DEBUG_STEP_LOGS) {
+        if (!SkyentNuclearExplosionConfig.debugRayPlanner() || rayIndex != obsidianDebugTraceRayIndex || obsidianDebugStepLogs >= MAX_OBSIDIAN_DEBUG_STEP_LOGS) {
             return;
         }
 
@@ -717,110 +787,167 @@ public final class NuclearBlastRayPlanner {
     }
 
     public long raysProcessedTotal() {
-        return raysProcessedTotal;
+        return globalCounters.raysProcessedTotal;
     }
 
     public long stepsProcessedTotal() {
-        return stepsProcessedTotal;
+        return globalCounters.stepsProcessedTotal;
     }
 
     public long blocksMarkedTotal() {
-        return blocksMarkedTotal;
+        return globalCounters.blocksMarkedTotal;
+    }
+
+    public long blockStateReadCount() {
+        return globalCounters.blockStateReadCount;
+    }
+
+    public long blockEntityLookupCount() {
+        return globalCounters.blockEntityLookupCount;
+    }
+
+    public long collisionShapeLookupCount() {
+        return globalCounters.collisionShapeLookupCount;
+    }
+
+    public long duplicateMaskMarkAttempts() {
+        return globalCounters.duplicateMaskMarkAttempts;
+    }
+
+    public long airFastPathCount() {
+        return globalCounters.airFastPathCount;
+    }
+
+    public long fluidFastPathCount() {
+        return globalCounters.fluidFastPathCount;
+    }
+
+    public long classificationCacheHits() {
+        return resistanceCache.classificationCacheHits();
+    }
+
+    public long classificationCacheMisses() {
+        return resistanceCache.classificationCacheMisses();
     }
 
     public long unloadedChunkStops() {
-        return unloadedChunkStops;
+        return globalCounters.unloadedChunkStops;
     }
 
     public long blockedRayStops() {
-        return blockedRayStops;
+        return globalCounters.blockedRayStops;
     }
 
     public long energyStops() {
-        return energyStops;
+        return globalCounters.energyStops;
     }
 
     public long outOfWorldStops() {
-        return outOfWorldStops;
+        return globalCounters.outOfWorldStops;
     }
 
     public long fragileBlocksMarked() {
-        return fragileBlocksMarked;
+        return globalCounters.fragileBlocksMarked;
     }
 
     public long nonSolidBlocksMarked() {
-        return nonSolidBlocksMarked;
+        return globalCounters.nonSolidBlocksMarked;
     }
 
     public long fluidBlocksMarked() {
-        return fluidBlocksMarked;
+        return globalCounters.fluidBlocksMarked;
     }
 
     public long airBlocksSkipped() {
-        return airBlocksSkipped;
+        return globalCounters.airBlocksSkipped;
     }
 
     public long blockEntitySkips() {
-        return blockEntitySkips;
+        return globalCounters.blockEntitySkips;
     }
 
     public long blockEntityBlocksHit() {
-        return blockEntityBlocksHit;
+        return globalCounters.blockEntityBlocksHit;
     }
 
     public long blockEntityBlocksMarked() {
-        return blockEntityBlocksMarked;
+        return globalCounters.blockEntityBlocksMarked;
     }
 
     public long protectedBlockEntitySkips() {
-        return protectedBlockEntitySkips;
+        return globalCounters.protectedBlockEntitySkips;
     }
 
     public long unbreakableStops() {
-        return unbreakableStops;
+        return globalCounters.unbreakableStops;
     }
 
     public long crackedConcreteBricksPlanned() {
-        return crackedConcreteBricksPlanned;
+        return globalCounters.crackedConcreteBricksPlanned;
     }
 
     public long highResistanceBlocksHit() {
-        return highResistanceBlocksHit;
+        return globalCounters.highResistanceBlocksHit;
     }
 
     public long highResistanceBlocksMarked() {
-        return highResistanceBlocksMarked;
+        return globalCounters.highResistanceBlocksMarked;
     }
 
     public long highResistanceBlocksBlocked() {
-        return highResistanceBlocksBlocked;
+        return globalCounters.highResistanceBlocksBlocked;
     }
 
     public long highResistanceBlocksStoppedByEnergy() {
-        return highResistanceBlocksStoppedByEnergy;
+        return globalCounters.highResistanceBlocksStoppedByEnergy;
     }
 
     public long obsidianBlocksHit() {
-        return obsidianBlocksHit;
+        return globalCounters.obsidianBlocksHit;
     }
 
     public long obsidianBlocksMarked() {
-        return obsidianBlocksMarked;
+        return globalCounters.obsidianBlocksMarked;
     }
 
     public long obsidianBlocksBlocked() {
-        return obsidianBlocksBlocked;
+        return globalCounters.obsidianBlocksBlocked;
     }
 
     public long obsidianBlocksStoppedByEnergy() {
-        return obsidianBlocksStoppedByEnergy;
+        return globalCounters.obsidianBlocksStoppedByEnergy;
     }
 
     public int maxObsidianDepthMarkedOnSingleRay() {
-        return maxObsidianDepthMarkedOnSingleRay;
+        return globalCounters.maxObsidianDepthMarkedOnSingleRay;
     }
 
-    public record PlannerResult(int raysProcessed, int stepsProcessed, long blocksMarked, boolean complete) {
+    public record PlannerResult(
+            int raysProcessed,
+            int stepsProcessed,
+            long blocksMarked,
+            long blockStateReads,
+            long blockEntityLookups,
+            long collisionShapeLookups,
+            long duplicateMaskMarkAttempts,
+            long airFastPaths,
+            long fluidFastPaths,
+            long classificationCacheHits,
+            long classificationCacheMisses,
+            boolean complete
+    ) {
+    }
+
+    public record WorkerResult(
+            int startRayInclusive,
+            int endRayExclusive,
+            int raysProcessed,
+            int stepsProcessed,
+            NuclearDestructionMask mask,
+            PlannerCounters counters,
+            double elapsedMs,
+            boolean canceled
+    ) {
     }
 
     private record RayResult(int steps, int blocksMarked, StopReason stopReason) {
@@ -832,5 +959,134 @@ public final class NuclearBlastRayPlanner {
         BLOCKED,
         ENERGY,
         OUT_OF_WORLD
+    }
+
+    public interface RayWorldView {
+        NuclearBlockSnapshot.RayBlockSample sample(BlockPos.MutableBlockPos pos, int x, int y, int z);
+
+        int minBuildHeight();
+
+        int maxBuildHeight();
+    }
+
+    private final class LiveLevelRayWorldView implements RayWorldView {
+        @Override
+        public NuclearBlockSnapshot.RayBlockSample sample(BlockPos.MutableBlockPos pos, int x, int y, int z) {
+            pos.set(x, y, z);
+            if (!level.hasChunkAt(pos)) {
+                return NuclearBlockSnapshot.RayBlockSample.unloaded();
+            }
+            BlockState state = level.getBlockState(pos);
+            NuclearResistanceCache.RayBlockClassification classification = resistanceCache.classify(state);
+            boolean hasBlockEntity = false;
+            boolean blockEntityLookupCounted = false;
+            boolean protectedBlockEntity = false;
+            if (classification.hasBlockEntity()) {
+                blockEntityLookupCounted = true;
+                hasBlockEntity = level.getBlockEntity(pos) != null;
+                protectedBlockEntity = hasBlockEntity && resistanceCache.isProtectedBlockEntity(state, level, pos);
+            }
+            boolean nonSolid = false;
+            boolean collisionShapeLookupCounted = false;
+            if (classification.collisionShapeLookupNeeded()) {
+                collisionShapeLookupCounted = true;
+                nonSolid = state.getCollisionShape(level, pos).isEmpty();
+            }
+            return new NuclearBlockSnapshot.RayBlockSample(
+                    true,
+                    state,
+                    classification.air(),
+                    classification.fluid(),
+                    classification.fragile(),
+                    nonSolid,
+                    blockEntityLookupCounted,
+                    collisionShapeLookupCounted,
+                    hasBlockEntity,
+                    protectedBlockEntity,
+                    classification.canMarkForDestruction() && !protectedBlockEntity,
+                    resistanceCache.resistanceFor(state, level, pos),
+                    state.getBlock().getExplosionResistance()
+            );
+        }
+
+        @Override
+        public int minBuildHeight() {
+            return level.getMinBuildHeight();
+        }
+
+        @Override
+        public int maxBuildHeight() {
+            return level.getMaxBuildHeight();
+        }
+    }
+
+    public static final class PlannerCounters {
+        private long raysProcessedTotal;
+        private long stepsProcessedTotal;
+        private long blocksMarkedTotal;
+        private long blockStateReadCount;
+        private long blockEntityLookupCount;
+        private long collisionShapeLookupCount;
+        private long duplicateMaskMarkAttempts;
+        private long airFastPathCount;
+        private long fluidFastPathCount;
+        private long unloadedChunkStops;
+        private long blockedRayStops;
+        private long energyStops;
+        private long outOfWorldStops;
+        private long fragileBlocksMarked;
+        private long nonSolidBlocksMarked;
+        private long fluidBlocksMarked;
+        private long airBlocksSkipped;
+        private long blockEntitySkips;
+        private long blockEntityBlocksHit;
+        private long blockEntityBlocksMarked;
+        private long protectedBlockEntitySkips;
+        private long unbreakableStops;
+        private long crackedConcreteBricksPlanned;
+        private long highResistanceBlocksHit;
+        private long highResistanceBlocksMarked;
+        private long highResistanceBlocksBlocked;
+        private long highResistanceBlocksStoppedByEnergy;
+        private long obsidianBlocksHit;
+        private long obsidianBlocksMarked;
+        private long obsidianBlocksBlocked;
+        private long obsidianBlocksStoppedByEnergy;
+        private int maxObsidianDepthMarkedOnSingleRay;
+
+        private void add(PlannerCounters other) {
+            raysProcessedTotal += other.raysProcessedTotal;
+            stepsProcessedTotal += other.stepsProcessedTotal;
+            blocksMarkedTotal += other.blocksMarkedTotal;
+            blockStateReadCount += other.blockStateReadCount;
+            blockEntityLookupCount += other.blockEntityLookupCount;
+            collisionShapeLookupCount += other.collisionShapeLookupCount;
+            duplicateMaskMarkAttempts += other.duplicateMaskMarkAttempts;
+            airFastPathCount += other.airFastPathCount;
+            fluidFastPathCount += other.fluidFastPathCount;
+            unloadedChunkStops += other.unloadedChunkStops;
+            blockedRayStops += other.blockedRayStops;
+            energyStops += other.energyStops;
+            outOfWorldStops += other.outOfWorldStops;
+            fragileBlocksMarked += other.fragileBlocksMarked;
+            nonSolidBlocksMarked += other.nonSolidBlocksMarked;
+            fluidBlocksMarked += other.fluidBlocksMarked;
+            airBlocksSkipped += other.airBlocksSkipped;
+            blockEntitySkips += other.blockEntitySkips;
+            blockEntityBlocksHit += other.blockEntityBlocksHit;
+            blockEntityBlocksMarked += other.blockEntityBlocksMarked;
+            protectedBlockEntitySkips += other.protectedBlockEntitySkips;
+            unbreakableStops += other.unbreakableStops;
+            crackedConcreteBricksPlanned += other.crackedConcreteBricksPlanned;
+            highResistanceBlocksHit += other.highResistanceBlocksHit;
+            highResistanceBlocksMarked += other.highResistanceBlocksMarked;
+            highResistanceBlocksBlocked += other.highResistanceBlocksBlocked;
+            highResistanceBlocksStoppedByEnergy += other.highResistanceBlocksStoppedByEnergy;
+            obsidianBlocksHit += other.obsidianBlocksHit;
+            obsidianBlocksMarked += other.obsidianBlocksMarked;
+            obsidianBlocksBlocked += other.obsidianBlocksBlocked;
+            obsidianBlocksStoppedByEnergy += other.obsidianBlocksStoppedByEnergy;
+            maxObsidianDepthMarkedOnSingleRay = Math.max(maxObsidianDepthMarkedOnSingleRay, other.maxObsidianDepthMarkedOnSingleRay);
+        }
     }
 }

@@ -1,5 +1,6 @@
 package com.skyeshade.skyent.content.explosion.destruction;
 
+import com.skyeshade.skyent.config.SkyentNuclearExplosionConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.FluidTags;
@@ -12,9 +13,6 @@ import net.minecraft.world.phys.Vec3;
 public final class NuclearWaterEvaporationPass {
     private static final boolean EVAPORATE_WATER = true;
     private static final boolean EVAPORATE_LAVA = true;
-    private static final int WATER_CLEAR_VERTICAL_RANGE_DOWN = 96;
-    private static final int WATER_CLEAR_VERTICAL_RANGE_UP = 32;
-    private static final int WATER_CLEAR_RECHECK_OVERLAP = 1;
 
     private final ServerLevel level;
     private final Vec3 center;
@@ -24,6 +22,7 @@ public final class NuclearWaterEvaporationPass {
     private final int radius;
     private final int minY;
     private final int maxY;
+    private final int recheckOverlap;
     private int currentInnerRadius = -1;
     private int currentOuterRadius = -1;
     private int currentXOffset;
@@ -45,8 +44,9 @@ public final class NuclearWaterEvaporationPass {
         this.centerY = Mth.floor(center.y);
         this.centerZ = Mth.floor(center.z);
         this.radius = Math.max(0, radius);
-        this.minY = Math.max(level.getMinBuildHeight(), centerY - WATER_CLEAR_VERTICAL_RANGE_DOWN);
-        this.maxY = Math.min(level.getMaxBuildHeight() - 1, centerY + WATER_CLEAR_VERTICAL_RANGE_UP);
+        this.minY = Math.max(level.getMinBuildHeight(), centerY - SkyentNuclearExplosionConfig.waterEvaporationVerticalRangeDown());
+        this.maxY = Math.min(level.getMaxBuildHeight() - 1, centerY + SkyentNuclearExplosionConfig.waterEvaporationVerticalRangeUp());
+        this.recheckOverlap = SkyentNuclearExplosionConfig.waterEvaporationRecheckOverlap();
         this.complete = this.radius <= 0 || minY > maxY;
     }
 
@@ -177,7 +177,7 @@ public final class NuclearWaterEvaporationPass {
     }
 
     public int recheckOverlap() {
-        return WATER_CLEAR_RECHECK_OVERLAP;
+        return recheckOverlap;
     }
 
     public long totalSectionsProcessed() {
@@ -214,7 +214,7 @@ public final class NuclearWaterEvaporationPass {
 
     private void startNextShell(int stepBlocks) {
         int previousOuterRadius = currentOuterRadius;
-        currentInnerRadius = previousOuterRadius < 0 ? -1 : Math.max(0, previousOuterRadius - WATER_CLEAR_RECHECK_OVERLAP);
+        currentInnerRadius = previousOuterRadius < 0 ? -1 : Math.max(0, previousOuterRadius - recheckOverlap);
         currentOuterRadius = Math.min(radius, Math.max(0, previousOuterRadius) + stepBlocks);
         currentXOffset = -currentOuterRadius;
         currentZOffset = -currentOuterRadius;

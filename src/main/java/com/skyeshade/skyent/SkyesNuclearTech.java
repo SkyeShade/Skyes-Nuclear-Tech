@@ -1,6 +1,7 @@
 package com.skyeshade.skyent;
 
 import com.mojang.logging.LogUtils;
+import com.skyeshade.skyent.config.SkyentNuclearExplosionConfig;
 import com.skyeshade.skyent.content.entity.NuclearExplosionChunkLoading;
 import com.skyeshade.skyent.event.ClientEvents;
 import com.skyeshade.skyent.event.CommonEvents;
@@ -18,6 +19,8 @@ import com.skyeshade.skyent.registry.ModRecipes;
 import com.skyeshade.skyent.registry.ModSounds;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.common.Mod;
 import org.slf4j.Logger;
@@ -27,7 +30,9 @@ public final class SkyesNuclearTech {
     public static final String MOD_ID = "skyent";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    public SkyesNuclearTech(IEventBus modEventBus) {
+    public SkyesNuclearTech(IEventBus modEventBus, ModContainer modContainer) {
+        modContainer.registerConfig(ModConfig.Type.COMMON, SkyentNuclearExplosionConfig.SPEC, SkyentNuclearExplosionConfig.FILE_NAME);
+        modEventBus.addListener(SkyentNuclearExplosionConfig::onConfigLoad);
         register(modEventBus);
     }
 
