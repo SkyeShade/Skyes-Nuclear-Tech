@@ -263,6 +263,7 @@ public final class NuclearBlastRayPlanner {
         int obsidianBlocksMarkedThisRay = 0;
         double traveled = 0.0D;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        NuclearBlockSnapshot.MutableRayBlockSample sample = new NuclearBlockSnapshot.MutableRayBlockSample();
         boolean allowSharedDebugLogging = counters == globalCounters;
 
         while (traveled <= radius) {
@@ -271,34 +272,34 @@ public final class NuclearBlastRayPlanner {
             }
 
             pos.set(blockX, blockY, blockZ);
-            NuclearBlockSnapshot.RayBlockSample sample = worldView.sample(pos, blockX, blockY, blockZ);
-            if (!sample.loaded()) {
+            worldView.fillSample(pos, blockX, blockY, blockZ, sample);
+            int flags = sample.flags();
+            if ((flags & NuclearBlockSnapshot.FLAG_LOADED) == 0) {
                 return new RayResult(steps, marked, StopReason.UNLOADED_CHUNK);
             }
 
             counters.blockStateReadCount++;
-            BlockState state = sample.state();
-            if (sample.air()) {
+            if ((flags & NuclearBlockSnapshot.FLAG_AIR) != 0) {
                 counters.airBlocksSkipped++;
                 counters.airFastPathCount++;
             } else {
-                boolean hasBlockEntity = sample.hasBlockEntity();
-                if (sample.blockEntityLookupCounted()) {
+                boolean hasBlockEntity = (flags & NuclearBlockSnapshot.FLAG_HAS_BLOCK_ENTITY) != 0;
+                if ((flags & NuclearBlockSnapshot.FLAG_BLOCK_ENTITY_LOOKUP_COUNTED) != 0) {
                     counters.blockEntityLookupCount++;
                 }
-                boolean fragile = sample.fragile();
-                boolean fluid = sample.fluid();
+                boolean fragile = (flags & NuclearBlockSnapshot.FLAG_FRAGILE) != 0;
+                boolean fluid = (flags & NuclearBlockSnapshot.FLAG_FLUID) != 0;
                 if (fluid) {
                     counters.fluidFastPathCount++;
                 }
-                boolean nonSolid = sample.nonSolid();
-                if (sample.collisionShapeLookupCounted()) {
+                boolean nonSolid = (flags & NuclearBlockSnapshot.FLAG_NON_SOLID) != 0;
+                if ((flags & NuclearBlockSnapshot.FLAG_COLLISION_SHAPE_LOOKUP_COUNTED) != 0) {
                     counters.collisionShapeLookupCount++;
                 }
-                boolean obsidian = state.is(Blocks.OBSIDIAN);
+                boolean obsidian = (flags & NuclearBlockSnapshot.FLAG_OBSIDIAN) != 0;
                 float resistance = sample.resistance();
-                float rawResistance = sample.rawResistance();
-                boolean highResistance = resistance >= 12.0F || rawResistance >= 12.0F;
+                boolean highResistance = (flags & NuclearBlockSnapshot.FLAG_HIGH_RESISTANCE) != 0;
+                BlockState state = sample.state();
                 if (highResistance) {
                     counters.highResistanceBlocksHit++;
                 }
@@ -318,11 +319,11 @@ public final class NuclearBlastRayPlanner {
                         counters.obsidianBlocksBlocked++;
                     }
                     if (allowSharedDebugLogging) {
-                        logHighResistanceHit(index, pos, state, traveled, rayEnergy, rawResistance, resistance, true, false, hasBlockEntity, false, 0.0D, rayEnergy, StopReason.BLOCKED);
+                        logHighResistanceHit(index, pos, state, traveled, rayEnergy, resistance, resistance, true, false, hasBlockEntity, false, 0.0D, rayEnergy, StopReason.BLOCKED);
                     }
                     return new RayResult(steps, marked, StopReason.BLOCKED);
                 }
-                boolean protectedBlockEntity = sample.protectedBlockEntity();
+                boolean protectedBlockEntity = (flags & NuclearBlockSnapshot.FLAG_PROTECTED_BLOCK_ENTITY) != 0;
                 if (hasBlockEntity) {
                     counters.blockEntityBlocksHit++;
                 }
@@ -331,9 +332,9 @@ public final class NuclearBlastRayPlanner {
                     counters.protectedBlockEntitySkips++;
                 }
 
-                boolean canDestroy = sample.canDestroy();
+                boolean canDestroy = (flags & NuclearBlockSnapshot.FLAG_CAN_DESTROY) != 0;
                 boolean markSucceeded = false;
-                boolean concreteBricks = state.is(ModBlocks.CONCRETE_BRICKS.get());
+                boolean concreteBricks = (flags & NuclearBlockSnapshot.FLAG_CONCRETE_BRICKS) != 0;
                 if (!concreteBricks && rayEnergy > 0.0D && canDestroy) {
                     if (targetMask.mark(blockX, blockY, blockZ)) {
                         markSucceeded = true;
@@ -395,8 +396,8 @@ public final class NuclearBlastRayPlanner {
                     }
                     rayEnergy -= cost;
                     if (allowSharedDebugLogging) {
-                        logHighResistanceHit(index, pos, state, traveled, rayEnergyBefore, rawResistance, resistance, rayBlocking, canDestroy, hasBlockEntity, markSucceeded, rawCost, rayEnergy, rayEnergy <= 0.0D ? StopReason.ENERGY : null);
-                        logObsidianStepTrace(index, pos, state, traveled, rayEnergyBefore, rawResistance, resistance, closeRangeApplied, cost, rayEnergy, markSucceeded);
+                        logHighResistanceHit(index, pos, state, traveled, rayEnergyBefore, resistance, resistance, rayBlocking, canDestroy, hasBlockEntity, markSucceeded, rawCost, rayEnergy, rayEnergy <= 0.0D ? StopReason.ENERGY : null);
+                        logObsidianStepTrace(index, pos, state, traveled, rayEnergyBefore, resistance, resistance, closeRangeApplied, cost, rayEnergy, markSucceeded);
                     }
                     if (rayEnergy <= 0.0D) {
                         if (highResistance) {
@@ -962,7 +963,7 @@ public final class NuclearBlastRayPlanner {
     }
 
     public interface RayWorldView {
-        NuclearBlockSnapshot.RayBlockSample sample(BlockPos.MutableBlockPos pos, int x, int y, int z);
+        void fillSample(BlockPos.MutableBlockPos pos, int x, int y, int z, NuclearBlockSnapshot.MutableRayBlockSample sample);
 
         int minBuildHeight();
 
@@ -971,42 +972,60 @@ public final class NuclearBlastRayPlanner {
 
     private final class LiveLevelRayWorldView implements RayWorldView {
         @Override
-        public NuclearBlockSnapshot.RayBlockSample sample(BlockPos.MutableBlockPos pos, int x, int y, int z) {
+        public void fillSample(BlockPos.MutableBlockPos pos, int x, int y, int z, NuclearBlockSnapshot.MutableRayBlockSample sample) {
             pos.set(x, y, z);
             if (!level.hasChunkAt(pos)) {
-                return NuclearBlockSnapshot.RayBlockSample.unloaded();
+                sample.set(0, NuclearResistanceCache.AIR_RESISTANCE, null);
+                return;
             }
             BlockState state = level.getBlockState(pos);
             NuclearResistanceCache.RayBlockClassification classification = resistanceCache.classify(state);
+            int flags = NuclearBlockSnapshot.FLAG_LOADED;
+            if (classification.air()) {
+                flags |= NuclearBlockSnapshot.FLAG_AIR;
+            }
+            if (classification.fluid()) {
+                flags |= NuclearBlockSnapshot.FLAG_FLUID;
+            }
+            if (classification.fragile()) {
+                flags |= NuclearBlockSnapshot.FLAG_FRAGILE;
+            }
             boolean hasBlockEntity = false;
-            boolean blockEntityLookupCounted = false;
             boolean protectedBlockEntity = false;
             if (classification.hasBlockEntity()) {
-                blockEntityLookupCounted = true;
+                flags |= NuclearBlockSnapshot.FLAG_BLOCK_ENTITY_LOOKUP_COUNTED;
                 hasBlockEntity = level.getBlockEntity(pos) != null;
                 protectedBlockEntity = hasBlockEntity && resistanceCache.isProtectedBlockEntity(state, level, pos);
             }
+            if (hasBlockEntity) {
+                flags |= NuclearBlockSnapshot.FLAG_HAS_BLOCK_ENTITY;
+            }
+            if (protectedBlockEntity) {
+                flags |= NuclearBlockSnapshot.FLAG_PROTECTED_BLOCK_ENTITY;
+            }
+            if (classification.canMarkForDestruction() && !protectedBlockEntity) {
+                flags |= NuclearBlockSnapshot.FLAG_CAN_DESTROY;
+            }
             boolean nonSolid = false;
-            boolean collisionShapeLookupCounted = false;
             if (classification.collisionShapeLookupNeeded()) {
-                collisionShapeLookupCounted = true;
+                flags |= NuclearBlockSnapshot.FLAG_COLLISION_SHAPE_LOOKUP_COUNTED;
                 nonSolid = state.getCollisionShape(level, pos).isEmpty();
             }
-            return new NuclearBlockSnapshot.RayBlockSample(
-                    true,
-                    state,
-                    classification.air(),
-                    classification.fluid(),
-                    classification.fragile(),
-                    nonSolid,
-                    blockEntityLookupCounted,
-                    collisionShapeLookupCounted,
-                    hasBlockEntity,
-                    protectedBlockEntity,
-                    classification.canMarkForDestruction() && !protectedBlockEntity,
-                    resistanceCache.resistanceFor(state, level, pos),
-                    state.getBlock().getExplosionResistance()
-            );
+            if (nonSolid) {
+                flags |= NuclearBlockSnapshot.FLAG_NON_SOLID;
+            }
+            float resistance = resistanceCache.resistanceFor(state, level, pos);
+            float rawResistance = state.getBlock().getExplosionResistance();
+            if (resistance >= 12.0F || rawResistance >= 12.0F) {
+                flags |= NuclearBlockSnapshot.FLAG_HIGH_RESISTANCE;
+            }
+            if (state.is(Blocks.OBSIDIAN)) {
+                flags |= NuclearBlockSnapshot.FLAG_OBSIDIAN;
+            }
+            if (state.is(ModBlocks.CONCRETE_BRICKS.get())) {
+                flags |= NuclearBlockSnapshot.FLAG_CONCRETE_BRICKS;
+            }
+            sample.set(flags, resistance, state);
         }
 
         @Override

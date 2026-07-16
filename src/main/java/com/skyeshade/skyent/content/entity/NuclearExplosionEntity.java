@@ -953,7 +953,7 @@ public class NuclearExplosionEntity extends Entity {
             destructionPhase = DestructionPhase.ASYNC_PLANNING;
             if (SkyentNuclearExplosionConfig.debugRayTiming()) {
                 SkyesNuclearTech.LOGGER.info(
-                        "Nuke async ray planning started: id={} radius={} rays={} workerCount={} minRaysForAsync={} snapshotBuildMs={} snapshotReportedBuildMs={} snapshotSections={} snapshotBlocks={} snapshotEstimatedBytes={} snapshotBlockEntityLookups={} snapshotCollisionShapeLookups={}",
+                        "Nuke async ray planning started: id={} radius={} rays={} workerCount={} minRaysForAsync={} snapshotBuildMs={} snapshotReportedBuildMs={} snapshotSections={} snapshotFullSections={} snapshotAllAirSections={} snapshotBlocks={} snapshotEstimatedBytes={} snapshotOldStyleEstimatedBytes={} snapshotBytesPerSampleApprox={} snapshotBlockEntityLookups={} snapshotCollisionShapeLookups={}",
                         getId(),
                         destructionRadius,
                         rayPlanner.totalRays(),
@@ -962,8 +962,12 @@ public class NuclearExplosionEntity extends Entity {
                         snapshotBuildMs,
                         snapshot.buildMs(),
                         snapshot.sectionCount(),
+                        snapshot.fullSectionCount(),
+                        snapshot.allAirSectionCount(),
                         snapshot.sampledBlocks(),
                         snapshot.estimatedBytes(),
+                        snapshot.oldStyleEstimatedBytes(),
+                        snapshot.sampledBlocks() <= 0 ? 0.0D : snapshot.estimatedBytes() / (double) snapshot.sampledBlocks(),
                         snapshot.blockEntityLookups(),
                         snapshot.collisionShapeLookups()
                 );
@@ -1057,7 +1061,7 @@ public class NuclearExplosionEntity extends Entity {
             asyncRayPlanningHandle = null;
 
             SkyesNuclearTech.LOGGER.info(
-                    "Nuke async destruction planning complete: id={} selectedMode=ASYNC rays={}/{} steps={} workers={} submittedRayRanges={} asyncWallMs={} slowestWorkerMs={} fastestWorkerMs={} totalWorkerCpuMs={} mergeMs={} snapshotBuildMs={} snapshotSections={} snapshotSamples={} snapshotEstimatedBytes={} snapshotBlockEntityLookups={} snapshotCollisionShapeLookups={} mergedMaskSections={} estimatedBlocks={} plannedReplacements={} trackerPendingSections={} initiallyPrunedEmptySections={} initiallyPrunedAirSections={} mutationUpdateFlags={} suppressDrops=true",
+                    "Nuke async destruction planning complete: id={} selectedMode=ASYNC rays={}/{} steps={} workers={} submittedRayRanges={} asyncWallMs={} slowestWorkerMs={} fastestWorkerMs={} totalWorkerCpuMs={} mergeMs={} snapshotBuildMs={} snapshotSections={} snapshotFullSections={} snapshotAllAirSections={} snapshotSamples={} snapshotEstimatedBytes={} snapshotOldStyleEstimatedBytes={} snapshotBytesPerSampleApprox={} snapshotBlockEntityLookups={} snapshotCollisionShapeLookups={} mergedMaskSections={} estimatedBlocks={} plannedReplacements={} trackerPendingSections={} initiallyPrunedEmptySections={} initiallyPrunedAirSections={} mutationUpdateFlags={} suppressDrops=true",
                     getId(),
                     asyncResult.raysProcessed(),
                     rayPlanner.totalRays(),
@@ -1071,8 +1075,12 @@ public class NuclearExplosionEntity extends Entity {
                     mergeMs,
                     asyncResult.snapshot().buildMs(),
                     asyncResult.snapshot().sectionCount(),
+                    asyncResult.snapshot().fullSectionCount(),
+                    asyncResult.snapshot().allAirSectionCount(),
                     asyncResult.snapshot().sampledBlocks(),
                     asyncResult.snapshot().estimatedBytes(),
+                    asyncResult.snapshot().oldStyleEstimatedBytes(),
+                    asyncResult.snapshot().sampledBlocks() <= 0 ? 0.0D : asyncResult.snapshot().estimatedBytes() / (double) asyncResult.snapshot().sampledBlocks(),
                     asyncResult.snapshot().blockEntityLookups(),
                     asyncResult.snapshot().collisionShapeLookups(),
                     destructionMask.sectionCount(),
