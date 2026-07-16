@@ -23,6 +23,8 @@ public final class SkyentNuclearExplosionConfig {
     private static final ModConfigSpec.BooleanValue ASYNC_RAY_PLANNING;
     private static final ModConfigSpec.IntValue ASYNC_RAY_WORKERS;
     private static final ModConfigSpec.IntValue ASYNC_MIN_RAYS;
+    private static final ModConfigSpec.DoubleValue RAY_DENSITY_MULTIPLIER;
+    private static final ModConfigSpec.IntValue RAY_PLANNING_MAX_RAYS;
 
     private static final ModConfigSpec.IntValue MUTATION_MAX_BLOCKS_PER_TICK;
     private static final ModConfigSpec.DoubleValue MUTATION_MAX_MILLISECONDS_PER_TICK;
@@ -90,13 +92,28 @@ public final class SkyentNuclearExplosionConfig {
         BUILDER.push("ray_planning");
         ASYNC_RAY_PLANNING = BUILDER
                 .comment("Enables experimental snapshot-backed async nuclear ray planning.")
-                .define("async_ray_planning", false);
+                .define("async_ray_planning", true);
         ASYNC_RAY_WORKERS = BUILDER
                 .comment("Worker threads used by async ray planning. Clamped to available processors.")
                 .defineInRange("async_ray_workers", Math.max(1, Math.min(4, Runtime.getRuntime().availableProcessors())), 1, 16);
         ASYNC_MIN_RAYS = BUILDER
                 .comment("Minimum total rays before async ray planning is eligible.")
                 .defineInRange("async_min_rays", 20_000, 0, 2_000_000);
+        RAY_DENSITY_MULTIPLIER = BUILDER
+                .comment(
+                        "Controls destructive ray density.",
+                        "Higher values improve crater coverage/surface stripping but increase planning cost.",
+                        "Previous default was 8.0 * 4.0 = 32.0.",
+                        "Examples: 16.0 = cheaper, 32.0 = default/current, 64.0 = very dense/expensive."
+                )
+                .defineInRange("ray_density_multiplier", 64.0D, 1.0D, 128.0D);
+        RAY_PLANNING_MAX_RAYS = BUILDER
+                .comment(
+                        "Maximum destructive rays after ray_density_multiplier is applied.",
+                        "Raising this can improve coverage at high densities but increases CPU and snapshot/mutation cost.",
+                        "Increase max_rays if testing very high densities."
+                )
+                .defineInRange("max_rays", 3_200_000, 1_024, 20_000_000);
         BUILDER.pop();
 
         BUILDER.push("mutation");
@@ -239,6 +256,14 @@ public final class SkyentNuclearExplosionConfig {
         return Mth.clamp(ASYNC_MIN_RAYS.get(), 0, 2_000_000);
     }
 
+    public static double rayDensityMultiplier() {
+        return Mth.clamp(RAY_DENSITY_MULTIPLIER.get(), 1.0D, 128.0D);
+    }
+
+    public static int rayPlanningMaxRays() {
+        return Mth.clamp(RAY_PLANNING_MAX_RAYS.get(), 1_024, 2_000_000);
+    }
+
     public static int mutationMaxBlocksPerTick() {
         return Mth.clamp(MUTATION_MAX_BLOCKS_PER_TICK.get(), 1, 100_000);
     }
@@ -345,10 +370,12 @@ public final class SkyentNuclearExplosionConfig {
         }
 
         SkyesNuclearTech.LOGGER.info(
-                "Skyent nuclear explosion config loaded: asyncRayPlanning={} asyncWorkers={} asyncMinRays={} mutationMaxBlocksPerTick={} mutationMaxMsPerTick={} maxGameplayNukeRadius={} waterRadiusScale={} fireRadiusMultiplier={} radiationBurstEnabled={}",
+                "Skyent nuclear explosion config loaded: asyncRayPlanning={} asyncWorkers={} asyncMinRays={} rayDensityMultiplier={} maxRays={} mutationMaxBlocksPerTick={} mutationMaxMsPerTick={} maxGameplayNukeRadius={} waterRadiusScale={} fireRadiusMultiplier={} radiationBurstEnabled={}",
                 asyncRayPlanning(),
                 asyncRayWorkers(),
                 asyncMinRays(),
+                rayDensityMultiplier(),
+                rayPlanningMaxRays(),
                 mutationMaxBlocksPerTick(),
                 mutationMaxMillisecondsPerTick(),
                 chunkLoadingMaxGameplayNukeRadius(),

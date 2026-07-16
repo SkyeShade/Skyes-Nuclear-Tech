@@ -128,8 +128,6 @@ public class NuclearExplosionEntity extends Entity {
     private static final double NUKE_RAY_STARTING_ENERGY_PER_RADIUS = 100_250_500.0D;
     private static final double NUKE_RAY_STARTING_ENERGY_RADIUS_POWER = 1.35D;
     private static final double NUKE_VISUAL_RAY_SCALE_POWER = 0.75D;
-    private static final double NUKE_RAY_COUNT_MULTIPLIER = 8.0D;
-    private static final double NUKE_RAY_COUNT_EXTRA_MULTIPLIER = 4.0D;
     private static final double NUKE_RAY_INITIAL_ENERGY_MULTIPLIER = 1.0D;
     private static final double NUKE_CLOSE_RANGE_ARMOR_PIERCING_RADIUS_FRACTION = 0.35D;
     private static final double NUKE_CLOSE_RANGE_RESISTANCE_COST_MULTIPLIER = 0.25D;
@@ -411,7 +409,7 @@ public class NuclearExplosionEntity extends Entity {
                 destructionPhase = DestructionPhase.MUTATING;
                 mutationStartTick = tickCount;
                 SkyesNuclearTech.LOGGER.info(
-                        "Nuke destruction planning complete: id={} selectedMode=SYNC syncPlanningTotalMs={} planningTicks={} worstPlanningTickMs={} averagePlanningTickMs={} averageRaysPerTick={} averageStepsPerTick={} rays={}/{} baseRays={} rayMultiplier={} extraRayMultiplier={} baselineRadius={} radiusScale={} inverseRadiusScale={} smallRadiusProgressBoost={} visualRayScale={} initialRayEnergy={} rayEnergyJitterAtRadius200={} rayEnergyJitterSmallRadiusBonus={} rayEnergyJitterAmount={} rayEnergyJitterRange=[{},{}] rayEnergyJitterSamples={} distanceDecayPerBlock={} scaledDistanceDecayPerBlock={} resistanceCostMultiplier={} resistanceCostOffset={} resistancePowerNear={} resistancePowerFar={} resistancePowerCurve={} distanceResistanceGrowth={} scaledDistanceResistanceGrowth={} materialStackingGrowth={} scaledMaterialStackingGrowth={} closePierceFraction={} closeResistanceMultiplier={} scaledClosePierceFraction={} scaledCloseResistanceMultiplier={} resistanceSamples={} steps={} maskSections={} estimatedBlocks={} plannedReplacements={} trackerPendingSections={} initiallyPrunedEmptySections={} initiallyPrunedAirSections={} mutationUpdateFlags={} suppressDrops=true unloadedStops={} energyStops={} blockedStops={} unbreakableStops={} outOfWorldStops={} fragileMarked={} nonSolidMarked={} fluidMarked={} airSkipped={} blockEntityHits={} blockEntityMarked={} protectedBlockEntitySkips={} crackedConcreteBricksPlanned={} blockEntitySkips={} highResHit={} highResMarked={} highResBlocked={} highResEnergyStops={} obsidianHit={} obsidianMarked={} obsidianBlocked={} obsidianEnergyStops={} maxObsidianDepthMarkedOnSingleRay={}",
+                        "Nuke destruction planning complete: id={} selectedMode=SYNC syncPlanningTotalMs={} planningTicks={} worstPlanningTickMs={} averagePlanningTickMs={} averageRaysPerTick={} averageStepsPerTick={} rays={}/{} rayDensityMultiplier={} rawRayEstimate={} minRays={} maxRays={} totalRays={} rayCountClamped={} rayCountFormula={} baselineRadius={} radiusScale={} inverseRadiusScale={} smallRadiusProgressBoost={} visualRayScale={} initialRayEnergy={} rayEnergyJitterAtRadius200={} rayEnergyJitterSmallRadiusBonus={} rayEnergyJitterAmount={} rayEnergyJitterRange=[{},{}] rayEnergyJitterSamples={} distanceDecayPerBlock={} scaledDistanceDecayPerBlock={} resistanceCostMultiplier={} resistanceCostOffset={} resistancePowerNear={} resistancePowerFar={} resistancePowerCurve={} distanceResistanceGrowth={} scaledDistanceResistanceGrowth={} materialStackingGrowth={} scaledMaterialStackingGrowth={} closePierceFraction={} closeResistanceMultiplier={} scaledClosePierceFraction={} scaledCloseResistanceMultiplier={} resistanceSamples={} steps={} maskSections={} estimatedBlocks={} plannedReplacements={} trackerPendingSections={} initiallyPrunedEmptySections={} initiallyPrunedAirSections={} mutationUpdateFlags={} suppressDrops=true unloadedStops={} energyStops={} blockedStops={} unbreakableStops={} outOfWorldStops={} fragileMarked={} nonSolidMarked={} fluidMarked={} airSkipped={} blockEntityHits={} blockEntityMarked={} protectedBlockEntitySkips={} crackedConcreteBricksPlanned={} blockEntitySkips={} highResHit={} highResMarked={} highResBlocked={} highResEnergyStops={} obsidianHit={} obsidianMarked={} obsidianBlocked={} obsidianEnergyStops={} maxObsidianDepthMarkedOnSingleRay={}",
                         getId(),
                         syncRayPlanningTotalMs,
                         syncRayPlanningTicks,
@@ -421,9 +419,13 @@ public class NuclearExplosionEntity extends Entity {
                         syncRayPlanningTicks <= 0 ? 0.0D : syncRayPlanningTotalSteps / (double) syncRayPlanningTicks,
                         rayPlanner.rayIndex(),
                         rayPlanner.totalRays(),
-                        rayPlanner.baseRayCount(),
-                        rayPlanner.rayCountMultiplier(),
-                        rayPlanner.extraRayCountMultiplier(),
+                        rayPlanner.rayDensityMultiplier(),
+                        rayPlanner.rawRayEstimate(),
+                        rayPlanner.minRays(),
+                        rayPlanner.maxRays(),
+                        rayPlanner.totalRays(),
+                        rayPlanner.rayCountClamped(),
+                        rayPlanner.rayCountFormula(),
                         rayPlanner.baselineRadius(),
                         rayPlanner.radiusScale(),
                         rayPlanner.inverseRadiusScale(),
@@ -925,8 +927,7 @@ public class NuclearExplosionEntity extends Entity {
                 fixedOrigin(),
                 destructionRadius,
                 destructionStrength,
-                NUKE_RAY_COUNT_MULTIPLIER,
-                NUKE_RAY_COUNT_EXTRA_MULTIPLIER,
+                SkyentNuclearExplosionConfig.rayDensityMultiplier(),
                 NUKE_RAY_INITIAL_ENERGY_MULTIPLIER,
                 NUKE_CLOSE_RANGE_ARMOR_PIERCING_RADIUS_FRACTION,
                 NUKE_CLOSE_RANGE_RESISTANCE_COST_MULTIPLIER,
@@ -976,7 +977,7 @@ public class NuclearExplosionEntity extends Entity {
             destructionPhase = DestructionPhase.PLANNING;
         }
         SkyesNuclearTech.LOGGER.info(
-                "Nuke ray planning mode: id={} selectedMode={} syncReason={} asyncEnabled={} asyncEligible={} totalRays={} minRaysForAsync={} requestedWorkerCount={} activeWorkerCount={} entityRadius={} destructionRadius={} chunkRadius={} baselineRadius={} radiusScale={} inverseRadiusScale={} energyScale={} baselineStartingEnergy={} visualRayScale={} strength={} rayBaseEnergy={} rayEnergyPerRadius={} energyRadiusPower={} baseRays={} rayMultiplier={} extraRayMultiplier={} initialRayEnergy={} rayEnergyJitterAtRadius200={} rayEnergyJitterSmallRadiusBonus={} rayEnergyJitterAmount={} rayEnergyJitterRange=[{},{}] rayEnergyJitterSamples={} smallRadiusProgressBoost={} distanceDecayPerBlock={} scaledDistanceDecayPerBlock={} resistanceCostMultiplier={} resistanceCostOffset={} resistancePowerNear={} resistancePowerFar={} resistancePowerCurve={} distanceResistanceGrowth={} scaledDistanceResistanceGrowth={} materialStackingGrowth={} scaledMaterialStackingGrowth={} closePierceFraction={} closeResistanceMultiplier={} scaledClosePierceFraction={} scaledCloseResistanceMultiplier={} resistanceSamples={} planOnly={}",
+                "Nuke ray planning mode: id={} selectedMode={} syncReason={} asyncEnabled={} asyncEligible={} totalRays={} minRaysForAsync={} requestedWorkerCount={} activeWorkerCount={} entityRadius={} destructionRadius={} chunkRadius={} baselineRadius={} radiusScale={} inverseRadiusScale={} energyScale={} baselineStartingEnergy={} visualRayScale={} strength={} rayBaseEnergy={} rayEnergyPerRadius={} energyRadiusPower={} rayDensityMultiplier={} rawRayEstimate={} minRays={} maxRays={} rayCountClamped={} rayCountFormula={} initialRayEnergy={} rayEnergyJitterAtRadius200={} rayEnergyJitterSmallRadiusBonus={} rayEnergyJitterAmount={} rayEnergyJitterRange=[{},{}] rayEnergyJitterSamples={} smallRadiusProgressBoost={} distanceDecayPerBlock={} scaledDistanceDecayPerBlock={} resistanceCostMultiplier={} resistanceCostOffset={} resistancePowerNear={} resistancePowerFar={} resistancePowerCurve={} distanceResistanceGrowth={} scaledDistanceResistanceGrowth={} materialStackingGrowth={} scaledMaterialStackingGrowth={} closePierceFraction={} closeResistanceMultiplier={} scaledClosePierceFraction={} scaledCloseResistanceMultiplier={} resistanceSamples={} planOnly={}",
                 getId(),
                 selectedMode,
                 syncReason,
@@ -999,9 +1000,12 @@ public class NuclearExplosionEntity extends Entity {
                 NUKE_RAY_BASE_STARTING_ENERGY,
                 NUKE_RAY_STARTING_ENERGY_PER_RADIUS,
                 NUKE_RAY_STARTING_ENERGY_RADIUS_POWER,
-                rayPlanner.baseRayCount(),
-                rayPlanner.rayCountMultiplier(),
-                rayPlanner.extraRayCountMultiplier(),
+                rayPlanner.rayDensityMultiplier(),
+                rayPlanner.rawRayEstimate(),
+                rayPlanner.minRays(),
+                rayPlanner.maxRays(),
+                rayPlanner.rayCountClamped(),
+                rayPlanner.rayCountFormula(),
                 rayPlanner.initialRayEnergy(),
                 rayPlanner.rayEnergyJitterAtRadius200(),
                 rayPlanner.rayEnergyJitterSmallRadiusBonus(),
@@ -1102,8 +1106,7 @@ public class NuclearExplosionEntity extends Entity {
                     fixedOrigin(),
                     Mth.ceil(getRadius() * NUKE_DESTRUCTION_RADIUS_MULTIPLIER),
                     rayPlanner == null ? 1.0D : rayPlanner.initialRayEnergy(),
-                    NUKE_RAY_COUNT_MULTIPLIER,
-                    NUKE_RAY_COUNT_EXTRA_MULTIPLIER,
+                    SkyentNuclearExplosionConfig.rayDensityMultiplier(),
                     1.0D,
                     NUKE_CLOSE_RANGE_ARMOR_PIERCING_RADIUS_FRACTION,
                     NUKE_CLOSE_RANGE_RESISTANCE_COST_MULTIPLIER,
@@ -1121,15 +1124,18 @@ public class NuclearExplosionEntity extends Entity {
         }
 
         SkyesNuclearTech.LOGGER.info(
-                "Nuke ray planner debug: id={} tick={} phase={} rayIndex={}/{} baseRays={} rayMultiplier={} extraRayMultiplier={} baselineRadius={} radiusScale={} inverseRadiusScale={} smallRadiusProgressBoost={} visualRayScale={} initialRayEnergy={} rayEnergyJitterAmount={} rayEnergyJitterRange=[{},{}] rayEnergyJitterSamples={} distanceDecayPerBlock={} scaledDistanceDecayPerBlock={} resistanceCostMultiplier={} resistanceCostOffset={} resistancePowerNear={} resistancePowerFar={} resistancePowerCurve={} distanceResistanceGrowth={} scaledDistanceResistanceGrowth={} materialStackingGrowth={} scaledMaterialStackingGrowth={} closePierceFraction={} closeResistanceMultiplier={} scaledClosePierceFraction={} scaledCloseResistanceMultiplier={} resistanceSamples={} tickRays={} tickSteps={} totalRays={} totalSteps={} tickMarked={} totalMarked={} maskSections={} estimatedBlocks={} plannedReplacements={} unloadedStops={} energyStops={} blockedStops={} unbreakableStops={} outOfWorldStops={} fragileMarked={} nonSolidMarked={} fluidMarked={} airSkipped={} blockEntityHits={} blockEntityMarked={} protectedBlockEntitySkips={} crackedConcreteBricksPlanned={} blockEntitySkips={} highResHit={} highResMarked={} highResBlocked={} highResEnergyStops={} obsidianHit={} obsidianMarked={} obsidianBlocked={} obsidianEnergyStops={} maxObsidianDepthMarkedOnSingleRay={}",
+                "Nuke ray planner debug: id={} tick={} phase={} rayIndex={}/{} rayDensityMultiplier={} rawRayEstimate={} minRays={} maxRays={} rayCountClamped={} rayCountFormula={} baselineRadius={} radiusScale={} inverseRadiusScale={} smallRadiusProgressBoost={} visualRayScale={} initialRayEnergy={} rayEnergyJitterAmount={} rayEnergyJitterRange=[{},{}] rayEnergyJitterSamples={} distanceDecayPerBlock={} scaledDistanceDecayPerBlock={} resistanceCostMultiplier={} resistanceCostOffset={} resistancePowerNear={} resistancePowerFar={} resistancePowerCurve={} distanceResistanceGrowth={} scaledDistanceResistanceGrowth={} materialStackingGrowth={} scaledMaterialStackingGrowth={} closePierceFraction={} closeResistanceMultiplier={} scaledClosePierceFraction={} scaledCloseResistanceMultiplier={} resistanceSamples={} tickRays={} tickSteps={} totalRays={} totalSteps={} tickMarked={} totalMarked={} maskSections={} estimatedBlocks={} plannedReplacements={} unloadedStops={} energyStops={} blockedStops={} unbreakableStops={} outOfWorldStops={} fragileMarked={} nonSolidMarked={} fluidMarked={} airSkipped={} blockEntityHits={} blockEntityMarked={} protectedBlockEntitySkips={} crackedConcreteBricksPlanned={} blockEntitySkips={} highResHit={} highResMarked={} highResBlocked={} highResEnergyStops={} obsidianHit={} obsidianMarked={} obsidianBlocked={} obsidianEnergyStops={} maxObsidianDepthMarkedOnSingleRay={}",
                 getId(),
                 tickCount,
                 destructionPhase,
                 rayPlanner.rayIndex(),
                 rayPlanner.totalRays(),
-                rayPlanner.baseRayCount(),
-                rayPlanner.rayCountMultiplier(),
-                rayPlanner.extraRayCountMultiplier(),
+                rayPlanner.rayDensityMultiplier(),
+                rayPlanner.rawRayEstimate(),
+                rayPlanner.minRays(),
+                rayPlanner.maxRays(),
+                rayPlanner.rayCountClamped(),
+                rayPlanner.rayCountFormula(),
                 rayPlanner.baselineRadius(),
                 rayPlanner.radiusScale(),
                 rayPlanner.inverseRadiusScale(),

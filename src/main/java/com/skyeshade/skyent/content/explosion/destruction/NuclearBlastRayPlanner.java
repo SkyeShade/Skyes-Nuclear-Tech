@@ -17,7 +17,6 @@ public final class NuclearBlastRayPlanner {
     private static final int MAX_OBSIDIAN_DEBUG_HIT_LOGS = 200;
     private static final int MAX_OBSIDIAN_DEBUG_STEP_LOGS = 20;
     private static final int MIN_RAYS = 512;
-    private static final int MAX_RAYS = 320_000;
     private static final double GOLDEN_ANGLE = Math.PI * (3.0D - Math.sqrt(5.0D));
     private static final double NUKE_BASELINE_RADIUS = 200.0D;
     // Distance-shaped resistance model:
@@ -54,9 +53,9 @@ public final class NuclearBlastRayPlanner {
     private final double strength;
     private final NuclearDestructionMask mask;
     private final NuclearResistanceCache resistanceCache;
-    private final double rayCountMultiplier;
-    private final double extraRayCountMultiplier;
-    private final int baseRayCount;
+    private final double rayDensityMultiplier;
+    private final int rawRayEstimate;
+    private final int maxRays;
     private final int totalRays;
     private final double initialRayEnergy;
     private final double radiusScale;
@@ -84,8 +83,7 @@ public final class NuclearBlastRayPlanner {
             Vec3 center,
             int radius,
             double strength,
-            double rayCountMultiplier,
-            double extraRayCountMultiplier,
+            double rayDensityMultiplier,
             double initialRayEnergyMultiplier,
             double closeRangeArmorPiercingRadiusFraction,
             double closeRangeResistanceCostMultiplier,
@@ -99,14 +97,10 @@ public final class NuclearBlastRayPlanner {
         this.strength = Math.max(1.0D, strength);
         this.mask = mask;
         this.resistanceCache = resistanceCache;
-        this.rayCountMultiplier = rayCountMultiplier;
-        this.extraRayCountMultiplier = extraRayCountMultiplier;
-        this.baseRayCount = Mth.clamp(
-                Mth.ceil(rayCountMultiplier * Math.PI * this.radius * this.radius / 16.0D),
-                MIN_RAYS,
-                MAX_RAYS
-        );
-        this.totalRays = Mth.clamp(Mth.ceil(this.baseRayCount * extraRayCountMultiplier), MIN_RAYS, MAX_RAYS);
+        this.rayDensityMultiplier = Math.max(1.0D, rayDensityMultiplier);
+        this.rawRayEstimate = Mth.ceil(this.rayDensityMultiplier * Math.PI * this.radius * this.radius / 16.0D);
+        this.maxRays = Math.max(MIN_RAYS, SkyentNuclearExplosionConfig.rayPlanningMaxRays());
+        this.totalRays = Mth.clamp(this.rawRayEstimate, MIN_RAYS, this.maxRays);
         this.initialRayEnergy = this.strength * initialRayEnergyMultiplier;
         this.radiusScale = Math.max(0.01D, this.radius / NUKE_BASELINE_RADIUS);
         this.inverseRadiusScale = 1.0D / this.radiusScale;
@@ -613,16 +607,28 @@ public final class NuclearBlastRayPlanner {
         return totalRays;
     }
 
-    public int baseRayCount() {
-        return baseRayCount;
+    public int rawRayEstimate() {
+        return rawRayEstimate;
     }
 
-    public double rayCountMultiplier() {
-        return rayCountMultiplier;
+    public double rayDensityMultiplier() {
+        return rayDensityMultiplier;
     }
 
-    public double extraRayCountMultiplier() {
-        return extraRayCountMultiplier;
+    public int minRays() {
+        return MIN_RAYS;
+    }
+
+    public int maxRays() {
+        return maxRays;
+    }
+
+    public boolean rayCountClamped() {
+        return rawRayEstimate < MIN_RAYS || rawRayEstimate > maxRays;
+    }
+
+    public String rayCountFormula() {
+        return "ceil(rayDensityMultiplier*pi*radius^2/16)";
     }
 
     public double initialRayEnergy() {
