@@ -31,6 +31,7 @@ import com.skyeshade.skyent.client.sound.ConveyorSoundHandler;
 import com.skyeshade.skyent.client.sound.MachineSoundManager;
 import com.skyeshade.skyent.content.shape.MultiblockShapeRegistry;
 import com.skyeshade.skyent.content.item.HotItemUtil;
+import com.skyeshade.skyent.content.item.PyrophoricTooltip;
 import com.skyeshade.skyent.content.item.RadiationShieldingTooltip;
 import com.skyeshade.skyent.content.item.RadioactiveTooltip;
 import com.skyeshade.skyent.content.item.ToxicityTooltip;
@@ -192,6 +193,7 @@ public final class ClientEvents {
     private static void appendBottomMaterialInfoTooltips(ItemStack stack, ItemTooltipEvent event) {
         RadiationShieldingTooltip.append(stack, event.getToolTip());
         RadioactiveTooltip.append(stack, event.getToolTip());
+        PyrophoricTooltip.append(stack, event.getToolTip());
         ToxicityTooltip.append(stack, event.getToolTip());
         appendBlastResistanceTooltip(stack, event);
     }

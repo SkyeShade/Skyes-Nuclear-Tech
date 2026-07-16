@@ -6,6 +6,7 @@ import com.skyeshade.skyent.content.item.SteelTongsItem;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 
 public final class RadiationItemValues {
@@ -40,6 +41,9 @@ public final class RadiationItemValues {
         }
         if (stack.is(ModItems.RADIOACTIVE_SCRAP_METAL.get())) {
             return RadiationBlockProfiles.getRadiationStrength(ModBlocks.RADIOACTIVE_SCRAP_METAL.get());
+        }
+        if (stack.getItem() instanceof BlockItem blockItem) {
+            return RadiationBlockProfiles.getRadiationStrength(blockItem.getBlock());
         }
         return 0.0D;
     }

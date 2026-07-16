@@ -131,7 +131,8 @@ public final class HotItemSystem {
 
     private static boolean isBurningHotItem(ItemStack stack) {
         return !SteelTongsItem.isTongs(stack)
-                && (HotMetalItems.isHotVariant(stack)
+                && (HotItemUtil.isPyrophoric(stack)
+                || HotMetalItems.isHotVariant(stack)
                 || HotItemUtil.hasTemperature(stack) && HotItemUtil.getTemperature(stack) > STEAM_TEMPERATURE_C);
     }
 

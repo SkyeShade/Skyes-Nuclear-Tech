@@ -1,0 +1,31 @@
+{
+  "replace": false,
+  "values": [
+    "skyent:hot_iron_ingot",
+    "skyent:hot_copper_ingot",
+    "skyent:hot_gold_ingot",
+    "skyent:hot_steel_ingot",
+    "skyent:hot_cobalt_ingot",
+    "skyent:hot_nickel_ingot",
+    "skyent:hot_aluminum_ingot",
+    "skyent:hot_titanium_ingot",
+    "skyent:hot_tungsten_ingot",
+    "skyent:hot_uranium_ingot",
+    "skyent:hot_cobalt_bronze_ingot",
+    "skyent:hot_cupronickel_ingot",
+    "skyent:hot_iron_rod",
+    "skyent:hot_copper_rod",
+    "skyent:hot_tin_rod",
+    "skyent:hot_steel_rod",
+    "skyent:hot_aluminum_rod",
+    "skyent:hot_titanium_rod",
+    "skyent:hot_tungsten_rod",
+    "skyent:hot_cobalt_rod",
+    "skyent:hot_nickel_rod",
+    "skyent:hot_cobalt_bronze_rod",
+    "skyent:hot_cupronickel_rod",
+    "skyent:hot_vitrified_stone",
+    "skyent:radiant_vitrified_stone",
+    "skyent:infernal_vitrified_stone"
+  ]
+}

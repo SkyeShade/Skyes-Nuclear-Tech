@@ -1,11 +1,15 @@
 package com.skyeshade.skyent.content.item;
 
+import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.registry.ModItems;
 import java.util.List;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.ItemTags;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -13,6 +17,9 @@ import net.minecraft.world.item.component.CustomData;
 
 public final class HotItemUtil {
     public static final double AMBIENT_TEMPERATURE_C = 21.0D;
+    public static final TagKey<Item> PYROPHORIC = ItemTags.create(
+            ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "pyrophoric")
+    );
     private static final String TEMPERATURE_TAG = "SkyentTemperatureC";
 
     private HotItemUtil() {
@@ -65,6 +72,10 @@ public final class HotItemUtil {
 
     public static boolean isHot(ItemStack stack) {
         return HotMetalItems.isHotVariant(stack) || getTemperature(stack) > AMBIENT_TEMPERATURE_C;
+    }
+
+    public static boolean isPyrophoric(ItemStack stack) {
+        return !stack.isEmpty() && stack.is(PYROPHORIC);
     }
 
     public static double getForgingTemperature(ItemStack stack) {

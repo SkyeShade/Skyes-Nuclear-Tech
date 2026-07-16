@@ -53,10 +53,10 @@ public final class RadiationSourceTickSystem {
             if (state.is(ModBlocks.MOLTEN_CORIUM_BLOCK.get())) {
                 moltenCoriumSources++;
                 MoltenCoriumBlock.tickFromSourceRegistry(level, pos, state, level.random);
-            } else if (state.is(ModBlocks.RADIOACTIVE_SCRAP_METAL.get())) {
+            } else if (isActiveEnvironmentalRadiationSource(state)) {
                 radioactiveScrapMetalSources++;
                 if (scrapMetalRadiationTick) {
-                    tickRadioactiveScrapMetal(level, pos, serverTick);
+                    tickActiveEnvironmentalRadiationSource(level, pos, state, serverTick);
                 }
             }
         }
@@ -80,14 +80,21 @@ public final class RadiationSourceTickSystem {
         }
     }
 
-    private static void tickRadioactiveScrapMetal(ServerLevel level, BlockPos pos, int serverTick) {
+    private static boolean isActiveEnvironmentalRadiationSource(BlockState state) {
+        return state.is(ModBlocks.RADIOACTIVE_SCRAP_METAL.get())
+                || state.is(ModBlocks.HOT_VITRIFIED_STONE.get())
+                || state.is(ModBlocks.RADIANT_VITRIFIED_STONE.get())
+                || state.is(ModBlocks.INFERNAL_VITRIFIED_STONE.get());
+    }
+
+    private static void tickActiveEnvironmentalRadiationSource(ServerLevel level, BlockPos pos, BlockState state, int serverTick) {
         RadioactiveSourceRegistry.register(level, pos);
         debugRadioactiveScrapMetalActiveTick(level, pos, serverTick);
         RadiationUtil.applyFullEnvironmentalRadiation(
                 level,
                 pos,
-                RadiationBlockProfiles.getRadiationStrength(ModBlocks.RADIOACTIVE_SCRAP_METAL.get()),
-                RadiationBlockProfiles.getEnvironmentalRange(ModBlocks.RADIOACTIVE_SCRAP_METAL.get()),
+                RadiationBlockProfiles.getRadiationStrength(state),
+                RadiationBlockProfiles.getEnvironmentalRange(state),
                 RADIOACTIVE_SCRAP_METAL_RADIATION_ATTEMPTS_PER_RUN,
                 RADIOACTIVE_SCRAP_METAL_MAX_CONVERSIONS_PER_RUN,
                 level.random

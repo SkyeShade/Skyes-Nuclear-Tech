@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "skyent:dead_grass"
+    "skyent:dead_grass",
+    "skyent:contaminated_grass_block"
   ]
 }

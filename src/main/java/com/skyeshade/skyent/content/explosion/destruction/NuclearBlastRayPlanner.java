@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.content.explosion.destruction;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
+import com.skyeshade.skyent.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerLevel;
@@ -37,6 +38,13 @@ public final class NuclearBlastRayPlanner {
     private static final double NUKE_CLOSE_RANGE_FRACTION_RADIUS_POWER = 0.25D;
     private static final double NUKE_CLOSE_RANGE_COST_RADIUS_POWER = 0.35D;
     private static final double NUKE_MATERIAL_STACKING_RADIUS_POWER = 0.25D;
+    private static final double NUKE_RAY_ENERGY_JITTER_AT_RADIUS_200 = 0.18D;
+    private static final double NUKE_RAY_ENERGY_JITTER_SMALL_RADIUS_BONUS = 0.45D;
+    private static final double NUKE_RAY_ENERGY_JITTER_MIN_MULTIPLIER = 0.35D;
+    private static final double NUKE_RAY_ENERGY_JITTER_MAX_MULTIPLIER = 1.45D;
+    private static final double NUKE_RAY_ENERGY_JITTER_RADIUS_EXPONENT = 0.65D;
+    private static final double NUKE_RAY_ENERGY_JITTER_MAX_AMOUNT = 0.80D;
+    private static final double CONCRETE_BRICKS_CRACK_THRESHOLD_FRACTION = 0.50D;
 
     private final ServerLevel level;
     private final Vec3 center;
@@ -59,6 +67,7 @@ public final class NuclearBlastRayPlanner {
     private final double closeRangeResistanceCostMultiplier;
     private final double scaledCloseRangeArmorPiercingRadiusFraction;
     private final double scaledCloseRangeResistanceCostMultiplier;
+    private final double rayEnergyJitterAmount;
     private final long seed;
 
     private int rayIndex;
@@ -75,7 +84,11 @@ public final class NuclearBlastRayPlanner {
     private long fluidBlocksMarked;
     private long airBlocksSkipped;
     private long blockEntitySkips;
+    private long blockEntityBlocksHit;
+    private long blockEntityBlocksMarked;
+    private long protectedBlockEntitySkips;
     private long unbreakableStops;
+    private long crackedConcreteBricksPlanned;
     private long highResistanceBlocksHit;
     private long highResistanceBlocksMarked;
     private long highResistanceBlocksBlocked;
@@ -139,6 +152,14 @@ public final class NuclearBlastRayPlanner {
                 closeRangeResistanceCostMultiplier,
                 1.0D
         );
+        double smallNukeFactor = this.radiusScale >= 1.0D
+                ? 0.0D
+                : Math.pow(1.0D - this.radiusScale, NUKE_RAY_ENERGY_JITTER_RADIUS_EXPONENT);
+        this.rayEnergyJitterAmount = Mth.clamp(
+                NUKE_RAY_ENERGY_JITTER_AT_RADIUS_200 + NUKE_RAY_ENERGY_JITTER_SMALL_RADIUS_BONUS * smallNukeFactor,
+                0.0D,
+                NUKE_RAY_ENERGY_JITTER_MAX_AMOUNT
+        );
         this.seed = seed;
     }
 
@@ -175,7 +196,7 @@ public final class NuclearBlastRayPlanner {
 
     private RayResult traceRay(int index) {
         Vec3 direction = fibonacciDirection(index);
-        double rayEnergy = initialRayEnergy;
+        double rayEnergy = initialRayEnergy * rayEnergyJitterMultiplier(index);
         int blockX = Mth.floor(center.x);
         int blockY = Mth.floor(center.y);
         int blockZ = Mth.floor(center.z);
@@ -240,15 +261,24 @@ public final class NuclearBlastRayPlanner {
                     logHighResistanceHit(index, pos, state, traveled, rayEnergy, rawResistance, resistance, true, false, false, 0.0D, rayEnergy, StopReason.BLOCKED);
                     return new RayResult(steps, marked, StopReason.BLOCKED);
                 }
+                boolean protectedBlockEntity = hasBlockEntity && resistanceCache.isProtectedBlockEntity(state, level, pos);
                 if (hasBlockEntity) {
+                    blockEntityBlocksHit++;
+                }
+                if (protectedBlockEntity) {
                     blockEntitySkips++;
+                    protectedBlockEntitySkips++;
                 }
 
-                boolean canDestroy = !hasBlockEntity && resistanceCache.canMarkForDestruction(state);
+                boolean canDestroy = !protectedBlockEntity && resistanceCache.canMarkForDestruction(state);
                 boolean markSucceeded = false;
-                if (rayEnergy > 0.0D && canDestroy && mask.mark(blockX, blockY, blockZ)) {
+                boolean concreteBricks = state.is(ModBlocks.CONCRETE_BRICKS.get());
+                if (!concreteBricks && rayEnergy > 0.0D && canDestroy && mask.mark(blockX, blockY, blockZ)) {
                     markSucceeded = true;
                     marked++;
+                    if (hasBlockEntity) {
+                        blockEntityBlocksMarked++;
+                    }
                     if (fragile) {
                         fragileBlocksMarked++;
                     }
@@ -279,6 +309,23 @@ public final class NuclearBlastRayPlanner {
                         cost *= scaledCloseRangeResistanceCostMultiplier;
                     }
                     double rayEnergyBefore = rayEnergy;
+                    if (concreteBricks && rayEnergyBefore > 0.0D && canDestroy) {
+                        if (rayEnergyBefore >= cost) {
+                            markSucceeded = mask.mark(blockX, blockY, blockZ);
+                            if (markSucceeded) {
+                                marked++;
+                                if (hasBlockEntity) {
+                                    blockEntityBlocksMarked++;
+                                }
+                                if (highResistance) {
+                                    highResistanceBlocksMarked++;
+                                }
+                            }
+                        } else if (rayEnergyBefore >= cost * CONCRETE_BRICKS_CRACK_THRESHOLD_FRACTION
+                                && mask.markReplacement(blockX, blockY, blockZ, ModBlocks.CRACKED_CONCRETE_BRICKS.get().defaultBlockState())) {
+                            crackedConcreteBricksPlanned++;
+                        }
+                    }
                     rayEnergy -= cost;
                     logHighResistanceHit(index, pos, state, traveled, rayEnergyBefore, rawResistance, resistance, rayBlocking, canDestroy, markSucceeded, rawCost, rayEnergy, rayEnergy <= 0.0D ? StopReason.ENERGY : null);
                     logObsidianStepTrace(index, pos, state, traveled, rayEnergyBefore, rawResistance, resistance, closeRangeApplied, cost, rayEnergy, markSucceeded);
@@ -446,6 +493,26 @@ public final class NuclearBlastRayPlanner {
         return Mth.clamp(distanceProgress * smallRadiusProgressBoost, 0.0D, 1.0D);
     }
 
+    private double rayEnergyJitterMultiplier(int rayIndex) {
+        long mixed = seed
+                ^ 0x9E3779B97F4A7C15L
+                ^ ((long) rayIndex * 0xBF58476D1CE4E5B9L);
+        mixed ^= mixed >>> 30;
+        mixed *= 0xBF58476D1CE4E5B9L;
+        mixed ^= mixed >>> 27;
+        mixed *= 0x94D049BB133111EBL;
+        mixed ^= mixed >>> 31;
+
+        double random01 = (mixed >>> 11) * 0x1.0p-53;
+        double centered = random01 * 2.0D - 1.0D;
+        double multiplier = 1.0D + centered * rayEnergyJitterAmount;
+        return Mth.clamp(
+                multiplier,
+                NUKE_RAY_ENERGY_JITTER_MIN_MULTIPLIER,
+                NUKE_RAY_ENERGY_JITTER_MAX_MULTIPLIER
+        );
+    }
+
     private Vec3 fibonacciDirection(int index) {
         double offsetIndex = Math.floorMod(index + Long.hashCode(seed), totalRays);
         double t = (offsetIndex + 0.5D) / totalRays;
@@ -571,6 +638,34 @@ public final class NuclearBlastRayPlanner {
         return scaledCloseRangeResistanceCostMultiplier;
     }
 
+    public double rayEnergyJitterAtRadius200() {
+        return NUKE_RAY_ENERGY_JITTER_AT_RADIUS_200;
+    }
+
+    public double rayEnergyJitterSmallRadiusBonus() {
+        return NUKE_RAY_ENERGY_JITTER_SMALL_RADIUS_BONUS;
+    }
+
+    public double rayEnergyJitterAmount() {
+        return rayEnergyJitterAmount;
+    }
+
+    public double rayEnergyJitterMinMultiplier() {
+        return NUKE_RAY_ENERGY_JITTER_MIN_MULTIPLIER;
+    }
+
+    public double rayEnergyJitterMaxMultiplier() {
+        return NUKE_RAY_ENERGY_JITTER_MAX_MULTIPLIER;
+    }
+
+    public String rayEnergyJitterSamples() {
+        return "r0=" + formatCost(rayEnergyJitterMultiplier(0))
+                + ",r1=" + formatCost(rayEnergyJitterMultiplier(1))
+                + ",r2=" + formatCost(rayEnergyJitterMultiplier(2))
+                + ",r3=" + formatCost(rayEnergyJitterMultiplier(3))
+                + ",r4=" + formatCost(rayEnergyJitterMultiplier(4));
+    }
+
     public String resistanceCostSamples() {
         return "r0.6[" + sampleResistanceCosts(0.6D)
                 + "] r6[" + sampleResistanceCosts(6.0D)
@@ -669,8 +764,24 @@ public final class NuclearBlastRayPlanner {
         return blockEntitySkips;
     }
 
+    public long blockEntityBlocksHit() {
+        return blockEntityBlocksHit;
+    }
+
+    public long blockEntityBlocksMarked() {
+        return blockEntityBlocksMarked;
+    }
+
+    public long protectedBlockEntitySkips() {
+        return protectedBlockEntitySkips;
+    }
+
     public long unbreakableStops() {
         return unbreakableStops;
+    }
+
+    public long crackedConcreteBricksPlanned() {
+        return crackedConcreteBricksPlanned;
     }
 
     public long highResistanceBlocksHit() {

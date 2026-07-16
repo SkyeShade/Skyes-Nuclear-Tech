@@ -99,6 +99,13 @@ public final class ModBlocks {
                     .requiresCorrectToolForDrops()
     );
 
+    public static final DeferredBlock<?> CRACKED_CONCRETE_BRICKS = BLOCKS.registerSimpleBlock(
+            "cracked_concrete_bricks",
+            BlockBehaviour.Properties.ofFullCopy(Blocks.GRAY_CONCRETE)
+                    .strength(6.0F, OBSIDIAN_BLAST_RESISTANCE)
+                    .requiresCorrectToolForDrops()
+    );
+
     public static final DeferredBlock<?> REINFORCED_CONCRETE = BLOCKS.registerSimpleBlock(
             "reinforced_concrete",
             BlockBehaviour.Properties.ofFullCopy(Blocks.GRAY_CONCRETE)
@@ -434,6 +441,42 @@ public final class ModBlocks {
                     .noOcclusion()
     );
 
+    public static final DeferredBlock<RadioactiveBlock> CONTAMINATED_GRASS_BLOCK = BLOCKS.registerBlock(
+            "contaminated_grass_block",
+            RadioactiveBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.GRASS_BLOCK)
+                    .strength(0.6F, 0.6F)
+    );
+
+    public static final DeferredBlock<RadioactiveBlock> VITRIFIED_STONE = vitrifiedStone(
+            "vitrified_stone",
+            EnvironmentalRadiationMode.CHEAP
+    );
+    public static final DeferredBlock<RadioactiveBlock> BAKED_VITRIFIED_STONE = vitrifiedStone(
+            "baked_vitrified_stone",
+            EnvironmentalRadiationMode.CHEAP
+    );
+    public static final DeferredBlock<RadioactiveBlock> SCORCHED_VITRIFIED_STONE = vitrifiedStone(
+            "scorched_vitrified_stone",
+            EnvironmentalRadiationMode.CHEAP
+    );
+    public static final DeferredBlock<RadioactiveBlock> IRRADIATED_VITRIFIED_STONE = vitrifiedStone(
+            "irradiated_vitrified_stone",
+            EnvironmentalRadiationMode.CHEAP
+    );
+    public static final DeferredBlock<RadioactiveBlock> HOT_VITRIFIED_STONE = vitrifiedStone(
+            "hot_vitrified_stone",
+            EnvironmentalRadiationMode.FULL_RAY
+    );
+    public static final DeferredBlock<RadioactiveBlock> RADIANT_VITRIFIED_STONE = vitrifiedStone(
+            "radiant_vitrified_stone",
+            EnvironmentalRadiationMode.FULL_RAY
+    );
+    public static final DeferredBlock<RadioactiveBlock> INFERNAL_VITRIFIED_STONE = vitrifiedStone(
+            "infernal_vitrified_stone",
+            EnvironmentalRadiationMode.FULL_RAY
+    );
+
     public static final DeferredBlock<GeigerCounterPlacedBlock> GEIGER_COUNTER_PLACED = BLOCKS.registerBlock(
             "geiger_counter_placed",
             GeigerCounterPlacedBlock::new,
@@ -501,6 +544,17 @@ public final class ModBlocks {
                 name,
                 properties -> new DeadLeavesBlock(properties, () -> livingLeaves),
                 BlockBehaviour.Properties.ofFullCopy(livingLeaves).randomTicks().noOcclusion()
+        );
+    }
+
+    private static DeferredBlock<RadioactiveBlock> vitrifiedStone(String name, EnvironmentalRadiationMode environmentalMode) {
+        return BLOCKS.registerBlock(
+                name,
+                properties -> new RadioactiveBlock(properties, environmentalMode),
+                BlockBehaviour.Properties.ofFullCopy(Blocks.STONE)
+                        .strength(4.0F, 8.0F)
+                        .requiresCorrectToolForDrops()
+                        .isValidSpawn((state, level, pos, entityType) -> false)
         );
     }
 

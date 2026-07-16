@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "": [
+      { "model": "skyent:block/contaminated_grass_block" },
+      { "model": "skyent:block/contaminated_grass_block", "y": 90 },
+      { "model": "skyent:block/contaminated_grass_block", "y": 180 },
+      { "model": "skyent:block/contaminated_grass_block", "y": 270 }
+    ]
+  }
+}

@@ -27,6 +27,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.BRICK_BLAST_FURNACE.get());
                         output.accept(ModItems.COAL_FORGE.get());
                         output.accept(ModItems.FIRE_BRICKS.get());
+                        output.accept(ModItems.CRACKED_CONCRETE_BRICKS.get());
                         output.accept(ModItems.CONCRETE_BRICKS.get());
                         output.accept(ModItems.REINFORCED_CONCRETE.get());
                         output.accept(ModItems.TUNGSTEN_REINFORCED_CONCRETE.get());
@@ -79,6 +80,14 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.URANIUM_BLOCK.get());
                         output.accept(ModItems.CORIUM_BLOCK.get());
                         output.accept(ModItems.RADIOACTIVE_SCRAP_METAL.get());
+                        output.accept(ModItems.CONTAMINATED_GRASS_BLOCK.get());
+                        output.accept(ModItems.VITRIFIED_STONE.get());
+                        output.accept(ModItems.BAKED_VITRIFIED_STONE.get());
+                        output.accept(ModItems.SCORCHED_VITRIFIED_STONE.get());
+                        output.accept(ModItems.IRRADIATED_VITRIFIED_STONE.get());
+                        output.accept(ModItems.HOT_VITRIFIED_STONE.get());
+                        output.accept(ModItems.RADIANT_VITRIFIED_STONE.get());
+                        output.accept(ModItems.INFERNAL_VITRIFIED_STONE.get());
                         output.accept(ModItems.MOLTEN_CORIUM_BUCKET.get());
                         output.accept(ModItems.STEEL_FLUID_BARREL.get());
                         addSteelFluidBarrelVariants(output);

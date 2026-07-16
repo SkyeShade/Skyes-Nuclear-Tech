@@ -70,6 +70,11 @@ public final class ModItems {
             new Item.Properties()
     );
 
+    public static final DeferredItem<BlockItem> CRACKED_CONCRETE_BRICKS = ITEMS.registerSimpleBlockItem(
+            ModBlocks.CRACKED_CONCRETE_BRICKS,
+            new Item.Properties()
+    );
+
     public static final DeferredItem<BlockItem> REINFORCED_CONCRETE = ITEMS.registerSimpleBlockItem(
             ModBlocks.REINFORCED_CONCRETE,
             new Item.Properties()
@@ -329,6 +334,15 @@ public final class ModItems {
             "radioactive_scrap_metal",
             () -> new RadioactiveBlockItem(ModBlocks.RADIOACTIVE_SCRAP_METAL.get(), new Item.Properties())
     );
+
+    public static final DeferredItem<RadioactiveBlockItem> CONTAMINATED_GRASS_BLOCK = radioactiveBlockItem("contaminated_grass_block", ModBlocks.CONTAMINATED_GRASS_BLOCK);
+    public static final DeferredItem<RadioactiveBlockItem> VITRIFIED_STONE = radioactiveBlockItem("vitrified_stone", ModBlocks.VITRIFIED_STONE);
+    public static final DeferredItem<RadioactiveBlockItem> BAKED_VITRIFIED_STONE = radioactiveBlockItem("baked_vitrified_stone", ModBlocks.BAKED_VITRIFIED_STONE);
+    public static final DeferredItem<RadioactiveBlockItem> SCORCHED_VITRIFIED_STONE = radioactiveBlockItem("scorched_vitrified_stone", ModBlocks.SCORCHED_VITRIFIED_STONE);
+    public static final DeferredItem<RadioactiveBlockItem> IRRADIATED_VITRIFIED_STONE = radioactiveBlockItem("irradiated_vitrified_stone", ModBlocks.IRRADIATED_VITRIFIED_STONE);
+    public static final DeferredItem<RadioactiveBlockItem> HOT_VITRIFIED_STONE = radioactiveBlockItem("hot_vitrified_stone", ModBlocks.HOT_VITRIFIED_STONE);
+    public static final DeferredItem<RadioactiveBlockItem> RADIANT_VITRIFIED_STONE = radioactiveBlockItem("radiant_vitrified_stone", ModBlocks.RADIANT_VITRIFIED_STONE);
+    public static final DeferredItem<RadioactiveBlockItem> INFERNAL_VITRIFIED_STONE = radioactiveBlockItem("infernal_vitrified_stone", ModBlocks.INFERNAL_VITRIFIED_STONE);
 
     public static final DeferredItem<BucketItem> MOLTEN_CORIUM_BUCKET = ITEMS.register(
             "molten_corium_bucket",
@@ -610,6 +624,13 @@ public final class ModItems {
 
     private static DeferredItem<Item> simpleItem(String name) {
         return ITEMS.registerSimpleItem(name, new Item.Properties());
+    }
+
+    private static DeferredItem<RadioactiveBlockItem> radioactiveBlockItem(String name, net.neoforged.neoforge.registries.DeferredBlock<? extends net.minecraft.world.level.block.Block> block) {
+        return ITEMS.register(
+                name,
+                () -> new RadioactiveBlockItem(block.get(), new Item.Properties())
+        );
     }
 
     public static void register(IEventBus modEventBus) {

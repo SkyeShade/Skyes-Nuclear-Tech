@@ -27,6 +27,9 @@ public final class NuclearResistanceCache {
     public static final TagKey<Block> NUKE_FRAGILE = BlockTags.create(
             ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "nuke_fragile")
     );
+    public static final TagKey<Block> NUKE_PROTECTED_BLOCK_ENTITIES = BlockTags.create(
+            ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "nuke_protected_block_entities")
+    );
 
     private final Map<BlockState, Float> cachedResistances = new HashMap<>();
 
@@ -49,6 +52,10 @@ public final class NuclearResistanceCache {
 
     public boolean canMarkForDestruction(BlockState state) {
         return !state.isAir() && !isUnbreakable(state);
+    }
+
+    public boolean isProtectedBlockEntity(BlockState state, Level level, BlockPos pos) {
+        return isUnbreakable(state) || state.is(NUKE_PROTECTED_BLOCK_ENTITIES);
     }
 
     public boolean isFragile(BlockState state) {
@@ -85,6 +92,7 @@ public final class NuclearResistanceCache {
             return FRAGILE_RESISTANCE;
         }
         if (state.is(ModBlocks.CONCRETE_BRICKS.get())
+                || state.is(ModBlocks.CRACKED_CONCRETE_BRICKS.get())
                 || state.is(ModBlocks.REINFORCED_CONCRETE.get())
                 || state.is(ModBlocks.TUNGSTEN_REINFORCED_CONCRETE.get())
                 || state.is(ModBlocks.PLATED_CONCRETE.get())) {

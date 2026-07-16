@@ -17,6 +17,7 @@
     "skyent:lead_block",
     "skyent:coal_forge",
     "skyent:fire_bricks",
+    "skyent:cracked_concrete_bricks",
     "skyent:concrete_bricks",
     "skyent:reinforced_concrete",
     "skyent:tungsten_reinforced_concrete",
@@ -38,6 +39,13 @@
     "skyent:uranium_ore",
     "skyent:deepslate_uranium_ore",
     "skyent:uranium_block",
-    "skyent:corium_block"
+    "skyent:corium_block",
+    "skyent:vitrified_stone",
+    "skyent:baked_vitrified_stone",
+    "skyent:scorched_vitrified_stone",
+    "skyent:irradiated_vitrified_stone",
+    "skyent:hot_vitrified_stone",
+    "skyent:radiant_vitrified_stone",
+    "skyent:infernal_vitrified_stone"
   ]
 }

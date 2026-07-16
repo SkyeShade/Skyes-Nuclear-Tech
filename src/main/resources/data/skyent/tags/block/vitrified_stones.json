@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    "skyent:vitrified_stone",
+    "skyent:baked_vitrified_stone",
+    "skyent:scorched_vitrified_stone",
+    "skyent:irradiated_vitrified_stone",
+    "skyent:hot_vitrified_stone",
+    "skyent:radiant_vitrified_stone",
+    "skyent:infernal_vitrified_stone"
+  ]
+}

@@ -26,6 +26,15 @@ public final class NuclearSectionMutationPlan {
         }
     }
 
+    public BlockState plannedState(int x, int y, int z) {
+        NuclearDestructionMask.SectionKey key = new NuclearDestructionMask.SectionKey(x >> 4, y >> 4, z >> 4);
+        Map<Integer, BlockState> section = sectionMutations.get(key);
+        if (section == null) {
+            return null;
+        }
+        return section.get(NuclearDestructionMask.localBitIndex(x, y, z));
+    }
+
     public boolean isEmpty() {
         return sectionMutations.isEmpty();
     }

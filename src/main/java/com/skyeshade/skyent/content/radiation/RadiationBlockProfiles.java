@@ -106,6 +106,38 @@ public final class RadiationBlockProfiles {
                 .radiation(1000.0D, 16, 80)
                 .transmission(0.90D)
                 .build());
+        register(ModBlocks.CONTAMINATED_GRASS_BLOCK, RadiationBlockProfile.builder()
+                .radiation(2.5D, 3, 40)
+                .transmission(0.90D)
+                .build());
+        register(ModBlocks.VITRIFIED_STONE, RadiationBlockProfile.builder()
+                .radiation(10.0D, 4, 32)
+                .transmission(0.90D)
+                .build());
+        register(ModBlocks.BAKED_VITRIFIED_STONE, RadiationBlockProfile.builder()
+                .radiation(25.0D, 5, 36)
+                .transmission(0.90D)
+                .build());
+        register(ModBlocks.SCORCHED_VITRIFIED_STONE, RadiationBlockProfile.builder()
+                .radiation(75.0D, 6, 44)
+                .transmission(0.90D)
+                .build());
+        register(ModBlocks.IRRADIATED_VITRIFIED_STONE, RadiationBlockProfile.builder()
+                .radiation(200.0D, 8, 56)
+                .transmission(0.90D)
+                .build());
+        register(ModBlocks.HOT_VITRIFIED_STONE, RadiationBlockProfile.builder()
+                .radiation(750.0D, 12, 72)
+                .transmission(0.90D)
+                .build());
+        register(ModBlocks.RADIANT_VITRIFIED_STONE, RadiationBlockProfile.builder()
+                .radiation(1_500.0D, 18, 96)
+                .transmission(0.90D)
+                .build());
+        register(ModBlocks.INFERNAL_VITRIFIED_STONE, RadiationBlockProfile.builder()
+                .radiation(5_000.0D, 28, 128)
+                .transmission(0.90D)
+                .build());
         register(ModBlocks.MOLTEN_CORIUM_BLOCK, RadiationBlockProfile.builder()
                 .radiation(25_000.0D, 48, 180)
                 .transmission(1.0D)

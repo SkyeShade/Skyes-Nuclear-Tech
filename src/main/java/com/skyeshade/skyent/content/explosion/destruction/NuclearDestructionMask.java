@@ -2,17 +2,22 @@ package com.skyeshade.skyent.content.explosion.destruction;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public final class NuclearDestructionMask {
     private final Map<SectionKey, BitSet> sectionMasks = new HashMap<>();
+    private final Map<SectionKey, Map<Integer, BlockState>> sectionReplacements = new HashMap<>();
     private long estimatedBlockCount;
+    private long estimatedReplacementCount;
 
     public boolean mark(BlockPos pos) {
         return mark(pos.getX(), pos.getY(), pos.getZ());
@@ -27,20 +32,48 @@ public final class NuclearDestructionMask {
         }
 
         mask.set(bitIndex);
+        Map<Integer, BlockState> replacements = sectionReplacements.get(key);
+        if (replacements != null && replacements.remove(bitIndex) != null) {
+            estimatedReplacementCount--;
+            if (replacements.isEmpty()) {
+                sectionReplacements.remove(key);
+            }
+        }
         estimatedBlockCount++;
         return true;
     }
 
+    public boolean markReplacement(int x, int y, int z, BlockState replacementState) {
+        SectionKey key = new SectionKey(x >> 4, y >> 4, z >> 4);
+        int bitIndex = localBitIndex(x, y, z);
+        BitSet deletionMask = sectionMasks.get(key);
+        if (deletionMask != null && deletionMask.get(bitIndex)) {
+            return false;
+        }
+
+        Map<Integer, BlockState> replacements = sectionReplacements.computeIfAbsent(key, ignored -> new HashMap<>());
+        BlockState previous = replacements.put(bitIndex, replacementState);
+        if (previous == null) {
+            estimatedReplacementCount++;
+            return true;
+        }
+        return false;
+    }
+
     public boolean isEmpty() {
-        return sectionMasks.isEmpty();
+        return sectionMasks.isEmpty() && sectionReplacements.isEmpty();
     }
 
     public int sectionCount() {
-        return sectionMasks.size();
+        return sectionKeys().size();
     }
 
     public long estimatedBlockCount() {
         return estimatedBlockCount;
+    }
+
+    public long estimatedReplacementCount() {
+        return estimatedReplacementCount;
     }
 
     public BitSet getMask(SectionKey key) {
@@ -55,20 +88,36 @@ public final class NuclearDestructionMask {
         return removed;
     }
 
+    public Map<Integer, BlockState> getReplacements(SectionKey key) {
+        return sectionReplacements.get(key);
+    }
+
+    public Map<Integer, BlockState> removeReplacements(SectionKey key) {
+        Map<Integer, BlockState> removed = sectionReplacements.remove(key);
+        if (removed != null) {
+            estimatedReplacementCount -= removed.size();
+        }
+        return removed;
+    }
+
     public List<SectionKey> sectionKeys() {
-        return new ArrayList<>(sectionMasks.keySet());
+        Set<SectionKey> keys = new HashSet<>(sectionMasks.keySet());
+        keys.addAll(sectionReplacements.keySet());
+        return new ArrayList<>(keys);
     }
 
     public void clear() {
         sectionMasks.clear();
+        sectionReplacements.clear();
         estimatedBlockCount = 0;
+        estimatedReplacementCount = 0;
     }
 
     public List<SectionKey> sectionKeysSortedByDistance(Vec3 center) {
         double centerSectionX = center.x / 16.0D;
         double centerSectionY = center.y / 16.0D;
         double centerSectionZ = center.z / 16.0D;
-        List<SectionKey> keys = new ArrayList<>(sectionMasks.keySet());
+        List<SectionKey> keys = sectionKeys();
         keys.sort((left, right) -> Double.compare(
                 left.distanceSqrTo(centerSectionX, centerSectionY, centerSectionZ),
                 right.distanceSqrTo(centerSectionX, centerSectionY, centerSectionZ)

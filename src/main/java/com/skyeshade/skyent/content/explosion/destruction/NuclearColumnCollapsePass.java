@@ -1,11 +1,15 @@
 package com.skyeshade.skyent.content.explosion.destruction;
 
+import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -23,9 +27,26 @@ public final class NuclearColumnCollapsePass {
     private static final int COLUMN_COLLAPSE_MAX_RUNS_PER_COLUMN = 4;
     private static final int COLUMN_COLLAPSE_SCAN_DEPTH_BELOW_SURFACE = 96;
     private static final double CHARRED_LOG_RADIUS_SCALE = 0.85D;
+    private static final double CONTAMINATED_GRASS_RADIUS_SCALE = 2.0D;
+    private static final double CONTAMINATED_GRASS_FULL_RADIUS_SCALE = 1.65D;
+    private static final double CONTAMINATED_GRASS_FEATHER_RADIUS_SCALE = 0.55D;
     private static final double DEAD_VEGETATION_RADIUS_SCALE = 3.0D;
+    private static final double VITRIFICATION_RADIUS_SCALE = 1.0D;
+    private static final double VITRIFICATION_FEATHER_RADIUS_SCALE = 0.25D;
+    private static final double VITRIFICATION_GENERATION_SCALE = 1.4D;
+    private static final double VITRIFICATION_BASELINE_RADIUS = 200.0D;
+    private static final double VITRIFICATION_HOT_TIER_FALLOFF_POWER = 3.0D;
+    private static final double VITRIFICATION_TIER_CURVE_POWER = 0.85D;
+    private static final double VITRIFICATION_OUTER_FADE_STRENGTH = 0.035D;
+    private static final double VITRIFICATION_MIN_EDGE_PLACEMENT_CHANCE = 0.0D;
+    private static final double VITRIFICATION_STRENGTH_NOISE = 0.08D;
+    private static final int VITRIFICATION_SURFACE_SCAN_DEPTH = 16;
     private static final double AFTERMATH_FIRE_CHANCE = 0.035D;
     private static final long AFTERMATH_FIRE_RANDOM_SEED_SALT = 0x5A5A17F1C3D29B4DL;
+    private static final long VITRIFICATION_RANDOM_SEED_SALT = 0x6D1F2A9B4C8E3779L;
+    private static final TagKey<Block> VITRIFIABLE_BLOCKS = BlockTags.create(
+            ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "vitrifiable_blocks")
+    );
     private static final int COLUMN_WORK_CHUNKS_PLANNED_PER_TICK = 2;
     private static final int COLUMN_WORK_MAX_COLUMNS_SCANNED_PER_TICK = 2_048;
     private static final int COLUMN_WORK_MAX_MUTATIONS_PER_TICK = 8_192;
@@ -51,8 +72,20 @@ public final class NuclearColumnCollapsePass {
     private final double collapseRadiusSqr;
     private final double charredLogRadius;
     private final double charredLogRadiusSqr;
+    private final double contaminatedGrassRadius;
+    private final double contaminatedGrassRadiusSqr;
+    private final double contaminatedGrassFullRadius;
+    private final double contaminatedGrassFeatherRadius;
     private final double deadVegetationRadius;
     private final double deadVegetationRadiusSqr;
+    private final double vitrificationRadius;
+    private final double vitrificationRadiusSqr;
+    private final double vitrificationFeatherRadius;
+    private final double unscaledVitrificationRadius;
+    private final double unscaledVitrificationFeatherRadius;
+    private final double vitrificationMaxRadius;
+    private final double vitrificationMaxRadiusSqr;
+    private final double radiusScale;
     private final long seed;
     private final int workUnitsTotal;
     private final int maxRing;
@@ -92,8 +125,47 @@ public final class NuclearColumnCollapsePass {
     private long skippedBlockEntitiesBeforeSurface;
     private long plannedMovementMutations;
     private long plannedCharredLogReplacements;
+    private long plannedContaminatedGrassReplacements;
+    private long contaminatedGrassGuaranteed;
+    private long contaminatedGrassFeathered;
+    private long contaminatedGrassSkippedByNoise;
+    private long deadGrassInContaminatedFeather;
     private long plannedDeadGrassReplacements;
     private long plannedDeadLeafReplacements;
+    private long plannedVitrifiedStoneReplacements;
+    private final long[] plannedVitrifiedTierReplacements = new long[7];
+    private final long[] plannedVitrifiedTopTierCounts = new long[7];
+    private final long[] vitrificationLowerTierCounts = new long[7];
+    private final long[] vitrificationUpperTierCounts = new long[7];
+    private final long[] vitrificationFinalTierCounts = new long[7];
+    private long vitrificationDitherPromotions;
+    private long vitrificationOuterFadeConsidered;
+    private long vitrificationOuterFadePlaced;
+    private long vitrificationOuterFadeSkipped;
+    private long vitrificationWeakEdgePlacements;
+    private long vitrificationContinuousTierSamples;
+    private double vitrificationContinuousTierSum;
+    private double vitrificationContinuousTierMin = Double.POSITIVE_INFINITY;
+    private double vitrificationContinuousTierMax = Double.NEGATIVE_INFINITY;
+    private long vitrificationColumnsConsidered;
+    private long vitrificationColumnsChecked;
+    private long vitrificationColumnsAffected;
+    private long vitrificationSkippedOutsideRadius;
+    private long vitrificationEdgeFeatherPlacements;
+    private long vitrificationSkippedBySoftEdge;
+    private long vitrificationSkippedNoSurface;
+    private long vitrificationSkippedSurfaceAir;
+    private long vitrificationSkippedNoVitrifiableBlock;
+    private long vitrificationSkippedTagMismatch;
+    private long vitrificationSkippedPlannedDeletion;
+    private long vitrificationSkippedPlannedMovementConflict;
+    private long vitrificationSkippedBlockEntity;
+    private long vitrificationSkippedFluid;
+    private long vitrificationSkippedUnloaded;
+    private long vitrificationReplacementsPlanned;
+    private int vitrificationDebugFailureLogs;
+    private int vitrificationBoundaryDebugLogs;
+    private int maxVitrificationDepthSeen;
     private long plannedFireBlocks;
     private long plannedPlantRemovals;
 
@@ -119,10 +191,22 @@ public final class NuclearColumnCollapsePass {
         this.collapseRadiusSqr = this.collapseRadius * this.collapseRadius;
         this.charredLogRadius = this.collapseRadius * CHARRED_LOG_RADIUS_SCALE;
         this.charredLogRadiusSqr = this.charredLogRadius * this.charredLogRadius;
+        this.contaminatedGrassFullRadius = this.collapseRadius * CONTAMINATED_GRASS_FULL_RADIUS_SCALE;
+        this.contaminatedGrassFeatherRadius = this.collapseRadius * CONTAMINATED_GRASS_FEATHER_RADIUS_SCALE;
+        this.contaminatedGrassRadius = this.contaminatedGrassFullRadius + this.contaminatedGrassFeatherRadius;
+        this.contaminatedGrassRadiusSqr = this.contaminatedGrassRadius * this.contaminatedGrassRadius;
         this.deadVegetationRadius = this.collapseRadius * DEAD_VEGETATION_RADIUS_SCALE;
         this.deadVegetationRadiusSqr = this.deadVegetationRadius * this.deadVegetationRadius;
+        this.unscaledVitrificationRadius = this.collapseRadius * VITRIFICATION_RADIUS_SCALE;
+        this.unscaledVitrificationFeatherRadius = this.collapseRadius * VITRIFICATION_FEATHER_RADIUS_SCALE;
+        this.vitrificationRadius = this.unscaledVitrificationRadius * VITRIFICATION_GENERATION_SCALE;
+        this.vitrificationRadiusSqr = this.vitrificationRadius * this.vitrificationRadius;
+        this.vitrificationFeatherRadius = this.unscaledVitrificationFeatherRadius * VITRIFICATION_GENERATION_SCALE;
+        this.vitrificationMaxRadius = this.vitrificationRadius + this.vitrificationFeatherRadius;
+        this.vitrificationMaxRadiusSqr = this.vitrificationMaxRadius * this.vitrificationMaxRadius;
+        this.radiusScale = Math.max(0.05D, this.collapseRadius / VITRIFICATION_BASELINE_RADIUS);
         int blockRadius = Mth.ceil(this.collapseRadius);
-        int aftermathBlockRadius = Mth.ceil(this.deadVegetationRadius);
+        int aftermathBlockRadius = Mth.ceil(Math.max(this.deadVegetationRadius, this.vitrificationRadius));
         this.minY = Math.max(level.getMinBuildHeight(), this.centerY - blockRadius);
         this.maxY = Math.min(level.getMaxBuildHeight() - 1, this.centerY + blockRadius);
         List<ChunkWorkUnit> workUnits = new ArrayList<>();
@@ -441,8 +525,7 @@ public final class NuclearColumnCollapsePass {
             planAftermathReplacement(column, y, state);
         }
 
-        // TODO: Later, irradiate or char the top 4-5 exposed blocks for this column after compaction.
-        applyFutureSurfaceIrradiationHook(column);
+        planVitrifiedSurfaceLayer(column, startY, endY);
     }
 
     private int planSurfaceRun(ColumnKey column, int runTopY, int endY) {
@@ -492,7 +575,7 @@ public final class NuclearColumnCollapsePass {
             planSet(column.x(), targetY, column.z(), finalState);
             plannedMovementMutations++;
             countAftermathReplacement(runStatesTopDown.get(index), finalState);
-            if (finalState.is(ModBlocks.DEAD_GRASS.get())) {
+            if (removesUnsupportedVegetationAbove(finalState)) {
                 planUnsupportedVegetationRemoval(column.x(), targetY + 1, column.z());
             }
             planSparseFireNearBlock(column, targetY, finalState);
@@ -553,9 +636,6 @@ public final class NuclearColumnCollapsePass {
         return resistance < 0.0F || resistance >= maxResistance;
     }
 
-    private void applyFutureSurfaceIrradiationHook(ColumnKey column) {
-    }
-
     private void planAftermathReplacement(ColumnKey column, int y, BlockState state) {
         if (isSectionPending(column.x(), y, column.z())) {
             return;
@@ -568,7 +648,7 @@ public final class NuclearColumnCollapsePass {
 
         planSet(column.x(), y, column.z(), replacement);
         countAftermathReplacement(state, replacement);
-        if (replacement.is(ModBlocks.DEAD_GRASS.get())) {
+        if (removesUnsupportedVegetationAbove(replacement)) {
             planUnsupportedVegetationRemoval(column.x(), y + 1, column.z());
         }
         planSparseFireNearBlock(column, y, replacement);
@@ -584,12 +664,460 @@ public final class NuclearColumnCollapsePass {
             return copyAxis(state, ModBlocks.CHARRED_LOG.get().defaultBlockState());
         }
         if (distanceSqr <= deadVegetationRadiusSqr) {
+            if (state.is(Blocks.GRASS_BLOCK)) {
+                return grassBlockAftermathReplacement(column);
+            }
             BlockState deadVegetation = deadVegetationReplacement(state);
             if (deadVegetation != null) {
                 return deadVegetation;
             }
         }
         return state;
+    }
+
+    private BlockState grassBlockAftermathReplacement(ColumnKey column) {
+        double distance = Math.sqrt(column.distanceSqr());
+        double chance = contaminatedGrassChance(distance);
+        if (chance >= 1.0D) {
+            contaminatedGrassGuaranteed++;
+            return ModBlocks.CONTAMINATED_GRASS_BLOCK.get().defaultBlockState();
+        }
+        if (chance > 0.0D && deterministicColumnNoise(column.x(), column.z()) < chance) {
+            contaminatedGrassFeathered++;
+            return ModBlocks.CONTAMINATED_GRASS_BLOCK.get().defaultBlockState();
+        }
+        if (chance > 0.0D) {
+            contaminatedGrassSkippedByNoise++;
+            deadGrassInContaminatedFeather++;
+        }
+        return ModBlocks.DEAD_GRASS.get().defaultBlockState();
+    }
+
+    private double contaminatedGrassChance(double distance) {
+        if (distance <= contaminatedGrassFullRadius) {
+            return 1.0D;
+        }
+        double contaminatedMaxRadius = contaminatedGrassFullRadius + contaminatedGrassFeatherRadius;
+        if (distance > contaminatedMaxRadius || contaminatedGrassFeatherRadius <= 0.0D) {
+            return 0.0D;
+        }
+        double t = (distance - contaminatedGrassFullRadius) / contaminatedGrassFeatherRadius;
+        return 1.0D - smoothstep(t);
+    }
+
+    private static double smoothstep(double t) {
+        t = Mth.clamp(t, 0.0D, 1.0D);
+        return t * t * (3.0D - 2.0D * t);
+    }
+
+    private void planVitrifiedSurfaceLayer(ColumnKey column, int startY, int endY) {
+        vitrificationColumnsConsidered++;
+        if (vitrificationRadius <= 0.0D || column.distanceSqr() > vitrificationMaxRadiusSqr) {
+            vitrificationSkippedOutsideRadius++;
+            return;
+        }
+        vitrificationColumnsChecked++;
+
+        double distance = Math.sqrt(column.distanceSqr());
+        double noise = deterministicColumnNoise(column.x(), column.z());
+        double normalizedDistance = Mth.clamp(distance / vitrificationRadius, 0.0D, 1.0D);
+        double core = Math.max(0.0D, 1.0D - normalizedDistance);
+        double tierIntensity = Math.pow(core, VITRIFICATION_HOT_TIER_FALLOFF_POWER);
+        double featherMultiplier = 1.0D;
+        if (distance > vitrificationRadius) {
+            double edgeProgress = Mth.clamp((distance - vitrificationRadius) / Math.max(1.0D, vitrificationFeatherRadius), 0.0D, 1.0D);
+            featherMultiplier = 1.0D - smoothstep(edgeProgress);
+        }
+        double placementStrength = tierIntensity * featherMultiplier;
+        double shapeNoise = deterministicColumnNoise(column.x() + 34123, column.z() - 9127) - 0.5D;
+        double noisyStrength = Mth.clamp(
+                placementStrength + shapeNoise * VITRIFICATION_STRENGTH_NOISE,
+                0.0D,
+                1.0D
+        );
+        int sizeTierCap = sizeTierCap();
+
+        int lowerTier;
+        int upperTier;
+        double tierFraction;
+        int topTier;
+        boolean ditherPromoted = false;
+        boolean weakEdgePlacement = false;
+        boolean skippedByOuterFade = false;
+        double edgeChance = 1.0D;
+        double edgeNoise = deterministicColumnNoise(column.x() + 19237, column.z() - 7193);
+        double continuousTier;
+        if (noisyStrength <= 0.0D) {
+            continuousTier = 0.0D;
+            recordVitrificationContinuousTier(continuousTier);
+            if (distance > vitrificationRadius) {
+                vitrificationSkippedBySoftEdge++;
+            }
+            vitrificationSkippedNoVitrifiableBlock++;
+            vitrificationOuterFadeSkipped++;
+            logVitrificationBoundarySample(column, distance, startY, endY, Integer.MIN_VALUE, Integer.MIN_VALUE, continuousTier, 0, 0, 0.0D, false, false, true, false, "zero_strength", tierIntensity, featherMultiplier, placementStrength, noisyStrength, edgeChance, edgeNoise, noise);
+            return;
+        }
+        if (noisyStrength < VITRIFICATION_OUTER_FADE_STRENGTH) {
+            vitrificationOuterFadeConsidered++;
+            edgeChance = Math.max(
+                    VITRIFICATION_MIN_EDGE_PLACEMENT_CHANCE,
+                    smoothstep(noisyStrength / VITRIFICATION_OUTER_FADE_STRENGTH)
+            );
+            if (edgeNoise > edgeChance) {
+                skippedByOuterFade = true;
+                if (distance > vitrificationRadius) {
+                    vitrificationSkippedBySoftEdge++;
+                }
+                vitrificationSkippedNoVitrifiableBlock++;
+                vitrificationOuterFadeSkipped++;
+                continuousTier = Math.pow(noisyStrength, VITRIFICATION_TIER_CURVE_POWER) * sizeTierCap;
+                recordVitrificationContinuousTier(continuousTier);
+                logVitrificationBoundarySample(column, distance, startY, endY, Integer.MIN_VALUE, Integer.MIN_VALUE, continuousTier, 0, 0, 0.0D, false, false, true, skippedByOuterFade, "outer_fade_skip", tierIntensity, featherMultiplier, placementStrength, noisyStrength, edgeChance, edgeNoise, noise);
+                return;
+            }
+            continuousTier = 0.0D;
+            recordVitrificationContinuousTier(continuousTier);
+            lowerTier = 0;
+            upperTier = 0;
+            tierFraction = 0.0D;
+            topTier = 0;
+            weakEdgePlacement = true;
+            vitrificationWeakEdgePlacements++;
+            vitrificationOuterFadePlaced++;
+        } else {
+            continuousTier = Math.pow(noisyStrength, VITRIFICATION_TIER_CURVE_POWER) * sizeTierCap;
+            recordVitrificationContinuousTier(continuousTier);
+            lowerTier = Mth.clamp(Mth.floor(continuousTier), 0, sizeTierCap);
+            upperTier = Math.min(sizeTierCap, lowerTier + 1);
+            tierFraction = Mth.clamp(continuousTier - lowerTier, 0.0D, 1.0D);
+            if (noise < tierFraction) {
+                topTier = upperTier;
+                ditherPromoted = upperTier > lowerTier;
+            } else {
+                topTier = lowerTier;
+            }
+            if (ditherPromoted) {
+                vitrificationDitherPromotions++;
+            }
+        }
+        vitrificationLowerTierCounts[lowerTier]++;
+        vitrificationUpperTierCounts[upperTier]++;
+        vitrificationFinalTierCounts[topTier]++;
+        if (distance > vitrificationRadius) {
+            vitrificationEdgeFeatherPlacements++;
+        }
+
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(column.x(), startY, column.z());
+        int surfaceY = findPostCollapseSurfaceY(column, startY, endY, pos);
+        if (surfaceY == Integer.MIN_VALUE) {
+            vitrificationSkippedNoSurface++;
+            logVitrificationFailure(column, distance, startY, endY, Integer.MIN_VALUE, "no_surface");
+            logVitrificationBoundarySample(column, distance, startY, endY, Integer.MIN_VALUE, Integer.MIN_VALUE, continuousTier, lowerTier, upperTier, tierFraction, ditherPromoted, weakEdgePlacement, false, skippedByOuterFade, "no_surface", tierIntensity, featherMultiplier, placementStrength, noisyStrength, edgeChance, edgeNoise, noise);
+            return;
+        }
+
+        int replacements = 0;
+        int tagMismatches = 0;
+        int firstVitrifiableY = Integer.MIN_VALUE;
+        int lowestScanY = Math.max(endY, surfaceY - VITRIFICATION_SURFACE_SCAN_DEPTH);
+        for (int y = surfaceY; y >= lowestScanY && replacements <= topTier; y--) {
+            if (isSectionPending(column.x(), y, column.z())) {
+                vitrificationSkippedUnloaded++;
+                continue;
+            }
+            pos.setY(y);
+            BlockState state = stateForVitrificationScan(column.x(), y, column.z(), pos);
+            if (state.isAir()) {
+                if (isPlannedAir(column.x(), y, column.z())) {
+                    vitrificationSkippedPlannedDeletion++;
+                } else if (y == surfaceY) {
+                    vitrificationSkippedSurfaceAir++;
+                }
+                continue;
+            }
+            if (!state.getFluidState().isEmpty()) {
+                vitrificationSkippedFluid++;
+                break;
+            }
+            if (level.getBlockEntity(pos) != null) {
+                vitrificationSkippedBlockEntity++;
+                continue;
+            }
+
+            if (!state.is(VITRIFIABLE_BLOCKS)) {
+                tagMismatches++;
+                if (isSoftVitrificationCover(state)) {
+                    continue;
+                }
+                vitrificationSkippedPlannedMovementConflict++;
+                break;
+            }
+
+            if (firstVitrifiableY == Integer.MIN_VALUE) {
+                firstVitrifiableY = y;
+            }
+            int tier = Math.max(0, topTier - replacements);
+            BlockState replacement = vitrifiedStateForTier(tier);
+            if (state.is(replacement.getBlock())) {
+                replacements++;
+                continue;
+            }
+            planSet(pos, replacement);
+            plannedVitrifiedStoneReplacements++;
+            vitrificationReplacementsPlanned++;
+            plannedVitrifiedTierReplacements[tier]++;
+            replacements++;
+        }
+
+        if (replacements > 0) {
+            vitrificationColumnsAffected++;
+            plannedVitrifiedTopTierCounts[topTier]++;
+            maxVitrificationDepthSeen = Math.max(maxVitrificationDepthSeen, replacements);
+            logVitrificationBoundarySample(column, distance, startY, endY, surfaceY, firstVitrifiableY, continuousTier, lowerTier, upperTier, tierFraction, ditherPromoted, weakEdgePlacement, true, skippedByOuterFade, "planned", tierIntensity, featherMultiplier, placementStrength, noisyStrength, edgeChance, edgeNoise, noise);
+        } else {
+            vitrificationSkippedNoVitrifiableBlock++;
+            vitrificationSkippedTagMismatch += tagMismatches;
+            logVitrificationFailure(column, distance, startY, endY, surfaceY, "no_vitrifiable_block");
+            logVitrificationBoundarySample(column, distance, startY, endY, surfaceY, firstVitrifiableY, continuousTier, lowerTier, upperTier, tierFraction, ditherPromoted, weakEdgePlacement, false, skippedByOuterFade, "no_vitrifiable_block", tierIntensity, featherMultiplier, placementStrength, noisyStrength, edgeChance, edgeNoise, noise);
+        }
+    }
+
+    private int findPostCollapseSurfaceY(ColumnKey column, int startY, int endY, BlockPos.MutableBlockPos pos) {
+        for (int y = startY; y >= endY; y--) {
+            if (isSectionPending(column.x(), y, column.z())) {
+                continue;
+            }
+            pos.setY(y);
+            BlockState state = stateForVitrificationScan(column.x(), y, column.z(), pos);
+            if (!state.isAir() && state.getFluidState().isEmpty()) {
+                return y;
+            }
+        }
+        return Integer.MIN_VALUE;
+    }
+
+    private BlockState plannedOrWorldState(int x, int y, int z, BlockPos pos) {
+        if (activePlan != null) {
+            BlockState planned = activePlan.plannedState(x, y, z);
+            if (planned != null) {
+                return planned;
+            }
+        }
+        return level.getBlockState(pos);
+    }
+
+    private BlockState stateForVitrificationScan(int x, int y, int z, BlockPos pos) {
+        BlockState actual = level.getBlockState(pos);
+        if (activePlan == null) {
+            return actual;
+        }
+        BlockState planned = activePlan.plannedState(x, y, z);
+        if (planned == null) {
+            return actual;
+        }
+        if (planned.isAir()) {
+            return planned;
+        }
+        if (isCosmeticAftermathState(planned)) {
+            return actual;
+        }
+        return planned;
+    }
+
+    private boolean isPlannedAir(int x, int y, int z) {
+        return activePlan != null
+                && activePlan.plannedState(x, y, z) != null
+                && activePlan.plannedState(x, y, z).isAir();
+    }
+
+    private static boolean isSoftVitrificationCover(BlockState state) {
+        return state.is(Blocks.GRASS_BLOCK)
+                || state.is(ModBlocks.CONTAMINATED_GRASS_BLOCK.get())
+                || state.is(ModBlocks.DEAD_GRASS.get())
+                || state.is(Blocks.DIRT)
+                || state.is(Blocks.COARSE_DIRT)
+                || state.is(Blocks.ROOTED_DIRT)
+                || state.is(Blocks.PODZOL)
+                || state.is(Blocks.MYCELIUM)
+                || state.is(Blocks.SNOW)
+                || state.is(BlockTags.FLOWERS)
+                || state.is(Blocks.SHORT_GRASS)
+                || state.is(Blocks.TALL_GRASS)
+                || state.is(Blocks.FERN)
+                || state.is(Blocks.LARGE_FERN)
+                || state.is(Blocks.DEAD_BUSH);
+    }
+
+    private static boolean isCosmeticAftermathState(BlockState state) {
+        return isGrassAftermathState(state)
+                || state.is(ModBlocks.DEAD_SHORT_GRASS.get())
+                || state.is(ModBlocks.DEAD_TALL_GRASS.get())
+                || state.is(BlockTags.LEAVES)
+                || state.is(Blocks.FIRE);
+    }
+
+    private static boolean isGrassAftermathState(BlockState state) {
+        return state.is(ModBlocks.CONTAMINATED_GRASS_BLOCK.get()) || state.is(ModBlocks.DEAD_GRASS.get());
+    }
+
+    private void logVitrificationFailure(ColumnKey column, double distance, int startY, int endY, int surfaceY, String reason) {
+        if (!Boolean.getBoolean("skyent.debugNukeColumnCollapse") || vitrificationDebugFailureLogs >= 20) {
+            return;
+        }
+        vitrificationDebugFailureLogs++;
+        StringBuilder scanned = new StringBuilder();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(column.x(), surfaceY == Integer.MIN_VALUE ? startY : surfaceY, column.z());
+        int scanStart = surfaceY == Integer.MIN_VALUE ? startY : surfaceY;
+        int scanEnd = Math.max(endY, scanStart - 7);
+        for (int y = scanStart; y >= scanEnd; y--) {
+            pos.setY(y);
+            BlockState actual = level.getBlockState(pos);
+            BlockState planned = activePlan == null ? null : activePlan.plannedState(column.x(), y, column.z());
+            BlockState effective = stateForVitrificationScan(column.x(), y, column.z(), pos);
+            if (!scanned.isEmpty()) {
+                scanned.append(" | ");
+            }
+            scanned.append("y=").append(y)
+                    .append(" actual=").append(actual.getBlock().builtInRegistryHolder().key().location())
+                    .append(" planned=").append(planned == null ? "none" : planned.getBlock().builtInRegistryHolder().key().location())
+                    .append(" effective=").append(effective.getBlock().builtInRegistryHolder().key().location())
+                    .append(" air=").append(effective.isAir())
+                    .append(" fluid=").append(!effective.getFluidState().isEmpty())
+                    .append(" vitrifiable=").append(effective.is(VITRIFIABLE_BLOCKS))
+                    .append(" blockEntity=").append(level.getBlockEntity(pos) != null);
+        }
+        SkyesNuclearTech.LOGGER.info(
+                "Nuke vitrification column skipped: reason={} x={} z={} distance={} hardRadius={} featherRadius={} startY={} endY={} surfaceY={} scanned={}",
+                reason,
+                column.x(),
+                column.z(),
+                distance,
+                vitrificationRadius,
+                vitrificationFeatherRadius,
+                startY,
+                endY,
+                surfaceY == Integer.MIN_VALUE ? "none" : Integer.toString(surfaceY),
+                scanned
+        );
+    }
+
+    private void logVitrificationBoundarySample(
+            ColumnKey column,
+            double distance,
+            int startY,
+            int endY,
+            int surfaceY,
+            int firstVitrifiableY,
+            double continuousTier,
+            int lowerTier,
+            int upperTier,
+            double tierFraction,
+            boolean ditherPromoted,
+            boolean weakEdgePlacement,
+            boolean plannedVitrification,
+            boolean skippedByOuterFade,
+            String reason,
+            double tierIntensity,
+            double featherMultiplier,
+            double placementStrength,
+            double noisyStrength,
+            double edgeChance,
+            double edgeNoise,
+            double noise
+    ) {
+        if (!Boolean.getBoolean("skyent.debugNukeColumnCollapse")
+                || vitrificationBoundaryDebugLogs >= 20
+                || !isNearVitrificationDebugBoundary(distance)) {
+            return;
+        }
+        vitrificationBoundaryDebugLogs++;
+        boolean plannedBiologicalOverlay = hasPlannedBiologicalOverlay(column, surfaceY == Integer.MIN_VALUE ? startY : surfaceY, endY);
+        SkyesNuclearTech.LOGGER.info(
+                "Nuke vitrification boundary sample: x={} z={} distance={} contaminatedGrassRadius={} deadVegetationRadius={} vitrificationRadius={} vitrificationFeatherRadius={} tierIntensity={} featherMultiplier={} placementStrength={} noisyStrength={} outerFadeStrength={} edgeChance={} edgeNoise={} skippedByOuterFade={} continuousTier={} lowerTier={} upperTier={} tierFraction={} noise={} ditherPromoted={} weakEdgePlacement={} sizeTierCap={} startY={} endY={} scanStartY={} firstVitrifiableY={} plannedBiologicalOverlay={} vitrificationPlanned={} reason={}",
+                column.x(),
+                column.z(),
+                distance,
+                contaminatedGrassRadius,
+                deadVegetationRadius,
+                vitrificationRadius,
+                vitrificationFeatherRadius,
+                tierIntensity,
+                featherMultiplier,
+                placementStrength,
+                noisyStrength,
+                VITRIFICATION_OUTER_FADE_STRENGTH,
+                edgeChance,
+                edgeNoise,
+                skippedByOuterFade,
+                continuousTier,
+                lowerTier,
+                upperTier,
+                tierFraction,
+                noise,
+                ditherPromoted,
+                weakEdgePlacement,
+                sizeTierCap(),
+                startY,
+                endY,
+                surfaceY == Integer.MIN_VALUE ? "none" : Integer.toString(surfaceY),
+                firstVitrifiableY == Integer.MIN_VALUE ? "none" : Integer.toString(firstVitrifiableY),
+                plannedBiologicalOverlay,
+                plannedVitrification,
+                reason
+        );
+    }
+
+    private void recordVitrificationContinuousTier(double continuousTier) {
+        vitrificationContinuousTierSamples++;
+        vitrificationContinuousTierSum += continuousTier;
+        vitrificationContinuousTierMin = Math.min(vitrificationContinuousTierMin, continuousTier);
+        vitrificationContinuousTierMax = Math.max(vitrificationContinuousTierMax, continuousTier);
+    }
+
+    private boolean isNearVitrificationDebugBoundary(double distance) {
+        return Math.abs(distance - contaminatedGrassRadius) < 2.0D
+                || Math.abs(distance - vitrificationRadius) < 2.0D
+                || Math.abs(distance - vitrificationMaxRadius) < 2.0D;
+    }
+
+    private boolean hasPlannedBiologicalOverlay(ColumnKey column, int scanStartY, int endY) {
+        if (activePlan == null) {
+            return false;
+        }
+        int scanEndY = Math.max(endY, scanStartY - VITRIFICATION_SURFACE_SCAN_DEPTH);
+        for (int y = scanStartY; y >= scanEndY; y--) {
+            BlockState planned = activePlan.plannedState(column.x(), y, column.z());
+            if (planned != null && isCosmeticAftermathState(planned)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private int sizeTierCap() {
+        if (radiusScale < 0.20D) {
+            return 2;
+        }
+        if (radiusScale < 0.50D) {
+            return 3;
+        }
+        if (radiusScale < 1.0D) {
+            return 4;
+        }
+        return 6;
+    }
+
+    private static BlockState vitrifiedStateForTier(int tier) {
+        return switch (Mth.clamp(tier, 0, 6)) {
+            case 1 -> ModBlocks.BAKED_VITRIFIED_STONE.get().defaultBlockState();
+            case 2 -> ModBlocks.SCORCHED_VITRIFIED_STONE.get().defaultBlockState();
+            case 3 -> ModBlocks.IRRADIATED_VITRIFIED_STONE.get().defaultBlockState();
+            case 4 -> ModBlocks.HOT_VITRIFIED_STONE.get().defaultBlockState();
+            case 5 -> ModBlocks.RADIANT_VITRIFIED_STONE.get().defaultBlockState();
+            case 6 -> ModBlocks.INFERNAL_VITRIFIED_STONE.get().defaultBlockState();
+            default -> ModBlocks.VITRIFIED_STONE.get().defaultBlockState();
+        };
     }
 
     private static BlockState deadVegetationReplacement(BlockState state) {
@@ -635,6 +1163,10 @@ public final class NuclearColumnCollapsePass {
                 || state.is(Blocks.LILAC)
                 || state.is(Blocks.ROSE_BUSH)
                 || state.is(Blocks.PEONY);
+    }
+
+    private static boolean removesUnsupportedVegetationAbove(BlockState state) {
+        return state.is(ModBlocks.CONTAMINATED_GRASS_BLOCK.get()) || state.is(ModBlocks.DEAD_GRASS.get());
     }
 
     private static BlockState deadLeavesReplacement(BlockState state) {
@@ -702,6 +1234,8 @@ public final class NuclearColumnCollapsePass {
         }
         if (replacement.is(ModBlocks.CHARRED_LOG.get())) {
             plannedCharredLogReplacements++;
+        } else if (replacement.is(ModBlocks.CONTAMINATED_GRASS_BLOCK.get())) {
+            plannedContaminatedGrassReplacements++;
         } else if (replacement.is(ModBlocks.DEAD_GRASS.get())
                 || replacement.is(ModBlocks.DEAD_SHORT_GRASS.get())
                 || replacement.is(ModBlocks.DEAD_TALL_GRASS.get())) {
@@ -791,6 +1325,18 @@ public final class NuclearColumnCollapsePass {
         value ^= (long) x * 0x9E3779B97F4A7C15L;
         value ^= (long) y * 0xC2B2AE3D27D4EB4FL;
         value ^= (long) z * 0x165667B19E3779F9L;
+        value ^= value >>> 33;
+        value *= 0xff51afd7ed558ccdL;
+        value ^= value >>> 33;
+        value *= 0xc4ceb9fe1a85ec53L;
+        value ^= value >>> 33;
+        return (value >>> 11) * 0x1.0p-53;
+    }
+
+    private double deterministicColumnNoise(int x, int z) {
+        long value = seed ^ VITRIFICATION_RANDOM_SEED_SALT;
+        value ^= (long) x * 0x9E3779B97F4A7C15L;
+        value ^= (long) z * 0xC2B2AE3D27D4EB4FL;
         value ^= value >>> 33;
         value *= 0xff51afd7ed558ccdL;
         value ^= value >>> 33;
@@ -998,8 +1544,62 @@ public final class NuclearColumnCollapsePass {
         return charredLogRadius;
     }
 
+    public double contaminatedGrassRadius() {
+        return contaminatedGrassRadius;
+    }
+
+    public double contaminatedGrassFullRadius() {
+        return contaminatedGrassFullRadius;
+    }
+
+    public double contaminatedGrassFeatherRadius() {
+        return contaminatedGrassFeatherRadius;
+    }
+
+    public String contaminatedGrassBlendDebug() {
+        return "fullRadius=" + contaminatedGrassFullRadius
+                + ",featherRadius=" + contaminatedGrassFeatherRadius
+                + ",maxRadius=" + contaminatedGrassRadius
+                + ",guaranteed=" + contaminatedGrassGuaranteed
+                + ",feathered=" + contaminatedGrassFeathered
+                + ",skippedByNoise=" + contaminatedGrassSkippedByNoise
+                + ",deadInFeather=" + deadGrassInContaminatedFeather;
+    }
+
     public double deadVegetationRadius() {
         return deadVegetationRadius;
+    }
+
+    public double vitrificationRadius() {
+        return vitrificationRadius;
+    }
+
+    public double unscaledVitrificationRadius() {
+        return unscaledVitrificationRadius;
+    }
+
+    public double vitrificationFeatherRadius() {
+        return vitrificationFeatherRadius;
+    }
+
+    public double unscaledVitrificationFeatherRadius() {
+        return unscaledVitrificationFeatherRadius;
+    }
+
+    public double vitrificationGenerationScale() {
+        return VITRIFICATION_GENERATION_SCALE;
+    }
+
+    public double vitrificationHotTierFalloffPower() {
+        return VITRIFICATION_HOT_TIER_FALLOFF_POWER;
+    }
+
+    public int vitrificationSizeTierCap() {
+        return sizeTierCap();
+    }
+
+    public boolean vitrificationUsesPostCollapseSurface() {
+        return true;
     }
 
     public double fireRadius() {
@@ -1014,12 +1614,188 @@ public final class NuclearColumnCollapsePass {
         return plannedCharredLogReplacements;
     }
 
+    public long plannedContaminatedGrassReplacements() {
+        return plannedContaminatedGrassReplacements;
+    }
+
     public long plannedDeadGrassReplacements() {
         return plannedDeadGrassReplacements;
     }
 
     public long plannedDeadLeafReplacements() {
         return plannedDeadLeafReplacements;
+    }
+
+    public long plannedVitrifiedStoneReplacements() {
+        return plannedVitrifiedStoneReplacements;
+    }
+
+    public long vitrificationColumnsConsidered() {
+        return vitrificationColumnsConsidered;
+    }
+
+    public String plannedVitrifiedTierReplacementsDebug() {
+        return "vitrified=" + plannedVitrifiedTierReplacements[0]
+                + ",baked=" + plannedVitrifiedTierReplacements[1]
+                + ",scorched=" + plannedVitrifiedTierReplacements[2]
+                + ",irradiated=" + plannedVitrifiedTierReplacements[3]
+                + ",hot=" + plannedVitrifiedTierReplacements[4]
+                + ",radiant=" + plannedVitrifiedTierReplacements[5]
+                + ",infernal=" + plannedVitrifiedTierReplacements[6];
+    }
+
+    public String plannedVitrifiedTopTierCountsDebug() {
+        return "vitrified=" + plannedVitrifiedTopTierCounts[0]
+                + ",baked=" + plannedVitrifiedTopTierCounts[1]
+                + ",scorched=" + plannedVitrifiedTopTierCounts[2]
+                + ",irradiated=" + plannedVitrifiedTopTierCounts[3]
+                + ",hot=" + plannedVitrifiedTopTierCounts[4]
+                + ",radiant=" + plannedVitrifiedTopTierCounts[5]
+                + ",infernal=" + plannedVitrifiedTopTierCounts[6];
+    }
+
+    public String vitrificationLowerTierCountsDebug() {
+        return "vitrified=" + vitrificationLowerTierCounts[0]
+                + ",baked=" + vitrificationLowerTierCounts[1]
+                + ",scorched=" + vitrificationLowerTierCounts[2]
+                + ",irradiated=" + vitrificationLowerTierCounts[3]
+                + ",hot=" + vitrificationLowerTierCounts[4]
+                + ",radiant=" + vitrificationLowerTierCounts[5]
+                + ",infernal=" + vitrificationLowerTierCounts[6];
+    }
+
+    public String vitrificationBaseTierCountsDebug() {
+        return vitrificationLowerTierCountsDebug();
+    }
+
+    public String vitrificationUpperTierCountsDebug() {
+        return "vitrified=" + vitrificationUpperTierCounts[0]
+                + ",baked=" + vitrificationUpperTierCounts[1]
+                + ",scorched=" + vitrificationUpperTierCounts[2]
+                + ",irradiated=" + vitrificationUpperTierCounts[3]
+                + ",hot=" + vitrificationUpperTierCounts[4]
+                + ",radiant=" + vitrificationUpperTierCounts[5]
+                + ",infernal=" + vitrificationUpperTierCounts[6];
+    }
+
+    public String vitrificationFinalTierCountsDebug() {
+        return "vitrified=" + vitrificationFinalTierCounts[0]
+                + ",baked=" + vitrificationFinalTierCounts[1]
+                + ",scorched=" + vitrificationFinalTierCounts[2]
+                + ",irradiated=" + vitrificationFinalTierCounts[3]
+                + ",hot=" + vitrificationFinalTierCounts[4]
+                + ",radiant=" + vitrificationFinalTierCounts[5]
+                + ",infernal=" + vitrificationFinalTierCounts[6];
+    }
+
+    public String vitrificationDitherDebug() {
+        double average = vitrificationContinuousTierSamples == 0
+                ? 0.0D
+                : vitrificationContinuousTierSum / vitrificationContinuousTierSamples;
+        double min = vitrificationContinuousTierSamples == 0 ? 0.0D : vitrificationContinuousTierMin;
+        double max = vitrificationContinuousTierSamples == 0 ? 0.0D : vitrificationContinuousTierMax;
+        return "tierCurvePower=" + VITRIFICATION_TIER_CURVE_POWER
+                + ",outerFadeStrength=" + VITRIFICATION_OUTER_FADE_STRENGTH
+                + ",minEdgePlacementChance=" + VITRIFICATION_MIN_EDGE_PLACEMENT_CHANCE
+                + ",strengthNoise=" + VITRIFICATION_STRENGTH_NOISE
+                + ",generationScale=" + VITRIFICATION_GENERATION_SCALE
+                + ",continuousTierSamples=" + vitrificationContinuousTierSamples
+                + ",continuousTierMin=" + min
+                + ",continuousTierMax=" + max
+                + ",continuousTierAverage=" + average
+                + ",ditherPromotions=" + vitrificationDitherPromotions
+                + ",outerFadeConsidered=" + vitrificationOuterFadeConsidered
+                + ",outerFadePlaced=" + vitrificationOuterFadePlaced
+                + ",outerFadeSkipped=" + vitrificationOuterFadeSkipped
+                + ",weakEdgePlacements=" + vitrificationWeakEdgePlacements;
+    }
+
+    public String vitrificationDowngradeDebug() {
+        return vitrificationDitherDebug();
+    }
+
+    public long vitrificationColumnsChecked() {
+        return vitrificationColumnsChecked;
+    }
+
+    public long vitrificationSkippedOutsideRadius() {
+        return vitrificationSkippedOutsideRadius;
+    }
+
+    public long vitrificationColumnsAffected() {
+        return vitrificationColumnsAffected;
+    }
+
+    public int maxVitrificationDepthSeen() {
+        return maxVitrificationDepthSeen;
+    }
+
+    public long vitrificationEdgeFeatherPlacements() {
+        return vitrificationEdgeFeatherPlacements;
+    }
+
+    public long vitrificationSkippedBySoftEdge() {
+        return vitrificationSkippedBySoftEdge;
+    }
+
+    public long vitrificationSkippedNoSurface() {
+        return vitrificationSkippedNoSurface;
+    }
+
+    public long vitrificationSkippedSurfaceAir() {
+        return vitrificationSkippedSurfaceAir;
+    }
+
+    public long vitrificationSkippedNoVitrifiableBlock() {
+        return vitrificationSkippedNoVitrifiableBlock;
+    }
+
+    public long vitrificationSkippedTagMismatch() {
+        return vitrificationSkippedTagMismatch;
+    }
+
+    public long vitrificationSkippedPlannedDeletion() {
+        return vitrificationSkippedPlannedDeletion;
+    }
+
+    public long vitrificationSkippedPlannedMovementConflict() {
+        return vitrificationSkippedPlannedMovementConflict;
+    }
+
+    public long vitrificationSkippedBlockEntity() {
+        return vitrificationSkippedBlockEntity;
+    }
+
+    public long vitrificationSkippedFluid() {
+        return vitrificationSkippedFluid;
+    }
+
+    public long vitrificationSkippedUnloaded() {
+        return vitrificationSkippedUnloaded;
+    }
+
+    public long vitrificationReplacementsPlanned() {
+        return vitrificationReplacementsPlanned;
+    }
+
+    public String vitrificationSkipDebug() {
+        return "considered=" + vitrificationColumnsConsidered
+                + ",outsideRadius=" + vitrificationSkippedOutsideRadius
+                + ",softEdge=" + vitrificationSkippedBySoftEdge
+                + ",noSurface=" + vitrificationSkippedNoSurface
+                + ",surfaceAir=" + vitrificationSkippedSurfaceAir
+                + ",noVitrifiable=" + vitrificationSkippedNoVitrifiableBlock
+                + ",tagMismatch=" + vitrificationSkippedTagMismatch
+                + ",plannedDeletion=" + vitrificationSkippedPlannedDeletion
+                + ",movementConflict=" + vitrificationSkippedPlannedMovementConflict
+                + ",blockEntity=" + vitrificationSkippedBlockEntity
+                + ",fluid=" + vitrificationSkippedFluid
+                + ",unloaded=" + vitrificationSkippedUnloaded
+                + ",planned=" + vitrificationReplacementsPlanned
+                + ",lowerTiers={" + vitrificationLowerTierCountsDebug() + "}"
+                + ",upperTiers={" + vitrificationUpperTierCountsDebug() + "}"
+                + ",finalTiers={" + vitrificationFinalTierCountsDebug() + "}"
+                + ",dither={" + vitrificationDitherDebug() + "}";
     }
 
     public long plannedFireBlocks() {
