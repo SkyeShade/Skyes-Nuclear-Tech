@@ -13,6 +13,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
@@ -27,6 +28,8 @@ public final class NuclearColumnCollapsePass {
     private static final int COLUMN_COLLAPSE_MAX_RUNS_PER_COLUMN = 4;
     private static final int COLUMN_COLLAPSE_SCAN_DEPTH_BELOW_SURFACE = 96;
     private static final double CHARRED_LOG_RADIUS_SCALE = 0.85D;
+    private static final double NUKE_FIRE_CHARRING_RADIUS_MULTIPLIER = 2.0D;
+    private static final double NUKE_LEAF_EVAPORATION_INNER_FIRE_RADIUS_FRACTION = 0.5D;
     private static final double CONTAMINATED_GRASS_RADIUS_SCALE = 2.0D;
     private static final double CONTAMINATED_GRASS_FULL_RADIUS_SCALE = 1.65D;
     private static final double CONTAMINATED_GRASS_FEATHER_RADIUS_SCALE = 0.55D;
@@ -72,6 +75,8 @@ public final class NuclearColumnCollapsePass {
     private final double collapseRadiusSqr;
     private final double charredLogRadius;
     private final double charredLogRadiusSqr;
+    private final double leafEvaporationRadius;
+    private final double leafEvaporationRadiusSqr;
     private final double contaminatedGrassRadius;
     private final double contaminatedGrassRadiusSqr;
     private final double contaminatedGrassFullRadius;
@@ -125,6 +130,7 @@ public final class NuclearColumnCollapsePass {
     private long skippedBlockEntitiesBeforeSurface;
     private long plannedMovementMutations;
     private long plannedCharredLogReplacements;
+    private long plannedLeafEvaporations;
     private long plannedContaminatedGrassReplacements;
     private long contaminatedGrassGuaranteed;
     private long contaminatedGrassFeathered;
@@ -189,8 +195,10 @@ public final class NuclearColumnCollapsePass {
         this.centerZ = Mth.floor(center.z);
         this.collapseRadius = Math.max(0.0D, radius);
         this.collapseRadiusSqr = this.collapseRadius * this.collapseRadius;
-        this.charredLogRadius = this.collapseRadius * CHARRED_LOG_RADIUS_SCALE;
+        this.charredLogRadius = this.collapseRadius * CHARRED_LOG_RADIUS_SCALE * NUKE_FIRE_CHARRING_RADIUS_MULTIPLIER;
         this.charredLogRadiusSqr = this.charredLogRadius * this.charredLogRadius;
+        this.leafEvaporationRadius = this.charredLogRadius * NUKE_LEAF_EVAPORATION_INNER_FIRE_RADIUS_FRACTION;
+        this.leafEvaporationRadiusSqr = this.leafEvaporationRadius * this.leafEvaporationRadius;
         this.contaminatedGrassFullRadius = this.collapseRadius * CONTAMINATED_GRASS_FULL_RADIUS_SCALE;
         this.contaminatedGrassFeatherRadius = this.collapseRadius * CONTAMINATED_GRASS_FEATHER_RADIUS_SCALE;
         this.contaminatedGrassRadius = this.contaminatedGrassFullRadius + this.contaminatedGrassFeatherRadius;
@@ -641,6 +649,12 @@ public final class NuclearColumnCollapsePass {
             return;
         }
         BlockState replacement = aftermathReplacement(column, y, state);
+        if (isDeadPlantReplacement(replacement)) {
+            BlockPos plantPos = new BlockPos(column.x(), y, column.z());
+            if (!replacement.canSurvive(level, plantPos)) {
+                replacement = Blocks.AIR.defaultBlockState();
+            }
+        }
         if (replacement == state) {
             planSparseFireNearBlock(column, y, state);
             return;
@@ -660,6 +674,9 @@ public final class NuclearColumnCollapsePass {
         }
 
         double distanceSqr = column.distanceSqr();
+        if (distanceSqr <= leafEvaporationRadiusSqr && state.is(BlockTags.LEAVES)) {
+            return Blocks.AIR.defaultBlockState();
+        }
         if (distanceSqr <= charredLogRadiusSqr && state.is(BlockTags.LOGS)) {
             return copyAxis(state, ModBlocks.CHARRED_LOG.get().defaultBlockState());
         }
@@ -1128,7 +1145,11 @@ public final class NuclearColumnCollapsePass {
             return ModBlocks.DEAD_SHORT_GRASS.get().defaultBlockState();
         }
         if (state.is(Blocks.TALL_GRASS) || state.is(Blocks.LARGE_FERN)) {
-            return copyHalf(state, ModBlocks.DEAD_TALL_GRASS.get().defaultBlockState());
+            if (state.hasProperty(BlockStateProperties.DOUBLE_BLOCK_HALF)
+                    && state.getValue(BlockStateProperties.DOUBLE_BLOCK_HALF) == DoubleBlockHalf.UPPER) {
+                return Blocks.AIR.defaultBlockState();
+            }
+            return ModBlocks.DEAD_TALL_GRASS.get().defaultBlockState();
         }
         if (state.is(BlockTags.LEAVES)) {
             return copyLeafProperties(state, deadLeavesReplacement(state));
@@ -1167,6 +1188,10 @@ public final class NuclearColumnCollapsePass {
 
     private static boolean removesUnsupportedVegetationAbove(BlockState state) {
         return state.is(ModBlocks.CONTAMINATED_GRASS_BLOCK.get()) || state.is(ModBlocks.DEAD_GRASS.get());
+    }
+
+    private static boolean isDeadPlantReplacement(BlockState state) {
+        return state.is(ModBlocks.DEAD_SHORT_GRASS.get()) || state.is(ModBlocks.DEAD_TALL_GRASS.get());
     }
 
     private static BlockState deadLeavesReplacement(BlockState state) {
@@ -1234,6 +1259,8 @@ public final class NuclearColumnCollapsePass {
         }
         if (replacement.is(ModBlocks.CHARRED_LOG.get())) {
             plannedCharredLogReplacements++;
+        } else if (original.is(BlockTags.LEAVES) && replacement.isAir()) {
+            plannedLeafEvaporations++;
         } else if (replacement.is(ModBlocks.CONTAMINATED_GRASS_BLOCK.get())) {
             plannedContaminatedGrassReplacements++;
         } else if (replacement.is(ModBlocks.DEAD_GRASS.get())
@@ -1606,12 +1633,20 @@ public final class NuclearColumnCollapsePass {
         return charredLogRadius;
     }
 
+    public double leafEvaporationRadius() {
+        return leafEvaporationRadius;
+    }
+
     public long plannedMovementMutations() {
         return plannedMovementMutations;
     }
 
     public long plannedCharredLogReplacements() {
         return plannedCharredLogReplacements;
+    }
+
+    public long plannedLeafEvaporations() {
+        return plannedLeafEvaporations;
     }
 
     public long plannedContaminatedGrassReplacements() {

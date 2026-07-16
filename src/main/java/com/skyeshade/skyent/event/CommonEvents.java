@@ -47,7 +47,6 @@ public final class CommonEvents {
 
     private static void registerDeadLeavesFlammability() {
         FireBlock fire = (FireBlock) Blocks.FIRE;
-        fire.setFlammable(ModBlocks.CHARRED_LOG.get(), 1, 1);
         fire.setFlammable(ModBlocks.DEAD_OAK_LEAVES.get(), 30, 60);
         fire.setFlammable(ModBlocks.DEAD_BIRCH_LEAVES.get(), 30, 60);
         fire.setFlammable(ModBlocks.DEAD_SPRUCE_LEAVES.get(), 30, 60);

@@ -31,7 +31,7 @@ public final class NuclearBlastRayPlanner {
     private static final double NUKE_RESISTANCE_POWER_DISTANCE_CURVE = 1.01D;
     private static final double NUKE_DISTANCE_RESISTANCE_GROWTH = 2.0D;
     private static final double NUKE_RAY_DISTANCE_DECAY_PER_BLOCK = 0.0015D;
-    private static final double NUKE_MATERIAL_PENETRATION_STACKING_GROWTH = 20.00D;
+    private static final double NUKE_MATERIAL_PENETRATION_STACKING_GROWTH = 2.00D;
     private static final double NUKE_RESISTANCE_MIN_SOLID_COST = 0.0D;
     private static final double NUKE_SMALL_RADIUS_DISTANCE_PROGRESS_EXPONENT = 0.25D;
     private static final double NUKE_SMALL_RADIUS_PROGRESS_BOOST_MAX = 4.0D;

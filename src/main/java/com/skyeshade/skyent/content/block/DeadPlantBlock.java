@@ -24,6 +24,7 @@ public class DeadPlantBlock extends BushBlock {
     @Override
     protected boolean mayPlaceOn(BlockState state, BlockGetter level, BlockPos pos) {
         return state.is(ModBlocks.DEAD_GRASS.get())
+                || state.is(ModBlocks.CONTAMINATED_GRASS_BLOCK)
                 || state.is(Blocks.GRASS_BLOCK)
                 || state.is(Blocks.DIRT)
                 || state.is(Blocks.COARSE_DIRT)

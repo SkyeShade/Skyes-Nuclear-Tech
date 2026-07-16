@@ -113,22 +113,26 @@ public class NuclearExplosionEntity extends Entity {
     private static final boolean DEBUG_NUKE_LIFECYCLE = Boolean.getBoolean("skyent.debugNukeLifecycle");
     private static final boolean DEBUG_NUKE_ITEM_DROPS = Boolean.getBoolean("skyent.debugNukeItemDrops");
     private static final boolean DEBUG_NUKE_THERMAL_FLASH = Boolean.getBoolean("skyent.debugNukeThermalFlash");
-    private static final boolean DEBUG_NUKE_FLUID_EVAPORATION = Boolean.getBoolean("skyent.debugNukeFluidEvaporation")
+    private static final boolean DEBUG_NUKE_DETONATION_TIMING = Boolean.getBoolean("skyent.debugNukeDetonationTiming");
+    private static final boolean DEBUG_NUKE_WATER_CLEAR = Boolean.getBoolean("skyent.debugNukeWaterClear")
+            || Boolean.getBoolean("skyent.debugNukeFluidEvaporation")
             || Boolean.getBoolean("skyent.debugNukeWaterEvaporation");
     private static final int NUKE_RAY_PLANNER_MAX_RAYS_PER_TICK = 8_128;
     private static final int NUKE_RAY_PLANNER_MAX_STEPS_PER_TICK = 128_000;
     private static final int NUKE_BLOCK_MUTATION_MAX_BLOCKS_PER_TICK = 20_480;
     private static final int NUKE_BLOCK_MUTATION_MAX_SECTIONS_PER_TICK = 256;
     private static final int NUKE_DESTRUCTION_MAX_TICKS = 20 * 60 * 5;
-    private static final int FLUID_EVAPORATION_MAX_SECTIONS_PER_TICK = 32;
-    private static final int FLUID_EVAPORATION_MAX_BLOCK_CHECKS_PER_TICK = 250_000;
-    private static final int FLUID_EVAPORATION_MAX_BLOCK_CHANGES_PER_TICK = 16_384;
+    private static final boolean NUKE_CLEAR_WATER_ENABLED = true;
+    private static final int NUKE_WATER_CLEAR_RADIAL_LAYERS_PER_STEP = 2;
+    private static final int NUKE_WATER_CLEAR_MAX_BLOCKS_PER_TICK = 200_000;
+    private static final int NUKE_WATER_CLEAR_MAX_CHANGES_PER_TICK = 200_000;
+    private static final int NUKE_WATER_CLEAR_START_DELAY_TICKS = 1;
     private static final int COLUMN_COLLAPSE_COLUMNS_PER_TICK = 1_024;
     private static final int COLUMN_COLLAPSE_MAX_BLOCK_WRITES_PER_TICK = 8_128;
     private static final int COLUMN_COLLAPSE_MAX_DROP_BLOCKS = 10;
     private static final int AFTERMATH_MIN_COMPLETED_SECTIONS_TO_START = 1;
     private static final int AFTERMATH_FORCE_START_AFTER_TICKS = 40;
-    private static final double FLUID_EVAPORATION_RADIUS_SCALE = 0.60D;
+    private static final double NUKE_WATER_CLEAR_RADIUS_SCALE = 0.75D;
     private static final boolean NUKE_CLEANUP_DROPPED_ITEMS_IN_AFTERMATH = false;
     private static final double NUKE_ITEM_CLEANUP_RADIUS_SCALE = 3.0D;
     private static final double NUKE_BASELINE_RADIUS = 200.0D;
@@ -137,7 +141,7 @@ public class NuclearExplosionEntity extends Entity {
     private static final double NUKE_RAY_STARTING_ENERGY_PER_RADIUS = 100_250_500.0D;
     private static final double NUKE_RAY_STARTING_ENERGY_RADIUS_POWER = 1.35D;
     private static final double NUKE_VISUAL_RAY_SCALE_POWER = 0.75D;
-    private static final double NUKE_RAY_COUNT_MULTIPLIER = 4.0D;
+    private static final double NUKE_RAY_COUNT_MULTIPLIER = 8.0D;
     private static final double NUKE_RAY_COUNT_EXTRA_MULTIPLIER = 4.0D;
     private static final double NUKE_RAY_INITIAL_ENERGY_MULTIPLIER = 1.0D;
     private static final double NUKE_CLOSE_RANGE_ARMOR_PIERCING_RADIUS_FRACTION = 0.35D;
@@ -174,6 +178,7 @@ public class NuclearExplosionEntity extends Entity {
     private boolean appliedInitialThermalFlash;
     private boolean chunksForced;
     private boolean loggedInitialChunkLoadingState;
+    private boolean loggedFirstServerTickTiming;
     private boolean debugShockwaveTestCloudletSpawned;
     @Nullable
     private NuclearDestructionMask destructionMask;
@@ -185,6 +190,7 @@ public class NuclearExplosionEntity extends Entity {
     private NuclearBlockMutationQueue mutationQueue;
     @Nullable
     private NuclearWaterEvaporationPass fluidEvaporationPass;
+    private boolean waterClearStarted;
     @Nullable
     private NuclearColumnCollapsePass columnCollapsePass;
     @Nullable
@@ -211,6 +217,48 @@ public class NuclearExplosionEntity extends Entity {
     public NuclearExplosionEntity(Level level, Vec3 center) {
         this(ModEntities.NUCLEAR_EXPLOSION.get(), level);
         setFixedOrigin(center.x, center.y, center.z);
+    }
+
+    public static boolean isDetonationTimingDebugEnabled() {
+        return DEBUG_NUKE_DETONATION_TIMING;
+    }
+
+    public static long detonationTimingNowNs() {
+        return System.nanoTime();
+    }
+
+    public static double detonationTimingElapsedMs(long startNs) {
+        return (System.nanoTime() - startNs) / 1_000_000.0D;
+    }
+
+    public static double detonationTimingElapsedMs(long startNs, long endNs) {
+        return (endNs - startNs) / 1_000_000.0D;
+    }
+
+    public static void logDetonationTimingStep(String label, long startNs) {
+        logDetonationTimingStep(label, startNs, "");
+    }
+
+    public static void logDetonationTimingStep(String label, long startNs, String details) {
+        if (!DEBUG_NUKE_DETONATION_TIMING) {
+            return;
+        }
+        double elapsedMs = detonationTimingElapsedMs(startNs);
+        if (elapsedMs > 50.0D) {
+            SkyesNuclearTech.LOGGER.warn(
+                    "Nuke detonation timing: {} took {} ms{}",
+                    label,
+                    elapsedMs,
+                    details.isEmpty() ? "" : " " + details
+            );
+        } else {
+            SkyesNuclearTech.LOGGER.info(
+                    "Nuke detonation timing: {} took {} ms{}",
+                    label,
+                    elapsedMs,
+                    details.isEmpty() ? "" : " " + details
+            );
+        }
     }
 
     public void configure(float strength, boolean destroyBlocks, boolean spawnCloud, boolean flashSky, boolean playSounds, @Nullable Entity source) {
@@ -254,7 +302,21 @@ public class NuclearExplosionEntity extends Entity {
         if (level().isClientSide) {
             tickClientEffects();
         } else {
+            long serverTickStartNs = detonationTimingNowNs();
             tickServerEffects();
+            if (!loggedFirstServerTickTiming) {
+                loggedFirstServerTickTiming = true;
+                logDetonationTimingStep(
+                        "first NuclearExplosionEntity server tick",
+                        serverTickStartNs,
+                        "id=" + getId()
+                                + " tick=" + tickCount
+                                + " phase=" + destructionPhase
+                                + " waterClearActive=" + (fluidEvaporationPass != null)
+                                + " rayPlannerActive=" + (rayPlanner != null)
+                                + " mutationQueueActive=" + (mutationQueue != null)
+                );
+            }
         }
 
         if (tickCount > ENTITY_LIFETIME_TICKS && canReleaseImmediateChunks()) {
@@ -319,10 +381,16 @@ public class NuclearExplosionEntity extends Entity {
         }
 
         if (destructionPhase == DestructionPhase.NOT_STARTED) {
-            startFluidEvaporation(serverLevel);
             startNuclearDestructionPlanning(serverLevel);
         }
 
+        if (NUKE_CLEAR_WATER_ENABLED
+                && !waterClearStarted
+                && fluidEvaporationPass == null
+                && destructionTicks > NUKE_WATER_CLEAR_START_DELAY_TICKS
+                && destructionPhase != DestructionPhase.COMPLETE) {
+            startFluidEvaporation(serverLevel);
+        }
         tickFluidEvaporation();
 
         if (destructionPhase == DestructionPhase.PLANNING && rayPlanner != null && destructionMask != null) {
@@ -503,16 +571,23 @@ public class NuclearExplosionEntity extends Entity {
     }
 
     private void startFluidEvaporation(ServerLevel serverLevel) {
-        int evaporationRadius = Mth.ceil(getRadius() * FLUID_EVAPORATION_RADIUS_SCALE);
+        waterClearStarted = true;
+        int evaporationRadius = Mth.ceil(getRadius() * NUKE_WATER_CLEAR_RADIUS_SCALE);
         fluidEvaporationPass = new NuclearWaterEvaporationPass(serverLevel, fixedOrigin(), evaporationRadius);
-        if (DEBUG_NUKE_FLUID_EVAPORATION) {
+        if (DEBUG_NUKE_WATER_CLEAR) {
             SkyesNuclearTech.LOGGER.info(
-                    "Nuke fluid evaporation started: id={} center={} entityRadius={} evaporationRadius={} radiusScale={} sections={} chunkRadius={}",
+                    "Nuke water clearing started: id={} tick={} center={} entityRadius={} clearRadius={} radiusScale={} radialLayersPerStep={} recheckOverlap={} maxBlockChecksPerTick={} maxBlockChangesPerTick={} startDelayTicks={} shellEstimate={} chunkRadius={}",
                     getId(),
+                    tickCount,
                     fixedOrigin(),
                     getRadius(),
                     evaporationRadius,
-                    FLUID_EVAPORATION_RADIUS_SCALE,
+                    NUKE_WATER_CLEAR_RADIUS_SCALE,
+                    NUKE_WATER_CLEAR_RADIAL_LAYERS_PER_STEP,
+                    fluidEvaporationPass.recheckOverlap(),
+                    NUKE_WATER_CLEAR_MAX_BLOCKS_PER_TICK,
+                    NUKE_WATER_CLEAR_MAX_CHANGES_PER_TICK,
+                    NUKE_WATER_CLEAR_START_DELAY_TICKS,
                     fluidEvaporationPass.sectionCount(),
                     NuclearExplosionChunkLoading.computeChunkRadius(getRadius())
             );
@@ -525,14 +600,14 @@ public class NuclearExplosionEntity extends Entity {
         }
 
         NuclearWaterEvaporationPass.EvaporationResult result = fluidEvaporationPass.tick(
-                FLUID_EVAPORATION_MAX_SECTIONS_PER_TICK,
-                FLUID_EVAPORATION_MAX_BLOCK_CHECKS_PER_TICK,
-                FLUID_EVAPORATION_MAX_BLOCK_CHANGES_PER_TICK
+                NUKE_WATER_CLEAR_RADIAL_LAYERS_PER_STEP,
+                NUKE_WATER_CLEAR_MAX_BLOCKS_PER_TICK,
+                NUKE_WATER_CLEAR_MAX_CHANGES_PER_TICK
         );
         logFluidEvaporationDebug(result);
         if (fluidEvaporationPass.isComplete()) {
             SkyesNuclearTech.LOGGER.info(
-                    "Nuke fluid evaporation complete: id={} radius={} sectionsProcessed={} blockChecks={} waterRemoved={} lavaRemoved={} waterloggedCleared={} skippedUnloadedSections={} skippedBlockEntities={}",
+                    "Nuke water clearing complete: id={} radius={} shellsProcessed={} blockChecks={} waterRemoved={} lavaRemoved={} waterloggedCleared={} skippedUnloadedColumns={} skippedBlockEntities={}",
                     getId(),
                     fluidEvaporationPass.radius(),
                     fluidEvaporationPass.totalSectionsProcessed(),
@@ -570,7 +645,7 @@ public class NuclearExplosionEntity extends Entity {
         aftermathStartTick = tickCount;
         aftermathStartReason = reason;
         SkyesNuclearTech.LOGGER.info(
-                "Nuke column aftermath work started: id={} tick={} phase={} reason={} mutationTicks={} workUnits={} currentRing={} maxRing={} columnsApprox={} collapseRadius={} charredLogRadius={} contaminatedGrassRadius={} contaminatedGrassBlend={} deadVegetationRadius={} vitrificationGenerationScale={} unscaledVitrificationRadius={} scaledVitrificationRadius={} unscaledVitrificationFeatherRadius={} scaledVitrificationFeatherRadius={} vitrificationHotTierFalloffPower={} vitrificationSizeTierCap={} postCollapseSurfaceUsed={} vitrificationSkips={} fireRadius={} trackerPending={} trackerCompleted={} trackerSkipped={} minCompletedSections={} forceStartAfterTicks={} maxResistance={} maxDropBlocks={} maxRunsPerColumn={} scanDepth={}",
+                "Nuke column aftermath work started: id={} tick={} phase={} reason={} mutationTicks={} workUnits={} currentRing={} maxRing={} columnsApprox={} collapseRadius={} charredLogRadius={} contaminatedGrassRadius={} contaminatedGrassBlend={} deadVegetationRadius={} vitrificationGenerationScale={} unscaledVitrificationRadius={} scaledVitrificationRadius={} unscaledVitrificationFeatherRadius={} scaledVitrificationFeatherRadius={} vitrificationHotTierFalloffPower={} vitrificationSizeTierCap={} postCollapseSurfaceUsed={} vitrificationSkips={} fireRadius={} leafEvaporationRadius={} trackerPending={} trackerCompleted={} trackerSkipped={} minCompletedSections={} forceStartAfterTicks={} maxResistance={} maxDropBlocks={} maxRunsPerColumn={} scanDepth={}",
                 getId(),
                 tickCount,
                 destructionPhase,
@@ -595,6 +670,7 @@ public class NuclearExplosionEntity extends Entity {
                 columnCollapsePass.vitrificationUsesPostCollapseSurface(),
                 columnCollapsePass.vitrificationSkipDebug(),
                 columnCollapsePass.fireRadius(),
+                columnCollapsePass.leafEvaporationRadius(),
                 sectionCompletionTracker.pendingCount(),
                 sectionCompletionTracker.completedCount(),
                 sectionCompletionTracker.skippedCount(),
@@ -637,7 +713,7 @@ public class NuclearExplosionEntity extends Entity {
 
             if (columnCollapsePass.isComplete()) {
                 SkyesNuclearTech.LOGGER.info(
-                        "Nuke column aftermath complete: id={} processedColumns={} workUnitsCompleted={}/{} workUnitsPlanned={} noOpWorkUnits={} startReason={} currentRing={} maxRing={} deferredRemaining={} deferredChecks={} deferredQueued={} collapseRadius={} charredLogRadius={} contaminatedGrassRadius={} contaminatedGrassBlend={} deadVegetationRadius={} vitrificationGenerationScale={} unscaledVitrificationRadius={} scaledVitrificationRadius={} unscaledVitrificationFeatherRadius={} scaledVitrificationFeatherRadius={} vitrificationHotTierFalloffPower={} vitrificationSizeTierCap={} postCollapseSurfaceUsed={} fireRadius={} totalMutationsApplied={} totalSectionsMutated={} movementMutations={} charredLogs={} contaminatedGrass={} deadGrass={} deadLeaves={} vitrifiedStone={} vitrifiedTiers={} vitrifiedTopTiers={} vitrificationBaseTiers={} vitrificationFinalTiers={} vitrificationDowngrades={} vitrificationColumnsChecked={} vitrificationColumnsAffected={} maxVitrificationDepth={} vitrificationEdgeFeatherPlacements={} vitrificationSkippedBySoftEdge={} vitrificationSkips={} plannedPlantRemovals={} plannedFires={} placedFires={} mutationUnloadedSkips={} mutationBlockEntitySkips={} skippedUnloadedColumns={} barriers={} movableBlocks={} maxDropBlocks={} maxRunsPerColumn={} scanDepth={} runsFound={} runsMoved={} averageDrop={} maxDropSeen={} skippedBarrier={} skippedFluid={} skippedBlockEntity={} updateFlags={} suppressDrops=true",
+                        "Nuke column aftermath complete: id={} processedColumns={} workUnitsCompleted={}/{} workUnitsPlanned={} noOpWorkUnits={} startReason={} currentRing={} maxRing={} deferredRemaining={} deferredChecks={} deferredQueued={} collapseRadius={} charredLogRadius={} contaminatedGrassRadius={} contaminatedGrassBlend={} deadVegetationRadius={} vitrificationGenerationScale={} unscaledVitrificationRadius={} scaledVitrificationRadius={} unscaledVitrificationFeatherRadius={} scaledVitrificationFeatherRadius={} vitrificationHotTierFalloffPower={} vitrificationSizeTierCap={} postCollapseSurfaceUsed={} fireRadius={} leafEvaporationRadius={} totalMutationsApplied={} totalSectionsMutated={} movementMutations={} charredLogs={} leafEvaporated={} contaminatedGrass={} deadGrass={} deadLeaves={} vitrifiedStone={} vitrifiedTiers={} vitrifiedTopTiers={} vitrificationBaseTiers={} vitrificationFinalTiers={} vitrificationDowngrades={} vitrificationColumnsChecked={} vitrificationColumnsAffected={} maxVitrificationDepth={} vitrificationEdgeFeatherPlacements={} vitrificationSkippedBySoftEdge={} vitrificationSkips={} plannedPlantRemovals={} plannedFires={} placedFires={} mutationUnloadedSkips={} mutationBlockEntitySkips={} skippedUnloadedColumns={} barriers={} movableBlocks={} maxDropBlocks={} maxRunsPerColumn={} scanDepth={} runsFound={} runsMoved={} averageDrop={} maxDropSeen={} skippedBarrier={} skippedFluid={} skippedBlockEntity={} updateFlags={} suppressDrops=true",
                         getId(),
                         columnCollapsePass.totalColumnsProcessed(),
                         columnCollapsePass.workUnitsCompleted(),
@@ -664,10 +740,12 @@ public class NuclearExplosionEntity extends Entity {
                         columnCollapsePass.vitrificationSizeTierCap(),
                         columnCollapsePass.vitrificationUsesPostCollapseSurface(),
                         columnCollapsePass.fireRadius(),
+                        columnCollapsePass.leafEvaporationRadius(),
                         columnCollapsePass.totalMutationsApplied(),
                         columnCollapsePass.totalSectionsMutated(),
                         columnCollapsePass.plannedMovementMutations(),
                         columnCollapsePass.plannedCharredLogReplacements(),
+                        columnCollapsePass.plannedLeafEvaporations(),
                         columnCollapsePass.plannedContaminatedGrassReplacements(),
                         columnCollapsePass.plannedDeadGrassReplacements(),
                         columnCollapsePass.plannedDeadLeafReplacements(),
@@ -760,6 +838,7 @@ public class NuclearExplosionEntity extends Entity {
         fluidEvaporationPass = null;
         sectionCompletionTracker = null;
         aftermathStarted = true;
+        waterClearStarted = false;
         mutationStartTick = -1;
         aftermathStartReason = "cleaned_" + reason;
 
@@ -794,6 +873,7 @@ public class NuclearExplosionEntity extends Entity {
         double destructionStrength = baselineStartingEnergy * energyScale;
         destructionCleanupLogged = false;
         aftermathStarted = false;
+        waterClearStarted = false;
         aftermathStartTick = -1;
         mutationStartTick = -1;
         aftermathStartReason = "not_started";
@@ -986,7 +1066,7 @@ public class NuclearExplosionEntity extends Entity {
         }
 
         SkyesNuclearTech.LOGGER.info(
-                "Nuke column aftermath debug: id={} tick={} phase={} aftermathStarted={} aftermathStartTick={} startReason={} trackerPending={} trackerCompleted={} trackerSkipped={} collapseRadius={} charredLogRadius={} contaminatedGrassRadius={} contaminatedGrassBlend={} deadVegetationRadius={} vitrificationGenerationScale={} unscaledVitrificationRadius={} scaledVitrificationRadius={} unscaledVitrificationFeatherRadius={} scaledVitrificationFeatherRadius={} vitrificationHotTierFalloffPower={} vitrificationSizeTierCap={} postCollapseSurfaceUsed={} fireRadius={} currentRing={} maxRing={} workUnitsCompleted={}/{} readyWorkUnits={} deferredWorkUnits={} outerWorkUnitsNotStarted={} currentChunk={} blockedByPending={} blockedChunk={} blockedRing={} blockedTicks={} longestBlockedTicks={} tickChunksPlanned={} tickColumns={} tickDeferred={} tickPlannedMutations={} tickSectionsMutated={} tickMutationsApplied={} totalMutationsApplied={} totalSectionsMutated={} currentLocalMutations={} currentLocalSections={} noOpWorkUnits={} deferredChecks={} deferredQueued={} deferredRequeued={} movementMutations={} charredLogs={} contaminatedGrass={} deadGrass={} deadLeaves={} vitrifiedStone={} vitrifiedTiers={} vitrifiedTopTiers={} vitrificationBaseTiers={} vitrificationFinalTiers={} vitrificationDowngrades={} vitrificationColumnsChecked={} vitrificationColumnsAffected={} maxVitrificationDepth={} vitrificationEdgeFeatherPlacements={} vitrificationSkippedBySoftEdge={} vitrificationSkips={} plannedPlantRemovals={} plannedFires={} placedFires={} totalColumnsProcessed={} skippedUnloadedColumns={} mutationUnloadedSkips={} mutationBlockEntitySkips={} barriers={} movableBlocks={} maxDropBlocks={} maxRunsPerColumn={} scanDepth={} runsFound={} runsMoved={} averageDrop={} maxDropSeen={} skippedBarrier={} skippedFluid={} skippedBlockEntity={}",
+                "Nuke column aftermath debug: id={} tick={} phase={} aftermathStarted={} aftermathStartTick={} startReason={} trackerPending={} trackerCompleted={} trackerSkipped={} collapseRadius={} charredLogRadius={} contaminatedGrassRadius={} contaminatedGrassBlend={} deadVegetationRadius={} vitrificationGenerationScale={} unscaledVitrificationRadius={} scaledVitrificationRadius={} unscaledVitrificationFeatherRadius={} scaledVitrificationFeatherRadius={} vitrificationHotTierFalloffPower={} vitrificationSizeTierCap={} postCollapseSurfaceUsed={} fireRadius={} leafEvaporationRadius={} currentRing={} maxRing={} workUnitsCompleted={}/{} readyWorkUnits={} deferredWorkUnits={} outerWorkUnitsNotStarted={} currentChunk={} blockedByPending={} blockedChunk={} blockedRing={} blockedTicks={} longestBlockedTicks={} tickChunksPlanned={} tickColumns={} tickDeferred={} tickPlannedMutations={} tickSectionsMutated={} tickMutationsApplied={} totalMutationsApplied={} totalSectionsMutated={} currentLocalMutations={} currentLocalSections={} noOpWorkUnits={} deferredChecks={} deferredQueued={} deferredRequeued={} movementMutations={} charredLogs={} leafEvaporated={} contaminatedGrass={} deadGrass={} deadLeaves={} vitrifiedStone={} vitrifiedTiers={} vitrifiedTopTiers={} vitrificationBaseTiers={} vitrificationFinalTiers={} vitrificationDowngrades={} vitrificationColumnsChecked={} vitrificationColumnsAffected={} maxVitrificationDepth={} vitrificationEdgeFeatherPlacements={} vitrificationSkippedBySoftEdge={} vitrificationSkips={} plannedPlantRemovals={} plannedFires={} placedFires={} totalColumnsProcessed={} skippedUnloadedColumns={} mutationUnloadedSkips={} mutationBlockEntitySkips={} barriers={} movableBlocks={} maxDropBlocks={} maxRunsPerColumn={} scanDepth={} runsFound={} runsMoved={} averageDrop={} maxDropSeen={} skippedBarrier={} skippedFluid={} skippedBlockEntity={}",
                 getId(),
                 tickCount,
                 destructionPhase,
@@ -1010,6 +1090,7 @@ public class NuclearExplosionEntity extends Entity {
                 columnCollapsePass.vitrificationSizeTierCap(),
                 columnCollapsePass.vitrificationUsesPostCollapseSurface(),
                 columnCollapsePass.fireRadius(),
+                columnCollapsePass.leafEvaporationRadius(),
                 columnCollapsePass.currentRing(),
                 columnCollapsePass.maxRing(),
                 columnCollapsePass.workUnitsCompleted(),
@@ -1039,6 +1120,7 @@ public class NuclearExplosionEntity extends Entity {
                 columnCollapsePass.deferredWorkUnitsRequeued(),
                 columnCollapsePass.plannedMovementMutations(),
                 columnCollapsePass.plannedCharredLogReplacements(),
+                columnCollapsePass.plannedLeafEvaporations(),
                 columnCollapsePass.plannedContaminatedGrassReplacements(),
                 columnCollapsePass.plannedDeadGrassReplacements(),
                 columnCollapsePass.plannedDeadLeafReplacements(),
@@ -1100,24 +1182,32 @@ public class NuclearExplosionEntity extends Entity {
     }
 
     private void logFluidEvaporationDebug(NuclearWaterEvaporationPass.EvaporationResult result) {
-        if (!DEBUG_NUKE_FLUID_EVAPORATION || (tickCount % 20 != 0 && !result.complete()) || fluidEvaporationPass == null) {
+        if (!DEBUG_NUKE_WATER_CLEAR || (tickCount % 5 != 0 && !result.complete() && !result.capHit()) || fluidEvaporationPass == null) {
             return;
         }
 
         SkyesNuclearTech.LOGGER.info(
-                "Nuke fluid evaporation debug: id={} tick={} phase={} radius={} sectionsRemaining={} tickSections={} tickBlockChecks={} tickWaterRemoved={} tickLavaRemoved={} tickWaterloggedCleared={} tickSkippedUnloadedSections={} tickSkippedBlockEntities={} totalSectionsProcessed={} totalBlockChecks={} totalWaterRemoved={} totalLavaRemoved={} totalWaterloggedCleared={} totalSkippedUnloadedSections={} totalSkippedBlockEntities={} complete={}",
+                "Nuke water clearing debug: id={} tick={} phase={} innerRadius={} currentRadius={} targetRadius={} currentLayerY={} remainingRadius={} radialLayersPerStep={} recheckOverlap={} tickShells={} tickColumns={} tickBlockChecks={} tickWaterRemoved={} tickLavaRemoved={} tickWaterloggedCleared={} tickSkippedUnloadedColumns={} tickSkippedBlockEntities={} elapsedMs={} capHit={} totalShellsProcessed={} totalBlockChecks={} totalWaterRemoved={} totalLavaRemoved={} totalWaterloggedCleared={} totalSkippedUnloadedColumns={} totalSkippedBlockEntities={} complete={}",
                 getId(),
                 tickCount,
                 destructionPhase,
+                result.innerRadius(),
+                result.currentRadius(),
                 fluidEvaporationPass.radius(),
+                result.currentY(),
                 fluidEvaporationPass.sectionsRemaining(),
+                NUKE_WATER_CLEAR_RADIAL_LAYERS_PER_STEP,
+                fluidEvaporationPass.recheckOverlap(),
                 result.sectionsProcessed(),
+                result.columnsScanned(),
                 result.blockChecks(),
                 result.waterBlocksRemoved(),
                 result.lavaBlocksRemoved(),
                 result.waterloggedBlocksCleared(),
                 result.skippedUnloadedSections(),
                 result.skippedBlockEntities(),
+                result.elapsedMs(),
+                result.capHit(),
                 fluidEvaporationPass.totalSectionsProcessed(),
                 fluidEvaporationPass.totalBlocksChecked(),
                 fluidEvaporationPass.totalWaterBlocksRemoved(),
