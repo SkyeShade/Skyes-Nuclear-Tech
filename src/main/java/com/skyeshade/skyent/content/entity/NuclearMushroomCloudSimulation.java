@@ -25,6 +25,7 @@ public final class NuclearMushroomCloudSimulation {
     private static final int STEM_CLOUDLETS_PER_TICK = 2;
     private static final int TORUS_GROW_TICKS = 2_400;
     private static final int TORUS_RISE_TICKS = TORUS_GROW_TICKS;
+    private static final double CLOUD_GROWTH_SPEED_MULTIPLIER = 2.0D;
     private static final int TORUS_FADE_START_TICKS = 200;
     private static final int PARTICLE_HOT_COOL_TICKS = 200;
     private static final int STEM_HOT_COOL_TICKS = PARTICLE_HOT_COOL_TICKS / 2;
@@ -41,6 +42,13 @@ public final class NuclearMushroomCloudSimulation {
     private static final double TORUS_SOURCE_ANGLE = -Math.PI * 0.75D;
     private static final double TORUS_SOURCE_ANGLE_SPREAD = 0.45D;
     private static final double SECONDARY_TORUS_SOURCE_ANGLE_SPREAD = 0.55D;
+    private static final int HEAD_RANDOMNESS_FADE_TICKS = 260;
+    private static final double HEAD_INITIAL_POSITION_JITTER = 1.85D;
+    private static final double HEAD_FINAL_POSITION_JITTER = 0.18D;
+    private static final double HEAD_INITIAL_VELOCITY_JITTER = 0.18D;
+    private static final double HEAD_FINAL_VELOCITY_JITTER = 0.02D;
+    private static final double HEAD_INITIAL_SHAPE_CORRECTION_MULTIPLIER = 0.35D;
+    private static final double HEAD_FINAL_SHAPE_CORRECTION_MULTIPLIER = 1.0D;
     private static final int AIR_RING_LOWER_COUNT = 360;
     private static final int AIR_RING_UPPER_COUNT = 260;
     private static final int AIR_RING_LOWER_DELAY_TICKS = 20;
@@ -49,11 +57,25 @@ public final class NuclearMushroomCloudSimulation {
     private static final int AIR_RING_UPPER_LIFETIME = 260;
     private static final double AIR_RING_HEIGHT_EXTRA_Y = 40.0D;
     private static final double TORUS_INITIAL_MAJOR_RADIUS = 8.0D;
-    private static final double TORUS_FINAL_MAJOR_RADIUS = 55.0D;
+    private static final double TORUS_FINAL_MAJOR_RADIUS = 41.25D;
     private static final double TORUS_INITIAL_MINOR_RADIUS = 5.0D;
     private static final double TORUS_FINAL_MINOR_RADIUS = 28.0D;
     private static final double TORUS_INITIAL_CENTER_Y = 10.0D;
     private static final double TORUS_FINAL_CENTER_Y = 140.0D;
+    private static final double TORUS_INITIAL_HORIZONTAL_COMPRESSION = 0.75D;
+    private static final double TORUS_FINAL_HORIZONTAL_COMPRESSION = 1.0D;
+    private static final double SECONDARY_TORUS_FINAL_WIDTH_SCALE = 0.75D;
+    private static final double SECONDARY_TORUS_THICKNESS_SCALE = 0.119D;
+    private static final double SECONDARY_TORUS_RING_SCALE = 0.696D;
+    private static final boolean ENABLE_INITIAL_CHAOS_SPHERE = true;
+    private static final int INITIAL_CHAOS_SPHERE_COUNT = 650;
+    private static final double INITIAL_CHAOS_SPHERE_RADIUS = 24.0D;
+    private static final double INITIAL_CHAOS_SPHERE_RADIUS_SCALE = 1.25D;
+    private static final int INITIAL_CHAOS_SPHERE_LIFETIME_MIN_TICKS = 120;
+    private static final int INITIAL_CHAOS_SPHERE_LIFETIME_RANDOM_TICKS = 120;
+    private static final double INITIAL_CHAOS_SPHERE_INWARD_VELOCITY = 0.03D;
+    private static final double INITIAL_CHAOS_SPHERE_UPWARD_VELOCITY = 0.04D;
+    private static final double INITIAL_CHAOS_SPHERE_UPWARD_VELOCITY_RANDOM = 0.03D;
     private static final double CLOUD_FINAL_HEIGHT_SCALE = 1.5D;
     private static final double CLOUD_START_SCALE = 1.5D;
     private static final double CLOUD_END_SCALE = 1.0D;
@@ -68,6 +90,8 @@ public final class NuclearMushroomCloudSimulation {
     private boolean groundYInitialized;
     private double majorRadius;
     private double minorRadius;
+    private double horizontalMinorRadius;
+    private double torusHorizontalCompression = TORUS_INITIAL_HORIZONTAL_COMPRESSION;
     private double torusCenterY;
     private double secondaryMajorRadius;
     private double secondaryMinorRadius;
@@ -86,7 +110,9 @@ public final class NuclearMushroomCloudSimulation {
     private boolean spawnedUpperAirRing;
     private double lowerAirRingSpawnY = Double.NaN;
     private double upperAirRingSpawnY = Double.NaN;
+    private double initialChaosSphereRadius = Double.NaN;
     private boolean filledInitialTorus;
+    private boolean spawnedInitialChaosSphere;
 
     public NuclearMushroomCloudSimulation(long seed, float radius) {
         this.seed = seed;
@@ -97,12 +123,14 @@ public final class NuclearMushroomCloudSimulation {
                 : Mth.clamp(Math.pow(radiusScale, 0.45D), 0.35D, 1.0D);
         this.majorRadius = TORUS_INITIAL_MAJOR_RADIUS * visualScale;
         this.minorRadius = TORUS_INITIAL_MINOR_RADIUS * visualScale;
+        this.horizontalMinorRadius = this.minorRadius * torusHorizontalCompression;
         this.torusCenterY = TORUS_INITIAL_CENTER_Y * visualScale;
     }
 
     public void tick(Level level, Vec3 entityPosition) {
         updateGroundHeight(level, entityPosition);
         updateTorusField();
+        spawnInitialChaosSphereIfNeeded();
         fillInitialTorusIfNeeded();
         spawnAirRingsIfNeeded();
         spawnCloudlets();
@@ -139,6 +167,7 @@ public final class NuclearMushroomCloudSimulation {
         age = clampedTargetAge;
         updateTorusField();
         filledInitialTorus = true;
+        spawnedInitialChaosSphere = clampedTargetAge > 0;
         spawnedLowerAirRing = age >= AIR_RING_LOWER_DELAY_TICKS;
         spawnedUpperAirRing = age >= AIR_RING_UPPER_DELAY_TICKS;
     }
@@ -160,15 +189,18 @@ public final class NuclearMushroomCloudSimulation {
     }
 
     private void updateTorusField() {
-        double growProgress = smoothStep(Mth.clamp(age / (double) TORUS_GROW_TICKS, 0.0D, 1.0D));
-        double riseProgress = smoothStep(Mth.clamp(age / (double) TORUS_RISE_TICKS, 0.0D, 1.0D));
+        double growProgress = growthProgress(TORUS_GROW_TICKS);
+        double riseProgress = growthProgress(TORUS_RISE_TICKS);
+        torusHorizontalCompression = Mth.lerp(growProgress, TORUS_INITIAL_HORIZONTAL_COMPRESSION, TORUS_FINAL_HORIZONTAL_COMPRESSION);
         cloudScale = Mth.lerp(growProgress, CLOUD_START_SCALE, CLOUD_END_SCALE);
         double baseMajorRadius = Mth.lerp(growProgress, TORUS_INITIAL_MAJOR_RADIUS * visualScale, TORUS_FINAL_MAJOR_RADIUS * visualScale);
         double baseMinorRadius = Mth.lerp(growProgress, TORUS_INITIAL_MINOR_RADIUS * visualScale, TORUS_FINAL_MINOR_RADIUS * visualScale);
-        majorRadius = baseMajorRadius * cloudScale;
+        majorRadius = baseMajorRadius * cloudScale * torusHorizontalCompression;
         minorRadius = baseMinorRadius * cloudScale;
-        secondaryMinorRadius = minorRadius * 0.17D;
-        secondaryMajorRadius = Math.max(1.0D, (majorRadius + minorRadius) * 0.58D - secondaryMinorRadius);
+        horizontalMinorRadius = minorRadius * torusHorizontalCompression;
+        secondaryMinorRadius = minorRadius * SECONDARY_TORUS_THICKNESS_SCALE;
+        double secondaryWidthScale = Mth.lerp(growProgress, 1.0D, SECONDARY_TORUS_FINAL_WIDTH_SCALE);
+        secondaryMajorRadius = Math.max(1.0D, ((majorRadius + minorRadius) * SECONDARY_TORUS_RING_SCALE - secondaryMinorRadius) * secondaryWidthScale);
         torusScale = Math.max(1.0D, baseMajorRadius / Math.max(TORUS_INITIAL_MAJOR_RADIUS * visualScale, 1.0D));
         double baseY = Double.isFinite(groundY) ? groundY : 0.0D;
         double finalTorusCenterY = TORUS_FINAL_CENTER_Y * CLOUD_FINAL_HEIGHT_SCALE * visualScale;
@@ -186,6 +218,30 @@ public final class NuclearMushroomCloudSimulation {
         if (age > 2_400) {
             heat *= 0.35D;
         }
+    }
+
+    private double growthProgress(int ticks) {
+        return smoothStep(Mth.clamp(age * CLOUD_GROWTH_SPEED_MULTIPLIER / (double) ticks, 0.0D, 1.0D));
+    }
+
+    private double headRandomnessProgress() {
+        return smoothStep(Mth.clamp(age / (double) HEAD_RANDOMNESS_FADE_TICKS, 0.0D, 1.0D));
+    }
+
+    private double headPositionJitterScale() {
+        return Mth.lerp(headRandomnessProgress(), HEAD_INITIAL_POSITION_JITTER, HEAD_FINAL_POSITION_JITTER) * visualScale;
+    }
+
+    private double headVelocityJitterScale() {
+        return Mth.lerp(headRandomnessProgress(), HEAD_INITIAL_VELOCITY_JITTER, HEAD_FINAL_VELOCITY_JITTER) * visualScale;
+    }
+
+    private double headShapeCorrectionMultiplier() {
+        return Mth.lerp(headRandomnessProgress(), HEAD_INITIAL_SHAPE_CORRECTION_MULTIPLIER, HEAD_FINAL_SHAPE_CORRECTION_MULTIPLIER);
+    }
+
+    private double headSourceSpread() {
+        return Mth.lerp(headRandomnessProgress(), TORUS_SOURCE_ANGLE_SPREAD * 2.4D, TORUS_SOURCE_ANGLE_SPREAD);
     }
 
     private void spawnCloudlets() {
@@ -219,6 +275,55 @@ public final class NuclearMushroomCloudSimulation {
         }
     }
 
+    private void spawnInitialChaosSphereIfNeeded() {
+        if (!ENABLE_INITIAL_CHAOS_SPHERE || spawnedInitialChaosSphere || age != 0) {
+            return;
+        }
+        spawnedInitialChaosSphere = true;
+        RandomSource random = RandomSource.create(seed ^ 0xD1B54A32D192ED03L);
+        double sphereRadius = Math.max(
+                INITIAL_CHAOS_SPHERE_RADIUS * visualScale,
+                (majorRadius + horizontalMinorRadius) * 0.75D
+        ) * INITIAL_CHAOS_SPHERE_RADIUS_SCALE;
+        initialChaosSphereRadius = sphereRadius;
+        for (int index = 0; index < scaledCount(INITIAL_CHAOS_SPHERE_COUNT); index++) {
+            if (!makeRoomForCloudlet()) {
+                return;
+            }
+            double u = random.nextDouble() * 2.0D - 1.0D;
+            double theta = random.nextDouble() * Mth.TWO_PI;
+            double horizontal = Math.sqrt(Math.max(0.0D, 1.0D - u * u));
+            double distance = Math.cbrt(random.nextDouble()) * sphereRadius;
+            double x = Math.cos(theta) * horizontal * distance;
+            double y = torusCenterY + u * distance * 0.85D;
+            double z = Math.sin(theta) * horizontal * distance;
+            Vec3 radial = radial(x, z);
+            double velocityJitter = headVelocityJitterScale() * 1.35D;
+            double horizontalJitter = velocityJitter * 0.35D;
+            double velocityX = -radial.x * INITIAL_CHAOS_SPHERE_INWARD_VELOCITY * visualScale + jitter(random, horizontalJitter);
+            double velocityY = (INITIAL_CHAOS_SPHERE_UPWARD_VELOCITY
+                    + random.nextDouble() * INITIAL_CHAOS_SPHERE_UPWARD_VELOCITY_RANDOM) * visualScale;
+            double velocityZ = -radial.z * INITIAL_CHAOS_SPHERE_INWARD_VELOCITY * visualScale + jitter(random, horizontalJitter);
+            float startSize = scaleCloudletSize((float) ((5.0D + random.nextDouble() * 6.0D) * visualScale));
+            float growSize = scaleCloudletSize((float) ((8.0D + random.nextDouble() * 8.0D) * visualScale));
+            cloudlets.add(new MushroomCloudlet(
+                    MushroomCloudletType.INITIAL_FIREBALL_CHAOS,
+                    x,
+                    y,
+                    z,
+                    INITIAL_CHAOS_SPHERE_LIFETIME_MIN_TICKS + random.nextInt(INITIAL_CHAOS_SPHERE_LIFETIME_RANDOM_TICKS + 1),
+                    startSize,
+                    growSize,
+                    random.nextLong(),
+                    false,
+                    1.0F,
+                    velocityX,
+                    velocityY,
+                    velocityZ
+            ));
+        }
+    }
+
     private void fillInitialTorusIfNeeded() {
         if (!ENABLE_INITIAL_TORUS_FILL || filledInitialTorus) {
             return;
@@ -231,23 +336,27 @@ public final class NuclearMushroomCloudSimulation {
             }
             double angleAroundY = random.nextDouble() * Mth.TWO_PI;
             double angleAroundTube = random.nextDouble() * Mth.TWO_PI;
-            double tubeRadius = minorRadius * Math.sqrt(random.nextDouble());
-            double radialOffset = Math.cos(angleAroundTube) * tubeRadius;
-            double verticalOffset = Math.sin(angleAroundTube) * tubeRadius;
+            double tubeRadiusScale = Math.sqrt(random.nextDouble());
+            double radialOffset = Math.cos(angleAroundTube) * horizontalMinorRadius * tubeRadiusScale;
+            double verticalOffset = Math.sin(angleAroundTube) * minorRadius * tubeRadiusScale;
             double radialDistance = Math.max(0.0D, majorRadius + radialOffset);
-            double x = Math.cos(angleAroundY) * radialDistance + jitter(random, 0.3D * visualScale);
-            double z = Math.sin(angleAroundY) * radialDistance + jitter(random, 0.3D * visualScale);
-            double y = torusCenterY + verticalOffset + jitter(random, 0.22D * visualScale);
+            double jitterScale = headPositionJitterScale() * 1.25D;
+            double x = Math.cos(angleAroundY) * radialDistance + jitter(random, jitterScale);
+            double z = Math.sin(angleAroundY) * radialDistance + jitter(random, jitterScale);
+            double y = torusCenterY + verticalOffset + jitter(random, jitterScale * 0.75D);
             Vec3 radial = radial(x, z);
             Vec3 tangent = new Vec3(-radial.z, 0.0D, radial.x);
-            double tubeDistance = Math.sqrt(radialOffset * radialOffset + verticalOffset * verticalOffset);
-            double tubeDistanceSafe = Math.max(tubeDistance, 1.0E-5D);
-            double tangentRadial = verticalOffset / tubeDistanceSafe;
-            double tangentVertical = -radialOffset / tubeDistanceSafe;
-            double targetTubeSpeed = torusAngularSpeed() * Math.max(tubeDistance, minorRadius * 0.65D);
-            double velocityX = radial.x * tangentRadial * targetTubeSpeed * 0.45D + tangent.x * jitter(random, 0.003D * visualScale);
-            double velocityY = tangentVertical * targetTubeSpeed * 0.45D + jitter(random, 0.003D * visualScale);
-            double velocityZ = radial.z * tangentRadial * targetTubeSpeed * 0.45D + tangent.z * jitter(random, 0.003D * visualScale);
+            double normalizedRadial = radialOffset / Math.max(horizontalMinorRadius, 1.0E-5D);
+            double normalizedVertical = verticalOffset / Math.max(minorRadius, 1.0E-5D);
+            double normalizedTubeDistance = Math.max(Math.sqrt(normalizedRadial * normalizedRadial + normalizedVertical * normalizedVertical), 1.0E-5D);
+            double tangentRadial = normalizedVertical / normalizedTubeDistance;
+            double tangentVertical = -normalizedRadial / normalizedTubeDistance;
+            double effectiveTubeRadius = Math.sqrt(Math.max(horizontalMinorRadius, 1.0E-5D) * Math.max(minorRadius, 1.0E-5D));
+            double targetTubeSpeed = torusAngularSpeed() * Math.max(effectiveTubeRadius * normalizedTubeDistance, effectiveTubeRadius * 0.65D);
+            double velocityJitter = headVelocityJitterScale() * 1.25D;
+            double velocityX = radial.x * tangentRadial * targetTubeSpeed * 0.45D + tangent.x * jitter(random, 0.003D * visualScale) + jitter(random, velocityJitter);
+            double velocityY = tangentVertical * targetTubeSpeed * 0.45D + jitter(random, 0.003D * visualScale) + jitter(random, velocityJitter * 0.65D);
+            double velocityZ = radial.z * tangentRadial * targetTubeSpeed * 0.45D + tangent.z * jitter(random, 0.003D * visualScale) + jitter(random, velocityJitter);
             double sizeScale = Math.sqrt(torusScale);
             float startSize = scaleCloudletSize((float) ((5.0D + random.nextDouble() * 4.0D) * visualScale * sizeScale));
             float growSize = scaleCloudletSize((float) ((8.0D + random.nextDouble() * 8.0D) * visualScale * sizeScale));
@@ -339,20 +448,22 @@ public final class NuclearMushroomCloudSimulation {
 
     private void spawnTorusCloudlet(RandomSource random) {
         double angleAroundY = random.nextDouble() * Mth.TWO_PI;
-        double angleAroundTube = TORUS_SOURCE_ANGLE + jitter(random, TORUS_SOURCE_ANGLE_SPREAD);
-        double tubeRadius = minorRadius * Mth.lerp(random.nextDouble(), 0.35D, 1.0D);
-        double radialOffset = Math.cos(angleAroundTube) * tubeRadius;
-        double verticalOffset = Math.sin(angleAroundTube) * tubeRadius;
+        double angleAroundTube = TORUS_SOURCE_ANGLE + jitter(random, headSourceSpread());
+        double tubeRadiusScale = Mth.lerp(random.nextDouble(), 0.35D, 1.0D);
+        double radialOffset = Math.cos(angleAroundTube) * horizontalMinorRadius * tubeRadiusScale;
+        double verticalOffset = Math.sin(angleAroundTube) * minorRadius * tubeRadiusScale;
         double radialDistance = Math.max(0.0D, majorRadius + radialOffset);
-        double x = Math.cos(angleAroundY) * radialDistance;
-        double z = Math.sin(angleAroundY) * radialDistance;
-        double y = torusCenterY + verticalOffset;
+        double jitterScale = headPositionJitterScale();
+        double x = Math.cos(angleAroundY) * radialDistance + jitter(random, jitterScale);
+        double z = Math.sin(angleAroundY) * radialDistance + jitter(random, jitterScale);
+        double y = torusCenterY + verticalOffset + jitter(random, jitterScale * 0.75D);
         Vec3 radial = radial(x, z);
         Vec3 tangent = new Vec3(-radial.z, 0.0D, radial.x);
         double sizeScale = Math.sqrt(torusScale);
         float startSize = scaleCloudletSize((float) ((5.0D + random.nextDouble() * 4.0D) * visualScale * sizeScale));
         float growSize = scaleCloudletSize((float) ((8.0D + random.nextDouble() * 8.0D) * visualScale * sizeScale));
         double swirl = jitter(random, 0.006D * visualScale);
+        double velocityJitter = headVelocityJitterScale();
 
         cloudlets.add(new MushroomCloudlet(
                 MushroomCloudletType.TORUS_FIREBALL,
@@ -365,9 +476,9 @@ public final class NuclearMushroomCloudSimulation {
                 random.nextLong(),
                 false,
                 1.0F,
-                tangent.x * swirl + jitter(random, 0.002D * visualScale),
-                (0.01D + random.nextDouble() * 0.025D) * visualScale,
-                tangent.z * swirl + jitter(random, 0.002D * visualScale)
+                tangent.x * swirl + jitter(random, 0.002D * visualScale) + jitter(random, velocityJitter),
+                (0.01D + random.nextDouble() * 0.025D) * visualScale + jitter(random, velocityJitter * 0.65D),
+                tangent.z * swirl + jitter(random, 0.002D * visualScale) + jitter(random, velocityJitter)
         ));
         sourceSpawnCountThisTick++;
         sourceSpawnRadialOffsetSum += radialOffset;
@@ -517,7 +628,7 @@ public final class NuclearMushroomCloudSimulation {
         }
 
         SkyesNuclearTech.LOGGER.info(
-                "Nuke mushroom debug: age={} cloudlets={} groundY={} groundYInitialized={} visualScale={} particleScale={} cloudScale={} finalHeightScale={} growTicks={} riseTicks={} filledInitialTorus={} initialTorusFillCount={} scaledInitialTorusFillCount={} majorRadius={} minorRadius={} torusCenterY={} torusBottomY={} torusTopY={} secondaryMajorRadius={} secondaryMinorRadius={} secondaryCenterY={} stemBaseDepthBelowExplosion={} scaledStemDepth={} stemBottomY={} stemTopY={} stemHeight={} stemRadius0={} stemRadius030={} stemRadius075={} stemRadius1={} globalHeat={} stemHotSpawnHeatFactor={} stemHotSpawnChance={} torusSpawnTicks={} stemExtraSpawnTicks={} stemSpawnTicks={} torusSpawnRate={} scaledTorusSpawnRate={} secondarySpawnRate={} scaledSecondarySpawnRate={} stemSpawnRate={} scaledStemSpawnRate={} stemLifetimeMin={} stemLifetimeRandom={} airRingHeightExtraY={} airRingLowerDelay={} airRingUpperDelay={} airRingLowerLifetime={} airRingUpperLifetime={} lowerAirRingSpawnY={} upperAirRingSpawnY={} sourceAvgRadialOffset={} sourceAvgVerticalOffset={} torusScale={} angularSpeed={} targetTubeSpeed={} maxSpeed={} spawnedLowerAirRing={} spawnedUpperAirRing={} TORUS_FIREBALL={} SECONDARY_TORUS={} STEM={} WHITE_AIR_RING={} hotSTEM={}",
+                "Nuke mushroom debug: age={} cloudlets={} groundY={} groundYInitialized={} visualScale={} particleScale={} cloudScale={} finalHeightScale={} growTicks={} riseTicks={} growthSpeedMultiplier={} growthProgress={} torusInitialHorizontalCompression={} torusHorizontalCompression={} headRandomnessProgress={} headPositionJitterScale={} headVelocityJitterScale={} headShapeCorrectionMultiplier={} headSourceSpread={} spawnedInitialChaosSphere={} initialChaosSphereCount={} scaledInitialChaosSphereCount={} initialChaosSphereRadius={} initialChaosSphereInwardVelocity={} initialChaosSphereUpwardVelocity={} initialChaosSphereUpwardVelocityRandom={} filledInitialTorus={} initialTorusFillCount={} scaledInitialTorusFillCount={} horizontalMajorRadius={} finalHorizontalMajorRadius={} horizontalMinorRadius={} verticalMinorRadius={} torusCenterY={} torusBottomY={} torusTopY={} secondaryMajorRadius={} secondaryFinalWidthScale={} secondaryRingScale={} secondaryMinorRadius={} secondaryOuterRadius={} secondaryInnerRadius={} secondaryCenterY={} stemBaseDepthBelowExplosion={} scaledStemDepth={} stemBottomY={} stemTopY={} stemHeight={} stemRadius0={} stemRadius030={} stemRadius075={} stemRadius1={} globalHeat={} stemHotSpawnHeatFactor={} stemHotSpawnChance={} torusSpawnTicks={} stemExtraSpawnTicks={} stemSpawnTicks={} torusSpawnRate={} scaledTorusSpawnRate={} secondarySpawnRate={} scaledSecondarySpawnRate={} stemSpawnRate={} scaledStemSpawnRate={} stemLifetimeMin={} stemLifetimeRandom={} airRingHeightExtraY={} airRingLowerDelay={} airRingUpperDelay={} airRingLowerLifetime={} airRingUpperLifetime={} lowerAirRingSpawnY={} upperAirRingSpawnY={} sourceAvgRadialOffset={} sourceAvgVerticalOffset={} torusScale={} angularSpeed={} targetTubeSpeed={} maxSpeed={} spawnedLowerAirRing={} spawnedUpperAirRing={} INITIAL_FIREBALL_CHAOS={} TORUS_FIREBALL={} SECONDARY_TORUS={} STEM={} WHITE_AIR_RING={} hotSTEM={}",
                 age,
                 cloudlets.size(),
                 groundY,
@@ -528,16 +639,38 @@ public final class NuclearMushroomCloudSimulation {
                 CLOUD_FINAL_HEIGHT_SCALE,
                 TORUS_GROW_TICKS,
                 TORUS_RISE_TICKS,
+                CLOUD_GROWTH_SPEED_MULTIPLIER,
+                growthProgress(TORUS_GROW_TICKS),
+                TORUS_INITIAL_HORIZONTAL_COMPRESSION,
+                torusHorizontalCompression,
+                headRandomnessProgress(),
+                headPositionJitterScale(),
+                headVelocityJitterScale(),
+                headShapeCorrectionMultiplier(),
+                headSourceSpread(),
+                spawnedInitialChaosSphere,
+                INITIAL_CHAOS_SPHERE_COUNT,
+                scaledCount(INITIAL_CHAOS_SPHERE_COUNT),
+                initialChaosSphereRadius,
+                INITIAL_CHAOS_SPHERE_INWARD_VELOCITY,
+                INITIAL_CHAOS_SPHERE_UPWARD_VELOCITY,
+                INITIAL_CHAOS_SPHERE_UPWARD_VELOCITY_RANDOM,
                 filledInitialTorus,
                 INITIAL_TORUS_FILL_COUNT,
                 scaledInitialTorusFillCount(),
                 majorRadius,
+                TORUS_FINAL_MAJOR_RADIUS * visualScale,
+                horizontalMinorRadius,
                 minorRadius,
                 torusCenterY,
                 torusCenterY - minorRadius,
                 torusCenterY + minorRadius,
                 secondaryMajorRadius,
+                SECONDARY_TORUS_FINAL_WIDTH_SCALE,
+                SECONDARY_TORUS_RING_SCALE,
                 secondaryMinorRadius,
+                secondaryMajorRadius + secondaryMinorRadius,
+                Math.max(0.0D, secondaryMajorRadius - secondaryMinorRadius),
                 secondaryCenterY,
                 STEM_BASE_DEPTH_BELOW_EXPLOSION,
                 scaledStemDepth,
@@ -577,6 +710,7 @@ public final class NuclearMushroomCloudSimulation {
                 maxTorusSpeed(),
                 spawnedLowerAirRing,
                 spawnedUpperAirRing,
+                countCloudlets(MushroomCloudletType.INITIAL_FIREBALL_CHAOS),
                 countCloudlets(MushroomCloudletType.TORUS_FIREBALL),
                 countCloudlets(MushroomCloudletType.SECONDARY_TORUS),
                 countCloudlets(MushroomCloudletType.STEM),
@@ -671,6 +805,7 @@ public final class NuclearMushroomCloudSimulation {
     }
 
     private enum MushroomCloudletType {
+        INITIAL_FIREBALL_CHAOS,
         TORUS_FIREBALL,
         STEM,
         SECONDARY_TORUS,
@@ -753,6 +888,8 @@ public final class NuclearMushroomCloudSimulation {
                 dampAndClamp(0.988D, simulation.maxTorusSpeed() * 0.85D, 0.48D * simulation.visualScale);
             } else if (type == MushroomCloudletType.WHITE_AIR_RING) {
                 dampAirRing();
+            } else if (type == MushroomCloudletType.INITIAL_FIREBALL_CHAOS) {
+                dampInitialChaos();
             } else {
                 addTorusMotion(simulation);
                 dampAndClamp(0.988D, simulation.maxTorusSpeed(), 0.55D * simulation.visualScale);
@@ -763,7 +900,15 @@ public final class NuclearMushroomCloudSimulation {
         }
 
         private void addTorusMotion(NuclearMushroomCloudSimulation simulation) {
-            addTorusMotion(simulation, simulation.majorRadius, simulation.minorRadius, simulation.torusCenterY, 1.0D, 1.0D);
+            addTorusMotion(
+                    simulation,
+                    simulation.majorRadius,
+                    simulation.horizontalMinorRadius,
+                    simulation.minorRadius,
+                    simulation.torusCenterY,
+                    1.0D,
+                    simulation.headShapeCorrectionMultiplier()
+            );
         }
 
         private void addTorusMotion(
@@ -774,20 +919,36 @@ public final class NuclearMushroomCloudSimulation {
                 double speedMultiplier,
                 double correctionMultiplier
         ) {
+            addTorusMotion(simulation, motionMajorRadius, motionMinorRadius, motionMinorRadius, motionCenterY, speedMultiplier, correctionMultiplier);
+        }
+
+        private void addTorusMotion(
+                NuclearMushroomCloudSimulation simulation,
+                double motionMajorRadius,
+                double motionHorizontalMinorRadius,
+                double motionVerticalMinorRadius,
+                double motionCenterY,
+                double speedMultiplier,
+                double correctionMultiplier
+        ) {
             double horizontalDistance = Math.sqrt(x * x + z * z);
             Vec3 radialDir = radial(x, z);
             Vec3 tangentDir = new Vec3(-radialDir.z, 0.0D, radialDir.x);
             radialOffset = horizontalDistance - motionMajorRadius;
             verticalOffset = y - motionCenterY;
-            double radius = Math.max(motionMinorRadius, 1.0E-5D);
-            double tubeDistance = Math.sqrt(radialOffset * radialOffset + verticalOffset * verticalOffset);
-            double innerFactor = Mth.clamp(-radialOffset / radius, 0.0D, 1.0D);
-            double bottomFactor = Mth.clamp(-verticalOffset / radius, 0.0D, 1.0D);
+            double horizontalRadius = Math.max(motionHorizontalMinorRadius, 1.0E-5D);
+            double verticalRadius = Math.max(motionVerticalMinorRadius, 1.0E-5D);
+            double normalizedRadial = radialOffset / horizontalRadius;
+            double normalizedVertical = verticalOffset / verticalRadius;
+            double normalizedTubeDistance = Math.sqrt(normalizedRadial * normalizedRadial + normalizedVertical * normalizedVertical);
+            double effectiveTubeRadius = Math.sqrt(horizontalRadius * verticalRadius);
+            double innerFactor = Mth.clamp(-normalizedRadial, 0.0D, 1.0D);
+            double bottomFactor = Mth.clamp(-normalizedVertical, 0.0D, 1.0D);
 
-            double tubeDistanceSafe = Math.max(tubeDistance, 1.0E-5D);
-            double tangentRadial = verticalOffset / tubeDistanceSafe;
-            double tangentVertical = -radialOffset / tubeDistanceSafe;
-            double targetTubeSpeed = torusAngularSpeed() * Math.max(tubeDistance, motionMinorRadius * 0.65D) * speedMultiplier;
+            double tubeDistanceSafe = Math.max(normalizedTubeDistance, 1.0E-5D);
+            double tangentRadial = normalizedVertical / tubeDistanceSafe;
+            double tangentVertical = -normalizedRadial / tubeDistanceSafe;
+            double targetTubeSpeed = torusAngularSpeed() * Math.max(effectiveTubeRadius * normalizedTubeDistance, effectiveTubeRadius * 0.65D) * speedMultiplier;
             double targetVelocityX = radialDir.x * tangentRadial * targetTubeSpeed;
             double targetVelocityY = tangentVertical * targetTubeSpeed;
             double targetVelocityZ = radialDir.z * tangentRadial * targetTubeSpeed;
@@ -807,12 +968,12 @@ public final class NuclearMushroomCloudSimulation {
             velocityX += tangentDir.x * swirlStrength;
             velocityZ += tangentDir.z * swirlStrength;
 
-            if (tubeDistance > 1.0E-5D) {
-                double correction = Mth.clamp((motionMinorRadius - tubeDistance) / motionMinorRadius, -1.0D, 1.0D);
+            if (normalizedTubeDistance > 1.0E-5D) {
+                double correction = Mth.clamp(1.0D - normalizedTubeDistance, -1.0D, 1.0D);
                 double correctionStrength = 0.035D * simulation.visualScale * correction * correctionMultiplier;
-                velocityX += radialDir.x * (radialOffset / tubeDistance) * correctionStrength;
-                velocityY += (verticalOffset / tubeDistance) * correctionStrength;
-                velocityZ += radialDir.z * (radialOffset / tubeDistance) * correctionStrength;
+                velocityX += radialDir.x * (normalizedRadial / normalizedTubeDistance) * correctionStrength;
+                velocityY += (normalizedVertical / normalizedTubeDistance) * correctionStrength;
+                velocityZ += radialDir.z * (normalizedRadial / normalizedTubeDistance) * correctionStrength;
             }
         }
 
@@ -872,6 +1033,14 @@ public final class NuclearMushroomCloudSimulation {
             velocityY = Mth.clamp(velocityY, -0.05D, 0.05D);
         }
 
+        private void dampInitialChaos() {
+            double progress = Mth.clamp(age / (double) lifetime, 0.0D, 1.0D);
+            double drag = Mth.lerp(progress, 0.982D, 0.955D);
+            velocityX *= drag;
+            velocityY *= Mth.lerp(progress, 0.990D, 0.965D);
+            velocityZ *= drag;
+        }
+
         public boolean isExpired() {
             return age >= lifetime;
         }
@@ -906,6 +1075,10 @@ public final class NuclearMushroomCloudSimulation {
                 fade = progress < 0.30F ? 1.0F : 1.0F - (progress - 0.30F) / 0.70F;
                 return Mth.clamp(0.68F * fade, 0.0001F, 0.72F);
             }
+            if (type == MushroomCloudletType.INITIAL_FIREBALL_CHAOS) {
+                fade = progress < 0.40F ? 1.0F : 1.0F - (progress - 0.40F) / 0.60F;
+                return Mth.clamp(0.98F * fade, 0.0001F, 1.0F);
+            }
             if (type == MushroomCloudletType.STEM) {
                 fade = progress > 0.82F ? 1.0F - (progress - 0.82F) / 0.18F : 1.0F;
             } else {
@@ -935,6 +1108,9 @@ public final class NuclearMushroomCloudSimulation {
             }
             if (type == MushroomCloudletType.WHITE_AIR_RING) {
                 return whiteAirRingColor(partialTick, component);
+            }
+            if (type == MushroomCloudletType.INITIAL_FIREBALL_CHAOS) {
+                return initialFireballChaosColor(partialTick, component);
             }
             float progress = Mth.clamp((age + partialTick) / (float) lifetime, 0.0F, 1.0F);
             float particleCoolProgress = Mth.clamp((age + partialTick) / (float) PARTICLE_HOT_COOL_TICKS, 0.0F, 1.0F);
@@ -995,6 +1171,26 @@ public final class NuclearMushroomCloudSimulation {
             Color color = lerpColor(progress, white, paleGray);
             float value = component == 0 ? color.red : component == 1 ? color.green : color.blue;
             return Math.round(Mth.clamp(value, 0.0F, 1.0F) * 255.0F);
+        }
+
+        private int initialFireballChaosColor(float partialTick, int component) {
+            float progress = Mth.clamp((age + partialTick) / (float) lifetime, 0.0F, 1.0F);
+            Color darkSmoke = new Color(0.060F, 0.055F, 0.050F);
+            Color darkOrange = new Color(0.34F, 0.10F, 0.035F);
+            Color orange = new Color(0.92F, 0.30F, 0.055F);
+            Color hotYellow = new Color(1.0F, 0.78F, 0.22F);
+            Color hotWhite = new Color(1.0F, 0.96F, 0.78F);
+            Color color;
+            if (progress < 0.20F) {
+                color = lerpColor(progress / 0.20F, hotWhite, hotYellow);
+            } else if (progress < 0.60F) {
+                color = lerpColor((progress - 0.20F) / 0.40F, orange, darkOrange);
+            } else {
+                color = lerpColor((progress - 0.60F) / 0.40F, darkOrange, darkSmoke);
+            }
+            float seedTint = 0.93F + (((seed >>> 20) & 0xFFFF) / 65535.0F) * 0.14F;
+            float value = component == 0 ? color.red : component == 1 ? color.green : color.blue;
+            return Math.round(Mth.clamp(value * seedTint, 0.0F, 1.0F) * 255.0F);
         }
 
         private int stemColor(int component) {
