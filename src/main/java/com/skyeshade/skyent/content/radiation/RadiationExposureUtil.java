@@ -15,22 +15,17 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
-import java.util.UUID;
 
 public final class RadiationExposureUtil {
     private static final double EXPOSURE_RAY_STEP = 0.5D;
     private static final double MIN_TRANSMISSION = 0.001D;
     private static final double SOURCE_STRENGTH_TIE_EPSILON = 1.0E-6D;
-    private static final double FAST_MOVE_SCAN_RADIUS_FRACTION = 0.5D;
-    private static final Map<CacheKey, RadiationLocalSourceCache> LOCAL_SOURCE_CACHES = new HashMap<>();
 
     private RadiationExposureUtil() {
     }
@@ -50,9 +45,6 @@ public final class RadiationExposureUtil {
     public static ExposureScanResult scanEnvironmentalExposure(ServerLevel level, Vec3 entityPos, double scanRadius, LivingEntity excludedEntity) {
         if (SkyentRadiationConfig.exposureSourceSamplingCapEnabled()
                 && SkyentRadiationConfig.exposureStreamingSourceSelectionEnabled()) {
-            if (shouldUseLocalSourceCache(excludedEntity)) {
-                return scanEnvironmentalExposureCached(level, entityPos, scanRadius, excludedEntity);
-            }
             return scanEnvironmentalExposureStreaming(level, entityPos, scanRadius, excludedEntity);
         }
 
@@ -130,24 +122,12 @@ public final class RadiationExposureUtil {
                 sampledSources.chosenHottestFarthestDistance(),
                 false,
                 0,
-                foundSources,
-                sourceScan.registryCandidates(),
-                true,
                 0,
                 0,
                 0,
                 0,
                 0,
                 0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0.0D,
-                0.0D,
-                0.0D,
-                false,
                 0,
                 0,
                 0,
@@ -242,25 +222,6 @@ public final class RadiationExposureUtil {
                 sampledSources.chosenHottestMaxStrength(),
                 sampledSources.chosenHottestNearestDistance(),
                 sampledSources.chosenHottestFarthestDistance(),
-                false,
-                0,
-                accumulator.sourcesFound(),
-                registryStats.sourceRefsVisited(),
-                true,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0.0D,
-                0.0D,
-                0.0D,
                 registryStats.spatialIndexEnabled(),
                 registryStats.spatialIndexCellSize(),
                 registryStats.cellsVisited(),
@@ -271,121 +232,13 @@ public final class RadiationExposureUtil {
                 registryStats.aggregateSourcesWithinRadius(),
                 registryStats.individualSourcesWithinRadius(),
                 registryStats.clusteredBlockSourcesRepresented(),
-                nanosToMillis(collectionNs),
-                nanosToMillis(selectionNs),
-                nanosToMillis(raycastNs),
-                nanosToMillis(totalNs)
-        );
-
-        debugExposureSampling(level, excludedEntity, result);
-        return result;
-    }
-
-    private static ExposureScanResult scanEnvironmentalExposureCached(ServerLevel level, Vec3 entityPos, double scanRadius, LivingEntity excludedEntity) {
-        long totalStartNs = System.nanoTime();
-        long collectionStartNs = totalStartNs;
-        RadioactiveSourceRegistry registry = RadioactiveSourceRegistry.get(level);
-        RadiationLocalSourceCache cache = LOCAL_SOURCE_CACHES.computeIfAbsent(
-                cacheKey(level, entityPos, excludedEntity),
-                ignored -> new RadiationLocalSourceCache()
-        );
-        CacheUpdateStats cacheStats = cache.update(level, registry, entityPos, scanRadius, excludedEntity);
-        SelectionAccumulator accumulator = new SelectionAccumulator(level, entityPos);
-        MutableCacheCandidateStats candidateStats = new MutableCacheCandidateStats();
-
-        for (CachedSource cachedSource : cache.sources.values()) {
-            CacheCandidateAssessment assessment = cachedSource.assess(entityPos, scanRadius, level.getGameTime());
-            candidateStats.observe(assessment);
-            if (assessment.candidate() != null) {
-                accumulator.observe(assessment.candidate());
-            }
-        }
-        for (SourceCandidate source : findCarriedRadiationSources(level, entityPos, scanRadius, excludedEntity)) {
-            accumulator.observe(source);
-        }
-        for (SourceCandidate source : findRadioactiveCarrierEntitySources(level, entityPos, scanRadius)) {
-            accumulator.observe(source);
-        }
-        long collectionNs = System.nanoTime() - collectionStartNs;
-
-        long selectionStartNs = System.nanoTime();
-        SampledSources sampledSources = accumulator.finish();
-        List<SourceCandidate> contributing = sampledSources.sources();
-        long selectionNs = System.nanoTime() - selectionStartNs;
-
-        long raycastStartNs = System.nanoTime();
-        double exposure = 0.0D;
-        double strongestContribution = 0.0D;
-        int raycastsPerformed = 0;
-        for (SourceCandidate source : contributing) {
-            raycastsPerformed++;
-            double transmission = calculateTransmissionBetween(level, source.center(), entityPos, source.sourceBlockToSkip());
-            if (transmission <= 0.0D) {
-                continue;
-            }
-
-            double contribution = source.baseContribution() * transmission;
-            strongestContribution = Math.max(strongestContribution, contribution);
-            exposure += contribution;
-        }
-        long raycastNs = System.nanoTime() - raycastStartNs;
-        long totalNs = System.nanoTime() - totalStartNs;
-
-        ExposureScanResult result = new ExposureScanResult(
-                exposure,
-                accumulator.sourcesFound(),
-                accumulator.contributingSources(),
-                accumulator.nearestSourceDistance(),
-                strongestContribution,
-                registry.size(),
-                cacheStats.sourcesWithinRadius(),
-                sampledSources.hottestCount(),
-                sampledSources.closestCount(),
-                sampledSources.randomCount(),
-                sampledSources.hotCandidatePoolCount(),
-                sampledSources.duplicatesRemoved(),
-                contributing.size(),
-                raycastsPerformed,
-                cacheStats.chunkBucketsVisited(),
-                cacheStats.chunkBucketsWithSources(),
-                cacheStats.sourceRefsVisited(),
-                cacheStats.sourcesWithinRadius(),
-                sampledSources.strongestSourceStrength(),
-                sampledSources.strongestSourceDistance(),
-                sampledSources.strongestSourceSelected(),
-                sampledSources.chosenHottestMinStrength(),
-                sampledSources.chosenHottestMaxStrength(),
-                sampledSources.chosenHottestNearestDistance(),
-                sampledSources.chosenHottestFarthestDistance(),
-                true,
-                cache.sources.size(),
-                accumulator.sourcesFound(),
-                cacheStats.sampledRefs(),
-                cacheStats.fullScanUsed(),
-                cacheStats.added(),
-                cacheStats.updated(),
-                cacheStats.evicted(),
-                candidateStats.validEntries,
-                candidateStats.invalidEntries,
-                candidateStats.withinRadius,
-                candidateStats.contributing,
-                candidateStats.tooFar,
-                candidateStats.stale,
-                cacheStats.missingSource(),
-                0,
-                cacheStats.samplingMillis(),
-                cacheStats.evictionMillis(),
-                cacheStats.totalMillis(),
-                false,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
-                0,
+                registryStats.aggregateCellsEnabled(),
+                registryStats.aggregateCellsBlockedSparse(),
+                registryStats.aggregateCellsBlockedShielding(),
+                registryStats.aggregateCellsBlockedDominantSource(),
+                registryStats.aggregateCellsBlockedHotSource(),
+                registryStats.individualSourcesFromUnaggregatedCells(),
+                registryStats.forcedIndividualSources(),
                 nanosToMillis(collectionNs),
                 nanosToMillis(selectionNs),
                 nanosToMillis(raycastNs),
@@ -752,36 +605,27 @@ public final class RadiationExposureUtil {
                 ? serverPlayer.getGameProfile().getName()
                 : target == null ? "geiger_or_unknown" : target.getType().toShortString();
         String label = player ? "Radiation player exposure debug" : "Radiation entity exposure debug";
+        String sourceSelectionMode = result.spatialIndexEnabled() ? "SPATIAL_INDEX_CLUSTERED" : "CHUNK_BUCKET_FALLBACK";
 
         SkyesNuclearTech.LOGGER.info(
-                "{}: target={} dimension={} immune={} cacheEnabled={} cacheSize={} cacheCandidates={} cacheValidEntries={} cacheInvalidEntries={} cacheWithinRadius={} cacheContributing={} cacheTooFar={} cacheStale={} cacheMissingSource={} cacheDuplicateKeys={} cacheAdded={} cacheUpdated={} cacheEvicted={} fullScanUsed={} cacheSamplingMs={} cacheEvictionMs={} cacheMaintenanceMs={} spatialIndexEnabled={} cellSize={} cellsVisited={} cellsSkippedByAabb={} cellsWithSources={} individualSourceRefsVisited={} aggregateSourceRefsVisited={} aggregateSourcesWithinRadius={} individualSourcesWithinRadius={} clusteredBlockSourcesRepresented={} nearbySources={} contributingSources={} chunkBucketsVisited={} chunkBucketsWithSources={} sourceRefsVisited={} sampledRefsThisUpdate={} sourcesWithinRadius={} hotCandidatePool={} chosenHottest={} chosenClosest={} chosenRandom={} duplicatesRemoved={} finalSelected={} raycasts={} strongestSourceStrength={} strongestSourceDistance={} strongestSourceSelected={} chosenHottestStrengthRange=[{},{}] chosenHottestNearestDistance={} chosenHottestFarthestDistance={} collectionMs={} selectionMs={} raycastMs={} totalMs={} exposure={} nearestDistance={} strongestContribution={} playerPath={} entityPath={} scanRadius={}",
+                "{}: target={} dimension={} immune={} sourceSelectionMode={} spatialIndexEnabled={} cellSize={} cellsVisited={} cellsSkippedByAabb={} cellsWithSources={} aggregateCellsEnabled={} aggregateCellsBlockedSparse={} aggregateCellsBlockedShielding={} aggregateCellsBlockedDominantSource={} aggregateCellsBlockedHotSource={} individualSourcesFromUnaggregatedCells={} forcedIndividualSources={} individualSourceRefsVisited={} aggregateSourceRefsVisited={} aggregateSourcesWithinRadius={} individualSourcesWithinRadius={} clusteredBlockSourcesRepresented={} nearbySources={} contributingSources={} chunkBucketsVisited={} chunkBucketsWithSources={} sourceRefsVisited={} sourcesWithinRadius={} hotCandidatePool={} chosenHottest={} chosenClosest={} chosenRandom={} duplicatesRemoved={} finalSelected={} raycasts={} strongestSourceStrength={} strongestSourceDistance={} strongestSourceSelected={} chosenHottestStrengthRange=[{},{}] chosenHottestNearestDistance={} chosenHottestFarthestDistance={} collectionMs={} selectionMs={} raycastMs={} totalMs={} exposure={} nearestDistance={} strongestContribution={} playerPath={} entityPath={} scanRadius={}",
                 label,
                 targetName,
                 level.dimension().location(),
                 immune,
-                result.cacheEnabled(),
-                result.cacheSize(),
-                result.cacheCandidates(),
-                result.cacheValidEntries(),
-                result.cacheInvalidEntries(),
-                result.cacheWithinRadius(),
-                result.cacheContributing(),
-                result.cacheTooFar(),
-                result.cacheStale(),
-                result.cacheMissingSource(),
-                result.cacheDuplicateKeys(),
-                result.cacheAdded(),
-                result.cacheUpdated(),
-                result.cacheEvicted(),
-                result.fullScanUsed(),
-                result.cacheSamplingMillis(),
-                result.cacheEvictionMillis(),
-                result.cacheMaintenanceMillis(),
+                sourceSelectionMode,
                 result.spatialIndexEnabled(),
                 result.spatialIndexCellSize(),
                 result.cellsVisited(),
                 result.cellsSkippedByAabb(),
                 result.cellsWithSources(),
+                result.aggregateCellsEnabled(),
+                result.aggregateCellsBlockedSparse(),
+                result.aggregateCellsBlockedShielding(),
+                result.aggregateCellsBlockedDominantSource(),
+                result.aggregateCellsBlockedHotSource(),
+                result.individualSourcesFromUnaggregatedCells(),
+                result.forcedIndividualSources(),
                 result.individualSourceRefsVisited(),
                 result.aggregateSourceRefsVisited(),
                 result.aggregateSourcesWithinRadius(),
@@ -792,7 +636,6 @@ public final class RadiationExposureUtil {
                 result.chunkBucketsVisited(),
                 result.chunkBucketsWithSources(),
                 result.sourceRefsVisited(),
-                result.sampledRefsThisUpdate(),
                 result.sourcesWithinRadius(),
                 result.hotCandidatePoolSize(),
                 result.sampledHottestSources(),
@@ -823,332 +666,6 @@ public final class RadiationExposureUtil {
 
     private static double nanosToMillis(long nanos) {
         return nanos / 1_000_000.0D;
-    }
-
-    private static boolean shouldUseLocalSourceCache(LivingEntity target) {
-        if (!SkyentRadiationConfig.exposureLocalSourceCacheEnabled() || target == null) {
-            return false;
-        }
-
-        if (target instanceof ServerPlayer) {
-            return SkyentRadiationConfig.exposurePlayerLocalSourceCacheEnabled();
-        }
-
-        return SkyentRadiationConfig.exposureEntityLocalSourceCacheEnabled();
-    }
-
-    private static CacheKey cacheKey(ServerLevel level, Vec3 entityPos, LivingEntity target) {
-        if (target != null) {
-            return new CacheKey(level.dimension().location().toString() + ":" + target.getUUID());
-        }
-
-        long x = Mth.floor(entityPos.x * 4.0D);
-        long y = Mth.floor(entityPos.y * 4.0D);
-        long z = Mth.floor(entityPos.z * 4.0D);
-        return new CacheKey(level.dimension().location() + ":pos:" + x + ":" + y + ":" + z);
-    }
-
-    private static final class RadiationLocalSourceCache {
-        private final Map<Long, CachedSource> sources = new HashMap<>();
-        private Vec3 lastTargetPosition;
-        private long lastFullRescanTick = Long.MIN_VALUE;
-        private int chunkCursor;
-
-        private CacheUpdateStats update(
-                ServerLevel level,
-                RadioactiveSourceRegistry registry,
-                Vec3 entityPos,
-                double scanRadius,
-                LivingEntity target
-        ) {
-            long updateStartNs = System.nanoTime();
-            long gameTime = level.getGameTime();
-            int maxSources = SkyentRadiationConfig.exposureLocalCacheMaxSources();
-            double maxDistanceMultiplier = SkyentRadiationConfig.exposureLocalCacheMaxDistanceMultiplier();
-            double maxDistanceSqr = scanRadius * scanRadius * maxDistanceMultiplier * maxDistanceMultiplier;
-            boolean fastMove = lastTargetPosition != null && lastTargetPosition.distanceToSqr(entityPos) > scanRadius * scanRadius * FAST_MOVE_SCAN_RADIUS_FRACTION * FAST_MOVE_SCAN_RADIUS_FRACTION;
-            if (fastMove) {
-                evictFar(entityPos, maxDistanceSqr);
-                chunkCursor += 31;
-            }
-            lastTargetPosition = entityPos;
-
-            int sampleBudget = target instanceof ServerPlayer
-                    ? SkyentRadiationConfig.exposureLocalCacheSourceRefsSampledPerPlayerUpdate()
-                    : SkyentRadiationConfig.exposureLocalCacheSourceRefsSampledPerTick();
-            if (fastMove) {
-                sampleBudget = Math.min(sampleBudget * 2, sampleBudget + SkyentRadiationConfig.exposureLocalCacheSourceRefsSampledPerPlayerUpdate());
-            }
-
-            MutableCacheUpdateStats mutableStats = new MutableCacheUpdateStats();
-            boolean fullScan = shouldFullScan(gameTime);
-            RadioactiveSourceRegistry.NearbySourceScanStats scanStats;
-            long samplingStartNs = System.nanoTime();
-            if (fullScan) {
-                scanStats = registry.scanSourcesNear(entityPos, scanRadius * maxDistanceMultiplier, pos -> updateSource(level, pos, entityPos, scanRadius, maxDistanceSqr, gameTime, mutableStats));
-                lastFullRescanTick = gameTime;
-            } else {
-                scanStats = registry.sampleSourcesNear(entityPos, scanRadius * maxDistanceMultiplier, chunkCursor, sampleBudget, pos -> updateSource(level, pos, entityPos, scanRadius, maxDistanceSqr, gameTime, mutableStats));
-                chunkCursor += Math.max(1, scanStats.chunkBucketsVisited());
-            }
-            mutableStats.samplingNs = System.nanoTime() - samplingStartNs;
-
-            mutableStats.sampledRefs = fullScan ? scanStats.sourceRefsVisited() : Math.min(sampleBudget, scanStats.sourceRefsVisited());
-            mutableStats.fullScanUsed = fullScan;
-            mutableStats.chunkBucketsVisited = scanStats.chunkBucketsVisited();
-            mutableStats.chunkBucketsWithSources = scanStats.chunkBucketsWithSources();
-            mutableStats.sourceRefsVisited = scanStats.sourceRefsVisited();
-            mutableStats.sourcesWithinRadius = scanStats.sourcesWithinRadius();
-            long evictionStartNs = System.nanoTime();
-            mutableStats.evicted += evictInvalidStaleFarAndOverflow(entityPos, scanRadius, gameTime, maxSources);
-            mutableStats.evictionNs = System.nanoTime() - evictionStartNs;
-            mutableStats.totalNs = System.nanoTime() - updateStartNs;
-            return mutableStats.toImmutable();
-        }
-
-        private boolean shouldFullScan(long gameTime) {
-            int minBeforeFullScan = SkyentRadiationConfig.exposureLocalCacheMinSourcesBeforeFullScan();
-            if (minBeforeFullScan > 0 && sources.size() < minBeforeFullScan && lastFullRescanTick == Long.MIN_VALUE) {
-                return true;
-            }
-
-            int interval = SkyentRadiationConfig.exposureLocalCacheFullRescanIntervalTicks();
-            return interval > 0 && (lastFullRescanTick == Long.MIN_VALUE || gameTime - lastFullRescanTick >= interval);
-        }
-
-        private void updateSource(
-                ServerLevel level,
-                BlockPos pos,
-                Vec3 entityPos,
-                double scanRadius,
-                double maxDistanceSqr,
-                long gameTime,
-                MutableCacheUpdateStats stats
-        ) {
-            if (!level.hasChunkAt(pos)) {
-                return;
-            }
-
-            BlockState state = level.getBlockState(pos);
-            if (!(state.getBlock() instanceof RadioactiveSource source)) {
-                if (sources.remove(pos.asLong()) != null) {
-                    stats.evicted++;
-                }
-                stats.missingSource++;
-                RadioactiveSourceRegistry.unregister(level, pos);
-                return;
-            }
-
-            Vec3 sourceCenter = Vec3.atCenterOf(pos);
-            double distanceSqr = sourceCenter.distanceToSqr(entityPos);
-            if (distanceSqr > maxDistanceSqr) {
-                return;
-            }
-
-            long key = pos.asLong();
-            CachedSource cachedSource = sources.get(key);
-            if (cachedSource == null) {
-                sources.put(key, new CachedSource(pos.immutable(), source.getRadiationStrength(), source.getEntityRadiationRange(), gameTime, distanceSqr));
-                stats.added++;
-            } else {
-                cachedSource.refresh(source.getRadiationStrength(), source.getEntityRadiationRange(), gameTime, distanceSqr);
-                stats.updated++;
-            }
-        }
-
-        private void evictFar(Vec3 entityPos, double maxDistanceSqr) {
-            sources.values().removeIf(source -> Vec3.atCenterOf(source.pos()).distanceToSqr(entityPos) > maxDistanceSqr);
-        }
-
-        private int evictInvalidStaleFarAndOverflow(Vec3 entityPos, double scanRadius, long gameTime, int maxSources) {
-            int removed = 0;
-            int staleAfterTicks = SkyentRadiationConfig.exposureLocalCacheStaleAfterTicks();
-            double maxDistanceMultiplier = SkyentRadiationConfig.exposureLocalCacheMaxDistanceMultiplier();
-            double maxDistanceSqr = scanRadius * scanRadius * maxDistanceMultiplier * maxDistanceMultiplier;
-            List<CachedSource> evictable = new ArrayList<>();
-            for (CachedSource source : sources.values()) {
-                double distanceSqr = Vec3.atCenterOf(source.pos()).distanceToSqr(entityPos);
-                source.lastDistanceSqr = distanceSqr;
-                if (distanceSqr > maxDistanceSqr || gameTime - source.lastSeenTick() > staleAfterTicks) {
-                    evictable.add(source);
-                }
-            }
-
-            int batchSize = SkyentRadiationConfig.exposureLocalCacheEvictionBatchSize();
-            evictable.sort(Comparator.comparingDouble(source -> evictionScore(source, gameTime)));
-            for (CachedSource source : evictable) {
-                if (removed >= batchSize) {
-                    break;
-                }
-                if (sources.remove(source.pos().asLong()) != null) {
-                    removed++;
-                }
-            }
-
-            if (sources.size() > maxSources) {
-                List<CachedSource> overflow = new ArrayList<>(sources.values());
-                overflow.sort(Comparator.comparingDouble(source -> evictionScore(source, gameTime)));
-                for (CachedSource source : overflow) {
-                    if (sources.size() <= maxSources) {
-                        break;
-                    }
-                    if (sources.remove(source.pos().asLong()) != null) {
-                        removed++;
-                    }
-                }
-            }
-            return removed;
-        }
-
-        private double evictionScore(CachedSource source, long gameTime) {
-            double staleTicks = Math.max(0L, gameTime - source.lastSeenTick());
-            double strength = SkyentRadiationConfig.exposureLocalCachePreferEvictionOfWeakSources() ? source.strength() : 0.0D;
-            return strength * 0.01D - Math.sqrt(Math.max(0.0D, source.lastDistanceSqr)) - staleTicks * 2.0D;
-        }
-    }
-
-    private static final class CachedSource {
-        private final BlockPos pos;
-        private double strength;
-        private int range;
-        private long lastSeenTick;
-        private double lastDistanceSqr;
-
-        private CachedSource(BlockPos pos, double strength, int range, long lastSeenTick, double lastDistanceSqr) {
-            this.pos = pos;
-            this.strength = strength;
-            this.range = range;
-            this.lastSeenTick = lastSeenTick;
-            this.lastDistanceSqr = lastDistanceSqr;
-        }
-
-        private void refresh(double strength, int range, long lastSeenTick, double lastDistanceSqr) {
-            this.strength = strength;
-            this.range = range;
-            this.lastSeenTick = lastSeenTick;
-            this.lastDistanceSqr = lastDistanceSqr;
-        }
-
-        private CacheCandidateAssessment assess(Vec3 entityPos, double scanRadius, long gameTime) {
-            Vec3 center = Vec3.atCenterOf(pos);
-            double distance = center.distanceTo(entityPos);
-            boolean withinRadius = distance <= scanRadius;
-            boolean stale = gameTime - lastSeenTick > SkyentRadiationConfig.exposureLocalCacheStaleAfterTicks();
-            if (!withinRadius || distance > range || stale) {
-                return new CacheCandidateAssessment(null, withinRadius, false, !withinRadius, stale);
-            }
-
-            double clampedDistance = Math.max(1.0D, distance);
-            return new CacheCandidateAssessment(
-                    new SourceCandidate(pos, center, distance, strength, strength / (clampedDistance * clampedDistance), pos),
-                    true,
-                    true,
-                    false,
-                    false
-            );
-        }
-
-        private BlockPos pos() {
-            return pos;
-        }
-
-        private double strength() {
-            return strength;
-        }
-
-        private long lastSeenTick() {
-            return lastSeenTick;
-        }
-    }
-
-    private static final class MutableCacheCandidateStats {
-        private int validEntries;
-        private int invalidEntries;
-        private int withinRadius;
-        private int contributing;
-        private int tooFar;
-        private int stale;
-
-        private void observe(CacheCandidateAssessment assessment) {
-            if (assessment.withinRadius()) {
-                withinRadius++;
-            }
-            if (assessment.tooFar()) {
-                tooFar++;
-            }
-            if (assessment.stale()) {
-                stale++;
-            }
-            if (assessment.contributing()) {
-                validEntries++;
-                contributing++;
-            } else {
-                invalidEntries++;
-            }
-        }
-    }
-
-    private record CacheCandidateAssessment(
-            SourceCandidate candidate,
-            boolean withinRadius,
-            boolean contributing,
-            boolean tooFar,
-            boolean stale
-    ) {
-    }
-
-    private static final class MutableCacheUpdateStats {
-        private int chunkBucketsVisited;
-        private int chunkBucketsWithSources;
-        private int sourceRefsVisited;
-        private int sourcesWithinRadius;
-        private int sampledRefs;
-        private boolean fullScanUsed;
-        private int added;
-        private int updated;
-        private int evicted;
-        private int missingSource;
-        private long samplingNs;
-        private long evictionNs;
-        private long totalNs;
-
-        private CacheUpdateStats toImmutable() {
-            return new CacheUpdateStats(
-                    chunkBucketsVisited,
-                    chunkBucketsWithSources,
-                    sourceRefsVisited,
-                    sourcesWithinRadius,
-                    sampledRefs,
-                    fullScanUsed,
-                    added,
-                    updated,
-                    evicted,
-                    missingSource,
-                    nanosToMillis(samplingNs),
-                    nanosToMillis(evictionNs),
-                    nanosToMillis(totalNs)
-            );
-        }
-    }
-
-    private record CacheUpdateStats(
-            int chunkBucketsVisited,
-            int chunkBucketsWithSources,
-            int sourceRefsVisited,
-            int sourcesWithinRadius,
-            int sampledRefs,
-            boolean fullScanUsed,
-            int added,
-            int updated,
-            int evicted,
-            int missingSource,
-            double samplingMillis,
-            double evictionMillis,
-            double totalMillis
-    ) {
-    }
-
-    private record CacheKey(String value) {
     }
 
     private static final class SelectionAccumulator {
@@ -1399,25 +916,6 @@ public final class RadiationExposureUtil {
             double chosenHottestMaxStrength,
             double chosenHottestNearestDistance,
             double chosenHottestFarthestDistance,
-            boolean cacheEnabled,
-            int cacheSize,
-            int cacheCandidates,
-            int sampledRefsThisUpdate,
-            boolean fullScanUsed,
-            int cacheAdded,
-            int cacheUpdated,
-            int cacheEvicted,
-            int cacheValidEntries,
-            int cacheInvalidEntries,
-            int cacheWithinRadius,
-            int cacheContributing,
-            int cacheTooFar,
-            int cacheStale,
-            int cacheMissingSource,
-            int cacheDuplicateKeys,
-            double cacheSamplingMillis,
-            double cacheEvictionMillis,
-            double cacheMaintenanceMillis,
             boolean spatialIndexEnabled,
             int spatialIndexCellSize,
             int cellsVisited,
@@ -1428,6 +926,13 @@ public final class RadiationExposureUtil {
             int aggregateSourcesWithinRadius,
             int individualSourcesWithinRadius,
             int clusteredBlockSourcesRepresented,
+            int aggregateCellsEnabled,
+            int aggregateCellsBlockedSparse,
+            int aggregateCellsBlockedShielding,
+            int aggregateCellsBlockedDominantSource,
+            int aggregateCellsBlockedHotSource,
+            int individualSourcesFromUnaggregatedCells,
+            int forcedIndividualSources,
             double collectionMillis,
             double selectionMillis,
             double raycastMillis,

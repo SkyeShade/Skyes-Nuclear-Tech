@@ -2,6 +2,7 @@ package com.skyeshade.skyent.content.radiation;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.config.SkyentRadiationConfig;
+import com.skyeshade.skyent.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -167,6 +168,13 @@ public final class RadioactiveSourceRegistry extends SavedData {
         int cellsSkippedByAabb = 0;
         int cellsWithSources = 0;
         int clusteredBlockSourcesRepresented = 0;
+        int aggregateCellsEnabled = 0;
+        int aggregateCellsBlockedSparse = 0;
+        int aggregateCellsBlockedShielding = 0;
+        int aggregateCellsBlockedDominantSource = 0;
+        int aggregateCellsBlockedHotSource = 0;
+        int individualSourcesFromUnaggregatedCells = 0;
+        int forcedIndividualSources = 0;
 
         for (int chunkX = minChunkX; chunkX <= maxChunkX; chunkX++) {
             for (int chunkZ = minChunkZ; chunkZ <= maxChunkZ; chunkZ++) {
@@ -185,8 +193,26 @@ public final class RadioactiveSourceRegistry extends SavedData {
 
                     cellsVisited++;
                     cellsWithSources++;
+                    cell.refreshAggregation(level);
+                    if (cell.canAggregate) {
+                        aggregateCellsEnabled++;
+                    } else {
+                        if (cell.blockedSparse) {
+                            aggregateCellsBlockedSparse++;
+                        }
+                        if (cell.hasNearbyShielding) {
+                            aggregateCellsBlockedShielding++;
+                        }
+                        if (cell.blockedDominantSource) {
+                            aggregateCellsBlockedDominantSource++;
+                        }
+                        if (cell.blockedHotSource) {
+                            aggregateCellsBlockedHotSource++;
+                        }
+                    }
+
                     AggregateRadiationSource aggregate = cell.aggregate;
-                    if (aggregate != null && aggregate.count > 0) {
+                    if (cell.canAggregate && aggregate != null && aggregate.count > 0) {
                         aggregateRefsVisited++;
                         Vec3 aggregateCenter = aggregate.center();
                         double distanceSqr = aggregateCenter.distanceToSqr(center);
@@ -195,10 +221,21 @@ public final class RadioactiveSourceRegistry extends SavedData {
                             clusteredBlockSourcesRepresented += aggregate.count;
                             sourceConsumer.accept(new ExposureSourceRef(null, aggregateCenter, aggregate.strength(), aggregate.range(), true, aggregate.count));
                         }
+                    } else {
+                        for (SourceIndexEntry entry : cell.clusterableSources.values()) {
+                            individualRefsVisited++;
+                            individualSourcesFromUnaggregatedCells++;
+                            Vec3 sourceCenter = Vec3.atCenterOf(entry.pos());
+                            if (sourceCenter.distanceToSqr(center) <= radiusSq) {
+                                individualSourcesWithinRadius++;
+                                sourceConsumer.accept(new ExposureSourceRef(entry.pos(), sourceCenter, entry.strength(), entry.range(), false, 1));
+                            }
+                        }
                     }
 
                     for (SourceIndexEntry entry : cell.individualSources.values()) {
                         individualRefsVisited++;
+                        forcedIndividualSources++;
                         Vec3 sourceCenter = Vec3.atCenterOf(entry.pos());
                         if (sourceCenter.distanceToSqr(center) <= radiusSq) {
                             individualSourcesWithinRadius++;
@@ -222,6 +259,13 @@ public final class RadioactiveSourceRegistry extends SavedData {
                 aggregateSourcesWithinRadius,
                 individualSourcesWithinRadius,
                 clusteredBlockSourcesRepresented,
+                aggregateCellsEnabled,
+                aggregateCellsBlockedSparse,
+                aggregateCellsBlockedShielding,
+                aggregateCellsBlockedDominantSource,
+                aggregateCellsBlockedHotSource,
+                individualSourcesFromUnaggregatedCells,
+                forcedIndividualSources,
                 SkyentRadiationConfig.radiationSpatialIndexEnabled(),
                 cellSize
         );
@@ -327,22 +371,22 @@ public final class RadioactiveSourceRegistry extends SavedData {
 
         double strength = source.getRadiationStrength();
         int range = source.getEntityRadiationRange();
-        boolean individual = shouldIndexIndividually(state, strength);
+        boolean hotSpecial = isHotSpecialSource(state);
+        boolean individual = shouldForceIndividual(state, strength, hotSpecial);
+        boolean blocksCellAggregation = hotSpecial || strength >= SkyentRadiationConfig.exposureAlwaysIndividualStrength() || state.hasBlockEntity();
         long sourceKey = pos.asLong();
         long chunkKey = chunkKey(pos);
         long cellKey = cellKey(pos, cellSize);
         ChunkRadiationBucket chunk = spatialChunks.computeIfAbsent(chunkKey, ignored -> new ChunkRadiationBucket());
         RadiationCellBucket cell = chunk.cells.computeIfAbsent(cellKey, ignored -> new RadiationCellBucket(cellOriginX(pos, cellSize), cellOriginY(pos, cellSize), cellOriginZ(pos, cellSize), cellSize));
-        SourceIndexEntry entry = new SourceIndexEntry(pos.immutable(), chunkKey, cellKey, strength, range, individual);
+        SourceIndexEntry entry = new SourceIndexEntry(pos.immutable(), chunkKey, cellKey, strength, range, individual, blocksCellAggregation);
         sourceIndexEntries.put(sourceKey, entry);
         if (individual) {
             cell.individualSources.put(sourceKey, entry);
         } else {
-            if (cell.aggregate == null) {
-                cell.aggregate = new AggregateRadiationSource();
-            }
-            cell.aggregate.add(pos, strength, range);
+            cell.clusterableSources.put(sourceKey, entry);
         }
+        cell.dirty = true;
         return true;
     }
 
@@ -364,12 +408,10 @@ public final class RadioactiveSourceRegistry extends SavedData {
 
         if (entry.individual()) {
             cell.individualSources.remove(entry.pos().asLong());
-        } else if (cell.aggregate != null) {
-            cell.aggregate.remove(entry.pos(), entry.strength());
-            if (cell.aggregate.count <= 0) {
-                cell.aggregate = null;
-            }
+        } else {
+            cell.clusterableSources.remove(entry.pos().asLong());
         }
+        cell.dirty = true;
 
         if (cell.isEmpty()) {
             chunk.cells.remove(entry.cellKey());
@@ -379,8 +421,11 @@ public final class RadioactiveSourceRegistry extends SavedData {
         }
     }
 
-    private static boolean shouldIndexIndividually(BlockState state, double strength) {
+    private static boolean shouldForceIndividual(BlockState state, double strength, boolean hotSpecial) {
         if (!SkyentRadiationConfig.exposureClusteringEnabled() || !SkyentRadiationConfig.exposureClusterStaticWeakSources()) {
+            return true;
+        }
+        if (hotSpecial) {
             return true;
         }
         if (state.hasBlockEntity()) {
@@ -390,6 +435,25 @@ public final class RadioactiveSourceRegistry extends SavedData {
             return true;
         }
         return strength > SkyentRadiationConfig.exposureClusterMaxIndividualStrength();
+    }
+
+    private static boolean isHotSpecialSource(BlockState state) {
+        return state.is(ModBlocks.CORIUM_BLOCK.get())
+                || state.is(ModBlocks.MOLTEN_CORIUM_BLOCK.get())
+                || state.is(ModBlocks.RADIOACTIVE_SCRAP_METAL.get())
+                || state.is(ModBlocks.HOT_VITRIFIED_STONE.get())
+                || state.is(ModBlocks.RADIANT_VITRIFIED_STONE.get())
+                || state.is(ModBlocks.INFERNAL_VITRIFIED_STONE.get());
+    }
+
+    private static boolean isRadiationShielding(BlockState state) {
+        if (state.isAir()) {
+            return false;
+        }
+
+        RadiationBlockProfile profile = RadiationBlockProfiles.get(state.getBlock());
+        return profile.showShieldingTooltip()
+                || (profile.hasCustomTransmission() && profile.transmission() < 0.80D);
     }
 
     private static void emitIndividualSource(ServerLevel level, Vec3 center, double radius, BlockPos pos, ExposureSourceConsumer sourceConsumer) {
@@ -480,6 +544,13 @@ public final class RadioactiveSourceRegistry extends SavedData {
             int aggregateSourcesWithinRadius,
             int individualSourcesWithinRadius,
             int clusteredBlockSourcesRepresented,
+            int aggregateCellsEnabled,
+            int aggregateCellsBlockedSparse,
+            int aggregateCellsBlockedShielding,
+            int aggregateCellsBlockedDominantSource,
+            int aggregateCellsBlockedHotSource,
+            int individualSourcesFromUnaggregatedCells,
+            int forcedIndividualSources,
             boolean spatialIndexEnabled,
             int spatialIndexCellSize
     ) {
@@ -497,6 +568,13 @@ public final class RadioactiveSourceRegistry extends SavedData {
                     0,
                     sourcesWithinRadius,
                     0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0,
+                    sourceRefsVisited,
                     false,
                     0
             );
@@ -528,7 +606,17 @@ public final class RadioactiveSourceRegistry extends SavedData {
         private final int originZ;
         private final int size;
         private final Map<Long, SourceIndexEntry> individualSources = new HashMap<>();
+        private final Map<Long, SourceIndexEntry> clusterableSources = new HashMap<>();
         private AggregateRadiationSource aggregate;
+        private boolean dirty = true;
+        private boolean canAggregate;
+        private boolean hasNearbyShielding;
+        private boolean blockedSparse;
+        private boolean blockedDominantSource;
+        private boolean blockedHotSource;
+        private double sumStrength;
+        private double maxStrength;
+        private int maxRange;
 
         private RadiationCellBucket(int originX, int originY, int originZ, int size) {
             this.originX = originX;
@@ -562,7 +650,101 @@ public final class RadioactiveSourceRegistry extends SavedData {
         }
 
         private boolean isEmpty() {
-            return individualSources.isEmpty() && (aggregate == null || aggregate.count <= 0);
+            return individualSources.isEmpty() && clusterableSources.isEmpty();
+        }
+
+        private void refreshAggregation(ServerLevel level) {
+            if (!dirty) {
+                return;
+            }
+
+            dirty = false;
+            aggregate = null;
+            canAggregate = false;
+            blockedSparse = false;
+            blockedDominantSource = false;
+            blockedHotSource = false;
+            hasNearbyShielding = false;
+            sumStrength = 0.0D;
+            maxStrength = 0.0D;
+            maxRange = 0;
+
+            if (!SkyentRadiationConfig.exposureClusteringEnabled()
+                    || !SkyentRadiationConfig.exposureClusterStaticWeakSources()
+                    || clusterableSources.isEmpty()) {
+                return;
+            }
+
+            for (SourceIndexEntry entry : individualSources.values()) {
+                if (entry.blocksCellAggregation()) {
+                    blockedHotSource = true;
+                    return;
+                }
+            }
+
+            for (SourceIndexEntry entry : clusterableSources.values()) {
+                sumStrength += entry.strength();
+                maxStrength = Math.max(maxStrength, entry.strength());
+                maxRange = Math.max(maxRange, entry.range());
+            }
+
+            if (clusterableSources.size() < SkyentRadiationConfig.exposureMinSourcesPerAggregateCell()) {
+                blockedSparse = true;
+                return;
+            }
+
+            if (sumStrength <= 0.0D) {
+                blockedSparse = true;
+                return;
+            }
+
+            double dominantFraction = maxStrength / sumStrength;
+            if (dominantFraction >= SkyentRadiationConfig.exposureDominantSourceFractionForIndividual()) {
+                blockedDominantSource = true;
+                return;
+            }
+
+            if (SkyentRadiationConfig.exposureDisableAggregationNearShielding() && hasShieldingNearby(level)) {
+                hasNearbyShielding = true;
+                return;
+            }
+
+            AggregateRadiationSource nextAggregate = new AggregateRadiationSource();
+            for (SourceIndexEntry entry : clusterableSources.values()) {
+                nextAggregate.add(entry.pos(), entry.strength(), entry.range());
+            }
+            aggregate = nextAggregate;
+            canAggregate = aggregate.count > 0;
+        }
+
+        private boolean hasShieldingNearby(ServerLevel level) {
+            int radius = SkyentRadiationConfig.exposureShieldingNeighborRadius();
+            if (radius < 0) {
+                return false;
+            }
+
+            BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
+            int minX = originX - radius;
+            int minY = Math.max(level.getMinBuildHeight(), originY - radius);
+            int minZ = originZ - radius;
+            int maxX = originX + size - 1 + radius;
+            int maxY = Math.min(level.getMaxBuildHeight() - 1, originY + size - 1 + radius);
+            int maxZ = originZ + size - 1 + radius;
+            for (int x = minX; x <= maxX; x++) {
+                for (int z = minZ; z <= maxZ; z++) {
+                    mutablePos.set(x, originY, z);
+                    if (!level.hasChunkAt(mutablePos)) {
+                        continue;
+                    }
+                    for (int y = minY; y <= maxY; y++) {
+                        mutablePos.set(x, y, z);
+                        if (isRadiationShielding(level.getBlockState(mutablePos))) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
         }
     }
 
@@ -623,7 +805,8 @@ public final class RadioactiveSourceRegistry extends SavedData {
             long cellKey,
             double strength,
             int range,
-            boolean individual
+            boolean individual,
+            boolean blocksCellAggregation
     ) {
     }
 }
