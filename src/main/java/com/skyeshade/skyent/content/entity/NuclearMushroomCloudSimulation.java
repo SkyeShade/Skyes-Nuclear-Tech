@@ -20,7 +20,7 @@ public final class NuclearMushroomCloudSimulation {
     private static final int TORUS_CLOUDLETS_PER_TICK = 16;
     private static final int SECONDARY_TORUS_SPAWN_TICKS = TORUS_SPAWN_TICKS;
     private static final int SECONDARY_TORUS_CLOUDLETS_PER_TICK = 1;
-    private static final int STEM_EXTRA_SPAWN_TICKS = 1000;
+    private static final int STEM_EXTRA_SPAWN_TICKS = 1400;
     private static final int STEM_SPAWN_TICKS = TORUS_SPAWN_TICKS + STEM_EXTRA_SPAWN_TICKS;
     private static final int STEM_CLOUDLETS_PER_TICK = 2;
     private static final int TORUS_GROW_TICKS = 2_400;
@@ -34,7 +34,7 @@ public final class NuclearMushroomCloudSimulation {
     private static final int STEM_BASE_SIZE_BOOST_FADE_TICKS = 60;
     private static final float STEM_BASE_SIZE_BOOST = 2.0F;
     private static final double STEM_BASE_DEPTH_BELOW_EXPLOSION = 50.0D;
-    private static final int INITIAL_TORUS_FILL_COUNT = 900;
+    private static final int INITIAL_TORUS_FILL_COUNT = 1800;
     private static final boolean ENABLE_INITIAL_TORUS_FILL = true;
     private static final float CLOUDLET_SIZE_MULTIPLIER = 0.60F;
     private static final double TORUS_ROTATION_TICKS = 80.0D;
@@ -57,7 +57,7 @@ public final class NuclearMushroomCloudSimulation {
     private static final int AIR_RING_UPPER_LIFETIME = 260;
     private static final double AIR_RING_HEIGHT_EXTRA_Y = 40.0D;
     private static final double TORUS_INITIAL_MAJOR_RADIUS = 8.0D;
-    private static final double TORUS_FINAL_MAJOR_RADIUS = 41.25D;
+    private static final double TORUS_FINAL_MAJOR_RADIUS = 33.0D;
     private static final double TORUS_INITIAL_MINOR_RADIUS = 5.0D;
     private static final double TORUS_FINAL_MINOR_RADIUS = 28.0D;
     private static final double TORUS_INITIAL_CENTER_Y = 10.0D;
@@ -79,12 +79,21 @@ public final class NuclearMushroomCloudSimulation {
     private static final double CLOUD_FINAL_HEIGHT_SCALE = 1.5D;
     private static final double CLOUD_START_SCALE = 1.5D;
     private static final double CLOUD_END_SCALE = 1.0D;
-    private static final double CLOUD_BASELINE_RADIUS = 200.0D;
+    private static final double CLOUD_BASELINE_RADIUS = 100.0D;
+    private static final double CLOUD_RADIUS_SCALE_EXPONENT = 1.28D;
+    private static final double CLOUD_VISUAL_RADIUS_ANCHOR = 20.0D;
+    private static final double CLOUD_VISUAL_RADIUS_TARGET_AT_100 = 50.0D;
+    private static final double CLOUD_MIN_VISUAL_SCALE = 0.10D;
+    private static final double CLOUD_MAX_VISUAL_SCALE = 4.0D;
+    private static final double CLOUD_MIN_PARTICLE_SCALE = 0.12D;
 
     private final List<MushroomCloudlet> cloudlets = new ArrayList<>();
     private final long seed;
     private final float visualScale;
     private final double particleScale;
+    private final float nukeRadius;
+    private final double visualCloudRadius;
+    private final double rawRadiusScale;
     private int age;
     private double groundY = Double.NaN;
     private boolean groundYInitialized;
@@ -116,15 +125,28 @@ public final class NuclearMushroomCloudSimulation {
 
     public NuclearMushroomCloudSimulation(long seed, float radius) {
         this.seed = seed;
-        double radiusScale = Math.max(0.05D, radius / CLOUD_BASELINE_RADIUS);
-        this.visualScale = (float) Mth.clamp(radiusScale, 0.35D, 3.0D);
-        this.particleScale = radiusScale >= 1.0D
-                ? 1.0D
-                : Mth.clamp(Math.pow(radiusScale, 0.45D), 0.35D, 1.0D);
+        this.nukeRadius = radius;
+        this.visualCloudRadius = getVisualCloudRadius(radius);
+        double radiusScale = Math.max(0.01D, visualCloudRadius / CLOUD_BASELINE_RADIUS);
+        this.rawRadiusScale = radiusScale;
+        double nonlinearScale = Math.pow(radiusScale, CLOUD_RADIUS_SCALE_EXPONENT);
+        this.visualScale = (float) Mth.clamp(nonlinearScale, CLOUD_MIN_VISUAL_SCALE, CLOUD_MAX_VISUAL_SCALE);
+        this.particleScale = Mth.clamp(nonlinearScale, CLOUD_MIN_PARTICLE_SCALE, 1.0D);
         this.majorRadius = TORUS_INITIAL_MAJOR_RADIUS * visualScale;
         this.minorRadius = TORUS_INITIAL_MINOR_RADIUS * visualScale;
         this.horizontalMinorRadius = this.minorRadius * torusHorizontalCompression;
         this.torusCenterY = TORUS_INITIAL_CENTER_Y * visualScale;
+    }
+
+    private static double getVisualCloudRadius(double actualRadius) {
+        double radius = Math.max(0.0D, actualRadius);
+        if (radius <= CLOUD_VISUAL_RADIUS_ANCHOR) {
+            return radius;
+        }
+        double sqrtAnchor = Math.sqrt(CLOUD_VISUAL_RADIUS_ANCHOR);
+        double sqrtTarget = Math.sqrt(CLOUD_BASELINE_RADIUS);
+        double scaleFactor = (CLOUD_VISUAL_RADIUS_TARGET_AT_100 - CLOUD_VISUAL_RADIUS_ANCHOR) / (sqrtTarget - sqrtAnchor);
+        return CLOUD_VISUAL_RADIUS_ANCHOR + scaleFactor * (Math.sqrt(radius) - sqrtAnchor);
     }
 
     public void tick(Level level, Vec3 entityPosition) {
@@ -628,9 +650,13 @@ public final class NuclearMushroomCloudSimulation {
         }
 
         SkyesNuclearTech.LOGGER.info(
-                "Nuke mushroom debug: age={} cloudlets={} groundY={} groundYInitialized={} visualScale={} particleScale={} cloudScale={} finalHeightScale={} growTicks={} riseTicks={} growthSpeedMultiplier={} growthProgress={} torusInitialHorizontalCompression={} torusHorizontalCompression={} headRandomnessProgress={} headPositionJitterScale={} headVelocityJitterScale={} headShapeCorrectionMultiplier={} headSourceSpread={} spawnedInitialChaosSphere={} initialChaosSphereCount={} scaledInitialChaosSphereCount={} initialChaosSphereRadius={} initialChaosSphereInwardVelocity={} initialChaosSphereUpwardVelocity={} initialChaosSphereUpwardVelocityRandom={} filledInitialTorus={} initialTorusFillCount={} scaledInitialTorusFillCount={} horizontalMajorRadius={} finalHorizontalMajorRadius={} horizontalMinorRadius={} verticalMinorRadius={} torusCenterY={} torusBottomY={} torusTopY={} secondaryMajorRadius={} secondaryFinalWidthScale={} secondaryRingScale={} secondaryMinorRadius={} secondaryOuterRadius={} secondaryInnerRadius={} secondaryCenterY={} stemBaseDepthBelowExplosion={} scaledStemDepth={} stemBottomY={} stemTopY={} stemHeight={} stemRadius0={} stemRadius030={} stemRadius075={} stemRadius1={} globalHeat={} stemHotSpawnHeatFactor={} stemHotSpawnChance={} torusSpawnTicks={} stemExtraSpawnTicks={} stemSpawnTicks={} torusSpawnRate={} scaledTorusSpawnRate={} secondarySpawnRate={} scaledSecondarySpawnRate={} stemSpawnRate={} scaledStemSpawnRate={} stemLifetimeMin={} stemLifetimeRandom={} airRingHeightExtraY={} airRingLowerDelay={} airRingUpperDelay={} airRingLowerLifetime={} airRingUpperLifetime={} lowerAirRingSpawnY={} upperAirRingSpawnY={} sourceAvgRadialOffset={} sourceAvgVerticalOffset={} torusScale={} angularSpeed={} targetTubeSpeed={} maxSpeed={} spawnedLowerAirRing={} spawnedUpperAirRing={} INITIAL_FIREBALL_CHAOS={} TORUS_FIREBALL={} SECONDARY_TORUS={} STEM={} WHITE_AIR_RING={} hotSTEM={}",
+                "Nuke mushroom debug: age={} cloudlets={} nukeRadius={} visualCloudRadius={} rawRadiusScale={} radiusScaleExponent={} groundY={} groundYInitialized={} visualScale={} particleScale={} cloudScale={} finalHeightScale={} growTicks={} riseTicks={} growthSpeedMultiplier={} growthProgress={} torusInitialHorizontalCompression={} torusHorizontalCompression={} headRandomnessProgress={} headPositionJitterScale={} headVelocityJitterScale={} headShapeCorrectionMultiplier={} headSourceSpread={} spawnedInitialChaosSphere={} initialChaosSphereCount={} scaledInitialChaosSphereCount={} initialChaosSphereRadius={} initialChaosSphereInwardVelocity={} initialChaosSphereUpwardVelocity={} initialChaosSphereUpwardVelocityRandom={} filledInitialTorus={} initialTorusFillCount={} scaledInitialTorusFillCount={} horizontalMajorRadius={} finalHorizontalMajorRadius={} horizontalMinorRadius={} verticalMinorRadius={} torusCenterY={} torusBottomY={} torusTopY={} secondaryMajorRadius={} secondaryFinalWidthScale={} secondaryRingScale={} secondaryMinorRadius={} secondaryOuterRadius={} secondaryInnerRadius={} secondaryCenterY={} stemBaseDepthBelowExplosion={} scaledStemDepth={} stemBottomY={} stemTopY={} stemHeight={} stemRadius0={} stemRadius030={} stemRadius075={} stemRadius1={} globalHeat={} stemHotSpawnHeatFactor={} stemHotSpawnChance={} torusSpawnTicks={} stemExtraSpawnTicks={} stemSpawnTicks={} torusSpawnRate={} scaledTorusSpawnRate={} secondarySpawnRate={} scaledSecondarySpawnRate={} stemSpawnRate={} scaledStemSpawnRate={} stemLifetimeMin={} stemLifetimeRandom={} airRingHeightExtraY={} airRingLowerDelay={} airRingUpperDelay={} airRingLowerLifetime={} airRingUpperLifetime={} lowerAirRingSpawnY={} upperAirRingSpawnY={} sourceAvgRadialOffset={} sourceAvgVerticalOffset={} torusScale={} angularSpeed={} targetTubeSpeed={} maxSpeed={} smokeDark={} smokeMedium={} smokeLight={} spawnedLowerAirRing={} spawnedUpperAirRing={} INITIAL_FIREBALL_CHAOS={} TORUS_FIREBALL={} SECONDARY_TORUS={} STEM={} WHITE_AIR_RING={} hotSTEM={}",
                 age,
                 cloudlets.size(),
+                nukeRadius,
+                visualCloudRadius,
+                rawRadiusScale,
+                CLOUD_RADIUS_SCALE_EXPONENT,
                 groundY,
                 groundYInitialized,
                 visualScale,
@@ -708,6 +734,9 @@ public final class NuclearMushroomCloudSimulation {
                 torusAngularSpeed(),
                 targetTubeSpeedAtMinorRadius(),
                 maxTorusSpeed(),
+                countSmokeShade(0.0F),
+                countSmokeShade(0.5F),
+                countSmokeShade(1.0F),
                 spawnedLowerAirRing,
                 spawnedUpperAirRing,
                 countCloudlets(MushroomCloudletType.INITIAL_FIREBALL_CHAOS),
@@ -733,6 +762,16 @@ public final class NuclearMushroomCloudSimulation {
         int count = 0;
         for (MushroomCloudlet cloudlet : cloudlets) {
             if (cloudlet.type == MushroomCloudletType.STEM && cloudlet.hotStemParticle) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private int countSmokeShade(float shadeVariant) {
+        int count = 0;
+        for (MushroomCloudlet cloudlet : cloudlets) {
+            if (cloudlet.type != MushroomCloudletType.WHITE_AIR_RING && cloudlet.smokeShadeVariant == shadeVariant) {
                 count++;
             }
         }
@@ -796,6 +835,23 @@ public final class NuclearMushroomCloudSimulation {
         return (random.nextDouble() * 2.0D - 1.0D) * amount;
     }
 
+    private static float randomSmokeShadeVariant(long seed) {
+        long mixed = seed ^ 0x5A17BEEFL;
+        mixed ^= mixed >>> 33;
+        mixed *= 0xff51afd7ed558ccdL;
+        mixed ^= mixed >>> 33;
+        mixed *= 0xc4ceb9fe1a85ec53L;
+        mixed ^= mixed >>> 33;
+        double roll = ((mixed >>> 11) & ((1L << 53) - 1)) * 0x1.0p-53;
+        if (roll < 0.75D) {
+            return 0.0F;
+        }
+        if (roll < 0.93D) {
+            return 0.5F;
+        }
+        return 1.0F;
+    }
+
     private static Vec3 radial(double x, double z) {
         double length = Math.sqrt(x * x + z * z);
         if (length < 1.0E-5D) {
@@ -820,6 +876,7 @@ public final class NuclearMushroomCloudSimulation {
         private final long seed;
         private final boolean hotStemParticle;
         private final float initialSizeBoost;
+        private final float smokeShadeVariant;
         private double x;
         private double y;
         private double z;
@@ -866,6 +923,7 @@ public final class NuclearMushroomCloudSimulation {
             this.seed = seed;
             this.hotStemParticle = hotStemParticle;
             this.initialSizeBoost = initialSizeBoost;
+            this.smokeShadeVariant = randomSmokeShadeVariant(seed);
             this.velocityX = velocityX;
             this.velocityY = velocityY;
             this.velocityZ = velocityZ;
@@ -1117,7 +1175,7 @@ public final class NuclearMushroomCloudSimulation {
             double innerHeat = Mth.clamp(-radialOffset / Math.max(currentMinorRadius, 1.0E-5D), 0.0D, 1.0D);
             double heatFactor = Mth.clamp(localHeat * innerHeat * (1.0D - particleCoolProgress), 0.0D, 1.0D);
 
-            Color darkSmoke = new Color(0.055F, 0.052F, 0.05F);
+            Color darkSmoke = smokeColor();
             Color darkOrange = new Color(0.30F, 0.10F, 0.045F);
             Color orange = new Color(0.85F, 0.32F, 0.08F);
             Color hotYellow = new Color(1.0F, 0.72F, 0.22F);
@@ -1141,7 +1199,7 @@ public final class NuclearMushroomCloudSimulation {
         }
 
         private int secondaryTorusColor(int component) {
-            Color darkSmoke = new Color(0.055F, 0.052F, 0.05F);
+            Color darkSmoke = smokeColor();
             if (hotStemParticle) {
                 float coolProgress = Mth.clamp(age / (float) STEM_HOT_COOL_TICKS, 0.0F, 1.0F);
                 Color hotOrange = new Color(0.90F, 0.30F, 0.07F);
@@ -1155,8 +1213,8 @@ public final class NuclearMushroomCloudSimulation {
                 return Math.round(Mth.clamp(value * seedTint, 0.0F, 1.0F) * 255.0F);
             }
 
-            Color darkGray = new Color(0.14F, 0.125F, 0.105F);
-            Color warmSmoke = new Color(0.34F, 0.14F, 0.055F);
+            Color darkGray = smokeColor();
+            Color warmSmoke = new Color(0.34F, 0.16F, 0.075F);
             float warmth = (float) Mth.clamp(localHeat * 0.34D + 0.08D, 0.0D, 1.0D);
             Color color = lerpColor(warmth, darkSmoke, lerpColor(0.55F, darkGray, warmSmoke));
             float seedTint = 0.90F + (((seed >>> 32) & 0xFFFF) / 65535.0F) * 0.12F;
@@ -1175,7 +1233,7 @@ public final class NuclearMushroomCloudSimulation {
 
         private int initialFireballChaosColor(float partialTick, int component) {
             float progress = Mth.clamp((age + partialTick) / (float) lifetime, 0.0F, 1.0F);
-            Color darkSmoke = new Color(0.060F, 0.055F, 0.050F);
+            Color darkSmoke = smokeColor();
             Color darkOrange = new Color(0.34F, 0.10F, 0.035F);
             Color orange = new Color(0.92F, 0.30F, 0.055F);
             Color hotYellow = new Color(1.0F, 0.78F, 0.22F);
@@ -1194,7 +1252,7 @@ public final class NuclearMushroomCloudSimulation {
         }
 
         private int stemColor(int component) {
-            Color darkSmoke = new Color(0.055F, 0.052F, 0.05F);
+            Color darkSmoke = smokeColor();
             if (hotStemParticle) {
                 float coolProgress = Mth.clamp(age / (float) STEM_HOT_COOL_TICKS, 0.0F, 1.0F);
                 Color hotOrange = new Color(0.95F, 0.38F, 0.08F);
@@ -1208,8 +1266,8 @@ public final class NuclearMushroomCloudSimulation {
                 return Math.round(Mth.clamp(value * seedTint, 0.0F, 1.0F) * 255.0F);
             }
 
-            Color darkGray = new Color(0.10F, 0.095F, 0.085F);
-            Color warmSmoke = new Color(0.24F, 0.10F, 0.045F);
+            Color darkGray = smokeColor();
+            Color warmSmoke = new Color(0.26F, 0.12F, 0.055F);
             Color orangeTint = new Color(0.55F, 0.20F, 0.06F);
             float heightWarmth = (float) Mth.clamp(localHeat * stemNormalizedHeight * 0.45D, 0.0D, 1.0D);
             Color base = lerpColor((float) Mth.clamp(stemNormalizedHeight * 0.35D, 0.0D, 1.0D), darkSmoke, darkGray);
@@ -1218,6 +1276,26 @@ public final class NuclearMushroomCloudSimulation {
             float seedTint = 0.90F + (((seed >>> 32) & 0xFFFF) / 65535.0F) * 0.12F;
             float value = component == 0 ? color.red : component == 1 ? color.green : color.blue;
             return Math.round(Mth.clamp(value * seedTint, 0.0F, 1.0F) * 255.0F);
+        }
+
+        private Color smokeColor() {
+            Color darkSmoke = new Color(0.055F, 0.052F, 0.050F);
+            Color mediumSmoke = new Color(0.18F, 0.18F, 0.17F);
+            Color lightSmoke = new Color(0.36F, 0.36F, 0.34F);
+            Color base;
+            if (smokeShadeVariant >= 1.0F) {
+                base = lightSmoke;
+            } else if (smokeShadeVariant >= 0.5F) {
+                base = mediumSmoke;
+            } else {
+                base = darkSmoke;
+            }
+            float brightness = 0.95F + (((seed >>> 44) & 0xFF) / 255.0F) * 0.10F;
+            return new Color(
+                    Mth.clamp(base.red * brightness, 0.0F, 1.0F),
+                    Mth.clamp(base.green * brightness, 0.0F, 1.0F),
+                    Mth.clamp(base.blue * brightness, 0.0F, 1.0F)
+            );
         }
 
         private static Color lerpColor(float amount, Color start, Color end) {
