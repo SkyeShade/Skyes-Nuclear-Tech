@@ -147,6 +147,16 @@ public final class RadiationExposureUtil {
                 0.0D,
                 0.0D,
                 0.0D,
+                false,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
                 nanosToMillis(collectionNs),
                 nanosToMillis(selectionNs),
                 nanosToMillis(raycastNs),
@@ -162,33 +172,18 @@ public final class RadiationExposureUtil {
         long collectionStartNs = totalStartNs;
         RadioactiveSourceRegistry registry = RadioactiveSourceRegistry.get(level);
         SelectionAccumulator accumulator = new SelectionAccumulator(level, entityPos);
-        List<BlockPos> staleSources = new ArrayList<>();
 
-        RadioactiveSourceRegistry.NearbySourceScanStats registryStats = registry.scanSourcesNear(entityPos, scanRadius, pos -> {
-            if (!level.hasChunkAt(pos)) {
-                return;
-            }
-
-            BlockState state = level.getBlockState(pos);
-            if (!(state.getBlock() instanceof RadioactiveSource source)) {
-                staleSources.add(pos);
-                return;
-            }
-
-            Vec3 sourceCenter = Vec3.atCenterOf(pos);
+        RadioactiveSourceRegistry.NearbySourceScanStats registryStats = registry.scanExposureSourcesNear(level, entityPos, scanRadius, sourceRef -> {
+            Vec3 sourceCenter = sourceRef.center();
             double distance = sourceCenter.distanceTo(entityPos);
-            double strength = source.getRadiationStrength();
+            double strength = sourceRef.strength();
             double baseContribution = 0.0D;
-            if (distance <= source.getEntityRadiationRange()) {
+            if (distance <= sourceRef.range()) {
                 double clampedDistance = Math.max(1.0D, distance);
                 baseContribution = strength / (clampedDistance * clampedDistance);
             }
-            accumulator.observe(new SourceCandidate(pos, sourceCenter, distance, strength, baseContribution, pos));
+            accumulator.observe(new SourceCandidate(sourceRef.pos(), sourceCenter, distance, strength, baseContribution, sourceRef.pos()));
         });
-
-        for (BlockPos staleSource : staleSources) {
-            registry.unregister(staleSource);
-        }
 
         for (SourceCandidate source : findCarriedRadiationSources(level, entityPos, scanRadius, excludedEntity)) {
             accumulator.observe(source);
@@ -266,6 +261,16 @@ public final class RadiationExposureUtil {
                 0.0D,
                 0.0D,
                 0.0D,
+                registryStats.spatialIndexEnabled(),
+                registryStats.spatialIndexCellSize(),
+                registryStats.cellsVisited(),
+                registryStats.cellsSkippedByAabb(),
+                registryStats.cellsWithSources(),
+                registryStats.individualSourceRefsVisited(),
+                registryStats.aggregateSourceRefsVisited(),
+                registryStats.aggregateSourcesWithinRadius(),
+                registryStats.individualSourcesWithinRadius(),
+                registryStats.clusteredBlockSourcesRepresented(),
                 nanosToMillis(collectionNs),
                 nanosToMillis(selectionNs),
                 nanosToMillis(raycastNs),
@@ -371,6 +376,16 @@ public final class RadiationExposureUtil {
                 cacheStats.samplingMillis(),
                 cacheStats.evictionMillis(),
                 cacheStats.totalMillis(),
+                false,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
                 nanosToMillis(collectionNs),
                 nanosToMillis(selectionNs),
                 nanosToMillis(raycastNs),
@@ -739,7 +754,7 @@ public final class RadiationExposureUtil {
         String label = player ? "Radiation player exposure debug" : "Radiation entity exposure debug";
 
         SkyesNuclearTech.LOGGER.info(
-                "{}: target={} dimension={} immune={} cacheEnabled={} cacheSize={} cacheCandidates={} cacheValidEntries={} cacheInvalidEntries={} cacheWithinRadius={} cacheContributing={} cacheTooFar={} cacheStale={} cacheMissingSource={} cacheDuplicateKeys={} cacheAdded={} cacheUpdated={} cacheEvicted={} fullScanUsed={} cacheSamplingMs={} cacheEvictionMs={} cacheMaintenanceMs={} nearbySources={} contributingSources={} chunkBucketsVisited={} chunkBucketsWithSources={} sourceRefsVisited={} sampledRefsThisUpdate={} sourcesWithinRadius={} hotCandidatePool={} chosenHottest={} chosenClosest={} chosenRandom={} duplicatesRemoved={} finalSelected={} raycasts={} strongestSourceStrength={} strongestSourceDistance={} strongestSourceSelected={} chosenHottestStrengthRange=[{},{}] chosenHottestNearestDistance={} chosenHottestFarthestDistance={} collectionMs={} selectionMs={} raycastMs={} totalMs={} exposure={} nearestDistance={} strongestContribution={} playerPath={} entityPath={} scanRadius={}",
+                "{}: target={} dimension={} immune={} cacheEnabled={} cacheSize={} cacheCandidates={} cacheValidEntries={} cacheInvalidEntries={} cacheWithinRadius={} cacheContributing={} cacheTooFar={} cacheStale={} cacheMissingSource={} cacheDuplicateKeys={} cacheAdded={} cacheUpdated={} cacheEvicted={} fullScanUsed={} cacheSamplingMs={} cacheEvictionMs={} cacheMaintenanceMs={} spatialIndexEnabled={} cellSize={} cellsVisited={} cellsSkippedByAabb={} cellsWithSources={} individualSourceRefsVisited={} aggregateSourceRefsVisited={} aggregateSourcesWithinRadius={} individualSourcesWithinRadius={} clusteredBlockSourcesRepresented={} nearbySources={} contributingSources={} chunkBucketsVisited={} chunkBucketsWithSources={} sourceRefsVisited={} sampledRefsThisUpdate={} sourcesWithinRadius={} hotCandidatePool={} chosenHottest={} chosenClosest={} chosenRandom={} duplicatesRemoved={} finalSelected={} raycasts={} strongestSourceStrength={} strongestSourceDistance={} strongestSourceSelected={} chosenHottestStrengthRange=[{},{}] chosenHottestNearestDistance={} chosenHottestFarthestDistance={} collectionMs={} selectionMs={} raycastMs={} totalMs={} exposure={} nearestDistance={} strongestContribution={} playerPath={} entityPath={} scanRadius={}",
                 label,
                 targetName,
                 level.dimension().location(),
@@ -762,6 +777,16 @@ public final class RadiationExposureUtil {
                 result.cacheSamplingMillis(),
                 result.cacheEvictionMillis(),
                 result.cacheMaintenanceMillis(),
+                result.spatialIndexEnabled(),
+                result.spatialIndexCellSize(),
+                result.cellsVisited(),
+                result.cellsSkippedByAabb(),
+                result.cellsWithSources(),
+                result.individualSourceRefsVisited(),
+                result.aggregateSourceRefsVisited(),
+                result.aggregateSourcesWithinRadius(),
+                result.individualSourcesWithinRadius(),
+                result.clusteredBlockSourcesRepresented(),
                 result.sourcesFound(),
                 result.contributingSources(),
                 result.chunkBucketsVisited(),
@@ -1393,6 +1418,16 @@ public final class RadiationExposureUtil {
             double cacheSamplingMillis,
             double cacheEvictionMillis,
             double cacheMaintenanceMillis,
+            boolean spatialIndexEnabled,
+            int spatialIndexCellSize,
+            int cellsVisited,
+            int cellsSkippedByAabb,
+            int cellsWithSources,
+            int individualSourceRefsVisited,
+            int aggregateSourceRefsVisited,
+            int aggregateSourcesWithinRadius,
+            int individualSourcesWithinRadius,
+            int clusteredBlockSourcesRepresented,
             double collectionMillis,
             double selectionMillis,
             double raycastMillis,

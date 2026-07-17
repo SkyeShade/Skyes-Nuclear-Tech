@@ -45,6 +45,18 @@ public final class SkyentRadiationConfig {
     private static final ModConfigSpec.BooleanValue DEBUG_ENTITY_EXPOSURE_SAMPLING;
     private static final ModConfigSpec.BooleanValue DEBUG_HOT_BLOCK_RAY_THROTTLE;
 
+    private static final ModConfigSpec.BooleanValue SPATIAL_INDEX_ENABLED;
+    private static final ModConfigSpec.IntValue SPATIAL_INDEX_CELL_SIZE;
+    private static final ModConfigSpec.BooleanValue SPATIAL_INDEX_DEBUG;
+
+    private static final ModConfigSpec.BooleanValue EXPOSURE_CLUSTERING_ENABLED;
+    private static final ModConfigSpec.BooleanValue EXPOSURE_CLUSTER_STATIC_WEAK_SOURCES;
+    private static final ModConfigSpec.DoubleValue EXPOSURE_CLUSTER_MAX_INDIVIDUAL_STRENGTH;
+    private static final ModConfigSpec.DoubleValue EXPOSURE_ALWAYS_INDIVIDUAL_STRENGTH;
+    private static final ModConfigSpec.ConfigValue<String> EXPOSURE_AGGREGATE_STRENGTH_MODE;
+    private static final ModConfigSpec.DoubleValue EXPOSURE_AGGREGATE_MAX_STRENGTH;
+    private static final ModConfigSpec.ConfigValue<String> EXPOSURE_AGGREGATE_POSITION_MODE;
+
     static {
         BUILDER.comment(
                 "Skyes Nuclear Tech radiation tuning.",
@@ -119,6 +131,42 @@ public final class SkyentRadiationConfig {
         EXPOSURE_LOCAL_CACHE_PREFER_EVICTION_OF_WEAK_SOURCES = BUILDER
                 .comment("When evicting, prefer removing stale/far/weak sources so hot nearby sources remain cached.")
                 .define("local_cache_prefer_eviction_of_weak_sources", true);
+        BUILDER.pop();
+
+        BUILDER.push("spatial_index");
+        SPATIAL_INDEX_ENABLED = BUILDER
+                .comment("Uses a dimension -> chunk -> 3D cell source index for radiation source collection.")
+                .define("enabled", true);
+        SPATIAL_INDEX_CELL_SIZE = BUILDER
+                .comment("Cell size in blocks for the radiation spatial index. Must divide 16; invalid values are clamped to 8.")
+                .defineInRange("cell_size", 8, 1, 16);
+        SPATIAL_INDEX_DEBUG = BUILDER
+                .comment("Logs radiation spatial index rebuild/query details.")
+                .define("debug", false);
+        BUILDER.pop();
+
+        BUILDER.push("exposure_clustering");
+        EXPOSURE_CLUSTERING_ENABLED = BUILDER
+                .comment("Allows weak static radioactive block sources in the same spatial cell to be represented by one aggregate source.")
+                .define("enabled", true);
+        EXPOSURE_CLUSTER_STATIC_WEAK_SOURCES = BUILDER
+                .comment("Clusters static weak/medium block sources. Hot/special sources remain individual.")
+                .define("cluster_static_weak_sources", true);
+        EXPOSURE_CLUSTER_MAX_INDIVIDUAL_STRENGTH = BUILDER
+                .comment("Sources at or below this strength may be clustered when otherwise safe.")
+                .defineInRange("cluster_max_individual_strength", 999.0D, 0.0D, 1_000_000.0D);
+        EXPOSURE_ALWAYS_INDIVIDUAL_STRENGTH = BUILDER
+                .comment("Sources at or above this strength are always kept as individual candidates.")
+                .defineInRange("always_individual_strength", 5000.0D, 0.0D, 1_000_000.0D);
+        EXPOSURE_AGGREGATE_STRENGTH_MODE = BUILDER
+                .comment("Aggregate strength mode. Currently supports sum_capped.")
+                .define("aggregate_strength_mode", "sum_capped");
+        EXPOSURE_AGGREGATE_MAX_STRENGTH = BUILDER
+                .comment("Maximum strength of one aggregate cell source when using sum_capped.")
+                .defineInRange("aggregate_max_strength", 750.0D, 0.0D, 1_000_000.0D);
+        EXPOSURE_AGGREGATE_POSITION_MODE = BUILDER
+                .comment("Aggregate position mode. Currently supports weighted_center.")
+                .define("aggregate_position_mode", "weighted_center");
         BUILDER.pop();
 
         BUILDER.push("hot_block_rays");
@@ -287,18 +335,63 @@ public final class SkyentRadiationConfig {
         return DEBUG_HOT_BLOCK_RAY_THROTTLE.get();
     }
 
+    public static boolean radiationSpatialIndexEnabled() {
+        return SPATIAL_INDEX_ENABLED.get();
+    }
+
+    public static int radiationSpatialIndexCellSize() {
+        int configured = Mth.clamp(SPATIAL_INDEX_CELL_SIZE.get(), 1, 16);
+        return 16 % configured == 0 ? configured : 8;
+    }
+
+    public static boolean debugRadiationSpatialIndex() {
+        return SPATIAL_INDEX_DEBUG.get();
+    }
+
+    public static boolean exposureClusteringEnabled() {
+        return EXPOSURE_CLUSTERING_ENABLED.get();
+    }
+
+    public static boolean exposureClusterStaticWeakSources() {
+        return EXPOSURE_CLUSTER_STATIC_WEAK_SOURCES.get();
+    }
+
+    public static double exposureClusterMaxIndividualStrength() {
+        return Mth.clamp(EXPOSURE_CLUSTER_MAX_INDIVIDUAL_STRENGTH.get(), 0.0D, 1_000_000.0D);
+    }
+
+    public static double exposureAlwaysIndividualStrength() {
+        return Mth.clamp(EXPOSURE_ALWAYS_INDIVIDUAL_STRENGTH.get(), 0.0D, 1_000_000.0D);
+    }
+
+    public static String exposureAggregateStrengthMode() {
+        return EXPOSURE_AGGREGATE_STRENGTH_MODE.get();
+    }
+
+    public static double exposureAggregateMaxStrength() {
+        return Mth.clamp(EXPOSURE_AGGREGATE_MAX_STRENGTH.get(), 0.0D, 1_000_000.0D);
+    }
+
+    public static String exposureAggregatePositionMode() {
+        return EXPOSURE_AGGREGATE_POSITION_MODE.get();
+    }
+
     public static void onConfigLoad(ModConfigEvent event) {
         if (event.getConfig().getSpec() != SPEC) {
             return;
         }
 
         SkyesNuclearTech.LOGGER.info(
-                "Skyent radiation config loaded: playerInterval={} entityInterval={} scanRadius={} samplingCap={} streamingSelection={} localCache={} playerLocalCache={} entityLocalCache={} localCacheMaxSources={} localCachePlayerSampleRefs={} hottest={} hottestPool={} closest={} random={} legacyExposureSamplingDebug={} playerExposureSamplingDebug={} entityExposureSamplingDebug={} hotBlockRays={} maxEmitters={} softEmitters={}",
+                "Skyent radiation config loaded: playerInterval={} entityInterval={} scanRadius={} samplingCap={} streamingSelection={} spatialIndex={} cellSize={} clustering={} aggregateMaxStrength={} localCache={} playerLocalCache={} entityLocalCache={} localCacheMaxSources={} localCachePlayerSampleRefs={} hottest={} hottestPool={} closest={} random={} legacyExposureSamplingDebug={} playerExposureSamplingDebug={} entityExposureSamplingDebug={} hotBlockRays={} maxEmitters={} softEmitters={}",
                 exposurePlayerUpdateIntervalTicks(),
                 exposureEntityUpdateIntervalTicks(),
                 exposureRadioactiveBlockScanRadius(),
                 exposureSourceSamplingCapEnabled(),
                 exposureStreamingSourceSelectionEnabled(),
+                radiationSpatialIndexEnabled(),
+                radiationSpatialIndexCellSize(),
+                exposureClusteringEnabled(),
+                exposureAggregateMaxStrength(),
                 exposureLocalSourceCacheEnabled(),
                 exposurePlayerLocalSourceCacheEnabled(),
                 exposureEntityLocalSourceCacheEnabled(),
