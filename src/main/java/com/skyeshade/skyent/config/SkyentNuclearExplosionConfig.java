@@ -237,7 +237,7 @@ public final class SkyentNuclearExplosionConfig {
                 .comment("Maximum milliseconds per tick spent in column aftermath when TPS is at or below hard_tps.")
                 .defineInRange("laggy_max_milliseconds_per_tick", 2.0D, 0.1D, 50.0D);
         AFTERMATH_UNLOADED_CHUNK_SKIP_COOLDOWN_TICKS = BUILDER
-                .comment("Reserved cooldown for deferred unloaded aftermath chunks. Current pass skips unloaded chunks instead of force-loading them.")
+                .comment("Reserved cooldown for deferred unloaded aftermath chunks. Column aftermath now force-loads only the active mutation chunk.")
                 .defineInRange("unloaded_chunk_skip_cooldown_ticks", 40, 0, 20 * 60 * 60);
         BUILDER.pop();
 
@@ -271,7 +271,7 @@ public final class SkyentNuclearExplosionConfig {
                 .defineInRange("radius_multiplier", 2.0D, 0.0D, 10.0D);
         FIRE_CHARRING_LEAF_EVAPORATION_INNER_FRACTION = BUILDER
                 .comment("Inner fraction of the fire/charring radius where leaves evaporate instead of burning.")
-                .defineInRange("leaf_evaporation_inner_fraction", 0.5D, 0.0D, 1.0D);
+                .defineInRange("leaf_evaporation_inner_fraction", 0.8D, 0.0D, 1.0D);
         BUILDER.pop();
 
         BUILDER.push("radiation");

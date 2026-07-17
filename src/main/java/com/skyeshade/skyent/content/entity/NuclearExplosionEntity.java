@@ -64,6 +64,30 @@ public class NuclearExplosionEntity extends Entity {
             NuclearExplosionEntity.class,
             EntityDataSerializers.FLOAT
     );
+    private static final EntityDataAccessor<Integer> DATA_VISUAL_AGE = SynchedEntityData.defineId(
+            NuclearExplosionEntity.class,
+            EntityDataSerializers.INT
+    );
+    private static final EntityDataAccessor<Boolean> DATA_HAS_VISUAL_ORIGIN = SynchedEntityData.defineId(
+            NuclearExplosionEntity.class,
+            EntityDataSerializers.BOOLEAN
+    );
+    private static final EntityDataAccessor<Float> DATA_ORIGIN_X = SynchedEntityData.defineId(
+            NuclearExplosionEntity.class,
+            EntityDataSerializers.FLOAT
+    );
+    private static final EntityDataAccessor<Float> DATA_ORIGIN_Y = SynchedEntityData.defineId(
+            NuclearExplosionEntity.class,
+            EntityDataSerializers.FLOAT
+    );
+    private static final EntityDataAccessor<Float> DATA_ORIGIN_Z = SynchedEntityData.defineId(
+            NuclearExplosionEntity.class,
+            EntityDataSerializers.FLOAT
+    );
+    private static final EntityDataAccessor<Float> DATA_GROUND_Y = SynchedEntityData.defineId(
+            NuclearExplosionEntity.class,
+            EntityDataSerializers.FLOAT
+    );
     public static final float VANILLA_EXPLOSION_STRENGTH = 16.0F;
     public static final int ENTITY_LIFETIME_TICKS = 20 * 60 * 4;
     public static final float DEFAULT_NUKE_RADIUS = 200.0F;
@@ -110,6 +134,7 @@ public class NuclearExplosionEntity extends Entity {
     private static final boolean DEBUG_NUKE_LIFECYCLE = Boolean.getBoolean("skyent.debugNukeLifecycle");
     private static final boolean DEBUG_NUKE_ITEM_DROPS = Boolean.getBoolean("skyent.debugNukeItemDrops");
     private static final boolean DEBUG_NUKE_THERMAL_FLASH = Boolean.getBoolean("skyent.debugNukeThermalFlash");
+    private static final boolean DEBUG_NUKE_VISUAL_SYNC = Boolean.getBoolean("skyent.debugNukeVisualSync");
     private static final int NUKE_RAY_PLANNER_MAX_RAYS_PER_TICK = 8_128;
     private static final int NUKE_RAY_PLANNER_MAX_STEPS_PER_TICK = 128_000;
     private static final int NUKE_WATER_CLEAR_START_DELAY_TICKS = 1;
@@ -157,6 +182,8 @@ public class NuclearExplosionEntity extends Entity {
     private int centerRadiationTicks;
     private boolean appliedInitialThermalFlash;
     private boolean chunksForced;
+    private ChunkPos retainedCenterChunk;
+    private UUID aftermathChunkLoadingOwnerUuid;
     private boolean loggedInitialChunkLoadingState;
     private boolean loggedFirstServerTickTiming;
     private double worstRayPlanningTickMs;
@@ -200,6 +227,7 @@ public class NuclearExplosionEntity extends Entity {
     private double originX = Double.NaN;
     private double originY = Double.NaN;
     private double originZ = Double.NaN;
+    private double explosionGroundY = Double.NaN;
 
     public NuclearExplosionEntity(EntityType<NuclearExplosionEntity> entityType, Level level) {
         super(entityType, level);
@@ -274,6 +302,17 @@ public class NuclearExplosionEntity extends Entity {
         chunkLoadingOwnerUuid = lease.ownerUuid();
         forcedExplosionChunks.clear();
         forcedExplosionChunks.addAll(lease.chunks());
+        retainedCenterChunk = chunkPosition();
+        if (level() instanceof ServerLevel serverLevel
+                && !forcedExplosionChunks.contains(retainedCenterChunk)
+                && NuclearExplosionChunkLoading.forceSingleChunk(
+                serverLevel,
+                getChunkLoadingOwnerUuid(),
+                retainedCenterChunk,
+                SkyentNuclearExplosionConfig.chunkLoadingTickingTickets()
+        )) {
+            forcedExplosionChunks.add(retainedCenterChunk);
+        }
         chunksForced = !forcedExplosionChunks.isEmpty();
         NuclearExplosionChunkLoading.debugAdopted(getChunkLoadingOwnerUuid(), getId(), forcedExplosionChunks.size());
     }
@@ -284,17 +323,26 @@ public class NuclearExplosionEntity extends Entity {
         builder.define(DATA_FLASH_SKY, true);
         builder.define(DATA_VISUAL_SEED, 0L);
         builder.define(DATA_RADIUS, DEFAULT_NUKE_RADIUS);
+        builder.define(DATA_VISUAL_AGE, 0);
+        builder.define(DATA_HAS_VISUAL_ORIGIN, false);
+        builder.define(DATA_ORIGIN_X, 0.0F);
+        builder.define(DATA_ORIGIN_Y, 0.0F);
+        builder.define(DATA_ORIGIN_Z, 0.0F);
+        builder.define(DATA_GROUND_Y, 0.0F);
     }
 
     @Override
     public void tick() {
+        syncFixedOriginFromEntityData();
         stabilizeFixedOrigin();
         super.tick();
+        syncFixedOriginFromEntityData();
         stabilizeFixedOrigin();
 
         if (level().isClientSide) {
             tickClientEffects();
         } else {
+            entityData.set(DATA_VISUAL_AGE, tickCount);
             long serverTickStartNs = detonationTimingNowNs();
             tickServerEffects();
             if (!loggedFirstServerTickTiming) {
@@ -313,7 +361,7 @@ public class NuclearExplosionEntity extends Entity {
         }
 
         if (tickCount > ENTITY_LIFETIME_TICKS && canReleaseImmediateChunks()) {
-            unforceExplosionChunks();
+            unforceExplosionChunks(false);
             discard();
         }
     }
@@ -330,7 +378,7 @@ public class NuclearExplosionEntity extends Entity {
 
         tickNuclearDestruction();
         if (chunksForced && canReleaseImmediateChunks()) {
-            unforceExplosionChunks();
+            unforceExplosionChunks(false);
         }
         if (!appliedInitialThermalFlash) {
             appliedInitialThermalFlash = true;
@@ -388,9 +436,11 @@ public class NuclearExplosionEntity extends Entity {
 
         if (destructionPhase == DestructionPhase.PLANNING && rayPlanner != null && destructionMask != null) {
             long rayPlanningStartNs = System.nanoTime();
+            int rayBudget = NukePerformanceBudget.scaleInt(NUKE_RAY_PLANNER_MAX_RAYS_PER_TICK, 512, serverLevel.getServer());
+            int stepBudget = NukePerformanceBudget.scaleInt(NUKE_RAY_PLANNER_MAX_STEPS_PER_TICK, 8_192, serverLevel.getServer());
             NuclearBlastRayPlanner.PlannerResult result = rayPlanner.tickBudget(
-                    NUKE_RAY_PLANNER_MAX_RAYS_PER_TICK,
-                    NUKE_RAY_PLANNER_MAX_STEPS_PER_TICK
+                    rayBudget,
+                    stepBudget
             );
             double rayPlanningElapsedMs = elapsedMs(rayPlanningStartNs);
             worstRayPlanningTickMs = Math.max(worstRayPlanningTickMs, rayPlanningElapsedMs);
@@ -403,6 +453,7 @@ public class NuclearExplosionEntity extends Entity {
             }
             logRayTimingDebug(result, rayPlanningElapsedMs);
             logRayPlannerDebug(result);
+            NukePerformanceBudget.logIfEnabled(getId(), tickCount, destructionPhase.name(), 0, 0, rayBudget, stepBudget);
 
             if (rayPlanner.isComplete()) {
                 sectionCompletionTracker = new NuclearSectionCompletionTracker();
@@ -510,10 +561,25 @@ public class NuclearExplosionEntity extends Entity {
             }
 
             long mutationStartNs = System.nanoTime();
-            NuclearBlockMutationQueue.MutationResult result = mutationQueue.tick(
+            int mutationSectionsBudget = NukePerformanceBudget.scaleInt(
                     SkyentNuclearExplosionConfig.mutationMaxSectionsPerTick(),
+                    1,
+                    serverLevel.getServer()
+            );
+            int mutationBlocksBudget = NukePerformanceBudget.scaleInt(
                     SkyentNuclearExplosionConfig.mutationMaxBlocksPerTick(),
-                    SkyentNuclearExplosionConfig.mutationMaxMillisecondsPerTick()
+                    64,
+                    serverLevel.getServer()
+            );
+            double mutationMsBudget = NukePerformanceBudget.scaleMilliseconds(
+                    SkyentNuclearExplosionConfig.mutationMaxMillisecondsPerTick(),
+                    1.0D,
+                    serverLevel.getServer()
+            );
+            NuclearBlockMutationQueue.MutationResult result = mutationQueue.tick(
+                    mutationSectionsBudget,
+                    mutationBlocksBudget,
+                    mutationMsBudget
             );
             double mutationElapsedMs = elapsedMs(mutationStartNs);
             worstBlockMutationTickMs = Math.max(worstBlockMutationTickMs, mutationElapsedMs);
@@ -522,6 +588,7 @@ public class NuclearExplosionEntity extends Entity {
             }
             logRayMutationTimingDebug(result, mutationElapsedMs);
             logMutationDebug(result);
+            NukePerformanceBudget.logIfEnabled(getId(), tickCount, destructionPhase.name(), mutationBlocksBudget, mutationSectionsBudget, 0, 0);
             if (!aftermathStarted && sectionCompletionTracker != null) {
                 int readySections = sectionCompletionTracker.completedCount() + sectionCompletionTracker.skippedCount();
                 if (readySections >= SkyentNuclearExplosionConfig.mutationMinCompletedSectionsBeforeAftermath()) {
@@ -575,6 +642,7 @@ public class NuclearExplosionEntity extends Entity {
                 resistanceCache = null;
                 rayPlanner = null;
                 mutationQueue = null;
+                unforceExplosionChunks(false);
                 if (!aftermathStarted) {
                     startColumnCollapsePass(serverLevel, "deletion_complete");
                     tickColumnCollapseTasks(serverLevel);
@@ -644,10 +712,16 @@ public class NuclearExplosionEntity extends Entity {
             return;
         }
 
+        ServerLevel serverLevel = (ServerLevel) level();
+        int waterBudget = NukePerformanceBudget.scaleInt(
+                SkyentNuclearExplosionConfig.waterEvaporationMaxBlocksPerTick(),
+                1024,
+                serverLevel.getServer()
+        );
         NuclearWaterEvaporationPass.EvaporationResult result = fluidEvaporationPass.tick(
                 SkyentNuclearExplosionConfig.waterEvaporationRadialLayersPerStep(),
-                SkyentNuclearExplosionConfig.waterEvaporationMaxBlocksPerTick(),
-                SkyentNuclearExplosionConfig.waterEvaporationMaxBlocksPerTick()
+                waterBudget,
+                waterBudget
         );
         if (result.sectionsProcessed() > 0
                 || result.columnsScanned() > 0
@@ -656,7 +730,7 @@ public class NuclearExplosionEntity extends Entity {
                 || result.lavaBlocksRemoved() > 0
                 || result.waterloggedBlocksCleared() > 0
                 || result.complete()) {
-            markDestructionProgress((ServerLevel) level(), "water_evaporation");
+            markDestructionProgress(serverLevel, "water_evaporation");
         }
         logFluidEvaporationDebug(result);
         if (fluidEvaporationPass.isComplete()) {
@@ -693,6 +767,7 @@ public class NuclearExplosionEntity extends Entity {
                 COLUMN_COLLAPSE_MAX_RESISTANCE,
                 COLUMN_COLLAPSE_MAX_DROP_BLOCKS,
                 getVisualSeed(),
+                getAftermathChunkLoadingOwnerUuid(),
                 sectionCompletionTracker
         );
         double aftermathBuildWorkUnitsMs = elapsedMs(aftermathStartNs);
@@ -1489,6 +1564,7 @@ public class NuclearExplosionEntity extends Entity {
                 multiplier = Mth.lerp(t, 0.10D, 1.0D);
             }
         }
+        multiplier = Math.min(multiplier, NukePerformanceBudget.currentWorkScale(serverLevel.getServer()));
 
         int workUnitsBudget = Mth.clamp(
                 Mth.ceil(SkyentNuclearExplosionConfig.aftermathBaseWorkUnitsPerTick() * multiplier),
@@ -1514,7 +1590,7 @@ public class NuclearExplosionEntity extends Entity {
         }
 
         SkyesNuclearTech.LOGGER.info(
-                "Nuke column aftermath debug: id={} tick={} phase={} aftermathStarted={} aftermathStartTick={} startReason={} tpsEstimate={} avgTickMs={} adaptiveThrottle={} adaptiveMultiplier={} workUnitsBudget={} columnsBudget={} timeBudgetMs={} tickWorkUnitsProcessed={} tickChunksPlanned={} tickColumns={} tickDeferred={} tickUnloadedWorkUnitsSkipped={} elapsedMs={} stoppedByWorkBudget={} stoppedByColumnBudget={} stoppedByTimeBudget={} stoppedByNoWork={} unloadedChunkSkipCooldownTicks={} trackerPending={} trackerCompleted={} trackerSkipped={} collapseRadius={} charredLogRadius={} contaminatedGrassRadius={} contaminatedGrassBlend={} deadVegetationRadius={} vitrificationGenerationScale={} unscaledVitrificationRadius={} scaledVitrificationRadius={} unscaledVitrificationFeatherRadius={} scaledVitrificationFeatherRadius={} vitrificationHotTierFalloffPower={} vitrificationSizeTierCap={} postCollapseSurfaceUsed={} fireRadius={} leafEvaporationRadius={} currentRing={} maxRing={} workUnitsCompleted={}/{} readyWorkUnits={} deferredWorkUnits={} outerWorkUnitsNotStarted={} currentChunk={} blockedByPending={} blockedChunk={} blockedRing={} blockedTicks={} longestBlockedTicks={} tickPlannedMutations={} tickSectionsMutated={} tickMutationsApplied={} totalMutationsApplied={} totalSectionsMutated={} currentLocalMutations={} currentLocalSections={} noOpWorkUnits={} deferredChecks={} deferredQueued={} deferredRequeued={} movementMutations={} charredLogs={} leafEvaporated={} contaminatedGrass={} deadGrass={} deadLeaves={} vitrifiedStone={} vitrifiedTiers={} vitrifiedTopTiers={} vitrificationBaseTiers={} vitrificationFinalTiers={} vitrificationDowngrades={} vitrificationColumnsChecked={} vitrificationColumnsAffected={} maxVitrificationDepth={} vitrificationEdgeFeatherPlacements={} vitrificationSkippedBySoftEdge={} vitrificationSkips={} plannedPlantRemovals={} plannedFires={} placedFires={} totalColumnsProcessed={} skippedUnloadedColumns={} mutationUnloadedSkips={} mutationBlockEntitySkips={} barriers={} movableBlocks={} maxDropBlocks={} maxRunsPerColumn={} scanDepth={} runsFound={} runsMoved={} averageDrop={} maxDropSeen={} skippedBarrier={} skippedFluid={} skippedBlockEntity={}",
+                "Nuke column aftermath debug: id={} tick={} phase={} aftermathStarted={} aftermathStartTick={} startReason={} tpsEstimate={} avgTickMs={} adaptiveThrottle={} adaptiveMultiplier={} workUnitsBudget={} columnsBudget={} timeBudgetMs={} tickWorkUnitsProcessed={} tickChunksPlanned={} tickColumns={} tickDeferred={} tickUnloadedWorkUnitsSkipped={} elapsedMs={} stoppedByWorkBudget={} stoppedByColumnBudget={} stoppedByTimeBudget={} stoppedByNoWork={} unloadedChunkSkipCooldownTicks={} trackerPending={} trackerCompleted={} trackerSkipped={} collapseRadius={} charredLogRadius={} contaminatedGrassRadius={} contaminatedGrassBlend={} deadVegetationRadius={} vitrificationGenerationScale={} unscaledVitrificationRadius={} scaledVitrificationRadius={} unscaledVitrificationFeatherRadius={} scaledVitrificationFeatherRadius={} vitrificationHotTierFalloffPower={} vitrificationSizeTierCap={} postCollapseSurfaceUsed={} fireRadius={} leafEvaporationRadius={} currentRing={} maxRing={} workUnitsCompleted={}/{} readyWorkUnits={} deferredWorkUnits={} outerWorkUnitsNotStarted={} currentChunk={} forcedMutationChunks={} mutationChunksForced={} mutationChunksUnforced={} mutationChunkLoadWaits={} mutationChunkForceFailures={} blockedByPending={} blockedChunk={} blockedRing={} blockedTicks={} longestBlockedTicks={} tickPlannedMutations={} tickSectionsMutated={} tickMutationsApplied={} totalMutationsApplied={} totalSectionsMutated={} currentLocalMutations={} currentLocalSections={} noOpWorkUnits={} deferredChecks={} deferredQueued={} deferredRequeued={} movementMutations={} charredLogs={} leafEvaporated={} contaminatedGrass={} deadGrass={} deadLeaves={} vitrifiedStone={} vitrifiedTiers={} vitrifiedTopTiers={} vitrificationBaseTiers={} vitrificationFinalTiers={} vitrificationDowngrades={} vitrificationColumnsChecked={} vitrificationColumnsAffected={} maxVitrificationDepth={} vitrificationEdgeFeatherPlacements={} vitrificationSkippedBySoftEdge={} vitrificationSkips={} plannedPlantRemovals={} plannedFires={} placedFires={} totalColumnsProcessed={} skippedUnloadedColumns={} mutationUnloadedSkips={} mutationBlockEntitySkips={} barriers={} movableBlocks={} maxDropBlocks={} maxRunsPerColumn={} scanDepth={} runsFound={} runsMoved={} averageDrop={} maxDropSeen={} skippedBarrier={} skippedFluid={} skippedBlockEntity={}",
                 getId(),
                 tickCount,
                 destructionPhase,
@@ -1565,6 +1641,11 @@ public class NuclearExplosionEntity extends Entity {
                 columnCollapsePass.deferredWorkUnitsRemaining(),
                 columnCollapsePass.outerWorkUnitsNotStarted(),
                 columnCollapsePass.currentWorkUnitDebug(),
+                columnCollapsePass.forcedMutationChunks(),
+                columnCollapsePass.mutationChunksForced(),
+                columnCollapsePass.mutationChunksUnforced(),
+                columnCollapsePass.mutationChunkLoadWaits(),
+                columnCollapsePass.mutationChunkForceFailures(),
                 columnCollapsePass.blockedByPendingSections(),
                 columnCollapsePass.blockedWorkUnitDebug(),
                 columnCollapsePass.blockedRing(),
@@ -1847,13 +1928,28 @@ public class NuclearExplosionEntity extends Entity {
         }
 
         ChunkPos centerChunk = chunkPosition();
+        retainedCenterChunk = centerChunk;
         int chunkRadius = NuclearExplosionChunkLoading.computeChunkRadius(getRadius());
         int added = NuclearExplosionChunkLoading.forceExplosionChunks(serverLevel, getChunkLoadingOwnerUuid(), centerChunk, chunkRadius, forcedExplosionChunks);
+        if (!forcedExplosionChunks.contains(centerChunk)
+                && NuclearExplosionChunkLoading.forceSingleChunk(
+                serverLevel,
+                getChunkLoadingOwnerUuid(),
+                centerChunk,
+                SkyentNuclearExplosionConfig.chunkLoadingTickingTickets()
+        )) {
+            forcedExplosionChunks.add(centerChunk);
+            added++;
+        }
         chunksForced = !forcedExplosionChunks.isEmpty();
         NuclearExplosionChunkLoading.debugForced(getChunkLoadingOwnerUuid(), getId(), centerChunk, chunkRadius, forcedExplosionChunks.size(), added);
     }
 
     private void unforceExplosionChunks() {
+        unforceExplosionChunks(true);
+    }
+
+    private void unforceExplosionChunks(boolean releaseRetainedCenterChunk) {
         if (!chunksForced || forcedExplosionChunks.isEmpty()) {
             chunksForced = false;
             forcedExplosionChunks.clear();
@@ -1863,8 +1959,22 @@ public class NuclearExplosionEntity extends Entity {
             return;
         }
 
-        int released = NuclearExplosionChunkLoading.unforceExplosionChunks(serverLevel, getChunkLoadingOwnerUuid(), forcedExplosionChunks);
-        chunksForced = false;
+        ChunkPos centerToKeep = releaseRetainedCenterChunk ? null : retainedCenterChunk;
+        Set<ChunkPos> chunksToRelease = new HashSet<>(forcedExplosionChunks);
+        if (centerToKeep != null) {
+            chunksToRelease.remove(centerToKeep);
+        }
+        if (chunksToRelease.isEmpty()) {
+            chunksForced = !forcedExplosionChunks.isEmpty();
+            return;
+        }
+        Set<ChunkPos> releasedChunks = new HashSet<>(chunksToRelease);
+        int released = NuclearExplosionChunkLoading.unforceExplosionChunks(serverLevel, getChunkLoadingOwnerUuid(), chunksToRelease);
+        forcedExplosionChunks.removeAll(releasedChunks);
+        chunksForced = !forcedExplosionChunks.isEmpty();
+        if (releaseRetainedCenterChunk) {
+            retainedCenterChunk = null;
+        }
         NuclearExplosionChunkLoading.debugUnforced(getChunkLoadingOwnerUuid(), getId(), released);
     }
 
@@ -1879,10 +1989,49 @@ public class NuclearExplosionEntity extends Entity {
         originX = x;
         originY = y;
         originZ = z;
+        if (!level().isClientSide) {
+            explosionGroundY = computeExplosionGroundY(x, y, z);
+            syncVisualOriginData();
+        }
         setPos(x, y, z);
         setOldPosAndRot();
         setDeltaMovement(Vec3.ZERO);
         fallDistance = 0.0F;
+    }
+
+    private void syncVisualOriginData() {
+        if (!Double.isFinite(originX) || !Double.isFinite(originY) || !Double.isFinite(originZ)) {
+            return;
+        }
+        if (!Double.isFinite(explosionGroundY)) {
+            explosionGroundY = computeExplosionGroundY(originX, originY, originZ);
+        }
+        entityData.set(DATA_ORIGIN_X, (float) originX);
+        entityData.set(DATA_ORIGIN_Y, (float) originY);
+        entityData.set(DATA_ORIGIN_Z, (float) originZ);
+        entityData.set(DATA_GROUND_Y, (float) explosionGroundY);
+        entityData.set(DATA_HAS_VISUAL_ORIGIN, true);
+    }
+
+    private double computeExplosionGroundY(double x, double y, double z) {
+        if (!Double.isFinite(x) || !Double.isFinite(y) || !Double.isFinite(z)) {
+            return Double.isFinite(y) ? y : getY();
+        }
+        if (!level().hasChunkAt(new BlockPos(Mth.floor(x), Mth.floor(y), Mth.floor(z)))) {
+            return y;
+        }
+        int height = level().getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Mth.floor(x), Mth.floor(z));
+        return Math.max(height, level().getMinBuildHeight());
+    }
+
+    private void syncFixedOriginFromEntityData() {
+        if (!level().isClientSide || !hasSyncedExplosionOrigin()) {
+            return;
+        }
+        originX = entityData.get(DATA_ORIGIN_X);
+        originY = entityData.get(DATA_ORIGIN_Y);
+        originZ = entityData.get(DATA_ORIGIN_Z);
+        explosionGroundY = entityData.get(DATA_GROUND_Y);
     }
 
     private void stabilizeFixedOrigin() {
@@ -1911,6 +2060,17 @@ public class NuclearExplosionEntity extends Entity {
             chunkLoadingOwnerUuid = getUUID();
         }
         return chunkLoadingOwnerUuid;
+    }
+
+    private UUID getAftermathChunkLoadingOwnerUuid() {
+        if (aftermathChunkLoadingOwnerUuid == null) {
+            UUID base = getChunkLoadingOwnerUuid();
+            aftermathChunkLoadingOwnerUuid = new UUID(
+                    base.getMostSignificantBits() ^ 0x5A7EAF7E2A71C9D3L,
+                    base.getLeastSignificantBits() ^ 0x31C0B10C6D9E3779L
+            );
+        }
+        return aftermathChunkLoadingOwnerUuid;
     }
 
     @Override
@@ -2041,10 +2201,30 @@ public class NuclearExplosionEntity extends Entity {
             mushroomCloudSimulation = null;
             return;
         }
+        if (level().isClientSide && !hasValidVisualSyncData()) {
+            return;
+        }
+        Vec3 visualOrigin = getExplosionOrigin();
         if (mushroomCloudSimulation == null) {
             mushroomCloudSimulation = new NuclearMushroomCloudSimulation(getVisualSeed(), getRadius());
+            mushroomCloudSimulation.setKnownGroundYRelative(getExplosionGroundY() - visualOrigin.y);
+            int visualAge = getVisualAge();
+            if (visualAge > 0 && level().isClientSide) {
+                mushroomCloudSimulation.skipToAge(level(), visualOrigin, visualAge);
+                if (DEBUG_NUKE_VISUAL_SYNC) {
+                    SkyesNuclearTech.LOGGER.info(
+                            "Nuke visual sync: initialized mushroom simulation id={} clientTick={} visualAge={} localTick={} origin={} groundY={}",
+                            getId(),
+                            tickCount,
+                            visualAge,
+                            tickCount,
+                            visualOrigin,
+                            getExplosionGroundY()
+                    );
+                }
+            }
         }
-        mushroomCloudSimulation.tick(level(), position());
+        mushroomCloudSimulation.tick(level(), visualOrigin);
     }
 
     private void tickCloudlets() {
@@ -2071,7 +2251,8 @@ public class NuclearExplosionEntity extends Entity {
         float baseSize = Mth.clamp(2.5F + (float) shockwaveRadius * 0.025F, 3.0F, 8.0F);
         double desiredSpacing = Math.max(2.5D, baseSize * 0.75D);
         int count = Mth.clamp((int) (Math.PI * 2.0D * shockwaveRadius / desiredSpacing), SHOCKWAVE_MIN_PUFFS, SHOCKWAVE_MAX_PUFFS);
-        RandomSource random = RandomSource.create(getVisualSeed() ^ 0x5DEECE66DL ^ tickCount * 104729L);
+        int visualAge = getVisualAge();
+        RandomSource random = RandomSource.create(getVisualSeed() ^ 0x5DEECE66DL ^ visualAge * 104729L);
         int addedThisTick = 0;
 
         for (int index = 0; index < count; index++) {
@@ -2421,7 +2602,7 @@ public class NuclearExplosionEntity extends Entity {
     }
 
     private double getShockwaveRadius() {
-        return tickCount * SHOCKWAVE_SPEED_BLOCKS_PER_TICK;
+        return getVisualAge() * SHOCKWAVE_SPEED_BLOCKS_PER_TICK;
     }
 
     private double getShockwaveMaxRadius() {
@@ -2443,6 +2624,47 @@ public class NuclearExplosionEntity extends Entity {
     public long getVisualSeed() {
         long seed = entityData.get(DATA_VISUAL_SEED);
         return seed == 0L ? getUUID().getLeastSignificantBits() : seed;
+    }
+
+    public int getVisualAge() {
+        int syncedAge = entityData.get(DATA_VISUAL_AGE);
+        return level().isClientSide ? Math.max(syncedAge, tickCount) : tickCount;
+    }
+
+    public float getVisualAge(float partialTick) {
+        return getVisualAge() + partialTick;
+    }
+
+    public boolean hasSyncedExplosionOrigin() {
+        return entityData.get(DATA_HAS_VISUAL_ORIGIN);
+    }
+
+    public boolean hasValidVisualSyncData() {
+        return getRadius() > 0.0F
+                && getVisualSeed() != 0L
+                && hasSyncedExplosionOrigin()
+                && Double.isFinite(getExplosionGroundY());
+    }
+
+    public Vec3 getExplosionOrigin() {
+        if (hasSyncedExplosionOrigin()) {
+            return new Vec3(
+                    entityData.get(DATA_ORIGIN_X),
+                    entityData.get(DATA_ORIGIN_Y),
+                    entityData.get(DATA_ORIGIN_Z)
+            );
+        }
+        return fixedOrigin();
+    }
+
+    public double getExplosionGroundY() {
+        if (hasSyncedExplosionOrigin()) {
+            return entityData.get(DATA_GROUND_Y);
+        }
+        if (!Double.isFinite(explosionGroundY)) {
+            explosionGroundY = computeExplosionGroundY(originX, originY, originZ);
+        }
+        return explosionGroundY;
     }
 
     public boolean shouldSpawnCloud() {
@@ -2481,6 +2703,10 @@ public class NuclearExplosionEntity extends Entity {
                 : compound.getBoolean("AppliedEntityBlastImpulse");
         destructionPhase = readDestructionPhase(compound.getString("DestructionPhase"));
         destructionTicks = compound.contains("DestructionTicks") ? compound.getInt("DestructionTicks") : 0;
+        if (compound.contains("VisualAge")) {
+            tickCount = Math.max(0, compound.getInt("VisualAge"));
+            entityData.set(DATA_VISUAL_AGE, tickCount);
+        }
         if (!SAVE_NUKE_DESTRUCTION_PROGRESS && destructionPhase != DestructionPhase.COMPLETE) {
             // TODO: Persist planner ray index and compact section masks when large NBT writes are made configurable.
             destructionPhase = DestructionPhase.NOT_STARTED;
@@ -2494,7 +2720,9 @@ public class NuclearExplosionEntity extends Entity {
         originX = compound.contains("OriginX") ? compound.getDouble("OriginX") : getX();
         originY = compound.contains("OriginY") ? compound.getDouble("OriginY") : getY();
         originZ = compound.contains("OriginZ") ? compound.getDouble("OriginZ") : getZ();
+        explosionGroundY = compound.contains("ExplosionGroundY") ? compound.getDouble("ExplosionGroundY") : computeExplosionGroundY(originX, originY, originZ);
         setFixedOrigin(originX, originY, originZ);
+        syncVisualOriginData();
         entityData.set(DATA_VISUAL_SEED, compound.contains("VisualSeed") ? compound.getLong("VisualSeed") : level().random.nextLong());
         if (compound.hasUUID("SourceUuid")) {
             sourceUuid = compound.getUUID("SourceUuid");
@@ -2516,11 +2744,13 @@ public class NuclearExplosionEntity extends Entity {
         compound.putBoolean("AppliedInitialThermalFlash", appliedInitialThermalFlash);
         compound.putString("DestructionPhase", destructionPhase.name());
         compound.putInt("DestructionTicks", destructionTicks);
+        compound.putInt("VisualAge", getVisualAge());
         compound.putUUID("ChunkLoadingOwnerUuid", getChunkLoadingOwnerUuid());
         Vec3 origin = fixedOrigin();
         compound.putDouble("OriginX", origin.x);
         compound.putDouble("OriginY", origin.y);
         compound.putDouble("OriginZ", origin.z);
+        compound.putDouble("ExplosionGroundY", getExplosionGroundY());
         compound.putLong("VisualSeed", getVisualSeed());
         if (sourceUuid != null) {
             compound.putUUID("SourceUuid", sourceUuid);

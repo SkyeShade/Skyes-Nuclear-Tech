@@ -112,6 +112,37 @@ public final class NuclearMushroomCloudSimulation {
         age++;
     }
 
+    public void setKnownGroundYRelative(double groundYRelative) {
+        if (!Double.isFinite(groundYRelative)) {
+            return;
+        }
+        groundY = groundYRelative;
+        groundYInitialized = true;
+    }
+
+    public void skipToAge(Level level, Vec3 entityPosition, int targetAge) {
+        int clampedTargetAge = Mth.clamp(targetAge, 0, MAX_AGE_TICKS);
+        if (clampedTargetAge <= age) {
+            return;
+        }
+
+        updateGroundHeight(level, entityPosition);
+        int replayTicks = Math.min(clampedTargetAge - age, 200);
+        for (int index = 0; index < replayTicks; index++) {
+            tick(level, entityPosition);
+        }
+        if (age >= clampedTargetAge) {
+            return;
+        }
+
+        cloudlets.clear();
+        age = clampedTargetAge;
+        updateTorusField();
+        filledInitialTorus = true;
+        spawnedLowerAirRing = age >= AIR_RING_LOWER_DELAY_TICKS;
+        spawnedUpperAirRing = age >= AIR_RING_UPPER_DELAY_TICKS;
+    }
+
     public List<MushroomCloudlet> cloudlets() {
         return cloudlets;
     }

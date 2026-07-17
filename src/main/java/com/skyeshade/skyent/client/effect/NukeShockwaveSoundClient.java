@@ -64,8 +64,9 @@ public final class NukeShockwaveSoundClient {
         double dx = player.getX() - entity.getX();
         double dz = player.getZ() - entity.getZ();
         double distance = Math.sqrt(dx * dx + dz * dz);
-        double previousRadius = Math.max(0.0D, (entity.tickCount - 1) * NuclearExplosionEntity.SHOCKWAVE_SPEED_BLOCKS_PER_TICK);
-        double currentRadius = entity.tickCount * NuclearExplosionEntity.SHOCKWAVE_SPEED_BLOCKS_PER_TICK;
+        int visualAge = entity.getVisualAge();
+        double previousRadius = Math.max(0.0D, (visualAge - 1) * NuclearExplosionEntity.SHOCKWAVE_SPEED_BLOCKS_PER_TICK);
+        double currentRadius = visualAge * NuclearExplosionEntity.SHOCKWAVE_SPEED_BLOCKS_PER_TICK;
 
         if (distance <= currentRadius + ARRIVAL_BAND_BLOCKS && distance >= previousRadius - ARRIVAL_BAND_BLOCKS) {
             state.triggered = true;
@@ -88,7 +89,7 @@ public final class NukeShockwaveSoundClient {
             return;
         }
 
-        RandomSource random = RandomSource.create(entity.getVisualSeed() + entity.tickCount * 31L + remainingTicks * 17L);
+        RandomSource random = RandomSource.create(entity.getVisualSeed() + entity.getVisualAge() * 31L + remainingTicks * 17L);
         float pitch = 0.8F + random.nextFloat() * 0.4F;
         minecraft.level.playLocalSound(
                 entity.getX(),

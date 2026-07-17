@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.event;
 
 import com.skyeshade.skyent.content.radiation.ModDamageSources;
+import com.skyeshade.skyent.content.entity.NukePerformanceBudget;
 import com.skyeshade.skyent.content.shape.MultiblockShapeRegistry;
 import com.skyeshade.skyent.event.systems.BootstrapSystem;
 import com.skyeshade.skyent.event.systems.CraftingSoundSystem;
@@ -37,6 +38,7 @@ public final class ServerEvents {
         NeoForge.EVENT_BUS.addListener(ServerEvents::onItemCrafted);
         NeoForge.EVENT_BUS.addListener(ServerEvents::onLivingIncomingDamage);
         NeoForge.EVENT_BUS.addListener(ServerEvents::onEntityTick);
+        NeoForge.EVENT_BUS.addListener(ServerEvents::onServerTickPre);
         NeoForge.EVENT_BUS.addListener(ServerEvents::onServerTick);
         NeoForge.EVENT_BUS.addListener(ServerEvents::onChunkLoad);
     }
@@ -71,6 +73,7 @@ public final class ServerEvents {
     }
 
     public static void onServerTick(ServerTickEvent.Post event) {
+        NukePerformanceBudget.onServerTickPost(event);
         if (event.getServer().getTickCount() % RadiationSourceTickSystem.MOLTEN_CORIUM_REGISTRY_TICK_INTERVAL == 0) {
             for (ServerLevel level : event.getServer().getAllLevels()) {
                 RadiationSourceTickSystem.tick(level);
@@ -82,6 +85,10 @@ public final class ServerEvents {
             ToxicitySystem.tickLivingEntity(player);
             HotItemSystem.tickLivingEntity(player);
         }
+    }
+
+    public static void onServerTickPre(ServerTickEvent.Pre event) {
+        NukePerformanceBudget.onServerTickPre(event);
     }
 
     public static void onChunkLoad(ChunkEvent.Load event) {

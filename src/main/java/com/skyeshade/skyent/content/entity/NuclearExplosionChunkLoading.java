@@ -165,6 +165,28 @@ public final class NuclearExplosionChunkLoading {
         return forceExplosionChunksDetailed(level, ownerUuid, center, chunkRadius, forcedChunks).added();
     }
 
+    public static boolean forceSingleChunk(ServerLevel level, UUID ownerUuid, ChunkPos chunk, boolean ticking) {
+        return NUKE_TICKET_CONTROLLER.forceChunk(
+                level,
+                ownerUuid,
+                chunk.x,
+                chunk.z,
+                true,
+                ticking
+        );
+    }
+
+    public static boolean unforceSingleChunk(ServerLevel level, UUID ownerUuid, ChunkPos chunk, boolean ticking) {
+        return NUKE_TICKET_CONTROLLER.forceChunk(
+                level,
+                ownerUuid,
+                chunk.x,
+                chunk.z,
+                false,
+                ticking
+        );
+    }
+
     private static ForceChunksResult forceExplosionChunksDetailed(ServerLevel level, UUID ownerUuid, ChunkPos center, int chunkRadius, Set<ChunkPos> forcedChunks) {
         long totalStartNs = NuclearExplosionEntity.detonationTimingNowNs();
         int added = 0;
@@ -175,9 +197,14 @@ public final class NuclearExplosionChunkLoading {
         double chunkListMs = NuclearExplosionEntity.detonationTimingElapsedMs(listStartNs);
         int loadedBeforeForce = countLoadedChunks(level, chunks);
         int attempted = 0;
+        int maxForcedChunks = NukePerformanceBudget.scaleInt(
+                SkyentNuclearExplosionConfig.chunkLoadingMaxForcedChunks(),
+                1,
+                level.getServer()
+        );
         long forceLoopStartNs = NuclearExplosionEntity.detonationTimingNowNs();
         for (ChunkPos chunk : chunks) {
-            if (forcedChunks.size() >= SkyentNuclearExplosionConfig.chunkLoadingMaxForcedChunks()) {
+            if (forcedChunks.size() >= maxForcedChunks) {
                 capped = true;
                 logForceLimit(center, chunkRadius, forcedChunks.size());
                 break;
@@ -222,6 +249,8 @@ public final class NuclearExplosionChunkLoading {
                         + " safeLoadedBeforeForce=" + result.loadedBeforeForce()
                         + " notLoadedBeforeForce=" + (result.chunkCount() - result.loadedBeforeForce())
                         + " capped=" + result.capped()
+                        + " configuredMaxForcedChunks=" + SkyentNuclearExplosionConfig.chunkLoadingMaxForcedChunks()
+                        + " scaledMaxForcedChunks=" + maxForcedChunks
                         + " chunkListMs=" + result.chunkListMs()
                         + " forceLoopMs=" + result.forceLoopMs()
                         + " slowestForceMs=" + result.slowestForceMs()

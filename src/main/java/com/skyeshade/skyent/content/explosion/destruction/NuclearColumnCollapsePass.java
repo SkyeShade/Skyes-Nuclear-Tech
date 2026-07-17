@@ -2,6 +2,7 @@ package com.skyeshade.skyent.content.explosion.destruction;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.config.SkyentNuclearExplosionConfig;
+import com.skyeshade.skyent.content.entity.NuclearExplosionChunkLoading;
 import com.skyeshade.skyent.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
@@ -22,8 +23,10 @@ import net.minecraft.world.phys.Vec3;
 import java.util.ArrayList;
 import java.util.ArrayDeque;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Queue;
+import java.util.Set;
+import java.util.UUID;
 
 public final class NuclearColumnCollapsePass {
     private static final int COLUMN_COLLAPSE_MAX_RUNS_PER_COLUMN = 4;
@@ -55,13 +58,16 @@ public final class NuclearColumnCollapsePass {
     private static final int COLUMN_WORK_MAX_SECTIONS_PER_TICK = 32;
     private static final int DEFERRED_WORK_RETRY_INTERVAL_TICKS = 20;
     private static final int DEFERRED_WORK_CHECKS_PER_TICK = 64;
+    private static final boolean DEBUG_NUKE_MUTATIONS = Boolean.getBoolean("skyent.debugNukeMutations");
 
     private final ServerLevel level;
     private final List<ChunkWorkUnit> orderedWorkUnits;
-    private final Queue<ChunkWorkUnit> readyWorkUnits = new ArrayDeque<>();
-    private final Queue<ChunkWorkUnit> deferredWorkUnits = new ArrayDeque<>();
+    private final ArrayDeque<ChunkWorkUnit> readyWorkUnits = new ArrayDeque<>();
+    private final ArrayDeque<ChunkWorkUnit> deferredWorkUnits = new ArrayDeque<>();
     private final NuclearSectionMutationPlan emptyPlan = new NuclearSectionMutationPlan();
     private final NuclearSectionCompletionTracker sectionCompletionTracker;
+    private final UUID chunkTicketOwner;
+    private final Set<ChunkPos> forcedMutationChunks = new HashSet<>();
     private final Vec3 center;
     private final int centerX;
     private final int centerY;
@@ -118,6 +124,10 @@ public final class NuclearColumnCollapsePass {
     private int blockedTicks;
     private int longestBlockedTicks;
     private long skippedUnloadedColumns;
+    private long mutationChunksForced;
+    private long mutationChunksUnforced;
+    private long mutationChunkLoadWaits;
+    private long mutationChunkForceFailures;
     private long barriersEncountered;
     private long movableBlocksCollected;
     private long surfaceRunsFound;
@@ -181,10 +191,12 @@ public final class NuclearColumnCollapsePass {
             double maxResistance,
             int maxDropBlocks,
             long seed,
+            UUID chunkTicketOwner,
             NuclearSectionCompletionTracker sectionCompletionTracker
     ) {
         this.level = level;
         this.sectionCompletionTracker = sectionCompletionTracker;
+        this.chunkTicketOwner = chunkTicketOwner;
         this.center = center;
         this.maxResistance = maxResistance;
         this.maxDropBlocks = Math.max(0, maxDropBlocks);
@@ -335,14 +347,14 @@ public final class NuclearColumnCollapsePass {
                 break;
             }
 
-            if (!level.hasChunk(workUnit.chunkPos().x, workUnit.chunkPos().z)) {
-                skippedUnloadedColumns += 256L;
+            if (!ensureWorkUnitChunkReady(workUnit)) {
+                readyWorkUnits.addFirst(workUnit);
                 unloadedWorkUnitsSkippedThisTick++;
-                workUnitsCompleted++;
-                workUnitsProcessedThisTick++;
-                continue;
+                stoppedByNoWork = true;
+                break;
             }
             if (!isWorkUnitReady(workUnit)) {
+                releaseMutationChunk(workUnit.chunkPos());
                 deferredWorkUnits.add(workUnit);
                 deferredColumnsQueued += 256L;
                 deferredColumnChecks++;
@@ -459,6 +471,7 @@ public final class NuclearColumnCollapsePass {
     }
 
     private void finishCurrentWorkUnit() {
+        ChunkPos finishedChunk = currentWorkUnit == null ? null : currentWorkUnit.chunkPos();
         if (currentLocalMutationQueue != null) {
             mutationUnloadedSectionSkips += currentLocalMutationQueue.unloadedSectionSkips();
             mutationBlockEntitySkips += currentLocalMutationQueue.blockEntitySkips();
@@ -472,6 +485,7 @@ public final class NuclearColumnCollapsePass {
         currentLocalPlan = null;
         currentWorkUnit = null;
         workUnitsCompleted++;
+        releaseMutationChunk(finishedChunk);
     }
 
     private void updateComplete() {
@@ -1555,7 +1569,87 @@ public final class NuclearColumnCollapsePass {
         activePlan = null;
         currentWorkUnit = null;
         emptyPlan.clear();
+        releaseAllMutationChunks();
         complete = true;
+    }
+
+    private boolean ensureWorkUnitChunkReady(ChunkWorkUnit workUnit) {
+        ChunkPos chunk = workUnit.chunkPos();
+        if (level.hasChunk(chunk.x, chunk.z)) {
+            forceMutationChunk(chunk);
+            return true;
+        }
+
+        mutationChunkLoadWaits++;
+        if (forceMutationChunk(chunk)) {
+            if (level.hasChunk(chunk.x, chunk.z)) {
+                return true;
+            }
+            if (DEBUG_NUKE_MUTATIONS && tickCounter % 20 == 0) {
+                SkyesNuclearTech.LOGGER.info(
+                        "Nuke aftermath mutation chunk waiting: owner={} chunk={} forced={} waits={} forcedChunks={}",
+                        chunkTicketOwner,
+                        chunk,
+                        true,
+                        mutationChunkLoadWaits,
+                        forcedMutationChunks.size()
+                );
+            }
+            return false;
+        }
+
+        mutationChunkForceFailures++;
+        skippedUnloadedColumns += 256L;
+        if (DEBUG_NUKE_MUTATIONS) {
+            SkyesNuclearTech.LOGGER.warn(
+                    "Nuke aftermath mutation chunk force failed: owner={} chunk={} failures={}",
+                    chunkTicketOwner,
+                    chunk,
+                    mutationChunkForceFailures
+            );
+        }
+        return false;
+    }
+
+    private boolean forceMutationChunk(ChunkPos chunk) {
+        if (forcedMutationChunks.contains(chunk)) {
+            return true;
+        }
+        boolean forced = NuclearExplosionChunkLoading.forceSingleChunk(
+                level,
+                chunkTicketOwner,
+                chunk,
+                SkyentNuclearExplosionConfig.chunkLoadingTickingTickets()
+        );
+        if (forced) {
+            forcedMutationChunks.add(chunk);
+            mutationChunksForced++;
+        }
+        return forced;
+    }
+
+    private void releaseMutationChunk(ChunkPos chunk) {
+        if (chunk == null || !forcedMutationChunks.remove(chunk)) {
+            return;
+        }
+        if (NuclearExplosionChunkLoading.unforceSingleChunk(
+                level,
+                chunkTicketOwner,
+                chunk,
+                SkyentNuclearExplosionConfig.chunkLoadingTickingTickets()
+        )) {
+            mutationChunksUnforced++;
+        }
+    }
+
+    private void releaseAllMutationChunks() {
+        if (forcedMutationChunks.isEmpty()) {
+            return;
+        }
+        List<ChunkPos> chunks = new ArrayList<>(forcedMutationChunks);
+        for (ChunkPos chunk : chunks) {
+            releaseMutationChunk(chunk);
+        }
     }
 
     public NuclearSectionMutationPlan mutationPlan() {
@@ -1568,6 +1662,26 @@ public final class NuclearColumnCollapsePass {
 
     public long skippedUnloadedColumns() {
         return skippedUnloadedColumns;
+    }
+
+    public int forcedMutationChunks() {
+        return forcedMutationChunks.size();
+    }
+
+    public long mutationChunksForced() {
+        return mutationChunksForced;
+    }
+
+    public long mutationChunksUnforced() {
+        return mutationChunksUnforced;
+    }
+
+    public long mutationChunkLoadWaits() {
+        return mutationChunkLoadWaits;
+    }
+
+    public long mutationChunkForceFailures() {
+        return mutationChunkForceFailures;
     }
 
     public long barriersEncountered() {

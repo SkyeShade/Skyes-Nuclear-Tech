@@ -41,7 +41,10 @@ public class NuclearExplosionRenderer extends EntityRenderer<NuclearExplosionEnt
 
     @Override
     public void render(NuclearExplosionEntity entity, float entityYaw, float partialTick, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight) {
-        float age = entity.tickCount + partialTick;
+        if (!entity.hasValidVisualSyncData()) {
+            return;
+        }
+        float age = entity.getVisualAge(partialTick);
         if (!RENDER_RAYS_OVER_CLOUDS && age < NuclearExplosionEntity.RAY_TOTAL_TICKS) {
             renderRays(entity, age, poseStack, bufferSource);
         }
