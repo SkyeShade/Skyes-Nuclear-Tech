@@ -4,6 +4,7 @@ import com.skyeshade.skyent.content.radiation.EnvironmentalRadiationMode;
 import com.skyeshade.skyent.content.radiation.RadioactiveSourceRegistry;
 import com.skyeshade.skyent.content.radiation.RadiationMeltdownUtil;
 import com.skyeshade.skyent.content.radiation.RadiationBlockProfiles;
+import com.skyeshade.skyent.content.radiation.RadiationHotBlockRayThrottle;
 import com.skyeshade.skyent.content.radiation.RadiationUtil;
 import com.skyeshade.skyent.content.radiation.RadioactiveSource;
 import net.minecraft.core.BlockPos;
@@ -47,7 +48,9 @@ public class RadioactiveBlock extends Block implements RadioactiveSource {
         RadioactiveSourceRegistry.register(level, pos);
         RadiationMeltdownUtil.tryTriggerMeltdown(level, pos, random);
         if (environmentalMode == EnvironmentalRadiationMode.FULL_RAY) {
-            RadiationUtil.applyFullEnvironmentalRadiation(level, pos, getRadiationStrength(), getEnvironmentalRadiationRange(), random);
+            if (RadiationHotBlockRayThrottle.request(level, pos).allowed()) {
+                RadiationUtil.applyFullEnvironmentalRadiation(level, pos, getRadiationStrength(), getEnvironmentalRadiationRange(), random);
+            }
         } else {
             RadiationUtil.applyCheapEnvironmentalRadiation(level, pos, getRadiationStrength(), getEnvironmentalRadiationRange(), random);
         }

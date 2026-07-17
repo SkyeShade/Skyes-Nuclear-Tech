@@ -53,6 +53,12 @@ public final class NuclearBlockMutationQueue {
     private double totalMutationTickMs;
     private double worstMutationTickMs;
     private long maxBlocksChangedInSingleTick;
+    private long maxSectionsTouchedInSingleTick;
+    private long worstMutationTickSections;
+    private long stoppedByBlockBudgetCount;
+    private long stoppedByTimeBudgetCount;
+    private long stoppedBySectionBudgetCount;
+    private long stoppedByQueueEmptyCount;
     private long worstMutationTickIndex = -1L;
 
     public NuclearBlockMutationQueue(ServerLevel level, NuclearDestructionMask mask, Vec3 center, NuclearSectionCompletionTracker sectionCompletionTracker, NuclearResistanceCache resistanceCache) {
@@ -78,17 +84,21 @@ public final class NuclearBlockMutationQueue {
         int sectionsTouched = 0;
         int blocksChanged = 0;
         int operationsSinceTimeCheck = 0;
+        boolean stoppedByTimeBudget = false;
+        boolean stoppedByQueueEmpty = false;
 
         while (!complete && sectionsTouched < maxSections && blocksChanged < maxBlocks) {
             if (++operationsSinceTimeCheck >= TIME_BUDGET_CHECK_INTERVAL_OPERATIONS) {
                 operationsSinceTimeCheck = 0;
                 if (System.nanoTime() - startNs >= maxNs && (blocksChanged > 0 || sectionsTouched > 0)) {
+                    stoppedByTimeBudget = true;
                     break;
                 }
             }
 
             if (currentMask == null && currentReplacements == null && !nextSection()) {
                 complete = true;
+                stoppedByQueueEmpty = true;
                 break;
             }
 
@@ -139,9 +149,34 @@ public final class NuclearBlockMutationQueue {
         if (elapsedMs > worstMutationTickMs) {
             worstMutationTickMs = elapsedMs;
             worstMutationTickIndex = mutationTicks;
+            worstMutationTickSections = sectionsTouched;
         }
         maxBlocksChangedInSingleTick = Math.max(maxBlocksChangedInSingleTick, blocksChanged);
-        return new MutationResult(sectionsTouched, blocksChanged, complete, elapsedMs);
+        maxSectionsTouchedInSingleTick = Math.max(maxSectionsTouchedInSingleTick, sectionsTouched);
+        boolean stoppedByBlockBudget = !complete && blocksChanged >= maxBlocks;
+        boolean stoppedBySectionBudget = !complete && sectionsTouched >= maxSections;
+        if (stoppedByBlockBudget) {
+            stoppedByBlockBudgetCount++;
+        }
+        if (stoppedByTimeBudget) {
+            stoppedByTimeBudgetCount++;
+        }
+        if (stoppedBySectionBudget) {
+            stoppedBySectionBudgetCount++;
+        }
+        if (stoppedByQueueEmpty) {
+            stoppedByQueueEmptyCount++;
+        }
+        return new MutationResult(
+                sectionsTouched,
+                blocksChanged,
+                complete,
+                elapsedMs,
+                stoppedByBlockBudget,
+                stoppedByTimeBudget,
+                stoppedBySectionBudget,
+                stoppedByQueueEmpty
+        );
     }
 
     private boolean nextSection() {
@@ -317,6 +352,34 @@ public final class NuclearBlockMutationQueue {
         return maxBlocksChangedInSingleTick;
     }
 
+    public long maxSectionsTouchedInSingleTick() {
+        return maxSectionsTouchedInSingleTick;
+    }
+
+    public long worstMutationTickSections() {
+        return worstMutationTickSections;
+    }
+
+    public double averageSectionsTouchedPerTick() {
+        return mutationTicks <= 0 ? 0.0D : totalSectionsTouched / (double) mutationTicks;
+    }
+
+    public long stoppedByBlockBudgetCount() {
+        return stoppedByBlockBudgetCount;
+    }
+
+    public long stoppedByTimeBudgetCount() {
+        return stoppedByTimeBudgetCount;
+    }
+
+    public long stoppedBySectionBudgetCount() {
+        return stoppedBySectionBudgetCount;
+    }
+
+    public long stoppedByQueueEmptyCount() {
+        return stoppedByQueueEmptyCount;
+    }
+
     public long worstMutationTickIndex() {
         return worstMutationTickIndex;
     }
@@ -458,6 +521,15 @@ public final class NuclearBlockMutationQueue {
         }
     }
 
-    public record MutationResult(int sectionsTouched, int blocksRemoved, boolean complete, double elapsedMs) {
+    public record MutationResult(
+            int sectionsTouched,
+            int blocksRemoved,
+            boolean complete,
+            double elapsedMs,
+            boolean stoppedByBlockBudget,
+            boolean stoppedByTimeBudget,
+            boolean stoppedBySectionBudget,
+            boolean stoppedByQueueEmpty
+    ) {
     }
 }

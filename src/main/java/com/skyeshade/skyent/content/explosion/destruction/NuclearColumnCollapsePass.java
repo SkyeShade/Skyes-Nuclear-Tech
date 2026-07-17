@@ -49,8 +49,8 @@ public final class NuclearColumnCollapsePass {
     private static final TagKey<Block> VITRIFIABLE_BLOCKS = BlockTags.create(
             ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "vitrifiable_blocks")
     );
-    private static final int COLUMN_WORK_CHUNKS_PLANNED_PER_TICK = 2;
-    private static final int COLUMN_WORK_MAX_COLUMNS_SCANNED_PER_TICK = 2_048;
+    private static final int COLUMN_WORK_MAX_COLUMNS_SCANNED_PER_TICK = 65_536;
+    private static final int TIME_BUDGET_CHECK_INTERVAL_COLUMNS = 64;
     private static final int COLUMN_WORK_MAX_MUTATIONS_PER_TICK = 8_192;
     private static final int COLUMN_WORK_MAX_SECTIONS_PER_TICK = 32;
     private static final int DEFERRED_WORK_RETRY_INTERVAL_TICKS = 20;
@@ -244,15 +244,24 @@ public final class NuclearColumnCollapsePass {
         complete = orderedWorkUnits.isEmpty() || minY > maxY;
     }
 
-    public CollapseResult tick(int maxColumns) {
+    public CollapseResult tick(int maxWorkUnits, int maxColumns, double maxMilliseconds) {
+        long startNs = System.nanoTime();
+        long maxNs = Math.max(1L, (long) (Math.max(0.0D, maxMilliseconds) * 1_000_000.0D));
         tickCounter++;
+        int workUnitBudget = Math.max(1, maxWorkUnits);
         int columnBudget = Math.min(maxColumns, COLUMN_WORK_MAX_COLUMNS_SCANNED_PER_TICK);
         int columnsThisTick = 0;
         int deferredThisTick = 0;
+        int unloadedWorkUnitsSkippedThisTick = 0;
         int workUnitsPlannedThisTick = 0;
+        int workUnitsProcessedThisTick = 0;
         int sectionsMutatedThisTick = 0;
         int mutationsAppliedThisTick = 0;
         long plannedThisTick = 0L;
+        boolean stoppedByWorkBudget = false;
+        boolean stoppedByColumnBudget = false;
+        boolean stoppedByTimeBudget = false;
+        boolean stoppedByNoWork = false;
 
         while (!complete) {
             if (currentLocalMutationQueue != null) {
@@ -272,14 +281,31 @@ public final class NuclearColumnCollapsePass {
                 totalMutationsApplied += result.blocksChanged();
                 if (currentLocalMutationQueue.isComplete()) {
                     finishCurrentWorkUnit();
+                    workUnitsProcessedThisTick++;
+                }
+                if (System.nanoTime() - startNs >= maxNs && (result.sectionsTouched() > 0 || result.blocksChanged() > 0)) {
+                    stoppedByTimeBudget = true;
+                    break;
                 }
                 if (result.sectionsTouched() == 0 && result.blocksChanged() == 0 && currentLocalMutationQueue != null) {
+                    stoppedByNoWork = true;
                     break;
                 }
                 continue;
             }
 
-            if (workUnitsPlannedThisTick >= COLUMN_WORK_CHUNKS_PLANNED_PER_TICK || columnsThisTick >= columnBudget) {
+            if (workUnitsProcessedThisTick >= workUnitBudget) {
+                stoppedByWorkBudget = true;
+                break;
+            }
+            if (columnsThisTick >= columnBudget) {
+                stoppedByColumnBudget = true;
+                break;
+            }
+            if ((columnsThisTick == 0 || columnsThisTick % TIME_BUDGET_CHECK_INTERVAL_COLUMNS == 0)
+                    && System.nanoTime() - startNs >= maxNs
+                    && (workUnitsProcessedThisTick > 0 || columnsThisTick > 0 || sectionsMutatedThisTick > 0 || mutationsAppliedThisTick > 0)) {
+                stoppedByTimeBudget = true;
                 break;
             }
 
@@ -289,12 +315,14 @@ public final class NuclearColumnCollapsePass {
                     blockedByPendingSections = true;
                     blockedTicks++;
                     longestBlockedTicks = Math.max(longestBlockedTicks, blockedTicks);
+                    stoppedByNoWork = true;
                     break;
                 }
                 if (readyWorkUnits.isEmpty() && deferredWorkUnits.isEmpty()) {
                     fillNextRing();
                     if (readyWorkUnits.isEmpty()) {
                         updateComplete();
+                        stoppedByNoWork = !complete;
                         break;
                     }
                 }
@@ -303,12 +331,15 @@ public final class NuclearColumnCollapsePass {
             ChunkWorkUnit workUnit = readyWorkUnits.poll();
             if (workUnit == null) {
                 updateComplete();
+                stoppedByNoWork = !complete;
                 break;
             }
 
             if (!level.hasChunk(workUnit.chunkPos().x, workUnit.chunkPos().z)) {
                 skippedUnloadedColumns += 256L;
+                unloadedWorkUnitsSkippedThisTick++;
                 workUnitsCompleted++;
+                workUnitsProcessedThisTick++;
                 continue;
             }
             if (!isWorkUnitReady(workUnit)) {
@@ -318,6 +349,7 @@ public final class NuclearColumnCollapsePass {
                 blockedByPendingSections = true;
                 blockedWorkUnit = workUnit;
                 deferredThisTick++;
+                workUnitsProcessedThisTick++;
                 continue;
             }
 
@@ -333,6 +365,7 @@ public final class NuclearColumnCollapsePass {
             totalColumnsProcessed += scanned;
             workUnitsPlanned++;
             workUnitsPlannedThisTick++;
+            workUnitsProcessedThisTick++;
             plannedThisTick += currentLocalPlan.mutationCount();
 
             if (currentLocalPlan.isEmpty()) {
@@ -349,12 +382,23 @@ public final class NuclearColumnCollapsePass {
         return new CollapseResult(
                 columnsThisTick,
                 deferredThisTick,
+                unloadedWorkUnitsSkippedThisTick,
                 plannedThisTick,
                 workUnitsPlannedThisTick,
+                workUnitsProcessedThisTick,
                 sectionsMutatedThisTick,
                 mutationsAppliedThisTick,
-                complete
+                complete,
+                (System.nanoTime() - startNs) / 1_000_000.0D,
+                stoppedByWorkBudget,
+                stoppedByColumnBudget,
+                stoppedByTimeBudget,
+                stoppedByNoWork
         );
+    }
+
+    public CollapseResult tick(int maxColumns) {
+        return tick(2, maxColumns, Double.MAX_VALUE);
     }
 
     private boolean chunkIntersectsRadius(int chunkX, int chunkZ, double radiusSqr) {
@@ -1855,11 +1899,18 @@ public final class NuclearColumnCollapsePass {
     public record CollapseResult(
             int columnsProcessed,
             int columnsDeferred,
+            int unloadedWorkUnitsSkipped,
             long mutationsPlanned,
             int workUnitsPlanned,
+            int workUnitsProcessed,
             int sectionsMutated,
             int mutationsApplied,
-            boolean complete
+            boolean complete,
+            double elapsedMs,
+            boolean stoppedByWorkBudget,
+            boolean stoppedByColumnBudget,
+            boolean stoppedByTimeBudget,
+            boolean stoppedByNoWork
     ) {
     }
 

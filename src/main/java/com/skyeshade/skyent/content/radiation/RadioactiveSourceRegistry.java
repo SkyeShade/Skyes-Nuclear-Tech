@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 public final class RadioactiveSourceRegistry extends SavedData {
     private static final String DATA_NAME = "skyent_radioactive_sources";
@@ -82,27 +83,89 @@ public final class RadioactiveSourceRegistry extends SavedData {
 
     public List<BlockPos> getSourcesNear(Vec3 center, double radius) {
         List<BlockPos> nearbySources = new ArrayList<>();
+        scanSourcesNear(center, radius, nearbySources::add);
+        return nearbySources;
+    }
+
+    public NearbySourceScanStats scanSourcesNear(Vec3 center, double radius, Consumer<BlockPos> sourceConsumer) {
         int centerChunkX = Mth.floor(center.x) >> 4;
         int centerChunkZ = Mth.floor(center.z) >> 4;
         int chunkRadius = Mth.ceil(radius / 16.0D);
         double radiusSq = radius * radius;
+        int bucketsVisited = 0;
+        int bucketsWithSources = 0;
+        int sourceRefsVisited = 0;
+        int sourcesWithinRadius = 0;
 
         for (int chunkX = centerChunkX - chunkRadius; chunkX <= centerChunkX + chunkRadius; chunkX++) {
             for (int chunkZ = centerChunkZ - chunkRadius; chunkZ <= centerChunkZ + chunkRadius; chunkZ++) {
+                bucketsVisited++;
                 Set<BlockPos> chunkPositions = positionsByChunk.get(chunkKey(chunkX, chunkZ));
                 if (chunkPositions == null) {
                     continue;
                 }
 
+                bucketsWithSources++;
+                sourceRefsVisited += chunkPositions.size();
                 for (BlockPos pos : chunkPositions) {
                     if (Vec3.atCenterOf(pos).distanceToSqr(center) <= radiusSq) {
-                        nearbySources.add(pos);
+                        sourcesWithinRadius++;
+                        sourceConsumer.accept(pos);
                     }
                 }
             }
         }
 
-        return nearbySources;
+        return new NearbySourceScanStats(bucketsVisited, bucketsWithSources, sourceRefsVisited, sourcesWithinRadius);
+    }
+
+    public NearbySourceScanStats sampleSourcesNear(
+            Vec3 center,
+            double radius,
+            int cursor,
+            int maxSourceRefs,
+            Consumer<BlockPos> sourceConsumer
+    ) {
+        int centerChunkX = Mth.floor(center.x) >> 4;
+        int centerChunkZ = Mth.floor(center.z) >> 4;
+        int chunkRadius = Mth.ceil(radius / 16.0D);
+        int side = chunkRadius * 2 + 1;
+        int totalBuckets = side * side;
+        int start = Math.floorMod(cursor, Math.max(1, totalBuckets));
+        double radiusSq = radius * radius;
+        int bucketsVisited = 0;
+        int bucketsWithSources = 0;
+        int sourceRefsVisited = 0;
+        int sourcesWithinRadius = 0;
+
+        for (int offsetIndex = 0; offsetIndex < totalBuckets && sourceRefsVisited < maxSourceRefs; offsetIndex++) {
+            int index = (start + offsetIndex) % totalBuckets;
+            int offsetX = index % side - chunkRadius;
+            int offsetZ = index / side - chunkRadius;
+            int chunkX = centerChunkX + offsetX;
+            int chunkZ = centerChunkZ + offsetZ;
+            bucketsVisited++;
+
+            Set<BlockPos> chunkPositions = positionsByChunk.get(chunkKey(chunkX, chunkZ));
+            if (chunkPositions == null) {
+                continue;
+            }
+
+            bucketsWithSources++;
+            for (BlockPos pos : chunkPositions) {
+                if (sourceRefsVisited >= maxSourceRefs) {
+                    break;
+                }
+
+                sourceRefsVisited++;
+                if (Vec3.atCenterOf(pos).distanceToSqr(center) <= radiusSq) {
+                    sourcesWithinRadius++;
+                    sourceConsumer.accept(pos);
+                }
+            }
+        }
+
+        return new NearbySourceScanStats(bucketsVisited, bucketsWithSources, sourceRefsVisited, sourcesWithinRadius);
     }
 
     public List<BlockPos> copyAllSources() {
@@ -138,5 +201,13 @@ public final class RadioactiveSourceRegistry extends SavedData {
 
     private static long chunkKey(int chunkX, int chunkZ) {
         return ((long) chunkX & 0xFFFFFFFFL) | (((long) chunkZ & 0xFFFFFFFFL) << 32);
+    }
+
+    public record NearbySourceScanStats(
+            int chunkBucketsVisited,
+            int chunkBucketsWithSources,
+            int sourceRefsVisited,
+            int sourcesWithinRadius
+    ) {
     }
 }

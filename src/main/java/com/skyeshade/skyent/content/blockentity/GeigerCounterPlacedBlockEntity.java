@@ -1,5 +1,6 @@
 package com.skyeshade.skyent.content.blockentity;
 
+import com.skyeshade.skyent.config.SkyentRadiationConfig;
 import com.skyeshade.skyent.content.radiation.RadiationExposureUtil;
 import com.skyeshade.skyent.content.item.GeigerNeedleUtil;
 import com.skyeshade.skyent.registry.ModBlockEntities;
@@ -52,7 +53,7 @@ public class GeigerCounterPlacedBlockEntity extends BlockEntity {
         double exposure = RadiationExposureUtil.calculateEnvironmentalExposure(
                 serverLevel,
                 samplePos,
-                RadiationExposureUtil.DEFAULT_PLAYER_SCAN_RADIUS
+                SkyentRadiationConfig.exposureRadioactiveBlockScanRadius()
         );
 
         geiger.setCurrentExposureMillisievertsPerSecond(exposure);

@@ -2,6 +2,7 @@ package com.skyeshade.skyent;
 
 import com.mojang.logging.LogUtils;
 import com.skyeshade.skyent.config.SkyentNuclearExplosionConfig;
+import com.skyeshade.skyent.config.SkyentRadiationConfig;
 import com.skyeshade.skyent.content.entity.NuclearExplosionChunkLoading;
 import com.skyeshade.skyent.event.ClientEvents;
 import com.skyeshade.skyent.event.CommonEvents;
@@ -32,7 +33,9 @@ public final class SkyesNuclearTech {
 
     public SkyesNuclearTech(IEventBus modEventBus, ModContainer modContainer) {
         modContainer.registerConfig(ModConfig.Type.COMMON, SkyentNuclearExplosionConfig.SPEC, SkyentNuclearExplosionConfig.FILE_NAME);
+        modContainer.registerConfig(ModConfig.Type.COMMON, SkyentRadiationConfig.SPEC, SkyentRadiationConfig.FILE_NAME);
         modEventBus.addListener(SkyentNuclearExplosionConfig::onConfigLoad);
+        modEventBus.addListener(SkyentRadiationConfig::onConfigLoad);
         register(modEventBus);
     }
 

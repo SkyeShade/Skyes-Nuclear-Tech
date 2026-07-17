@@ -28,9 +28,14 @@ public final class SkyentNuclearExplosionConfig {
 
     private static final ModConfigSpec.IntValue MUTATION_MAX_BLOCKS_PER_TICK;
     private static final ModConfigSpec.DoubleValue MUTATION_MAX_MILLISECONDS_PER_TICK;
+    private static final ModConfigSpec.IntValue MUTATION_MAX_SECTIONS_PER_TICK;
+    private static final ModConfigSpec.IntValue MUTATION_MIN_COMPLETED_SECTIONS_BEFORE_AFTERMATH;
+    private static final ModConfigSpec.IntValue MUTATION_AFTERMATH_FORCE_START_AFTER_TICKS;
+    private static final ModConfigSpec.IntValue MUTATION_NO_PROGRESS_TIMEOUT_TICKS;
+    private static final ModConfigSpec.IntValue MUTATION_MAX_TOTAL_DESTRUCTION_TICKS;
 
     private static final ModConfigSpec.BooleanValue CHUNK_LOADING_ENABLED;
-    private static final ModConfigSpec.DoubleValue CHUNK_LOADING_MAX_GAMEPLAY_NUKE_RADIUS;
+    private static final ModConfigSpec.DoubleValue CHUNK_LOADING_MAX_RADIUS_FOR_IMMEDIATE_CHUNK_LOADING;
     private static final ModConfigSpec.DoubleValue CHUNK_LOADING_IMMEDIATE_RADIUS_MULTIPLIER;
     private static final ModConfigSpec.IntValue CHUNK_LOADING_IMMEDIATE_EXTRA_CHUNKS;
     private static final ModConfigSpec.IntValue CHUNK_LOADING_IMMEDIATE_MIN_CHUNK_RADIUS;
@@ -39,6 +44,20 @@ public final class SkyentNuclearExplosionConfig {
     private static final ModConfigSpec.IntValue CHUNK_LOADING_KEEP_IMMEDIATE_CHUNKS_TICKS;
     private static final ModConfigSpec.BooleanValue CHUNK_LOADING_TICKING_TICKETS;
     private static final ModConfigSpec.IntValue CHUNK_LOADING_DEBUG_FORCE_CHUNK_RADIUS_OVERRIDE;
+
+    private static final ModConfigSpec.BooleanValue AFTERMATH_ADAPTIVE_TPS_THROTTLE;
+    private static final ModConfigSpec.DoubleValue AFTERMATH_TARGET_TPS;
+    private static final ModConfigSpec.DoubleValue AFTERMATH_SOFT_TPS;
+    private static final ModConfigSpec.DoubleValue AFTERMATH_HARD_TPS;
+    private static final ModConfigSpec.IntValue AFTERMATH_MIN_WORK_UNITS_PER_TICK;
+    private static final ModConfigSpec.IntValue AFTERMATH_MAX_WORK_UNITS_PER_TICK;
+    private static final ModConfigSpec.IntValue AFTERMATH_BASE_WORK_UNITS_PER_TICK;
+    private static final ModConfigSpec.IntValue AFTERMATH_MIN_COLUMNS_PER_TICK;
+    private static final ModConfigSpec.IntValue AFTERMATH_MAX_COLUMNS_PER_TICK;
+    private static final ModConfigSpec.IntValue AFTERMATH_BASE_COLUMNS_PER_TICK;
+    private static final ModConfigSpec.DoubleValue AFTERMATH_MAX_MILLISECONDS_PER_TICK;
+    private static final ModConfigSpec.DoubleValue AFTERMATH_LAGGY_MAX_MILLISECONDS_PER_TICK;
+    private static final ModConfigSpec.IntValue AFTERMATH_UNLOADED_CHUNK_SKIP_COOLDOWN_TICKS;
 
     private static final ModConfigSpec.BooleanValue WATER_EVAPORATION_ENABLED;
     private static final ModConfigSpec.DoubleValue WATER_EVAPORATION_RADIUS_SCALE;
@@ -113,25 +132,47 @@ public final class SkyentNuclearExplosionConfig {
                         "Raising this can improve coverage at high densities but increases CPU and snapshot/mutation cost.",
                         "Increase max_rays if testing very high densities."
                 )
-                .defineInRange("max_rays", 3_200_000, 1_024, 20_000_000);
+                .defineInRange("max_rays", 200_000_000, 1_024, 2_000_000_000);
         BUILDER.pop();
 
         BUILDER.push("mutation");
         MUTATION_MAX_BLOCKS_PER_TICK = BUILDER
                 .comment("Maximum nuclear destruction block changes applied per server tick.")
-                .defineInRange("max_blocks_per_tick", 8_192, 1, 100_000);
+                .defineInRange("max_blocks_per_tick", 524_288, 1, 1_048_576);
         MUTATION_MAX_MILLISECONDS_PER_TICK = BUILDER
                 .comment("Approximate max milliseconds spent applying nuclear destruction mutations per tick.")
                 .defineInRange("max_milliseconds_per_tick", 12.0D, 1.0D, 50.0D);
+        MUTATION_MAX_SECTIONS_PER_TICK = BUILDER
+                .comment(
+                        "Maximum destruction mask sections the mutation queue may complete per tick.",
+                        "Higher values can finish large craters faster, but block and millisecond budgets still apply."
+                )
+                .defineInRange("max_sections_per_tick", 256, 1, 4096);
+        MUTATION_MIN_COMPLETED_SECTIONS_BEFORE_AFTERMATH = BUILDER
+                .comment("Completed or skipped destruction sections required before column aftermath can start.")
+                .defineInRange("min_completed_sections_before_aftermath", 1, 0, 1_000_000);
+        MUTATION_AFTERMATH_FORCE_START_AFTER_TICKS = BUILDER
+                .comment("Ticks after mutation starts before column aftermath can start even if the section threshold is not met.")
+                .defineInRange("aftermath_force_start_after_ticks", 40, 0, 20 * 60 * 60);
+        MUTATION_NO_PROGRESS_TIMEOUT_TICKS = BUILDER
+                .comment("Ticks before a nuclear destruction job is considered stuck if no phase makes progress. Set 0 to disable.")
+                .defineInRange("no_progress_timeout_ticks", 400, 0, 20 * 60 * 60);
+        MUTATION_MAX_TOTAL_DESTRUCTION_TICKS = BUILDER
+                .comment("Emergency total lifetime cap for nuclear destruction work. Set 0 to disable the fixed total timeout.")
+                .defineInRange("max_total_destruction_ticks", 0, 0, 20 * 60 * 60);
         BUILDER.pop();
 
         BUILDER.push("chunk_loading");
         CHUNK_LOADING_ENABLED = BUILDER
                 .comment("Whether nuclear explosions force-load chunks for gameplay work.")
                 .define("enabled", true);
-        CHUNK_LOADING_MAX_GAMEPLAY_NUKE_RADIUS = BUILDER
-                .comment("Largest nuke radius used when computing immediate forced chunk radius.")
-                .defineInRange("max_gameplay_nuke_radius", 300.0D, 1.0D, 300.0D);
+        CHUNK_LOADING_MAX_RADIUS_FOR_IMMEDIATE_CHUNK_LOADING = BUILDER
+                .comment(
+                        "Largest nuke radius used as input for immediate forced chunk radius.",
+                        "This does not cap explosion gameplay radius, ray destruction, visuals, shockwave, or radiation.",
+                        "Keep immediate_max_chunk_radius and max_forced_chunks conservative unless testing huge nukes."
+                )
+                .defineInRange("max_radius_for_immediate_chunk_loading", 1000.0D, 1.0D, 10_000.0D);
         CHUNK_LOADING_IMMEDIATE_RADIUS_MULTIPLIER = BUILDER
                 .comment("Multiplier applied to nuke radius before converting to immediate forced chunks.")
                 .defineInRange("immediate_radius_multiplier", 1.10D, 0.0D, 10.0D);
@@ -156,6 +197,48 @@ public final class SkyentNuclearExplosionConfig {
         CHUNK_LOADING_DEBUG_FORCE_CHUNK_RADIUS_OVERRIDE = BUILDER
                 .comment("Debug override for immediate forced chunk radius. Use -1 to disable.")
                 .defineInRange("debug_force_chunk_radius_override", -1, -1, 64);
+        BUILDER.pop();
+
+        BUILDER.push("aftermath");
+        AFTERMATH_ADAPTIVE_TPS_THROTTLE = BUILDER
+                .comment("Enables TPS-aware throttling for secondary nuclear column aftermath work.")
+                .define("adaptive_tps_throttle", true);
+        AFTERMATH_TARGET_TPS = BUILDER
+                .comment("Nominal target TPS for aftermath throttle diagnostics.")
+                .defineInRange("target_tps", 20.0D, 1.0D, 20.0D);
+        AFTERMATH_SOFT_TPS = BUILDER
+                .comment("TPS at or above this value uses full aftermath budgets.")
+                .defineInRange("soft_tps", 18.0D, 1.0D, 20.0D);
+        AFTERMATH_HARD_TPS = BUILDER
+                .comment("TPS at or below this value uses minimum/laggy aftermath budgets.")
+                .defineInRange("hard_tps", 15.0D, 1.0D, 20.0D);
+        AFTERMATH_MIN_WORK_UNITS_PER_TICK = BUILDER
+                .comment("Minimum column aftermath chunk work units processed per tick when work is available.")
+                .defineInRange("min_work_units_per_tick", 1, 1, 4096);
+        AFTERMATH_MAX_WORK_UNITS_PER_TICK = BUILDER
+                .comment("Maximum column aftermath chunk work units processed per tick.")
+                .defineInRange("max_work_units_per_tick", 128, 1, 4096);
+        AFTERMATH_BASE_WORK_UNITS_PER_TICK = BUILDER
+                .comment("Base column aftermath chunk work units per tick before TPS throttle scaling.")
+                .defineInRange("base_work_units_per_tick", 32, 1, 4096);
+        AFTERMATH_MIN_COLUMNS_PER_TICK = BUILDER
+                .comment("Minimum column aftermath columns scanned per tick when work is available.")
+                .defineInRange("min_columns_per_tick", 16, 1, 65_536);
+        AFTERMATH_MAX_COLUMNS_PER_TICK = BUILDER
+                .comment("Maximum column aftermath columns scanned per tick.")
+                .defineInRange("max_columns_per_tick", 4096, 1, 65_536);
+        AFTERMATH_BASE_COLUMNS_PER_TICK = BUILDER
+                .comment("Base column aftermath columns scanned per tick before TPS throttle scaling.")
+                .defineInRange("base_columns_per_tick", 1024, 1, 65_536);
+        AFTERMATH_MAX_MILLISECONDS_PER_TICK = BUILDER
+                .comment("Maximum milliseconds per tick spent in column aftermath on healthy servers.")
+                .defineInRange("max_milliseconds_per_tick", 8.0D, 0.1D, 50.0D);
+        AFTERMATH_LAGGY_MAX_MILLISECONDS_PER_TICK = BUILDER
+                .comment("Maximum milliseconds per tick spent in column aftermath when TPS is at or below hard_tps.")
+                .defineInRange("laggy_max_milliseconds_per_tick", 2.0D, 0.1D, 50.0D);
+        AFTERMATH_UNLOADED_CHUNK_SKIP_COOLDOWN_TICKS = BUILDER
+                .comment("Reserved cooldown for deferred unloaded aftermath chunks. Current pass skips unloaded chunks instead of force-loading them.")
+                .defineInRange("unloaded_chunk_skip_cooldown_ticks", 40, 0, 20 * 60 * 60);
         BUILDER.pop();
 
         BUILDER.push("water_evaporation");
@@ -261,23 +344,43 @@ public final class SkyentNuclearExplosionConfig {
     }
 
     public static int rayPlanningMaxRays() {
-        return Mth.clamp(RAY_PLANNING_MAX_RAYS.get(), 1_024, 2_000_000);
+        return Mth.clamp(RAY_PLANNING_MAX_RAYS.get(), 1_024, Integer.MAX_VALUE);
     }
 
     public static int mutationMaxBlocksPerTick() {
-        return Mth.clamp(MUTATION_MAX_BLOCKS_PER_TICK.get(), 1, 100_000);
+        return Mth.clamp(MUTATION_MAX_BLOCKS_PER_TICK.get(), 1, Integer.MAX_VALUE);
     }
 
     public static double mutationMaxMillisecondsPerTick() {
         return Mth.clamp(MUTATION_MAX_MILLISECONDS_PER_TICK.get(), 1.0D, 50.0D);
     }
 
+    public static int mutationMaxSectionsPerTick() {
+        return Mth.clamp(MUTATION_MAX_SECTIONS_PER_TICK.get(), 1, 4096);
+    }
+
+    public static int mutationMinCompletedSectionsBeforeAftermath() {
+        return Mth.clamp(MUTATION_MIN_COMPLETED_SECTIONS_BEFORE_AFTERMATH.get(), 0, 1_000_000);
+    }
+
+    public static int mutationAftermathForceStartAfterTicks() {
+        return Mth.clamp(MUTATION_AFTERMATH_FORCE_START_AFTER_TICKS.get(), 0, 20 * 60 * 60);
+    }
+
+    public static int mutationNoProgressTimeoutTicks() {
+        return Mth.clamp(MUTATION_NO_PROGRESS_TIMEOUT_TICKS.get(), 0, 20 * 60 * 60);
+    }
+
+    public static int mutationMaxTotalDestructionTicks() {
+        return Mth.clamp(MUTATION_MAX_TOTAL_DESTRUCTION_TICKS.get(), 0, 20 * 60 * 60);
+    }
+
     public static boolean chunkLoadingEnabled() {
         return CHUNK_LOADING_ENABLED.get();
     }
 
-    public static double chunkLoadingMaxGameplayNukeRadius() {
-        return Mth.clamp(CHUNK_LOADING_MAX_GAMEPLAY_NUKE_RADIUS.get(), 1.0D, 300.0D);
+    public static double chunkLoadingMaxRadiusForImmediateChunkLoading() {
+        return Mth.clamp(CHUNK_LOADING_MAX_RADIUS_FOR_IMMEDIATE_CHUNK_LOADING.get(), 1.0D, 10_000.0D);
     }
 
     public static double chunkLoadingImmediateRadiusMultiplier() {
@@ -310,6 +413,58 @@ public final class SkyentNuclearExplosionConfig {
 
     public static int chunkLoadingDebugForceChunkRadiusOverride() {
         return Mth.clamp(CHUNK_LOADING_DEBUG_FORCE_CHUNK_RADIUS_OVERRIDE.get(), -1, 64);
+    }
+
+    public static boolean aftermathAdaptiveTpsThrottle() {
+        return AFTERMATH_ADAPTIVE_TPS_THROTTLE.get();
+    }
+
+    public static double aftermathTargetTps() {
+        return Mth.clamp(AFTERMATH_TARGET_TPS.get(), 1.0D, 20.0D);
+    }
+
+    public static double aftermathSoftTps() {
+        return Mth.clamp(AFTERMATH_SOFT_TPS.get(), 1.0D, 20.0D);
+    }
+
+    public static double aftermathHardTps() {
+        return Mth.clamp(AFTERMATH_HARD_TPS.get(), 1.0D, 20.0D);
+    }
+
+    public static int aftermathMinWorkUnitsPerTick() {
+        return Mth.clamp(AFTERMATH_MIN_WORK_UNITS_PER_TICK.get(), 1, 4096);
+    }
+
+    public static int aftermathMaxWorkUnitsPerTick() {
+        return Mth.clamp(AFTERMATH_MAX_WORK_UNITS_PER_TICK.get(), aftermathMinWorkUnitsPerTick(), 4096);
+    }
+
+    public static int aftermathBaseWorkUnitsPerTick() {
+        return Mth.clamp(AFTERMATH_BASE_WORK_UNITS_PER_TICK.get(), aftermathMinWorkUnitsPerTick(), aftermathMaxWorkUnitsPerTick());
+    }
+
+    public static int aftermathMinColumnsPerTick() {
+        return Mth.clamp(AFTERMATH_MIN_COLUMNS_PER_TICK.get(), 1, 65_536);
+    }
+
+    public static int aftermathMaxColumnsPerTick() {
+        return Mth.clamp(AFTERMATH_MAX_COLUMNS_PER_TICK.get(), aftermathMinColumnsPerTick(), 65_536);
+    }
+
+    public static int aftermathBaseColumnsPerTick() {
+        return Mth.clamp(AFTERMATH_BASE_COLUMNS_PER_TICK.get(), aftermathMinColumnsPerTick(), aftermathMaxColumnsPerTick());
+    }
+
+    public static double aftermathMaxMillisecondsPerTick() {
+        return Mth.clamp(AFTERMATH_MAX_MILLISECONDS_PER_TICK.get(), 0.1D, 50.0D);
+    }
+
+    public static double aftermathLaggyMaxMillisecondsPerTick() {
+        return Mth.clamp(AFTERMATH_LAGGY_MAX_MILLISECONDS_PER_TICK.get(), 0.1D, aftermathMaxMillisecondsPerTick());
+    }
+
+    public static int aftermathUnloadedChunkSkipCooldownTicks() {
+        return Mth.clamp(AFTERMATH_UNLOADED_CHUNK_SKIP_COOLDOWN_TICKS.get(), 0, 20 * 60 * 60);
     }
 
     public static boolean waterEvaporationEnabled() {
@@ -370,7 +525,7 @@ public final class SkyentNuclearExplosionConfig {
         }
 
         SkyesNuclearTech.LOGGER.info(
-                "Skyent nuclear explosion config loaded: asyncRayPlanning={} asyncWorkers={} asyncMinRays={} rayDensityMultiplier={} maxRays={} mutationMaxBlocksPerTick={} mutationMaxMsPerTick={} maxGameplayNukeRadius={} waterRadiusScale={} fireRadiusMultiplier={} radiationBurstEnabled={}",
+                "Skyent nuclear explosion config loaded: asyncRayPlanning={} asyncWorkers={} asyncMinRays={} rayDensityMultiplier={} maxRays={} mutationMaxBlocksPerTick={} mutationMaxMsPerTick={} mutationMaxSectionsPerTick={} aftermathMinCompletedSections={} aftermathForceStartAfterTicks={} noProgressTimeoutTicks={} maxTotalDestructionTicks={} maxRadiusForImmediateChunkLoading={} immediateMaxChunkRadius={} maxForcedChunks={} aftermathAdaptiveThrottle={} aftermathBaseWorkUnits={} aftermathBaseColumns={} aftermathMaxMs={} aftermathLaggyMaxMs={} waterRadiusScale={} fireRadiusMultiplier={} radiationBurstEnabled={}",
                 asyncRayPlanning(),
                 asyncRayWorkers(),
                 asyncMinRays(),
@@ -378,7 +533,19 @@ public final class SkyentNuclearExplosionConfig {
                 rayPlanningMaxRays(),
                 mutationMaxBlocksPerTick(),
                 mutationMaxMillisecondsPerTick(),
-                chunkLoadingMaxGameplayNukeRadius(),
+                mutationMaxSectionsPerTick(),
+                mutationMinCompletedSectionsBeforeAftermath(),
+                mutationAftermathForceStartAfterTicks(),
+                mutationNoProgressTimeoutTicks(),
+                mutationMaxTotalDestructionTicks(),
+                chunkLoadingMaxRadiusForImmediateChunkLoading(),
+                chunkLoadingImmediateMaxChunkRadius(),
+                chunkLoadingMaxForcedChunks(),
+                aftermathAdaptiveTpsThrottle(),
+                aftermathBaseWorkUnitsPerTick(),
+                aftermathBaseColumnsPerTick(),
+                aftermathMaxMillisecondsPerTick(),
+                aftermathLaggyMaxMillisecondsPerTick(),
                 waterEvaporationRadiusScale(),
                 fireCharringRadiusMultiplier(),
                 radiationCenterBurstEnabled()

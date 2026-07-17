@@ -5,6 +5,7 @@ import com.skyeshade.skyent.content.block.MoltenCoriumBlock;
 import com.skyeshade.skyent.content.radiation.RadioactiveSource;
 import com.skyeshade.skyent.content.radiation.RadioactiveSourceRegistry;
 import com.skyeshade.skyent.content.radiation.RadiationBlockProfiles;
+import com.skyeshade.skyent.content.radiation.RadiationHotBlockRayThrottle;
 import com.skyeshade.skyent.content.radiation.RadiationUtil;
 import com.skyeshade.skyent.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
@@ -14,7 +15,9 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.block.state.BlockState;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
 public final class RadiationSourceTickSystem {
     public static final int MOLTEN_CORIUM_REGISTRY_TICK_INTERVAL = 20;
@@ -32,6 +35,7 @@ public final class RadiationSourceTickSystem {
     public static void tick(ServerLevel level) {
         RadioactiveSourceRegistry registry = RadioactiveSourceRegistry.get(level);
         List<BlockPos> sources = registry.copyAllSources();
+        Collections.shuffle(sources, new Random(level.getSeed() ^ (level.getGameTime() * 0x9E3779B97F4A7C15L)));
         int moltenCoriumSources = 0;
         int radioactiveScrapMetalSources = 0;
         int staleEntries = 0;
@@ -78,6 +82,7 @@ public final class RadiationSourceTickSystem {
                     level.dimension().location()
             );
         }
+        RadiationHotBlockRayThrottle.logTickSummary(level);
     }
 
     private static boolean isActiveEnvironmentalRadiationSource(BlockState state) {
@@ -90,6 +95,10 @@ public final class RadiationSourceTickSystem {
     private static void tickActiveEnvironmentalRadiationSource(ServerLevel level, BlockPos pos, BlockState state, int serverTick) {
         RadioactiveSourceRegistry.register(level, pos);
         debugRadioactiveScrapMetalActiveTick(level, pos, serverTick);
+        if (!RadiationHotBlockRayThrottle.request(level, pos).allowed()) {
+            return;
+        }
+
         RadiationUtil.applyFullEnvironmentalRadiation(
                 level,
                 pos,

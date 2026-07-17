@@ -4,6 +4,7 @@ import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.radiation.RadioactiveSource;
 import com.skyeshade.skyent.content.radiation.RadioactiveSourceRegistry;
 import com.skyeshade.skyent.content.radiation.RadiationBlockProfiles;
+import com.skyeshade.skyent.content.radiation.RadiationHotBlockRayThrottle;
 import com.skyeshade.skyent.content.radiation.RadiationUtil;
 import com.skyeshade.skyent.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
@@ -69,15 +70,17 @@ public class MoltenCoriumBlock extends LiquidBlock implements RadioactiveSource 
         }
 
         RadioactiveSourceRegistry.register(level, pos);
-        RadiationUtil.applyFullEnvironmentalRadiation(
-                level,
-                pos,
-                RadiationBlockProfiles.getRadiationStrength(ModBlocks.MOLTEN_CORIUM_BLOCK.get()),
-                RadiationBlockProfiles.getEnvironmentalRange(ModBlocks.MOLTEN_CORIUM_BLOCK.get()),
-                RADIATION_ATTEMPTS_PER_TICK,
-                MAX_RADIATION_CONVERSIONS_PER_TICK,
-                random
-        );
+        if (RadiationHotBlockRayThrottle.request(level, pos).allowed()) {
+            RadiationUtil.applyFullEnvironmentalRadiation(
+                    level,
+                    pos,
+                    RadiationBlockProfiles.getRadiationStrength(ModBlocks.MOLTEN_CORIUM_BLOCK.get()),
+                    RadiationBlockProfiles.getEnvironmentalRange(ModBlocks.MOLTEN_CORIUM_BLOCK.get()),
+                    RADIATION_ATTEMPTS_PER_TICK,
+                    MAX_RADIATION_CONVERSIONS_PER_TICK,
+                    random
+            );
+        }
 
         tryMeltNeighbor(level, pos, Direction.DOWN, random);
 

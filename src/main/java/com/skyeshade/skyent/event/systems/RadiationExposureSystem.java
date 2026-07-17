@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.event.systems;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
+import com.skyeshade.skyent.config.SkyentRadiationConfig;
 import com.skyeshade.skyent.content.radiation.CarriedRadiationUtil;
 import com.skyeshade.skyent.content.radiation.ModDamageSources;
 import com.skyeshade.skyent.content.radiation.RadiationExposureData;
@@ -34,8 +35,6 @@ import java.util.Set;
 import java.util.UUID;
 
 public final class RadiationExposureSystem {
-    public static final int PLAYER_EXPOSURE_UPDATE_INTERVAL_TICKS = 5;
-    public static final int NON_PLAYER_EXPOSURE_UPDATE_INTERVAL_TICKS = 20;
     public static final double MAX_RADIATION_SICKNESS = 1000.0D;
     public static final double IRREVERSIBLE_THRESHOLD = 800.0D;
     public static final double MAX_HEALTH_LOSS_START = 400.0D;
@@ -70,7 +69,8 @@ public final class RadiationExposureSystem {
 
         long gameTime = level.getGameTime();
         RadiationExposureData data = getOrLoadData(player);
-        if (gameTime - data.getLastExposureUpdateTick() < PLAYER_EXPOSURE_UPDATE_INTERVAL_TICKS) {
+        int updateInterval = SkyentRadiationConfig.exposurePlayerUpdateIntervalTicks();
+        if (gameTime - data.getLastExposureUpdateTick() < updateInterval) {
             return;
         }
 
@@ -78,7 +78,7 @@ public final class RadiationExposureSystem {
         RadiationExposureUtil.ExposureScanResult scan = RadiationExposureUtil.scanEnvironmentalExposure(
                 level,
                 samplePos,
-                RadiationExposureUtil.DEFAULT_PLAYER_SCAN_RADIUS,
+                SkyentRadiationConfig.exposureRadioactiveBlockScanRadius(),
                 player
         );
         double exposure = scan.exposureMillisievertsPerSecond() + getAmbientRadiationMillisievertsPerSecond(player);
@@ -88,7 +88,7 @@ public final class RadiationExposureSystem {
         data.setCurrentInventoryExposureMillisievertsPerSecond(inventoryExposure);
         data.setCurrentTotalExposureMillisievertsPerSecond(exposure + inventoryExposure);
         data.setLastExposureUpdateTick(gameTime);
-        updateRadiationSickness(player, data, gameTime, PLAYER_EXPOSURE_UPDATE_INTERVAL_TICKS);
+        updateRadiationSickness(player, data, gameTime, updateInterval);
         saveData(player, data);
         PacketDistributor.sendToPlayer(player, new GeigerExposurePayload(data.getCurrentTotalExposureMillisievertsPerSecond(), data.getRadiationSickness()));
         sendPeriodicDebugOverlay(player, scan, data, gameTime);
@@ -106,7 +106,8 @@ public final class RadiationExposureSystem {
 
         long gameTime = level.getGameTime();
         RadiationExposureData data = getOrLoadData(entity);
-        if (gameTime - data.getLastExposureUpdateTick() < NON_PLAYER_EXPOSURE_UPDATE_INTERVAL_TICKS) {
+        int updateInterval = SkyentRadiationConfig.exposureEntityUpdateIntervalTicks();
+        if (gameTime - data.getLastExposureUpdateTick() < updateInterval) {
             return;
         }
 
@@ -114,7 +115,7 @@ public final class RadiationExposureSystem {
         RadiationExposureUtil.ExposureScanResult scan = RadiationExposureUtil.scanEnvironmentalExposure(
                 level,
                 samplePos,
-                RadiationExposureUtil.DEFAULT_PLAYER_SCAN_RADIUS,
+                SkyentRadiationConfig.exposureRadioactiveBlockScanRadius(),
                 entity
         );
         double environmentalExposure = scan.exposureMillisievertsPerSecond() + getAmbientRadiationMillisievertsPerSecond(entity);
@@ -124,7 +125,7 @@ public final class RadiationExposureSystem {
         data.setCurrentInventoryExposureMillisievertsPerSecond(inventoryExposure);
         data.setCurrentTotalExposureMillisievertsPerSecond(environmentalExposure + inventoryExposure);
         data.setLastExposureUpdateTick(gameTime);
-        updateRadiationSickness(entity, data, gameTime, NON_PLAYER_EXPOSURE_UPDATE_INTERVAL_TICKS);
+        updateRadiationSickness(entity, data, gameTime, updateInterval);
         saveData(entity, data);
     }
 
