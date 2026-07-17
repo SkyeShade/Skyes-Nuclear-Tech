@@ -2,9 +2,13 @@ package com.skyeshade.skyent.content.entity;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.TagKey;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
 
@@ -76,6 +80,24 @@ public final class NuclearMushroomCloudSimulation {
     private static final double INITIAL_CHAOS_SPHERE_INWARD_VELOCITY = 0.03D;
     private static final double INITIAL_CHAOS_SPHERE_UPWARD_VELOCITY = 0.04D;
     private static final double INITIAL_CHAOS_SPHERE_UPWARD_VELOCITY_RANDOM = 0.03D;
+    private static final double CRATER_SMOKE_RADIUS_FRACTION = 0.75D;
+    private static final int CRATER_SMOKE_SPAWN_TICKS = MAX_AGE_TICKS / 2;
+    private static final int CRATER_SMOKE_CLOUDLETS_PER_TICK = 8;
+    private static final int CRATER_SMOKE_SPAWN_ATTEMPTS_PER_CLOUDLET = 8;
+    private static final int CRATER_SMOKE_LIFETIME_MIN_TICKS = 180;
+    private static final int CRATER_SMOKE_LIFETIME_RANDOM_TICKS = 80;
+    private static final double CRATER_SMOKE_SURFACE_OFFSET_MIN = 0.5D;
+    private static final double CRATER_SMOKE_SURFACE_OFFSET_MAX = 3.0D;
+    private static final double CRATER_SMOKE_UPWARD_SPEED_MIN = 0.025D;
+    private static final double CRATER_SMOKE_UPWARD_SPEED_MAX = 0.085D;
+    private static final double CRATER_SMOKE_HORIZONTAL_JITTER_SPEED = 0.018D;
+    private static final double CRATER_SMOKE_MIN_EDGE_SIZE_SCALE = 0.125D;
+    private static final double CRATER_SMOKE_MIN_EDGE_SPEED_SCALE = 0.20D;
+    private static final double CRATER_SMOKE_DISTANCE_SCALE_POWER = 1.4D;
+    private static final TagKey<Block> CRATER_SMOKE_SPAWN_BLOCKS = BlockTags.create(ResourceLocation.fromNamespaceAndPath(
+            SkyesNuclearTech.MOD_ID,
+            "vitrified_stones"
+    ));
     private static final double CLOUD_FINAL_HEIGHT_SCALE = 1.5D;
     private static final double CLOUD_START_SCALE = 1.5D;
     private static final double CLOUD_END_SCALE = 1.0D;
@@ -120,6 +142,15 @@ public final class NuclearMushroomCloudSimulation {
     private double lowerAirRingSpawnY = Double.NaN;
     private double upperAirRingSpawnY = Double.NaN;
     private double initialChaosSphereRadius = Double.NaN;
+    private double craterSmokeRadius;
+    private int craterSmokeSpawnedThisTick;
+    private int craterSmokeSpawnAttemptsThisTick;
+    private int craterSmokeSkippedNoVitrifiedThisTick;
+    private int craterSmokeSkippedChunkUnavailableThisTick;
+    private double craterSmokeSizeScaleMinThisTick;
+    private double craterSmokeSizeScaleMaxThisTick;
+    private double craterSmokeSpeedScaleMinThisTick;
+    private double craterSmokeSpeedScaleMaxThisTick;
     private boolean filledInitialTorus;
     private boolean spawnedInitialChaosSphere;
 
@@ -127,6 +158,7 @@ public final class NuclearMushroomCloudSimulation {
         this.seed = seed;
         this.nukeRadius = radius;
         this.visualCloudRadius = getVisualCloudRadius(radius);
+        this.craterSmokeRadius = Math.max(0.0D, radius * CRATER_SMOKE_RADIUS_FRACTION);
         double radiusScale = Math.max(0.01D, visualCloudRadius / CLOUD_BASELINE_RADIUS);
         this.rawRadiusScale = radiusScale;
         double nonlinearScale = Math.pow(radiusScale, CLOUD_RADIUS_SCALE_EXPONENT);
@@ -155,7 +187,7 @@ public final class NuclearMushroomCloudSimulation {
         spawnInitialChaosSphereIfNeeded();
         fillInitialTorusIfNeeded();
         spawnAirRingsIfNeeded();
-        spawnCloudlets();
+        spawnCloudlets(level, entityPosition);
         tickCloudlets();
         trimOldestIfNeeded();
         logDebug();
@@ -266,11 +298,26 @@ public final class NuclearMushroomCloudSimulation {
         return Mth.lerp(headRandomnessProgress(), TORUS_SOURCE_ANGLE_SPREAD * 2.4D, TORUS_SOURCE_ANGLE_SPREAD);
     }
 
-    private void spawnCloudlets() {
+    private void spawnCloudlets(Level level, Vec3 entityPosition) {
         RandomSource random = RandomSource.create(seed + age * 104_729L);
         sourceSpawnCountThisTick = 0;
         sourceSpawnRadialOffsetSum = 0.0D;
         sourceSpawnVerticalOffsetSum = 0.0D;
+        craterSmokeSpawnedThisTick = 0;
+        craterSmokeSpawnAttemptsThisTick = 0;
+        craterSmokeSkippedNoVitrifiedThisTick = 0;
+        craterSmokeSkippedChunkUnavailableThisTick = 0;
+        craterSmokeSizeScaleMinThisTick = Double.POSITIVE_INFINITY;
+        craterSmokeSizeScaleMaxThisTick = 0.0D;
+        craterSmokeSpeedScaleMinThisTick = Double.POSITIVE_INFINITY;
+        craterSmokeSpeedScaleMaxThisTick = 0.0D;
+        if (age < CRATER_SMOKE_SPAWN_TICKS) {
+            for (int index = 0; index < scaledCount(CRATER_SMOKE_CLOUDLETS_PER_TICK); index++) {
+                if (!spawnCraterSmokeCloudlet(level, entityPosition, random) && cloudlets.size() >= MAX_MUSHROOM_CLOUDLETS) {
+                    return;
+                }
+            }
+        }
         if (age < TORUS_SPAWN_TICKS) {
             for (int index = 0; index < scaledCount(TORUS_CLOUDLETS_PER_TICK); index++) {
                 if (!makeRoomForCloudlet()) {
@@ -295,6 +342,79 @@ public final class NuclearMushroomCloudSimulation {
                 spawnStemCloudlet(random);
             }
         }
+    }
+
+    private boolean spawnCraterSmokeCloudlet(Level level, Vec3 entityPosition, RandomSource random) {
+        double localX = 0.0D;
+        double localZ = 0.0D;
+        double surfaceY = Double.NaN;
+        for (int attempt = 0; attempt < CRATER_SMOKE_SPAWN_ATTEMPTS_PER_CLOUDLET; attempt++) {
+            craterSmokeSpawnAttemptsThisTick++;
+            double angle = random.nextDouble() * Mth.TWO_PI;
+            double distance = Math.pow(random.nextDouble(), 0.65D) * craterSmokeRadius;
+            localX = Math.cos(angle) * distance;
+            localZ = Math.sin(angle) * distance;
+            surfaceY = sampleCraterSmokeSurfaceY(level, entityPosition, localX, localZ);
+            if (Double.isFinite(surfaceY)) {
+                break;
+            }
+        }
+        if (!Double.isFinite(surfaceY) || !makeRoomForCloudlet()) {
+            return false;
+        }
+        double distance = Math.sqrt(localX * localX + localZ * localZ);
+        double normalizedDistance = Mth.clamp(distance / Math.max(craterSmokeRadius, 1.0D), 0.0D, 1.0D);
+        double distanceFalloff = Math.pow(normalizedDistance, CRATER_SMOKE_DISTANCE_SCALE_POWER);
+        double craterSizeScale = Mth.lerp(distanceFalloff, 1.0D, CRATER_SMOKE_MIN_EDGE_SIZE_SCALE);
+        double craterSpeedScale = Mth.lerp(distanceFalloff, 1.0D, CRATER_SMOKE_MIN_EDGE_SPEED_SCALE);
+        craterSmokeSizeScaleMinThisTick = Math.min(craterSmokeSizeScaleMinThisTick, craterSizeScale);
+        craterSmokeSizeScaleMaxThisTick = Math.max(craterSmokeSizeScaleMaxThisTick, craterSizeScale);
+        craterSmokeSpeedScaleMinThisTick = Math.min(craterSmokeSpeedScaleMinThisTick, craterSpeedScale);
+        craterSmokeSpeedScaleMaxThisTick = Math.max(craterSmokeSpeedScaleMaxThisTick, craterSpeedScale);
+        double y = surfaceY + Mth.lerp(random.nextDouble(), CRATER_SMOKE_SURFACE_OFFSET_MIN, CRATER_SMOKE_SURFACE_OFFSET_MAX);
+        double sizeScale = Math.sqrt(torusScale);
+        float startSize = scaleCloudletSize((float) ((10.0D + random.nextDouble() * 8.0D) * visualScale * sizeScale * craterSizeScale));
+        float growSize = scaleCloudletSize((float) ((14.0D + random.nextDouble() * 14.0D) * visualScale * sizeScale * craterSizeScale));
+        double velocityX = jitter(random, CRATER_SMOKE_HORIZONTAL_JITTER_SPEED * visualScale) * craterSpeedScale;
+        double velocityY = Mth.lerp(random.nextDouble(), CRATER_SMOKE_UPWARD_SPEED_MIN, CRATER_SMOKE_UPWARD_SPEED_MAX) * visualScale * craterSpeedScale;
+        double velocityZ = jitter(random, CRATER_SMOKE_HORIZONTAL_JITTER_SPEED * visualScale) * craterSpeedScale;
+        cloudlets.add(new MushroomCloudlet(
+                MushroomCloudletType.CRATER_SMOKE,
+                localX,
+                y,
+                localZ,
+                CRATER_SMOKE_LIFETIME_MIN_TICKS + random.nextInt(CRATER_SMOKE_LIFETIME_RANDOM_TICKS + 1),
+                startSize,
+                growSize,
+                random.nextLong(),
+                false,
+                1.0F,
+                velocityX,
+                velocityY,
+                velocityZ
+        ));
+        craterSmokeSpawnedThisTick++;
+        return true;
+    }
+
+    private double sampleCraterSmokeSurfaceY(Level level, Vec3 entityPosition, double localX, double localZ) {
+        int blockX = Mth.floor(entityPosition.x + localX);
+        int blockZ = Mth.floor(entityPosition.z + localZ);
+        if (!level.hasChunk(blockX >> 4, blockZ >> 4)) {
+            craterSmokeSkippedChunkUnavailableThisTick++;
+            return Double.NaN;
+        }
+        int height = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, blockX, blockZ);
+        if (height <= level.getMinBuildHeight()) {
+            craterSmokeSkippedNoVitrifiedThisTick++;
+            return Double.NaN;
+        }
+        BlockPos surfacePos = new BlockPos(blockX, height - 1, blockZ);
+        if (!level.getBlockState(surfacePos).is(CRATER_SMOKE_SPAWN_BLOCKS)) {
+            craterSmokeSkippedNoVitrifiedThisTick++;
+            return Double.NaN;
+        }
+        return height - entityPosition.y;
     }
 
     private void spawnInitialChaosSphereIfNeeded() {
@@ -650,7 +770,7 @@ public final class NuclearMushroomCloudSimulation {
         }
 
         SkyesNuclearTech.LOGGER.info(
-                "Nuke mushroom debug: age={} cloudlets={} nukeRadius={} visualCloudRadius={} rawRadiusScale={} radiusScaleExponent={} groundY={} groundYInitialized={} visualScale={} particleScale={} cloudScale={} finalHeightScale={} growTicks={} riseTicks={} growthSpeedMultiplier={} growthProgress={} torusInitialHorizontalCompression={} torusHorizontalCompression={} headRandomnessProgress={} headPositionJitterScale={} headVelocityJitterScale={} headShapeCorrectionMultiplier={} headSourceSpread={} spawnedInitialChaosSphere={} initialChaosSphereCount={} scaledInitialChaosSphereCount={} initialChaosSphereRadius={} initialChaosSphereInwardVelocity={} initialChaosSphereUpwardVelocity={} initialChaosSphereUpwardVelocityRandom={} filledInitialTorus={} initialTorusFillCount={} scaledInitialTorusFillCount={} horizontalMajorRadius={} finalHorizontalMajorRadius={} horizontalMinorRadius={} verticalMinorRadius={} torusCenterY={} torusBottomY={} torusTopY={} secondaryMajorRadius={} secondaryFinalWidthScale={} secondaryRingScale={} secondaryMinorRadius={} secondaryOuterRadius={} secondaryInnerRadius={} secondaryCenterY={} stemBaseDepthBelowExplosion={} scaledStemDepth={} stemBottomY={} stemTopY={} stemHeight={} stemRadius0={} stemRadius030={} stemRadius075={} stemRadius1={} globalHeat={} stemHotSpawnHeatFactor={} stemHotSpawnChance={} torusSpawnTicks={} stemExtraSpawnTicks={} stemSpawnTicks={} torusSpawnRate={} scaledTorusSpawnRate={} secondarySpawnRate={} scaledSecondarySpawnRate={} stemSpawnRate={} scaledStemSpawnRate={} stemLifetimeMin={} stemLifetimeRandom={} airRingHeightExtraY={} airRingLowerDelay={} airRingUpperDelay={} airRingLowerLifetime={} airRingUpperLifetime={} lowerAirRingSpawnY={} upperAirRingSpawnY={} sourceAvgRadialOffset={} sourceAvgVerticalOffset={} torusScale={} angularSpeed={} targetTubeSpeed={} maxSpeed={} smokeDark={} smokeMedium={} smokeLight={} spawnedLowerAirRing={} spawnedUpperAirRing={} INITIAL_FIREBALL_CHAOS={} TORUS_FIREBALL={} SECONDARY_TORUS={} STEM={} WHITE_AIR_RING={} hotSTEM={}",
+                "Nuke mushroom debug: age={} cloudlets={} nukeRadius={} visualCloudRadius={} rawRadiusScale={} radiusScaleExponent={} groundY={} groundYInitialized={} visualScale={} particleScale={} cloudScale={} finalHeightScale={} growTicks={} riseTicks={} growthSpeedMultiplier={} growthProgress={} torusInitialHorizontalCompression={} torusHorizontalCompression={} headRandomnessProgress={} headPositionJitterScale={} headVelocityJitterScale={} headShapeCorrectionMultiplier={} headSourceSpread={} spawnedInitialChaosSphere={} initialChaosSphereCount={} scaledInitialChaosSphereCount={} initialChaosSphereRadius={} initialChaosSphereInwardVelocity={} initialChaosSphereUpwardVelocity={} initialChaosSphereUpwardVelocityRandom={} craterSmokeRadius={} craterSmokeSpawnTicks={} craterSmokeAttemptsPerCloudlet={} craterSmokeMinEdgeSizeScale={} craterSmokeMinEdgeSpeedScale={} craterSmokeDistanceScalePower={} craterSmokeSizeScaleRange=[{},{}] craterSmokeSpeedScaleRange=[{},{}] craterSmokeSpawnAttemptsThisTick={} craterSmokeSpawnedThisTick={} craterSmokeSkippedNoVitrifiedThisTick={} craterSmokeSkippedChunkUnavailableThisTick={} filledInitialTorus={} initialTorusFillCount={} scaledInitialTorusFillCount={} horizontalMajorRadius={} finalHorizontalMajorRadius={} horizontalMinorRadius={} verticalMinorRadius={} torusCenterY={} torusBottomY={} torusTopY={} secondaryMajorRadius={} secondaryFinalWidthScale={} secondaryRingScale={} secondaryMinorRadius={} secondaryOuterRadius={} secondaryInnerRadius={} secondaryCenterY={} stemBaseDepthBelowExplosion={} scaledStemDepth={} stemBottomY={} stemTopY={} stemHeight={} stemRadius0={} stemRadius030={} stemRadius075={} stemRadius1={} globalHeat={} stemHotSpawnHeatFactor={} stemHotSpawnChance={} torusSpawnTicks={} stemExtraSpawnTicks={} stemSpawnTicks={} torusSpawnRate={} scaledTorusSpawnRate={} secondarySpawnRate={} scaledSecondarySpawnRate={} stemSpawnRate={} scaledStemSpawnRate={} stemLifetimeMin={} stemLifetimeRandom={} airRingHeightExtraY={} airRingLowerDelay={} airRingUpperDelay={} airRingLowerLifetime={} airRingUpperLifetime={} lowerAirRingSpawnY={} upperAirRingSpawnY={} sourceAvgRadialOffset={} sourceAvgVerticalOffset={} torusScale={} angularSpeed={} targetTubeSpeed={} maxSpeed={} smokeDark={} smokeMedium={} smokeLight={} spawnedLowerAirRing={} spawnedUpperAirRing={} INITIAL_FIREBALL_CHAOS={} CRATER_SMOKE={} TORUS_FIREBALL={} SECONDARY_TORUS={} STEM={} WHITE_AIR_RING={} hotSTEM={}",
                 age,
                 cloudlets.size(),
                 nukeRadius,
@@ -681,6 +801,20 @@ public final class NuclearMushroomCloudSimulation {
                 INITIAL_CHAOS_SPHERE_INWARD_VELOCITY,
                 INITIAL_CHAOS_SPHERE_UPWARD_VELOCITY,
                 INITIAL_CHAOS_SPHERE_UPWARD_VELOCITY_RANDOM,
+                craterSmokeRadius,
+                CRATER_SMOKE_SPAWN_TICKS,
+                CRATER_SMOKE_SPAWN_ATTEMPTS_PER_CLOUDLET,
+                CRATER_SMOKE_MIN_EDGE_SIZE_SCALE,
+                CRATER_SMOKE_MIN_EDGE_SPEED_SCALE,
+                CRATER_SMOKE_DISTANCE_SCALE_POWER,
+                craterSmokeSpawnedThisTick == 0 ? 0.0D : craterSmokeSizeScaleMinThisTick,
+                craterSmokeSpawnedThisTick == 0 ? 0.0D : craterSmokeSizeScaleMaxThisTick,
+                craterSmokeSpawnedThisTick == 0 ? 0.0D : craterSmokeSpeedScaleMinThisTick,
+                craterSmokeSpawnedThisTick == 0 ? 0.0D : craterSmokeSpeedScaleMaxThisTick,
+                craterSmokeSpawnAttemptsThisTick,
+                craterSmokeSpawnedThisTick,
+                craterSmokeSkippedNoVitrifiedThisTick,
+                craterSmokeSkippedChunkUnavailableThisTick,
                 filledInitialTorus,
                 INITIAL_TORUS_FILL_COUNT,
                 scaledInitialTorusFillCount(),
@@ -740,6 +874,7 @@ public final class NuclearMushroomCloudSimulation {
                 spawnedLowerAirRing,
                 spawnedUpperAirRing,
                 countCloudlets(MushroomCloudletType.INITIAL_FIREBALL_CHAOS),
+                countCloudlets(MushroomCloudletType.CRATER_SMOKE),
                 countCloudlets(MushroomCloudletType.TORUS_FIREBALL),
                 countCloudlets(MushroomCloudletType.SECONDARY_TORUS),
                 countCloudlets(MushroomCloudletType.STEM),
@@ -862,6 +997,7 @@ public final class NuclearMushroomCloudSimulation {
 
     private enum MushroomCloudletType {
         INITIAL_FIREBALL_CHAOS,
+        CRATER_SMOKE,
         TORUS_FIREBALL,
         STEM,
         SECONDARY_TORUS,
@@ -948,6 +1084,8 @@ public final class NuclearMushroomCloudSimulation {
                 dampAirRing();
             } else if (type == MushroomCloudletType.INITIAL_FIREBALL_CHAOS) {
                 dampInitialChaos();
+            } else if (type == MushroomCloudletType.CRATER_SMOKE) {
+                dampCraterSmoke(simulation);
             } else {
                 addTorusMotion(simulation);
                 dampAndClamp(0.988D, simulation.maxTorusSpeed(), 0.55D * simulation.visualScale);
@@ -1099,6 +1237,20 @@ public final class NuclearMushroomCloudSimulation {
             velocityZ *= drag;
         }
 
+        private void dampCraterSmoke(NuclearMushroomCloudSimulation simulation) {
+            velocityX *= 0.978D;
+            velocityZ *= 0.978D;
+            velocityY = Math.max(0.0D, velocityY * 0.984D + 0.002D * simulation.visualScale);
+            double maxHorizontalSpeed = 0.08D * simulation.visualScale;
+            double horizontalSpeedSqr = velocityX * velocityX + velocityZ * velocityZ;
+            if (horizontalSpeedSqr > maxHorizontalSpeed * maxHorizontalSpeed) {
+                double scale = maxHorizontalSpeed / Math.sqrt(horizontalSpeedSqr);
+                velocityX *= scale;
+                velocityZ *= scale;
+            }
+            velocityY = Mth.clamp(velocityY, 0.0D, 0.12D * simulation.visualScale);
+        }
+
         public boolean isExpired() {
             return age >= lifetime;
         }
@@ -1137,6 +1289,10 @@ public final class NuclearMushroomCloudSimulation {
                 fade = progress < 0.40F ? 1.0F : 1.0F - (progress - 0.40F) / 0.60F;
                 return Mth.clamp(0.98F * fade, 0.0001F, 1.0F);
             }
+            if (type == MushroomCloudletType.CRATER_SMOKE) {
+                fade = progress < 0.65F ? 1.0F : 1.0F - (progress - 0.65F) / 0.35F;
+                return Mth.clamp((float) (0.88F * fade * globalAlpha), 0.0001F, 0.92F);
+            }
             if (type == MushroomCloudletType.STEM) {
                 fade = progress > 0.82F ? 1.0F - (progress - 0.82F) / 0.18F : 1.0F;
             } else {
@@ -1169,6 +1325,9 @@ public final class NuclearMushroomCloudSimulation {
             }
             if (type == MushroomCloudletType.INITIAL_FIREBALL_CHAOS) {
                 return initialFireballChaosColor(partialTick, component);
+            }
+            if (type == MushroomCloudletType.CRATER_SMOKE) {
+                return craterSmokeColor(component);
             }
             float progress = Mth.clamp((age + partialTick) / (float) lifetime, 0.0F, 1.0F);
             float particleCoolProgress = Mth.clamp((age + partialTick) / (float) PARTICLE_HOT_COOL_TICKS, 0.0F, 1.0F);
@@ -1247,6 +1406,13 @@ public final class NuclearMushroomCloudSimulation {
                 color = lerpColor((progress - 0.60F) / 0.40F, darkOrange, darkSmoke);
             }
             float seedTint = 0.93F + (((seed >>> 20) & 0xFFFF) / 65535.0F) * 0.14F;
+            float value = component == 0 ? color.red : component == 1 ? color.green : color.blue;
+            return Math.round(Mth.clamp(value * seedTint, 0.0F, 1.0F) * 255.0F);
+        }
+
+        private int craterSmokeColor(int component) {
+            Color color = smokeColor();
+            float seedTint = 0.92F + (((seed >>> 28) & 0xFFFF) / 65535.0F) * 0.12F;
             float value = component == 0 ? color.red : component == 1 ? color.green : color.blue;
             return Math.round(Mth.clamp(value * seedTint, 0.0F, 1.0F) * 255.0F);
         }
