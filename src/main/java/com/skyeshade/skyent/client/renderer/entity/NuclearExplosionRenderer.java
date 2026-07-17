@@ -128,24 +128,32 @@ public class NuclearExplosionRenderer extends EntityRenderer<NuclearExplosionEnt
         Quaternionf cameraRotation = Minecraft.getInstance().getEntityRenderDispatcher().cameraOrientation();
         int shockwaveCount = 0;
         int renderedShockwaveCount = 0;
+        int activeSweepCount = 0;
+        int renderedActiveSweepCount = 0;
         for (NuclearCloudlet cloudlet : entity.getCloudlets()) {
             if (cloudlet.type() == NuclearCloudletType.SHOCKWAVE) {
                 shockwaveCount++;
+            } else if (cloudlet.type() == NuclearCloudletType.ACTIVE_BLAST_SWEEP_SMOKE) {
+                activeSweepCount++;
             }
 
             boolean rendered = renderCloudlet(buffer, poseStack, cameraRotation, cloudlet, partialTick);
             if (rendered && cloudlet.type() == NuclearCloudletType.SHOCKWAVE) {
                 renderedShockwaveCount++;
+            } else if (rendered && cloudlet.type() == NuclearCloudletType.ACTIVE_BLAST_SWEEP_SMOKE) {
+                renderedActiveSweepCount++;
             }
         }
 
-        logRenderDebug(entity, shockwaveCount, renderedShockwaveCount);
+        logRenderDebug(entity, shockwaveCount, renderedShockwaveCount, activeSweepCount, renderedActiveSweepCount);
     }
 
     private static void logRenderDebug(
             NuclearExplosionEntity entity,
             int shockwaveCount,
-            int renderedShockwaveCount
+            int renderedShockwaveCount,
+            int activeSweepCount,
+            int renderedActiveSweepCount
     ) {
         if (!DEBUG_SHOCKWAVE_VISUALS || entity.tickCount % 20 != 0) {
             return;
@@ -158,13 +166,15 @@ public class NuclearExplosionRenderer extends EntityRenderer<NuclearExplosionEnt
         LAST_DEBUG_RENDER_TICK.put(entity.getId(), entity.tickCount);
 
         SkyesNuclearTech.LOGGER.info(
-                "Nuke shockwave renderer debug: id={} tick={} total={} mushroom={} shockwave={} renderedShockwave={}",
+                "Nuke shockwave renderer debug: id={} tick={} total={} mushroom={} shockwave={} renderedShockwave={} activeSweep={} renderedActiveSweep={}",
                 entity.getId(),
                 entity.tickCount,
                 entity.getCloudlets().size(),
                 entity.getMushroomCloudlets().size(),
                 shockwaveCount,
-                renderedShockwaveCount
+                renderedShockwaveCount,
+                activeSweepCount,
+                renderedActiveSweepCount
         );
     }
 

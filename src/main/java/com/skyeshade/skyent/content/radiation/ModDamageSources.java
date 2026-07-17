@@ -14,14 +14,34 @@ public final class ModDamageSources {
             Registries.DAMAGE_TYPE,
             ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "radiation")
     );
+    public static final ResourceKey<DamageType> SHOCKWAVE = ResourceKey.create(
+            Registries.DAMAGE_TYPE,
+            ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "shockwave")
+    );
+    public static final ResourceKey<DamageType> NUCLEAR_EXPLOSION = ResourceKey.create(
+            Registries.DAMAGE_TYPE,
+            ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "nuclear_explosion")
+    );
 
     private ModDamageSources() {
     }
 
     public static DamageSource radiation(ServerLevel level) {
+        return source(level, RADIATION);
+    }
+
+    public static DamageSource shockwave(ServerLevel level) {
+        return source(level, SHOCKWAVE);
+    }
+
+    public static DamageSource nuclearExplosion(ServerLevel level) {
+        return source(level, NUCLEAR_EXPLOSION);
+    }
+
+    private static DamageSource source(ServerLevel level, ResourceKey<DamageType> key) {
         Holder<DamageType> holder = level.registryAccess()
                 .registryOrThrow(Registries.DAMAGE_TYPE)
-                .getHolderOrThrow(RADIATION);
+                .getHolderOrThrow(key);
         return new DamageSource(holder);
     }
 

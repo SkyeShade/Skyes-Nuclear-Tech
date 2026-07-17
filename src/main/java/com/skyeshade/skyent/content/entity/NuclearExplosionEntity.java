@@ -12,6 +12,7 @@ import com.skyeshade.skyent.content.explosion.destruction.NuclearRayPlanningExec
 import com.skyeshade.skyent.content.explosion.destruction.NuclearResistanceCache;
 import com.skyeshade.skyent.content.explosion.destruction.NuclearSectionCompletionTracker;
 import com.skyeshade.skyent.content.explosion.destruction.NuclearWaterEvaporationPass;
+import com.skyeshade.skyent.content.radiation.ModDamageSources;
 import com.skyeshade.skyent.event.systems.RadiationExposureSystem;
 import com.skyeshade.skyent.registry.ModEntities;
 import net.minecraft.world.damagesource.DamageSource;
@@ -88,6 +89,10 @@ public class NuclearExplosionEntity extends Entity {
             NuclearExplosionEntity.class,
             EntityDataSerializers.FLOAT
     );
+    private static final EntityDataAccessor<Boolean> DATA_ACTIVE_BLAST_PHASE = SynchedEntityData.defineId(
+            NuclearExplosionEntity.class,
+            EntityDataSerializers.BOOLEAN
+    );
     public static final float VANILLA_EXPLOSION_STRENGTH = 16.0F;
     public static final int ENTITY_LIFETIME_TICKS = 20 * 60 * 4;
     public static final float DEFAULT_NUKE_RADIUS = 200.0F;
@@ -100,7 +105,20 @@ public class NuclearExplosionEntity extends Entity {
     private static final double SHOCKWAVE_DAMAGE_BAND_WIDTH = 5.0D;
     private static final double SHOCKWAVE_DAMAGE_FALLOFF_POWER = 2.75D;
     private static final double SHOCKWAVE_KNOCKBACK_FALLOFF_POWER = 2.0D;
+    private static final double SHOCKWAVE_DAMAGE_MULTIPLIER = 0.5D;
+    private static final int SHOCKWAVE_COVER_SCAN_BLOCKS = 16;
     private static final float SHOCKWAVE_MIN_DAMAGE = 2.0F;
+    private static final int NUCLEAR_EXPLOSION_DAMAGE_INTERVAL_TICKS = 10;
+    private static final int NUCLEAR_EXPLOSION_POST_DESTRUCTION_DAMAGE_TICKS = 20;
+    private static final double NUCLEAR_EXPLOSION_ACTIVE_DAMAGE_RADIUS_MULTIPLIER = 1.5D;
+    private static final double NUCLEAR_EXPLOSION_CLOSE_FIRE_RADIUS = 64.0D;
+    private static final double NUCLEAR_EXPLOSION_COVER_HARDNESS_THRESHOLD = 6.0D;
+    private static final float NUCLEAR_EXPLOSION_DAMAGE_PER_RADIUS = 10.0F;
+    private static final float NUCLEAR_EXPLOSION_MIN_DAMAGE = 0.0F;
+    private static final double NUCLEAR_EXPLOSION_MAX_KNOCKBACK = 4.5D;
+    private static final double NUCLEAR_EXPLOSION_MAX_VERTICAL_KNOCKBACK = 1.2D;
+    private static final int NUCLEAR_EXPLOSION_FIRE_SECONDS = 10;
+    private static final double NUCLEAR_EXPLOSION_COVER_RAY_STEP_BLOCKS = 0.75D;
     private static final int SHOCKWAVE_MIN_PUFFS = 32;
     private static final int SHOCKWAVE_MAX_PUFFS = 260;
     private static final int SHOCKWAVE_LIFETIME_MIN_TICKS = 18;
@@ -108,6 +126,19 @@ public class NuclearExplosionEntity extends Entity {
     private static final double SHOCKWAVE_BAND_BEHIND_BLOCKS = 4.0D;
     private static final double SHOCKWAVE_BAND_AHEAD_BLOCKS = 1.0D;
     private static final int SHOCKWAVE_SURFACE_SCAN_PADDING = 8;
+    private static final int ACTIVE_BLAST_SWEEP_CLOUDLETS_PER_TICK = 20;
+    private static final int ACTIVE_BLAST_SWEEP_SPAWN_ATTEMPTS_PER_TICK = 40;
+    private static final int ACTIVE_BLAST_SWEEP_LIFETIME_MIN_TICKS = 35;
+    private static final int ACTIVE_BLAST_SWEEP_LIFETIME_RANDOM_TICKS = 45;
+    private static final double ACTIVE_BLAST_SWEEP_OUTWARD_SPEED_MIN = 1.75D;
+    private static final double ACTIVE_BLAST_SWEEP_OUTWARD_SPEED_MAX = 3.75D;
+    private static final double ACTIVE_BLAST_SWEEP_UPWARD_SPEED_MIN = 0.04D;
+    private static final double ACTIVE_BLAST_SWEEP_UPWARD_SPEED_MAX = 0.20D;
+    private static final double ACTIVE_BLAST_SWEEP_RANDOM_SIDE_SPEED = 0.55D;
+    private static final float ACTIVE_BLAST_SWEEP_MIN_SIZE = 4.0F;
+    private static final float ACTIVE_BLAST_SWEEP_MAX_SIZE = 9.0F;
+    private static final float ACTIVE_BLAST_SWEEP_MIN_GROW_SIZE = 5.0F;
+    private static final float ACTIVE_BLAST_SWEEP_MAX_GROW_SIZE = 12.0F;
     private static final double CENTER_RADIATION_DURATION_RADIUS_EXPONENT = 0.35D;
     private static final double CENTER_RADIATION_SOURCE_RADIUS_EXPONENT = 1.75D;
     private static final double CENTER_RADIATION_RANGE_RADIUS_EXPONENT = 0.85D;
@@ -135,6 +166,7 @@ public class NuclearExplosionEntity extends Entity {
     private static final boolean DEBUG_NUKE_ITEM_DROPS = Boolean.getBoolean("skyent.debugNukeItemDrops");
     private static final boolean DEBUG_NUKE_THERMAL_FLASH = Boolean.getBoolean("skyent.debugNukeThermalFlash");
     private static final boolean DEBUG_NUKE_VISUAL_SYNC = Boolean.getBoolean("skyent.debugNukeVisualSync");
+    private static final boolean DEBUG_NUKE_ENTITY_DAMAGE = Boolean.getBoolean("skyent.debugNukeEntityDamage");
     private static final int NUKE_RAY_PLANNER_MAX_RAYS_PER_TICK = 8_128;
     private static final int NUKE_RAY_PLANNER_MAX_STEPS_PER_TICK = 128_000;
     private static final int NUKE_WATER_CLEAR_START_DELAY_TICKS = 1;
@@ -179,6 +211,10 @@ public class NuclearExplosionEntity extends Entity {
     private int shockwaveFallbackHeightmap;
     private int shockwaveFallbackEntityY;
     private int shockwaveCloudletsSkipped;
+    private int activeBlastSweepAttempts;
+    private int activeBlastSweepAdded;
+    private int activeBlastSweepSkippedSurface;
+    private int activeBlastSweepSkippedChunkMissing;
     private int centerRadiationTicks;
     private boolean appliedInitialThermalFlash;
     private boolean chunksForced;
@@ -206,6 +242,8 @@ public class NuclearExplosionEntity extends Entity {
     @Nullable
     private NuclearWaterEvaporationPass fluidEvaporationPass;
     private boolean waterClearStarted;
+    private boolean primaryDestructionComplete;
+    private int primaryDestructionCompleteAge = -1;
     @Nullable
     private NuclearColumnCollapsePass columnCollapsePass;
     @Nullable
@@ -329,6 +367,7 @@ public class NuclearExplosionEntity extends Entity {
         builder.define(DATA_ORIGIN_Y, 0.0F);
         builder.define(DATA_ORIGIN_Z, 0.0F);
         builder.define(DATA_GROUND_Y, 0.0F);
+        builder.define(DATA_ACTIVE_BLAST_PHASE, false);
     }
 
     @Override
@@ -345,6 +384,7 @@ public class NuclearExplosionEntity extends Entity {
             entityData.set(DATA_VISUAL_AGE, tickCount);
             long serverTickStartNs = detonationTimingNowNs();
             tickServerEffects();
+            entityData.set(DATA_ACTIVE_BLAST_PHASE, isActiveBlastPhase());
             if (!loggedFirstServerTickTiming) {
                 loggedFirstServerTickTiming = true;
                 logDetonationTimingStep(
@@ -385,6 +425,7 @@ public class NuclearExplosionEntity extends Entity {
             applyInitialThermalFlash();
         }
 
+        tickNuclearExplosionEntityDamage();
         tickShockwaveServer();
         if (SkyentNuclearExplosionConfig.radiationCenterBurstEnabled()
                 && centerRadiationTicks < getCenterRadiationDurationTicks()) {
@@ -400,6 +441,7 @@ public class NuclearExplosionEntity extends Entity {
         }
 
         if (!ENABLE_NUCLEAR_BLOCK_DESTRUCTION || !destroyBlocks) {
+            markPrimaryDestructionComplete();
             destructionPhase = DestructionPhase.COMPLETE;
             cleanupDestructionState("disabled");
             return;
@@ -555,6 +597,7 @@ public class NuclearExplosionEntity extends Entity {
                         destructionMask == null ? 0 : destructionMask.sectionCount(),
                         destructionMask == null ? 0 : destructionMask.estimatedBlockCount()
                 );
+                markPrimaryDestructionComplete();
                 destructionPhase = DestructionPhase.COMPLETE;
                 cleanupDestructionState("plan_only");
                 return;
@@ -638,6 +681,20 @@ public class NuclearExplosionEntity extends Entity {
                         aftermathStarted,
                         aftermathStartTick
                 );
+                markPrimaryDestructionComplete();
+                if (DEBUG_NUKE_ENTITY_DAMAGE) {
+                    SkyesNuclearTech.LOGGER.info(
+                            "Nuke primary explosive destruction complete: id={} tick={} primaryDestructionCompleteAge={} postDestructionDamageTicks={} activeNuclearDamagePhase={} activeSweepSmokeAllowed={} aftermathStarted={} aftermathStartTick={}",
+                            getId(),
+                            tickCount,
+                            primaryDestructionCompleteAge,
+                            NUCLEAR_EXPLOSION_POST_DESTRUCTION_DAMAGE_TICKS,
+                            isActiveBlastPhase(),
+                            isActiveBlastPhase(),
+                            aftermathStarted,
+                            aftermathStartTick
+                    );
+                }
                 destructionMask = null;
                 resistanceCache = null;
                 rayPlanner = null;
@@ -997,6 +1054,8 @@ public class NuclearExplosionEntity extends Entity {
         mutationStartTick = -1;
         aftermathStartReason = "cleaned_" + reason;
         lastDestructionProgressReason = "cleaned_" + reason;
+        markPrimaryDestructionComplete();
+        entityData.set(DATA_ACTIVE_BLAST_PHASE, isActiveBlastPhase());
 
         if (!destructionCleanupLogged) {
             destructionCleanupLogged = true;
@@ -1028,6 +1087,9 @@ public class NuclearExplosionEntity extends Entity {
                 + NUKE_BASELINE_RADIUS * NUKE_RAY_STARTING_ENERGY_PER_RADIUS;
         double destructionStrength = baselineStartingEnergy * energyScale;
         destructionCleanupLogged = false;
+        primaryDestructionComplete = false;
+        primaryDestructionCompleteAge = -1;
+        entityData.set(DATA_ACTIVE_BLAST_PHASE, true);
         destructionProgressCounter = 0L;
         lastDestructionProgressGameTime = -1L;
         lastDestructionProgressReason = "starting";
@@ -2192,6 +2254,9 @@ public class NuclearExplosionEntity extends Entity {
         if (shockwaveVisualTick) {
             spawnShockwaveCloudlets();
         }
+        if (isActiveBlastPhaseVisual()) {
+            spawnActiveBlastSweepSmoke();
+        }
         logShockwaveVisualDebug(shockwaveVisualTick);
         tickClientShockwaveArrivalSound();
     }
@@ -2228,10 +2293,11 @@ public class NuclearExplosionEntity extends Entity {
     }
 
     private void tickCloudlets() {
+        Vec3 visualOrigin = hasValidVisualSyncData() ? getExplosionOrigin() : fixedOrigin();
         Iterator<NuclearCloudlet> iterator = cloudlets.iterator();
         while (iterator.hasNext()) {
             NuclearCloudlet cloudlet = iterator.next();
-            cloudlet.tick();
+            cloudlet.tick(level(), visualOrigin);
             if (cloudlet.isExpired()) {
                 iterator.remove();
             }
@@ -2294,6 +2360,114 @@ public class NuclearExplosionEntity extends Entity {
         if (addedThisTick == 0 && count > 0) {
             spawnFallbackShockwaveRing(count, shockwaveRadius, baseSize, distanceFactor, random);
         }
+    }
+
+    private void spawnActiveBlastSweepSmoke() {
+        Vec3 origin = getExplosionOrigin();
+        double activeRadius = activeNuclearDamageRadius();
+        double speedScale = Mth.clamp(getRadius() / NUKE_BASELINE_RADIUS, 0.65D, 1.6D);
+        int targetCount = Mth.clamp((int) (ACTIVE_BLAST_SWEEP_CLOUDLETS_PER_TICK * Math.sqrt(speedScale)), 8, 48);
+        int added = 0;
+        int visualAge = getVisualAge();
+        RandomSource random = RandomSource.create(getVisualSeed() ^ 0x6A09E667F3BCC909L ^ visualAge * 130_363L);
+
+        for (int attempt = 0; attempt < ACTIVE_BLAST_SWEEP_SPAWN_ATTEMPTS_PER_TICK && added < targetCount; attempt++) {
+            activeBlastSweepAttempts++;
+            double angle = random.nextDouble() * Mth.TWO_PI;
+            double distance = Math.pow(random.nextDouble(), 0.55D) * activeRadius;
+            double cos = Math.cos(angle);
+            double sin = Math.sin(angle);
+            double worldX = origin.x + cos * distance;
+            double worldZ = origin.z + sin * distance;
+            SurfaceSample surface = findActiveBlastSweepSurfaceTopY(worldX, worldZ);
+            if (surface.chunkMissing()) {
+                activeBlastSweepSkippedChunkMissing++;
+                continue;
+            }
+            if (!surface.found() && !surface.usedHeightmapFallback()) {
+                activeBlastSweepSkippedSurface++;
+                continue;
+            }
+
+            if (cloudlets.size() >= MAX_CLOUDLETS) {
+                removeOldestNonShockwaveCloudlet();
+                if (cloudlets.size() >= MAX_CLOUDLETS) {
+                    activeBlastSweepSkippedSurface++;
+                    break;
+                }
+            }
+
+            double spawnY = surface.surfaceY() + 0.8D + random.nextDouble() * 2.0D;
+            addActiveBlastSweepCloudlet(random, worldX, spawnY, worldZ, cos, sin, speedScale);
+            added++;
+        }
+    }
+
+    private void addActiveBlastSweepCloudlet(
+            RandomSource random,
+            double worldX,
+            double worldY,
+            double worldZ,
+            double cos,
+            double sin,
+            double speedScale
+    ) {
+        int lifetime = ACTIVE_BLAST_SWEEP_LIFETIME_MIN_TICKS + random.nextInt(ACTIVE_BLAST_SWEEP_LIFETIME_RANDOM_TICKS + 1);
+        float baseSize = Mth.lerp(random.nextFloat(), ACTIVE_BLAST_SWEEP_MIN_SIZE, ACTIVE_BLAST_SWEEP_MAX_SIZE);
+        float growSize = Mth.lerp(random.nextFloat(), ACTIVE_BLAST_SWEEP_MIN_GROW_SIZE, ACTIVE_BLAST_SWEEP_MAX_GROW_SIZE);
+        double speed = Mth.lerp(random.nextDouble(), ACTIVE_BLAST_SWEEP_OUTWARD_SPEED_MIN, ACTIVE_BLAST_SWEEP_OUTWARD_SPEED_MAX) * speedScale;
+        double side = (random.nextDouble() * 2.0D - 1.0D) * ACTIVE_BLAST_SWEEP_RANDOM_SIDE_SPEED * speedScale;
+        double velocityX = cos * speed + -sin * side;
+        double velocityZ = sin * speed + cos * side;
+        double velocityY = Mth.lerp(random.nextDouble(), ACTIVE_BLAST_SWEEP_UPWARD_SPEED_MIN, ACTIVE_BLAST_SWEEP_UPWARD_SPEED_MAX) * speedScale;
+        cloudlets.add(new NuclearCloudlet(
+                NuclearCloudletType.ACTIVE_BLAST_SWEEP_SMOKE,
+                worldX - getX(),
+                worldY - getY(),
+                worldZ - getZ(),
+                lifetime,
+                baseSize,
+                growSize,
+                random.nextLong(),
+                velocityX,
+                velocityY,
+                velocityZ,
+                0.0D,
+                0.0D
+        ));
+        activeBlastSweepAdded++;
+    }
+
+    private SurfaceSample findActiveBlastSweepSurfaceTopY(double worldX, double worldZ) {
+        int blockX = Mth.floor(worldX);
+        int blockZ = Mth.floor(worldZ);
+        if (!level().hasChunkAt(new BlockPos(blockX, Mth.floor(getY()), blockZ))) {
+            return new SurfaceSample(Double.NaN, false, true, false, false, false, blockX, blockZ, Integer.MIN_VALUE, Integer.MIN_VALUE, Integer.MIN_VALUE);
+        }
+
+        int minY = level().getMinBuildHeight();
+        int maxY = level().getMaxBuildHeight() - 1;
+        int heightmapY = level().getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, blockX, blockZ);
+        boolean heightmapValid = heightmapY > minY + 1 && heightmapY <= maxY + 1;
+        int startY = heightmapValid ? Mth.clamp(heightmapY + SHOCKWAVE_SURFACE_SCAN_PADDING, minY, maxY) : maxY;
+        BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos(blockX, startY, blockZ);
+        CollisionContext context = CollisionContext.empty();
+
+        for (int y = startY; y >= minY; y--) {
+            mutablePos.set(blockX, y, blockZ);
+            BlockState state = level().getBlockState(mutablePos);
+            if (state.isAir() || !state.getFluidState().isEmpty()) {
+                continue;
+            }
+            if (!state.getCollisionShape(level(), mutablePos, context).isEmpty()) {
+                return new SurfaceSample(y + 1.0D, true, false, heightmapValid, false, false, blockX, blockZ, heightmapY, startY, y);
+            }
+        }
+
+        if (heightmapValid) {
+            return new SurfaceSample(heightmapY, false, false, true, true, false, blockX, blockZ, heightmapY, startY, Integer.MIN_VALUE);
+        }
+        return new SurfaceSample(Double.NaN, false, false, false, false, false, blockX, blockZ, heightmapY, startY, Integer.MIN_VALUE);
     }
 
     private void spawnFallbackShockwaveRing(int expectedCount, double shockwaveRadius, float baseSize, float distanceFactor, RandomSource random) {
@@ -2421,7 +2595,7 @@ public class NuclearExplosionEntity extends Entity {
         }
 
         SkyesNuclearTech.LOGGER.info(
-                "Nuke shockwave client debug: id={} tick={} client={} radius={} max={} intervalTick={} methodCalls={} conditionPasses={} attempted={} added={} skipped={} surfaceFound={} surfaceNotFound={} chunkMissing={} invalidY={} heightmapInvalid={} foundTopDown={} fallbackHeightmap={} fallbackEntityY={} shockwaveCloudlets={} totalCloudlets={} spawnCloud={}",
+                    "Nuke shockwave client debug: id={} tick={} client={} radius={} max={} intervalTick={} methodCalls={} conditionPasses={} attempted={} added={} skipped={} surfaceFound={} surfaceNotFound={} chunkMissing={} invalidY={} heightmapInvalid={} foundTopDown={} fallbackHeightmap={} fallbackEntityY={} activeBlastPhase={} activeSweepRadius={} activeSweepAttempts={} activeSweepAdded={} activeSweepSkippedSurface={} activeSweepSkippedChunkMissing={} activeSweepCloudlets={} shockwaveCloudlets={} totalCloudlets={} spawnCloud={}",
                 getId(),
                 tickCount,
                 level().isClientSide,
@@ -2441,6 +2615,13 @@ public class NuclearExplosionEntity extends Entity {
                 shockwaveFoundSurfaceTopDown,
                 shockwaveFallbackHeightmap,
                 shockwaveFallbackEntityY,
+                isActiveBlastPhaseVisual(),
+                activeNuclearDamageRadius(),
+                activeBlastSweepAttempts,
+                activeBlastSweepAdded,
+                activeBlastSweepSkippedSurface,
+                activeBlastSweepSkippedChunkMissing,
+                activeBlastSweepCloudletCount(),
                 shockwaveCloudletCount(),
                 cloudlets.size(),
                 shouldSpawnCloud()
@@ -2510,6 +2691,16 @@ public class NuclearExplosionEntity extends Entity {
         return count;
     }
 
+    private int activeBlastSweepCloudletCount() {
+        int count = 0;
+        for (NuclearCloudlet cloudlet : cloudlets) {
+            if (cloudlet.type() == NuclearCloudletType.ACTIVE_BLAST_SWEEP_SMOKE) {
+                count++;
+            }
+        }
+        return count;
+    }
+
     private void tickClientShockwaveArrivalSound() {
         try {
             Class<?> soundClient = Class.forName("com.skyeshade.skyent.client.effect.NukeShockwaveSoundClient");
@@ -2542,10 +2733,9 @@ public class NuclearExplosionEntity extends Entity {
                 getZ() + searchRadius
         );
 
-        Entity source = sourceUuid == null || level().getServer() == null
-                ? null
-                : level().getServer().getPlayerList().getPlayer(sourceUuid);
+        ServerLevel serverLevel = (ServerLevel) level();
         int damagedThisTick = 0;
+        int coveredThisTick = 0;
         float lastDamage = 0.0F;
         for (LivingEntity entity : level().getEntitiesOfClass(LivingEntity.class, search, entity -> !entity.isRemoved())) {
             if (shockwaveDamagedEntities.contains(entity.getUUID())) {
@@ -2562,12 +2752,17 @@ public class NuclearExplosionEntity extends Entity {
 
             double normalized = Mth.clamp(distance / damageRadius, 0.0D, 1.0D);
             double damageFactor = Math.pow(1.0D - normalized, SHOCKWAVE_DAMAGE_FALLOFF_POWER);
-            float damage = (float) (1000.0D * damageFactor);
+            float damage = (float) (1000.0D * damageFactor * SHOCKWAVE_DAMAGE_MULTIPLIER);
             if (damage < SHOCKWAVE_MIN_DAMAGE) {
                 continue;
             }
+            if (isUnderShockwaveCover(entity)) {
+                coveredThisTick++;
+                shockwaveDamagedEntities.add(entity.getUUID());
+                continue;
+            }
 
-            entity.hurt(level().damageSources().explosion(this, source), damage);
+            entity.hurt(ModDamageSources.shockwave(serverLevel), damage);
             Vec3 knockback = entity.position().subtract(position());
             Vec3 horizontal = new Vec3(knockback.x, 0.0D, knockback.z);
             if (horizontal.lengthSqr() > 1.0E-6D) {
@@ -2582,17 +2777,217 @@ public class NuclearExplosionEntity extends Entity {
             lastDamage = damage;
         }
 
-        if (DEBUG_SHOCKWAVE_VISUALS && (damagedThisTick > 0 || tickCount % 20 == 0)) {
+        if ((DEBUG_SHOCKWAVE_VISUALS || DEBUG_NUKE_ENTITY_DAMAGE) && (damagedThisTick > 0 || coveredThisTick > 0 || tickCount % 20 == 0)) {
             SkyesNuclearTech.LOGGER.info(
-                    "Nuke shockwave damage tick: visualMaxRadius={} damageRadius={} currentRadius={} falloffPower={} entitiesDamaged={} lastDamage={}",
+                    "Nuke shockwave damage tick: visualMaxRadius={} damageRadius={} currentRadius={} falloffPower={} damageMultiplier={} entitiesDamaged={} roofCoveredSkipped={} lastDamage={}",
                     getShockwaveMaxRadius(),
                     damageRadius,
                     currentRadius,
                     SHOCKWAVE_DAMAGE_FALLOFF_POWER,
+                    SHOCKWAVE_DAMAGE_MULTIPLIER,
                     damagedThisTick,
+                    coveredThisTick,
                     lastDamage
             );
         }
+    }
+
+    private void tickNuclearExplosionEntityDamage() {
+        if (!(level() instanceof ServerLevel serverLevel)
+                || tickCount % NUCLEAR_EXPLOSION_DAMAGE_INTERVAL_TICKS != 0
+                || !isActiveBlastPhase()) {
+            return;
+        }
+
+        Vec3 center = fixedOrigin();
+        double damageRadius = getNuclearExplosionDamageRadius();
+        double radiusSqr = damageRadius * damageRadius;
+        AABB search = new AABB(
+                center.x - damageRadius,
+                center.y - damageRadius,
+                center.z - damageRadius,
+                center.x + damageRadius,
+                center.y + damageRadius,
+                center.z + damageRadius
+        );
+
+        int checked = 0;
+        int covered = 0;
+        int damaged = 0;
+        int ignited = 0;
+        float maxDamageApplied = 0.0F;
+        float maxDamage = getRadius() * NUCLEAR_EXPLOSION_DAMAGE_PER_RADIUS;
+        for (LivingEntity entity : level().getEntitiesOfClass(LivingEntity.class, search, entity -> !entity.isRemoved())) {
+            if (entity instanceof Player player && (player.isCreative() || player.isSpectator())) {
+                continue;
+            }
+            Vec3 offset = entity.position().subtract(center);
+            double distanceSqr = offset.lengthSqr();
+            if (distanceSqr > radiusSqr) {
+                continue;
+            }
+
+            checked++;
+            if (hasEnoughBlastCover(entity, center, NUCLEAR_EXPLOSION_COVER_HARDNESS_THRESHOLD)) {
+                covered++;
+                continue;
+            }
+
+            double distance = Math.sqrt(distanceSqr);
+            double normalized = Mth.clamp(distance / damageRadius, 0.0D, 1.0D);
+            double damageFactor = 1.0D - normalized;
+            float damage = Math.max(NUCLEAR_EXPLOSION_MIN_DAMAGE, maxDamage * (float) damageFactor);
+            if (damage <= 0.0F) {
+                continue;
+            }
+            if (entity.hurt(ModDamageSources.nuclearExplosion(serverLevel), damage)) {
+                damaged++;
+                maxDamageApplied = Math.max(maxDamageApplied, damage);
+            }
+
+            applyNuclearExplosionKnockback(entity, center, damageFactor);
+            double fireRadius = Math.min(NUCLEAR_EXPLOSION_CLOSE_FIRE_RADIUS, damageRadius);
+            if (distance <= fireRadius || damage >= maxDamage * 0.65F) {
+                entity.setRemainingFireTicks(Math.max(entity.getRemainingFireTicks(), NUCLEAR_EXPLOSION_FIRE_SECONDS * 20));
+                ignited++;
+            }
+        }
+
+        if (DEBUG_NUKE_ENTITY_DAMAGE) {
+            SkyesNuclearTech.LOGGER.info(
+                    "Nuke nuclear explosion damage tick: id={} tick={} primaryDestructionComplete={} primaryDestructionCompleteAge={} postDestructionDamageTicks={} activeDamagePhase={} nukeRadius={} activeDamageRadius={} activeRadiusMultiplier={} damagePerRadius={} maxDamage={} intervalTicks={} entitiesChecked={} covered={} damaged={} ignited={} maxDamageApplied={}",
+                    getId(),
+                    tickCount,
+                    primaryDestructionComplete,
+                    primaryDestructionCompleteAge,
+                    NUCLEAR_EXPLOSION_POST_DESTRUCTION_DAMAGE_TICKS,
+                    isActiveBlastPhase(),
+                    getRadius(),
+                    damageRadius,
+                    NUCLEAR_EXPLOSION_ACTIVE_DAMAGE_RADIUS_MULTIPLIER,
+                    NUCLEAR_EXPLOSION_DAMAGE_PER_RADIUS,
+                    maxDamage,
+                    NUCLEAR_EXPLOSION_DAMAGE_INTERVAL_TICKS,
+                    checked,
+                    covered,
+                    damaged,
+                    ignited,
+                    maxDamageApplied
+            );
+        }
+    }
+
+    private boolean isExplosionDestructionComplete() {
+        return !ENABLE_NUCLEAR_BLOCK_DESTRUCTION || !destroyBlocks || destructionPhase == DestructionPhase.COMPLETE;
+    }
+
+    private boolean isActiveBlastPhase() {
+        if (!ENABLE_NUCLEAR_BLOCK_DESTRUCTION || !destroyBlocks) {
+            return false;
+        }
+        if (!primaryDestructionComplete) {
+            return true;
+        }
+        return primaryDestructionCompleteAge >= 0
+                && tickCount - primaryDestructionCompleteAge <= NUCLEAR_EXPLOSION_POST_DESTRUCTION_DAMAGE_TICKS;
+    }
+
+    private boolean isActiveBlastPhaseVisual() {
+        return entityData.get(DATA_ACTIVE_BLAST_PHASE);
+    }
+
+    private void markPrimaryDestructionComplete() {
+        if (!primaryDestructionComplete) {
+            primaryDestructionComplete = true;
+            primaryDestructionCompleteAge = tickCount;
+        } else if (primaryDestructionCompleteAge < 0) {
+            primaryDestructionCompleteAge = tickCount;
+        }
+    }
+
+    private double getNuclearExplosionDamageRadius() {
+        return activeNuclearDamageRadius();
+    }
+
+    private double activeNuclearDamageRadius() {
+        return getRadius() * NUCLEAR_EXPLOSION_ACTIVE_DAMAGE_RADIUS_MULTIPLIER;
+    }
+
+    private void applyNuclearExplosionKnockback(LivingEntity entity, Vec3 center, double damageFactor) {
+        Vec3 away = entity.position().subtract(center);
+        Vec3 horizontal = new Vec3(away.x, 0.0D, away.z);
+        if (horizontal.lengthSqr() <= 1.0E-6D) {
+            horizontal = new Vec3(entity.getRandom().nextDouble() - 0.5D, 0.0D, entity.getRandom().nextDouble() - 0.5D);
+        }
+        if (horizontal.lengthSqr() <= 1.0E-6D) {
+            return;
+        }
+        Vec3 direction = horizontal.normalize();
+        double horizontalStrength = NUCLEAR_EXPLOSION_MAX_KNOCKBACK * damageFactor + 0.12D;
+        double verticalStrength = NUCLEAR_EXPLOSION_MAX_VERTICAL_KNOCKBACK * damageFactor;
+        entity.push(direction.x * horizontalStrength, verticalStrength, direction.z * horizontalStrength);
+        entity.hurtMarked = true;
+    }
+
+    private boolean isUnderShockwaveCover(LivingEntity entity) {
+        int x = Mth.floor(entity.getX());
+        int z = Mth.floor(entity.getZ());
+        int startY = Mth.floor(entity.getEyeY()) + 1;
+        int endY = Math.min(level().getMaxBuildHeight() - 1, startY + SHOCKWAVE_COVER_SCAN_BLOCKS);
+        BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos(x, startY, z);
+        CollisionContext context = CollisionContext.of(entity);
+        for (int y = startY; y <= endY; y++) {
+            mutablePos.set(x, y, z);
+            BlockState state = level().getBlockState(mutablePos);
+            if (!state.isAir()
+                    && state.getBlock().getExplosionResistance() > 0.2F
+                    && !state.getCollisionShape(level(), mutablePos, context).isEmpty()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean hasEnoughBlastCover(LivingEntity entity, Vec3 center, double threshold) {
+        Vec3 start = entity.getEyePosition();
+        Vec3 delta = center.subtract(start);
+        double length = delta.length();
+        if (length <= 1.0E-6D) {
+            return false;
+        }
+        Vec3 step = delta.normalize().scale(NUCLEAR_EXPLOSION_COVER_RAY_STEP_BLOCKS);
+        int samples = Mth.ceil(length / NUCLEAR_EXPLOSION_COVER_RAY_STEP_BLOCKS);
+        double accumulatedHardness = 0.0D;
+        long previousBlock = Long.MIN_VALUE;
+        BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
+        CollisionContext context = CollisionContext.of(entity);
+        for (int index = 1; index <= samples; index++) {
+            Vec3 sample = start.add(step.scale(index));
+            mutablePos.set(Mth.floor(sample.x), Mth.floor(sample.y), Mth.floor(sample.z));
+            long blockKey = mutablePos.asLong();
+            if (blockKey == previousBlock) {
+                continue;
+            }
+            previousBlock = blockKey;
+            if (!level().isInWorldBounds(mutablePos)) {
+                continue;
+            }
+
+            BlockState state = level().getBlockState(mutablePos);
+            if (state.isAir() || state.getCollisionShape(level(), mutablePos, context).isEmpty()) {
+                continue;
+            }
+
+            float resistance = state.getBlock().getExplosionResistance();
+            if (resistance < 0.0F || resistance >= threshold) {
+                return true;
+            }
+            accumulatedHardness += Math.max(0.0F, resistance);
+            if (accumulatedHardness >= threshold) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private double horizontalDistanceFromCenter(Vec3 position) {
@@ -2703,6 +3098,12 @@ public class NuclearExplosionEntity extends Entity {
                 : compound.getBoolean("AppliedEntityBlastImpulse");
         destructionPhase = readDestructionPhase(compound.getString("DestructionPhase"));
         destructionTicks = compound.contains("DestructionTicks") ? compound.getInt("DestructionTicks") : 0;
+        primaryDestructionComplete = compound.contains("PrimaryDestructionComplete")
+                ? compound.getBoolean("PrimaryDestructionComplete")
+                : destructionPhase == DestructionPhase.COMPLETE;
+        primaryDestructionCompleteAge = compound.contains("PrimaryDestructionCompleteAge")
+                ? compound.getInt("PrimaryDestructionCompleteAge")
+                : -1;
         if (compound.contains("VisualAge")) {
             tickCount = Math.max(0, compound.getInt("VisualAge"));
             entityData.set(DATA_VISUAL_AGE, tickCount);
@@ -2723,6 +3124,7 @@ public class NuclearExplosionEntity extends Entity {
         explosionGroundY = compound.contains("ExplosionGroundY") ? compound.getDouble("ExplosionGroundY") : computeExplosionGroundY(originX, originY, originZ);
         setFixedOrigin(originX, originY, originZ);
         syncVisualOriginData();
+        entityData.set(DATA_ACTIVE_BLAST_PHASE, isActiveBlastPhase());
         entityData.set(DATA_VISUAL_SEED, compound.contains("VisualSeed") ? compound.getLong("VisualSeed") : level().random.nextLong());
         if (compound.hasUUID("SourceUuid")) {
             sourceUuid = compound.getUUID("SourceUuid");
@@ -2744,6 +3146,8 @@ public class NuclearExplosionEntity extends Entity {
         compound.putBoolean("AppliedInitialThermalFlash", appliedInitialThermalFlash);
         compound.putString("DestructionPhase", destructionPhase.name());
         compound.putInt("DestructionTicks", destructionTicks);
+        compound.putBoolean("PrimaryDestructionComplete", primaryDestructionComplete);
+        compound.putInt("PrimaryDestructionCompleteAge", primaryDestructionCompleteAge);
         compound.putInt("VisualAge", getVisualAge());
         compound.putUUID("ChunkLoadingOwnerUuid", getChunkLoadingOwnerUuid());
         Vec3 origin = fixedOrigin();
@@ -2797,7 +3201,8 @@ public class NuclearExplosionEntity extends Entity {
     }
 
     public enum NuclearCloudletType {
-        SHOCKWAVE
+        SHOCKWAVE,
+        ACTIVE_BLAST_SWEEP_SMOKE
     }
 
     private enum DestructionPhase {
@@ -2838,6 +3243,7 @@ public class NuclearExplosionEntity extends Entity {
         private double prevY;
         private double prevZ;
         private int age;
+        private boolean collided;
 
         private NuclearCloudlet(NuclearCloudletType type, double x, double y, double z, int lifetime, float startSize, float growSize, long seed) {
             this.type = type;
@@ -2876,10 +3282,15 @@ public class NuclearExplosionEntity extends Entity {
             this.accelerationZ = accelerationZ;
         }
 
-        private void tick() {
+        private void tick(Level level, Vec3 origin) {
             prevX = x;
             prevY = y;
             prevZ = z;
+            if (type == NuclearCloudletType.ACTIVE_BLAST_SWEEP_SMOKE) {
+                tickActiveBlastSweep(level, origin);
+                age++;
+                return;
+            }
             velocityX += accelerationX;
             velocityZ += accelerationZ;
             x += velocityX;
@@ -2890,6 +3301,41 @@ public class NuclearExplosionEntity extends Entity {
             velocityZ *= 0.96D;
 
             age++;
+        }
+
+        private void tickActiveBlastSweep(Level level, Vec3 origin) {
+            double remainingX = velocityX;
+            double remainingY = velocityY;
+            double remainingZ = velocityZ;
+            double distance = Math.sqrt(remainingX * remainingX + remainingY * remainingY + remainingZ * remainingZ);
+            int steps = Math.max(1, Mth.ceil(distance / 0.5D));
+            double stepX = remainingX / steps;
+            double stepY = remainingY / steps;
+            double stepZ = remainingZ / steps;
+
+            for (int step = 0; step < steps; step++) {
+                double nextX = x + stepX;
+                double nextY = y + stepY;
+                double nextZ = z + stepZ;
+                BlockPos nextPos = BlockPos.containing(origin.x + nextX, origin.y + nextY, origin.z + nextZ);
+                if (level.hasChunkAt(nextPos)) {
+                    BlockState state = level.getBlockState(nextPos);
+                    if (!state.isAir() && !state.getCollisionShape(level, nextPos, CollisionContext.empty()).isEmpty()) {
+                        collided = true;
+                        velocityX *= 0.15D;
+                        velocityZ *= 0.15D;
+                        velocityY = Math.max(velocityY * 0.25D, 0.04D);
+                        break;
+                    }
+                }
+                x = nextX;
+                y = nextY;
+                z = nextZ;
+            }
+
+            velocityX *= collided ? 0.82D : 0.92D;
+            velocityY *= collided ? 0.84D : 0.94D;
+            velocityZ *= collided ? 0.82D : 0.92D;
         }
 
         public boolean isExpired() {
@@ -2917,6 +3363,10 @@ public class NuclearExplosionEntity extends Entity {
             float progress = Mth.clamp((age + partialTick) / (float) lifetime, 0.0F, 1.0F);
             if (type == NuclearCloudletType.SHOCKWAVE) {
                 return progress > 0.72F ? Mth.lerp((progress - 0.72F) / 0.28F, 0.95F, 0.0F) : 0.95F;
+            }
+            if (type == NuclearCloudletType.ACTIVE_BLAST_SWEEP_SMOKE) {
+                float alpha = progress > 0.55F ? Mth.lerp((progress - 0.55F) / 0.45F, 0.88F, 0.0F) : 0.88F;
+                return collided ? alpha * 0.35F : alpha;
             }
             return progress > 0.68F ? Mth.lerp((progress - 0.68F) / 0.32F, 0.86F, 0.0F) : 0.86F;
         }
@@ -2947,9 +3397,18 @@ public class NuclearExplosionEntity extends Entity {
 
         private int color(float partialTick, int component) {
             float progress = Mth.clamp((age + partialTick) / (float) lifetime, 0.0F, 1.0F);
-            float red = Mth.lerp(progress, 0.18F, 0.07F);
-            float green = Mth.lerp(progress, 0.16F, 0.065F);
-            float blue = Mth.lerp(progress, 0.14F, 0.06F);
+            float red;
+            float green;
+            float blue;
+            if (type == NuclearCloudletType.ACTIVE_BLAST_SWEEP_SMOKE) {
+                red = Mth.lerp(progress, 0.26F, 0.10F);
+                green = Mth.lerp(progress, 0.24F, 0.095F);
+                blue = Mth.lerp(progress, 0.21F, 0.085F);
+            } else {
+                red = Mth.lerp(progress, 0.18F, 0.07F);
+                green = Mth.lerp(progress, 0.16F, 0.065F);
+                blue = Mth.lerp(progress, 0.14F, 0.06F);
+            }
             return Math.round(Mth.clamp(component == 0 ? red : component == 1 ? green : blue, 0.0F, 1.0F) * 255.0F);
         }
     }

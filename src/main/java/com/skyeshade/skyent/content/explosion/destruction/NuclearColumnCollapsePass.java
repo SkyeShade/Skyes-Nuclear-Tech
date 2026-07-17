@@ -738,8 +738,8 @@ public final class NuclearColumnCollapsePass {
             return copyAxis(state, ModBlocks.CHARRED_LOG.get().defaultBlockState());
         }
         if (distanceSqr <= deadVegetationRadiusSqr) {
-            if (state.is(Blocks.GRASS_BLOCK)) {
-                return grassBlockAftermathReplacement(column);
+            if (isGrassAftermathBlock(state)) {
+                return grassBlockAftermathReplacement(column, state);
             }
             BlockState deadVegetation = deadVegetationReplacement(state);
             if (deadVegetation != null) {
@@ -749,7 +749,7 @@ public final class NuclearColumnCollapsePass {
         return state;
     }
 
-    private BlockState grassBlockAftermathReplacement(ColumnKey column) {
+    private BlockState grassBlockAftermathReplacement(ColumnKey column, BlockState currentState) {
         double distance = Math.sqrt(column.distanceSqr());
         double chance = contaminatedGrassChance(distance);
         if (chance >= 1.0D) {
@@ -763,6 +763,12 @@ public final class NuclearColumnCollapsePass {
         if (chance > 0.0D) {
             contaminatedGrassSkippedByNoise++;
             deadGrassInContaminatedFeather++;
+        }
+        if (currentState.is(ModBlocks.CONTAMINATED_GRASS_BLOCK.get())) {
+            return currentState;
+        }
+        if (currentState.is(ModBlocks.DEAD_GRASS.get())) {
+            return currentState;
         }
         return ModBlocks.DEAD_GRASS.get().defaultBlockState();
     }
@@ -919,7 +925,7 @@ public final class NuclearColumnCollapsePass {
                 continue;
             }
 
-            if (!state.is(VITRIFIABLE_BLOCKS)) {
+            if (!state.is(VITRIFIABLE_BLOCKS) && vitrifiedSeverity(state) <= 0) {
                 tagMismatches++;
                 if (isSoftVitrificationCover(state)) {
                     continue;
@@ -932,7 +938,7 @@ public final class NuclearColumnCollapsePass {
                 firstVitrifiableY = y;
             }
             int tier = Math.max(0, topTier - replacements);
-            BlockState replacement = vitrifiedStateForTier(tier);
+            BlockState replacement = combineVitrifiedState(state, tier);
             if (state.is(replacement.getBlock())) {
                 replacements++;
                 continue;
@@ -1194,6 +1200,52 @@ public final class NuclearColumnCollapsePass {
         };
     }
 
+    private static BlockState combineVitrifiedState(BlockState currentState, int incomingTier) {
+        int incomingSeverity = Mth.clamp(incomingTier, 0, 6) + 1;
+        int currentSeverity = vitrifiedSeverity(currentState);
+        if (currentSeverity <= 0) {
+            return vitrifiedStateForTier(incomingTier);
+        }
+        return vitrifiedStateForSeverity(currentSeverity + incomingSeverity);
+    }
+
+    private static int vitrifiedSeverity(BlockState state) {
+        if (state.is(ModBlocks.VITRIFIED_STONE.get())) {
+            return 1;
+        }
+        if (state.is(ModBlocks.BAKED_VITRIFIED_STONE.get())) {
+            return 2;
+        }
+        if (state.is(ModBlocks.SCORCHED_VITRIFIED_STONE.get())) {
+            return 3;
+        }
+        if (state.is(ModBlocks.IRRADIATED_VITRIFIED_STONE.get())) {
+            return 4;
+        }
+        if (state.is(ModBlocks.HOT_VITRIFIED_STONE.get())) {
+            return 5;
+        }
+        if (state.is(ModBlocks.RADIANT_VITRIFIED_STONE.get())) {
+            return 6;
+        }
+        if (state.is(ModBlocks.INFERNAL_VITRIFIED_STONE.get())) {
+            return 7;
+        }
+        return 0;
+    }
+
+    private static BlockState vitrifiedStateForSeverity(int severity) {
+        return switch (Mth.clamp(severity, 1, 7)) {
+            case 2 -> ModBlocks.BAKED_VITRIFIED_STONE.get().defaultBlockState();
+            case 3 -> ModBlocks.SCORCHED_VITRIFIED_STONE.get().defaultBlockState();
+            case 4 -> ModBlocks.IRRADIATED_VITRIFIED_STONE.get().defaultBlockState();
+            case 5 -> ModBlocks.HOT_VITRIFIED_STONE.get().defaultBlockState();
+            case 6 -> ModBlocks.RADIANT_VITRIFIED_STONE.get().defaultBlockState();
+            case 7 -> ModBlocks.INFERNAL_VITRIFIED_STONE.get().defaultBlockState();
+            default -> ModBlocks.VITRIFIED_STONE.get().defaultBlockState();
+        };
+    }
+
     private static BlockState deadVegetationReplacement(BlockState state) {
         if (state.is(Blocks.GRASS_BLOCK)) {
             return ModBlocks.DEAD_GRASS.get().defaultBlockState();
@@ -1241,6 +1293,12 @@ public final class NuclearColumnCollapsePass {
                 || state.is(Blocks.LILAC)
                 || state.is(Blocks.ROSE_BUSH)
                 || state.is(Blocks.PEONY);
+    }
+
+    private static boolean isGrassAftermathBlock(BlockState state) {
+        return state.is(Blocks.GRASS_BLOCK)
+                || state.is(ModBlocks.DEAD_GRASS.get())
+                || state.is(ModBlocks.CONTAMINATED_GRASS_BLOCK.get());
     }
 
     private static boolean removesUnsupportedVegetationAbove(BlockState state) {

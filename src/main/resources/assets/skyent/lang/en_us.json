@@ -247,5 +247,9 @@
   "message.skyent.too_cold_to_forge": "Too cold to forge",
   "death.attack.radiation": "%1$s died from radiation poisoning",
   "death.attack.radiation.player": "%1$s died from radiation poisoning while fighting %2$s",
+  "death.attack.shockwave": "%1$s was crushed by a nuclear shockwave",
+  "death.attack.shockwave.player": "%1$s was crushed by a nuclear shockwave while fighting %2$s",
+  "death.attack.nuclear_explosion": "%1$s was consumed by a nuclear explosion",
+  "death.attack.nuclear_explosion.player": "%1$s was consumed by a nuclear explosion while fighting %2$s",
   "itemGroup.skyent.skyent_tab": "Skye's Nuclear Tech"
 }
