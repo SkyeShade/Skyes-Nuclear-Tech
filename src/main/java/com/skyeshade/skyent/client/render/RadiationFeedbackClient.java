@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.client.render;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
+import com.skyeshade.skyent.config.SkyentClientConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.PostChain;
 import net.minecraft.resources.ResourceLocation;
@@ -29,6 +30,11 @@ public final class RadiationFeedbackClient {
 
     public static void tick() {
         Minecraft minecraft = Minecraft.getInstance();
+        if (!SkyentClientConfig.enableRadiationNoiseOverlay() || shouldHideForPlayerMode(minecraft)) {
+            clear();
+            return;
+        }
+
         displayedIntensity += (targetIntensity - displayedIntensity) * 0.12F;
         if (displayedIntensity < 0.001F) {
             displayedIntensity = 0.0F;
@@ -65,6 +71,11 @@ public final class RadiationFeedbackClient {
             Minecraft.getInstance().gameRenderer.shutdownEffect();
             active = false;
         }
+    }
+
+    private static boolean shouldHideForPlayerMode(Minecraft minecraft) {
+        return SkyentClientConfig.onlyShowRadiationNoiseOverlayInSurvival()
+                && (minecraft.player == null || minecraft.player.isCreative() || minecraft.player.isSpectator());
     }
 
     private static float smoothStep(float value) {
