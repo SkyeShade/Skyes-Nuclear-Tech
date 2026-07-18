@@ -10,6 +10,7 @@ import com.skyeshade.skyent.content.block.ConveyorChuteBlock;
 import com.skyeshade.skyent.content.block.ConveyorElevatorBlock;
 import com.skyeshade.skyent.content.block.ConveyorExporterBlock;
 import com.skyeshade.skyent.content.block.ConveyorSplitterBlock;
+import com.skyeshade.skyent.content.block.ContaminatedGrassBlock;
 import com.skyeshade.skyent.content.block.CoriumBlock;
 import com.skyeshade.skyent.content.block.DeadGrassBlock;
 import com.skyeshade.skyent.content.block.DeadLeavesBlock;
@@ -441,9 +442,9 @@ public final class ModBlocks {
                     .noOcclusion()
     );
 
-    public static final DeferredBlock<RadioactiveBlock> CONTAMINATED_GRASS_BLOCK = BLOCKS.registerBlock(
+    public static final DeferredBlock<ContaminatedGrassBlock> CONTAMINATED_GRASS_BLOCK = BLOCKS.registerBlock(
             "contaminated_grass_block",
-            RadioactiveBlock::new,
+            ContaminatedGrassBlock::new,
             BlockBehaviour.Properties.ofFullCopy(Blocks.GRASS_BLOCK)
                     .strength(0.6F, 0.6F)
     );
