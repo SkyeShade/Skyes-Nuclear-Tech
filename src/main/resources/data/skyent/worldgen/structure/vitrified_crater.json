@@ -1,0 +1,6 @@
+{
+  "type": "skyent:vitrified_crater",
+  "biomes": "#skyent:has_structure/vitrified_crater",
+  "spawn_overrides": {},
+  "step": "surface_structures"
+}

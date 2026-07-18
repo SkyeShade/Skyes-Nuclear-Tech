@@ -18,6 +18,7 @@ import com.skyeshade.skyent.registry.ModMenus;
 import com.skyeshade.skyent.registry.ModParticles;
 import com.skyeshade.skyent.registry.ModRecipes;
 import com.skyeshade.skyent.registry.ModSounds;
+import com.skyeshade.skyent.registry.ModStructures;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -46,6 +47,7 @@ public final class SkyesNuclearTech {
         ModItems.register(modEventBus);
         ModBlockEntities.register(modEventBus);
         ModEntities.register(modEventBus);
+        ModStructures.register(modEventBus);
         ModMenus.register(modEventBus);
         ModSounds.register(modEventBus);
         ModParticles.register(modEventBus);

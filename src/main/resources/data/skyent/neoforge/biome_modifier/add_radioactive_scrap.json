@@ -1,0 +1,6 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": "#skyent:has_feature/radioactive_scrap",
+  "features": "skyent:radioactive_scrap",
+  "step": "surface_structures"
+}

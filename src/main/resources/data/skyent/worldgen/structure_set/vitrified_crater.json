@@ -1,0 +1,14 @@
+{
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 68423917,
+    "spacing": 32,
+    "separation": 12
+  },
+  "structures": [
+    {
+      "structure": "skyent:vitrified_crater",
+      "weight": 1
+    }
+  ]
+}
