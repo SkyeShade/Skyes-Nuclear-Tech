@@ -80,6 +80,11 @@ public final class ModItems {
             new Item.Properties()
     );
 
+    public static final DeferredItem<BlockItem> REINFORCED_GLASS = ITEMS.registerSimpleBlockItem(
+            ModBlocks.REINFORCED_GLASS,
+            new Item.Properties()
+    );
+
     public static final DeferredItem<BlockItem> TUNGSTEN_REINFORCED_CONCRETE = ITEMS.registerSimpleBlockItem(
             ModBlocks.TUNGSTEN_REINFORCED_CONCRETE,
             new Item.Properties()

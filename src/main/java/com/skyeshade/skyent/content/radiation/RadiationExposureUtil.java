@@ -137,6 +137,7 @@ public final class RadiationExposureUtil {
                 0,
                 0,
                 0,
+                scanRadius,
                 nanosToMillis(collectionNs),
                 nanosToMillis(selectionNs),
                 nanosToMillis(raycastNs),
@@ -239,6 +240,7 @@ public final class RadiationExposureUtil {
                 registryStats.aggregateCellsBlockedHotSource(),
                 registryStats.individualSourcesFromUnaggregatedCells(),
                 registryStats.forcedIndividualSources(),
+                scanRadius,
                 nanosToMillis(collectionNs),
                 nanosToMillis(selectionNs),
                 nanosToMillis(raycastNs),
@@ -660,7 +662,7 @@ public final class RadiationExposureUtil {
                 result.strongestSourceContribution(),
                 "RadiationExposureSystem.tickPlayer -> RadiationExposureUtil.scanEnvironmentalExposure",
                 "RadiationExposureSystem.tickLivingEntity -> RadiationExposureUtil.scanEnvironmentalExposure",
-                SkyentRadiationConfig.exposureRadioactiveBlockScanRadius()
+                result.scanRadius()
         );
     }
 
@@ -933,6 +935,7 @@ public final class RadiationExposureUtil {
             int aggregateCellsBlockedHotSource,
             int individualSourcesFromUnaggregatedCells,
             int forcedIndividualSources,
+            double scanRadius,
             double collectionMillis,
             double selectionMillis,
             double raycastMillis,

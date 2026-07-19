@@ -5,17 +5,20 @@
     "C": {
       "item": "skyent:reinforced_concrete"
     },
-    "T": {
-      "item": "skyent:tungsten_rod"
+    "G": {
+      "item": "minecraft:glass"
+    },
+    "L": {
+      "item": "skyent:lead_powder"
     }
   },
   "pattern": [
-    "TCT",
-    "CTC",
-    "TCT"
+    "GLG",
+    "LCL",
+    "GLG"
   ],
   "result": {
-    "id": "skyent:tungsten_reinforced_concrete",
-    "count": 4
+    "count": 4,
+    "id": "skyent:reinforced_glass"
   }
 }

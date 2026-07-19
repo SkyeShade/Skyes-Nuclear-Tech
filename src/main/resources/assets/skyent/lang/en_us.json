@@ -8,6 +8,7 @@
   "block.skyent.cracked_concrete_bricks": "Cracked Concrete Bricks",
   "block.skyent.concrete_bricks": "Concrete Bricks",
   "block.skyent.reinforced_concrete": "Reinforced Concrete",
+  "block.skyent.reinforced_glass": "Reinforced Glass",
   "block.skyent.tungsten_reinforced_concrete": "Tungsten Reinforced Concrete",
   "block.skyent.plated_concrete": "Plated Concrete",
   "block.skyent.forging_anvil": "Forging Anvil",
@@ -251,5 +252,8 @@
   "death.attack.shockwave.player": "%1$s was crushed by a nuclear shockwave while fighting %2$s",
   "death.attack.nuclear_explosion": "%1$s was consumed by a nuclear explosion",
   "death.attack.nuclear_explosion.player": "%1$s was consumed by a nuclear explosion while fighting %2$s",
-  "itemGroup.skyent.skyent_tab": "Skye's Nuclear Tech"
+  "itemGroup.skyent.skyent_tab": "Skye's Nuclear Tech",
+  "itemGroup.skyent.machines_and_tools": "Skyes Nuclear Tech: Machines & Tools",
+  "itemGroup.skyent.blocks": "Skyes Nuclear Tech: Blocks",
+  "itemGroup.skyent.materials": "Skyes Nuclear Tech: Materials"
 }

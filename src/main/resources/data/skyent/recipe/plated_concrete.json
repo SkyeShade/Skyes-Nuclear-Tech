@@ -2,8 +2,8 @@
   "type": "minecraft:crafting_shaped",
   "category": "building",
   "key": {
-    "B": {
-      "item": "skyent:tungsten_bolt"
+    "L": {
+      "item": "skyent:lead_plate"
     },
     "C": {
       "item": "skyent:tungsten_reinforced_concrete"
@@ -13,9 +13,9 @@
     }
   },
   "pattern": [
-    "BPB",
+    "LPL",
     "PCP",
-    "BPB"
+    "LPL"
   ],
   "result": {
     "id": "skyent:plated_concrete"

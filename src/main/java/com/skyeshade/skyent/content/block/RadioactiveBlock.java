@@ -7,6 +7,7 @@ import com.skyeshade.skyent.content.radiation.RadiationBlockProfiles;
 import com.skyeshade.skyent.content.radiation.RadiationHotBlockRayThrottle;
 import com.skyeshade.skyent.content.radiation.RadiationUtil;
 import com.skyeshade.skyent.content.radiation.RadioactiveSource;
+import com.skyeshade.skyent.event.systems.RadiationSourceTickSystem;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
@@ -22,7 +23,7 @@ public class RadioactiveBlock extends Block implements RadioactiveSource {
     }
 
     public RadioactiveBlock(Properties properties, EnvironmentalRadiationMode environmentalMode) {
-        super(properties.randomTicks());
+        super(environmentalMode == EnvironmentalRadiationMode.PASSIVE_SOURCE_ONLY ? properties : properties.randomTicks());
         this.environmentalMode = environmentalMode;
     }
 
@@ -31,6 +32,7 @@ public class RadioactiveBlock extends Block implements RadioactiveSource {
         super.onPlace(state, level, pos, oldState, movedByPiston);
         if (level instanceof ServerLevel serverLevel) {
             RadioactiveSourceRegistry.register(serverLevel, pos);
+            RadiationSourceTickSystem.registerActiveSourceIfNeeded(serverLevel, pos, state);
         }
     }
 
@@ -38,20 +40,31 @@ public class RadioactiveBlock extends Block implements RadioactiveSource {
     protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
         if (level instanceof ServerLevel serverLevel && !newState.is(state.getBlock())) {
             RadioactiveSourceRegistry.unregister(serverLevel, pos);
+            RadiationSourceTickSystem.unregisterActiveSource(serverLevel, pos);
         }
 
         super.onRemove(state, level, pos, newState, movedByPiston);
     }
 
     @Override
+    public boolean isRandomlyTicking(BlockState state) {
+        return environmentalMode != EnvironmentalRadiationMode.PASSIVE_SOURCE_ONLY && super.isRandomlyTicking(state);
+    }
+
+    @Override
     public void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+        RadiationSourceTickSystem.recordRadioactiveBlockRandomTick(state);
         RadioactiveSourceRegistry.register(level, pos);
         RadiationMeltdownUtil.tryTriggerMeltdown(level, pos, random);
         if (environmentalMode == EnvironmentalRadiationMode.FULL_RAY) {
-            if (RadiationHotBlockRayThrottle.request(level, pos).allowed()) {
+            boolean ranEnvironmentalRays = RadiationHotBlockRayThrottle.request(level, pos).allowed();
+            if (ranEnvironmentalRays) {
+                RadiationSourceTickSystem.recordEnvironmentalSpreadAttempt(state, true);
                 RadiationUtil.applyFullEnvironmentalRadiation(level, pos, getRadiationStrength(), getEnvironmentalRadiationRange(), random);
             }
+            RadiationSourceTickSystem.debugActiveVitrifiedRandomTick(level, pos, state, ranEnvironmentalRays);
         } else {
+            RadiationSourceTickSystem.recordEnvironmentalSpreadAttempt(state, false);
             RadiationUtil.applyCheapEnvironmentalRadiation(level, pos, getRadiationStrength(), getEnvironmentalRadiationRange(), random);
         }
     }

@@ -24,6 +24,7 @@ public final class NuclearResistanceCache {
     public static final float MAX_BREAKABLE_RAY_RESISTANCE = 18.0F;
     public static final float RAY_BLOCKING_RESISTANCE = 2_000_000.0F;
     public static final float UNBREAKABLE_RESISTANCE = 3_600_000.0F;
+    public static final boolean DEBUG_NUKE_BLOCK_RESISTANCE = Boolean.getBoolean("skyent.debugNukeBlockResistance");
     public static final TagKey<Block> NUKE_FRAGILE = BlockTags.create(
             ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "nuke_fragile")
     );
@@ -128,14 +129,19 @@ public final class NuclearResistanceCache {
         if (resistance == 0.0F) {
             return FRAGILE_RESISTANCE;
         }
-        if (state.is(ModBlocks.CONCRETE_BRICKS.get())
-                || state.is(ModBlocks.CRACKED_CONCRETE_BRICKS.get())
-                || state.is(ModBlocks.REINFORCED_CONCRETE.get())
-                || state.is(ModBlocks.TUNGSTEN_REINFORCED_CONCRETE.get())
-                || state.is(ModBlocks.PLATED_CONCRETE.get())) {
+        if (isConcreteFamily(state)) {
             return resistance;
         }
         return Math.min(resistance, MAX_BREAKABLE_RAY_RESISTANCE);
+    }
+
+    public static boolean isConcreteFamily(BlockState state) {
+        return state.is(ModBlocks.CONCRETE_BRICKS.get())
+                || state.is(ModBlocks.CRACKED_CONCRETE_BRICKS.get())
+                || state.is(ModBlocks.REINFORCED_CONCRETE.get())
+                || state.is(ModBlocks.REINFORCED_GLASS.get())
+                || state.is(ModBlocks.TUNGSTEN_REINFORCED_CONCRETE.get())
+                || state.is(ModBlocks.PLATED_CONCRETE.get());
     }
 
     private static boolean isUnbreakable(BlockState state) {

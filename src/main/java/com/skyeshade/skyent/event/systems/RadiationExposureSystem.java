@@ -25,7 +25,6 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.HashMap;
@@ -88,7 +87,7 @@ public final class RadiationExposureSystem {
         data.setCurrentInventoryExposureMillisievertsPerSecond(inventoryExposure);
         data.setCurrentTotalExposureMillisievertsPerSecond(exposure + inventoryExposure);
         data.setLastExposureUpdateTick(gameTime);
-        updateRadiationSickness(player, data, gameTime, updateInterval);
+        updateRadiationSickness(player, data, gameTime, updateInterval, Integer.MAX_VALUE);
         saveData(player, data);
         PacketDistributor.sendToPlayer(player, new GeigerExposurePayload(data.getCurrentTotalExposureMillisievertsPerSecond(), data.getRadiationSickness()));
         sendPeriodicDebugOverlay(player, scan, data, gameTime);
@@ -100,16 +99,21 @@ public final class RadiationExposureSystem {
             return;
         }
 
+        RadiationEntityUpdateScheduler.enqueueIfDue(entity);
+    }
+
+    static void tickScheduledNonPlayerEntity(LivingEntity entity, int elapsedTicks) {
+        if (entity instanceof ServerPlayer player) {
+            tickPlayer(player);
+            return;
+        }
+
         if (!entity.isAlive() || entity.isRemoved() || !(entity.level() instanceof ServerLevel level)) {
             return;
         }
 
         long gameTime = level.getGameTime();
         RadiationExposureData data = getOrLoadData(entity);
-        int updateInterval = SkyentRadiationConfig.exposureEntityUpdateIntervalTicks();
-        if (gameTime - data.getLastExposureUpdateTick() < updateInterval) {
-            return;
-        }
 
         Vec3 samplePos = entity.getEyePosition();
         RadiationExposureUtil.ExposureScanResult scan = RadiationExposureUtil.scanEnvironmentalExposure(
@@ -125,8 +129,12 @@ public final class RadiationExposureSystem {
         data.setCurrentInventoryExposureMillisievertsPerSecond(inventoryExposure);
         data.setCurrentTotalExposureMillisievertsPerSecond(environmentalExposure + inventoryExposure);
         data.setLastExposureUpdateTick(gameTime);
-        updateRadiationSickness(entity, data, gameTime, updateInterval);
+        updateRadiationSickness(entity, data, gameTime, elapsedTicks, elapsedTicks);
         saveData(entity, data);
+    }
+
+    static long lastExposureUpdateTick(LivingEntity entity) {
+        return getOrLoadData(entity).getLastExposureUpdateTick();
     }
 
     public static void applyDirectEnvironmentalExposure(LivingEntity entity, double exposureMillisievertsPerSecond, int exposureTicks) {
@@ -430,7 +438,13 @@ public final class RadiationExposureSystem {
         entity.getPersistentData().put(PERSISTED_TAG, tag);
     }
 
-    private static void updateRadiationSickness(LivingEntity entity, RadiationExposureData data, long gameTime, int exposureUpdateInterval) {
+    private static void updateRadiationSickness(
+            LivingEntity entity,
+            RadiationExposureData data,
+            long gameTime,
+            int exposureUpdateInterval,
+            int maxElapsedTicks
+    ) {
         if (isRadiationImmune(entity)) {
             removeRadiationMaxHealthModifier(entity);
             data.setLastSicknessUpdateTick(gameTime);
@@ -438,7 +452,8 @@ public final class RadiationExposureSystem {
         }
 
         long lastUpdate = data.getLastSicknessUpdateTick();
-        long elapsedTicks = lastUpdate == 0L ? exposureUpdateInterval : Math.max(1L, gameTime - lastUpdate);
+        long rawElapsedTicks = lastUpdate == 0L ? exposureUpdateInterval : Math.max(1L, gameTime - lastUpdate);
+        long elapsedTicks = Math.min(rawElapsedTicks, Math.max(1, maxElapsedTicks));
         double elapsedSeconds = elapsedTicks / 20.0D;
         double sickness = data.getRadiationSickness();
         sickness += data.getCurrentTotalExposureMillisievertsPerSecond() * EXPOSURE_TO_SICKNESS_SCALE * elapsedSeconds;

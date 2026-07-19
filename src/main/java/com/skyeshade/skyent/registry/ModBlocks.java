@@ -33,6 +33,7 @@ import com.skyeshade.skyent.content.block.MoltenCoriumBlock;
 import com.skyeshade.skyent.content.block.NuclearChargeBlock;
 import com.skyeshade.skyent.content.block.RadioactiveBlock;
 import com.skyeshade.skyent.content.block.RadioactiveScrapMetalBlock;
+import com.skyeshade.skyent.content.block.ReinforcedGlassBlock;
 import com.skyeshade.skyent.content.block.RollingMillBlock;
 import com.skyeshade.skyent.content.block.RollingMillPartBlock;
 import com.skyeshade.skyent.content.block.SiltBlock;
@@ -44,6 +45,7 @@ import com.skyeshade.skyent.content.block.WireMillPartBlock;
 import com.skyeshade.skyent.content.radiation.EnvironmentalRadiationMode;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RotatedPillarBlock;
+import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredBlock;
@@ -112,6 +114,20 @@ public final class ModBlocks {
             BlockBehaviour.Properties.ofFullCopy(Blocks.GRAY_CONCRETE)
                     .strength(12.0F, OBSIDIAN_BLAST_RESISTANCE * 4.0F)
                     .requiresCorrectToolForDrops()
+    );
+
+    public static final DeferredBlock<ReinforcedGlassBlock> REINFORCED_GLASS = BLOCKS.registerBlock(
+            "reinforced_glass",
+            ReinforcedGlassBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.GLASS)
+                    .strength(12.0F, OBSIDIAN_BLAST_RESISTANCE * 4.0F)
+                    .sound(SoundType.GLASS)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
+                    .isValidSpawn((state, level, pos, entityType) -> false)
+                    .isRedstoneConductor((state, level, pos) -> false)
+                    .isSuffocating((state, level, pos) -> false)
+                    .isViewBlocking((state, level, pos) -> false)
     );
 
     public static final DeferredBlock<?> TUNGSTEN_REINFORCED_CONCRETE = BLOCKS.registerSimpleBlock(
@@ -451,19 +467,19 @@ public final class ModBlocks {
 
     public static final DeferredBlock<RadioactiveBlock> VITRIFIED_STONE = vitrifiedStone(
             "vitrified_stone",
-            EnvironmentalRadiationMode.CHEAP
+            EnvironmentalRadiationMode.PASSIVE_SOURCE_ONLY
     );
     public static final DeferredBlock<RadioactiveBlock> BAKED_VITRIFIED_STONE = vitrifiedStone(
             "baked_vitrified_stone",
-            EnvironmentalRadiationMode.CHEAP
+            EnvironmentalRadiationMode.FULL_RAY
     );
     public static final DeferredBlock<RadioactiveBlock> SCORCHED_VITRIFIED_STONE = vitrifiedStone(
             "scorched_vitrified_stone",
-            EnvironmentalRadiationMode.CHEAP
+            EnvironmentalRadiationMode.FULL_RAY
     );
     public static final DeferredBlock<RadioactiveBlock> IRRADIATED_VITRIFIED_STONE = vitrifiedStone(
             "irradiated_vitrified_stone",
-            EnvironmentalRadiationMode.CHEAP
+            EnvironmentalRadiationMode.FULL_RAY
     );
     public static final DeferredBlock<RadioactiveBlock> HOT_VITRIFIED_STONE = vitrifiedStone(
             "hot_vitrified_stone",

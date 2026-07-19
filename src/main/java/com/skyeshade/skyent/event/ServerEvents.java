@@ -6,6 +6,7 @@ import com.skyeshade.skyent.content.shape.MultiblockShapeRegistry;
 import com.skyeshade.skyent.event.systems.BootstrapSystem;
 import com.skyeshade.skyent.event.systems.CraftingSoundSystem;
 import com.skyeshade.skyent.event.systems.HotItemSystem;
+import com.skyeshade.skyent.event.systems.RadiationEntityUpdateScheduler;
 import com.skyeshade.skyent.event.systems.RadiationDebugSystem;
 import com.skyeshade.skyent.event.systems.RadiationExposureSystem;
 import com.skyeshade.skyent.event.systems.RadiationSourceTickSystem;
@@ -22,6 +23,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
@@ -32,6 +34,7 @@ public final class ServerEvents {
     public static void register() {
         NeoForge.EVENT_BUS.addListener(ServerEvents::onAddReloadListeners);
         NeoForge.EVENT_BUS.addListener(ServerEvents::onServerStarting);
+        NeoForge.EVENT_BUS.addListener(ServerEvents::onServerStopping);
         NeoForge.EVENT_BUS.addListener(ServerEvents::onRegisterCommands);
         NeoForge.EVENT_BUS.addListener(ServerEvents::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(ServerEvents::onPlayerClone);
@@ -45,6 +48,11 @@ public final class ServerEvents {
 
     public static void onServerStarting(ServerStartingEvent event) {
         BootstrapSystem.onServerStarting(event);
+    }
+
+    public static void onServerStopping(ServerStoppingEvent event) {
+        RadiationEntityUpdateScheduler.clear();
+        RadiationSourceTickSystem.clearActiveSources();
     }
 
     public static void onAddReloadListeners(AddReloadListenerEvent event) {
@@ -85,6 +93,7 @@ public final class ServerEvents {
             ToxicitySystem.tickLivingEntity(player);
             HotItemSystem.tickLivingEntity(player);
         }
+        RadiationEntityUpdateScheduler.processServerTick(event.getServer());
     }
 
     public static void onServerTickPre(ServerTickEvent.Pre event) {

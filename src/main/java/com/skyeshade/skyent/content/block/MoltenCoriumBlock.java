@@ -47,6 +47,7 @@ public class MoltenCoriumBlock extends LiquidBlock implements RadioactiveSource 
         super.onPlace(state, level, pos, oldState, movedByPiston);
         if (level instanceof ServerLevel serverLevel) {
             RadioactiveSourceRegistry.register(serverLevel, pos);
+            com.skyeshade.skyent.event.systems.RadiationSourceTickSystem.registerActiveSourceIfNeeded(serverLevel, pos, state);
         }
     }
 
@@ -54,6 +55,7 @@ public class MoltenCoriumBlock extends LiquidBlock implements RadioactiveSource 
     protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
         if (level instanceof ServerLevel serverLevel && !newState.is(state.getBlock())) {
             RadioactiveSourceRegistry.unregister(serverLevel, pos);
+            com.skyeshade.skyent.event.systems.RadiationSourceTickSystem.unregisterActiveSource(serverLevel, pos);
         }
 
         super.onRemove(state, level, pos, newState, movedByPiston);
@@ -61,7 +63,9 @@ public class MoltenCoriumBlock extends LiquidBlock implements RadioactiveSource 
 
     @Override
     protected void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+        com.skyeshade.skyent.event.systems.RadiationSourceTickSystem.recordRadioactiveBlockRandomTick(state);
         RadioactiveSourceRegistry.register(level, pos);
+        com.skyeshade.skyent.event.systems.RadiationSourceTickSystem.registerActiveSourceIfNeeded(level, pos, state);
     }
 
     public static void tickFromSourceRegistry(ServerLevel level, BlockPos pos, BlockState state, RandomSource random) {
@@ -71,6 +75,7 @@ public class MoltenCoriumBlock extends LiquidBlock implements RadioactiveSource 
 
         RadioactiveSourceRegistry.register(level, pos);
         if (RadiationHotBlockRayThrottle.request(level, pos).allowed()) {
+            com.skyeshade.skyent.event.systems.RadiationSourceTickSystem.recordEnvironmentalSpreadAttempt(state, true);
             RadiationUtil.applyFullEnvironmentalRadiation(
                     level,
                     pos,

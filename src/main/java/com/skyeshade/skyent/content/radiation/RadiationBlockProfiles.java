@@ -142,6 +142,30 @@ public final class RadiationBlockProfiles {
                 .radiation(25_000.0D, 48, 180)
                 .transmission(1.0D)
                 .build());
+        register(ModBlocks.CRACKED_CONCRETE_BRICKS, RadiationBlockProfile.builder()
+                .transmission(0.90D)
+                .showShieldingTooltip()
+                .build());
+        register(ModBlocks.CONCRETE_BRICKS, RadiationBlockProfile.builder()
+                .transmission(0.85D)
+                .showShieldingTooltip()
+                .build());
+        register(ModBlocks.REINFORCED_CONCRETE, RadiationBlockProfile.builder()
+                .transmission(0.65D)
+                .showShieldingTooltip()
+                .build());
+        register(ModBlocks.REINFORCED_GLASS, RadiationBlockProfile.builder()
+                .transmission(0.20D)
+                .showShieldingTooltip()
+                .build());
+        register(ModBlocks.TUNGSTEN_REINFORCED_CONCRETE, RadiationBlockProfile.builder()
+                .transmission(0.25D)
+                .showShieldingTooltip()
+                .build());
+        register(ModBlocks.PLATED_CONCRETE, RadiationBlockProfile.builder()
+                .transmission(0.02D)
+                .showShieldingTooltip()
+                .build());
         register(ModBlocks.ALUMINUM_BLOCK, RadiationBlockProfile.builder()
                 .transmission(0.65D)
                 .showShieldingTooltip()

@@ -5,8 +5,10 @@ import com.skyeshade.skyent.content.item.SteelFluidBarrelVariants;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredHolder;
+import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 public final class ModCreativeTabs {
@@ -15,186 +17,30 @@ public final class ModCreativeTabs {
             SkyesNuclearTech.MOD_ID
     );
 
-    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> SKYENT_TAB = CREATIVE_TABS.register(
-            "skyent_tab",
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> MACHINES_AND_TOOLS = CREATIVE_TABS.register(
+            "machines_and_tools",
             () -> CreativeModeTab.builder()
-                    .title(Component.translatable("itemGroup.skyent.skyent_tab"))
-                    .icon(() -> ModItems.COMBUSTION_GENERATOR.get().getDefaultInstance())
-                    .displayItems((parameters, output) -> {
-                        output.accept(ModItems.COMBUSTION_GENERATOR.get());
-                        output.accept(ModItems.ELECTRIC_FURNACE.get());
-                        output.accept(ModItems.LV_CRUSHER.get());
-                        output.accept(ModItems.BRICK_BLAST_FURNACE.get());
-                        output.accept(ModItems.COAL_FORGE.get());
-                        output.accept(ModItems.FIRE_BRICKS.get());
-                        output.accept(ModItems.CRACKED_CONCRETE_BRICKS.get());
-                        output.accept(ModItems.CONCRETE_BRICKS.get());
-                        output.accept(ModItems.REINFORCED_CONCRETE.get());
-                        output.accept(ModItems.TUNGSTEN_REINFORCED_CONCRETE.get());
-                        output.accept(ModItems.PLATED_CONCRETE.get());
-                        output.accept(ModItems.FORGING_ANVIL.get());
-                        output.accept(ModItems.STEAM_FORGE_HAMMER.get());
-                        output.accept(ModItems.HEATING_CHAMBER.get());
-                        output.accept(ModItems.ROLLING_MILL.get());
-                        output.accept(ModItems.INDUSTRIAL_PRESS.get());
-                        output.accept(ModItems.WIRE_MILL.get());
-                        output.accept(ModItems.NUCLEAR_CHARGE.get());
-                        output.accept(ModItems.LV_ELECTRIC_PUMP.get());
-                        output.accept(ModItems.LV_STEAM_TURBINE.get());
-                        output.accept(ModItems.BASIC_FLUID_DUCT.get());
-                        output.accept(ModItems.BASIC_CONVEYOR_BELT.get());
-                        output.accept(ModItems.CONVEYOR_SPLITTER.get());
-                        output.accept(ModItems.CONVEYOR_EXPORTER.get());
-                        output.accept(ModItems.CONVEYOR_ELEVATOR.get());
-                        output.accept(ModItems.CONVEYOR_CHUTE.get());
-                        output.accept(ModItems.SILT.get());
-                        output.accept(ModItems.DEAD_GRASS.get());
-                        output.accept(ModItems.DEAD_SHORT_GRASS.get());
-                        output.accept(ModItems.DEAD_TALL_GRASS.get());
-                        output.accept(ModItems.DEAD_OAK_LEAVES.get());
-                        output.accept(ModItems.DEAD_BIRCH_LEAVES.get());
-                        output.accept(ModItems.DEAD_SPRUCE_LEAVES.get());
-                        output.accept(ModItems.DEAD_JUNGLE_LEAVES.get());
-                        output.accept(ModItems.DEAD_ACACIA_LEAVES.get());
-                        output.accept(ModItems.DEAD_DARK_OAK_LEAVES.get());
-                        output.accept(ModItems.DEAD_MANGROVE_LEAVES.get());
-                        output.accept(ModItems.DEAD_CHERRY_LEAVES.get());
-                        output.accept(ModItems.DEAD_AZALEA_LEAVES.get());
-                        output.accept(ModItems.DEAD_FLOWERING_AZALEA_LEAVES.get());
-                        output.accept(ModItems.TITANIUM_ORE.get());
-                        output.accept(ModItems.DEEPSLATE_TITANIUM_ORE.get());
-                        output.accept(ModItems.ALUMINUM_ORE.get());
-                        output.accept(ModItems.DEEPSLATE_ALUMINUM_ORE.get());
-                        output.accept(ModItems.ALUMINUM_BLOCK.get());
-                        output.accept(ModItems.TITANIUM_BLOCK.get());
-                        output.accept(ModItems.TUNGSTEN_ORE.get());
-                        output.accept(ModItems.DEEPSLATE_TUNGSTEN_ORE.get());
-                        output.accept(ModItems.TUNGSTEN_BLOCK.get());
-                        output.accept(ModItems.STEEL_BLOCK.get());
-                        output.accept(ModItems.COBALT_BLOCK.get());
-                        output.accept(ModItems.NICKEL_BLOCK.get());
-                        output.accept(ModItems.LEAD_ORE.get());
-                        output.accept(ModItems.LEAD_BLOCK.get());
-                        output.accept(ModItems.URANIUM_ORE.get());
-                        output.accept(ModItems.DEEPSLATE_URANIUM_ORE.get());
-                        output.accept(ModItems.URANIUM_BLOCK.get());
-                        output.accept(ModItems.CORIUM_BLOCK.get());
-                        output.accept(ModItems.RADIOACTIVE_SCRAP_METAL.get());
-                        output.accept(ModItems.CONTAMINATED_GRASS_BLOCK.get());
-                        output.accept(ModItems.VITRIFIED_STONE.get());
-                        output.accept(ModItems.BAKED_VITRIFIED_STONE.get());
-                        output.accept(ModItems.SCORCHED_VITRIFIED_STONE.get());
-                        output.accept(ModItems.IRRADIATED_VITRIFIED_STONE.get());
-                        output.accept(ModItems.HOT_VITRIFIED_STONE.get());
-                        output.accept(ModItems.RADIANT_VITRIFIED_STONE.get());
-                        output.accept(ModItems.INFERNAL_VITRIFIED_STONE.get());
-                        output.accept(ModItems.MOLTEN_CORIUM_BUCKET.get());
-                        output.accept(ModItems.STEEL_FLUID_BARREL.get());
-                        addSteelFluidBarrelVariants(output);
-                        output.accept(ModItems.LV_CONNECTOR.get());
-                        output.accept(ModItems.MV_CONNECTOR.get());
-                        output.accept(ModItems.STEEL_INGOT.get());
-                        output.accept(ModItems.RAW_COBALT.get());
-                        output.accept(ModItems.RAW_NICKEL.get());
-                        output.accept(ModItems.RAW_TITANIUM.get());
-                        output.accept(ModItems.RAW_TUNGSTEN.get());
-                        output.accept(ModItems.RAW_ALUMINUM.get());
-                        output.accept(ModItems.RAW_LEAD.get());
-                        output.accept(ModItems.RAW_URANIUM.get());
-                        output.accept(ModItems.TITANIUM_INGOT.get());
-                        output.accept(ModItems.TUNGSTEN_INGOT.get());
-                        output.accept(ModItems.ALUMINUM_INGOT.get());
-                        output.accept(ModItems.LEAD_INGOT.get());
-                        output.accept(ModItems.URANIUM_INGOT.get());
-                        output.accept(ModItems.COBALT_INGOT.get());
-                        output.accept(ModItems.NICKEL_INGOT.get());
-                        output.accept(ModItems.TIN_INGOT.get());
-                        output.accept(ModItems.COBALT_BRONZE_INGOT.get());
-                        output.accept(ModItems.CUPRONICKEL_INGOT.get());
-                        output.accept(ModItems.IRON_PLATE.get());
-                        output.accept(ModItems.STEEL_PLATE.get());
-                        output.accept(ModItems.GOLD_PLATE.get());
-                        output.accept(ModItems.ALUMINUM_PLATE.get());
-                        output.accept(ModItems.TITANIUM_PLATE.get());
-                        output.accept(ModItems.TUNGSTEN_PLATE.get());
-                        output.accept(ModItems.COPPER_PLATE.get());
-                        output.accept(ModItems.COBALT_PLATE.get());
-                        output.accept(ModItems.NICKEL_PLATE.get());
-                        output.accept(ModItems.COBALT_BRONZE_PLATE.get());
-                        output.accept(ModItems.CUPRONICKEL_PLATE.get());
-                        output.accept(ModItems.LEAD_PLATE.get());
-                        output.accept(ModItems.IRON_POWDER.get());
-                        output.accept(ModItems.GOLD_POWDER.get());
-                        output.accept(ModItems.LEAD_POWDER.get());
-                        output.accept(ModItems.TUNGSTEN_POWDER.get());
-                        output.accept(ModItems.STEEL_POWDER.get());
-                        output.accept(ModItems.URANIUM_POWDER.get());
-                        output.accept(ModItems.COPPER_POWDER.get());
-                        output.accept(ModItems.TITANIUM_POWDER.get());
-                        output.accept(ModItems.ALUMINUM_POWDER.get());
-                        output.accept(ModItems.COBALT_POWDER.get());
-                        output.accept(ModItems.NICKEL_POWDER.get());
-                        output.accept(ModItems.TIN_POWDER.get());
-                        output.accept(ModItems.SMALL_TIN_POWDER.get());
-                        output.accept(ModItems.FIRE_CLAY.get());
-                        output.accept(ModItems.FIRE_BRICK.get());
-                        output.accept(ModItems.IRON_BOLT.get());
-                        output.accept(ModItems.COPPER_BOLT.get());
-                        output.accept(ModItems.STEEL_BOLT.get());
-                        output.accept(ModItems.TUNGSTEN_BOLT.get());
-                        output.accept(ModItems.COBALT_BOLT.get());
-                        output.accept(ModItems.NICKEL_BOLT.get());
-                        output.accept(ModItems.ALUMINUM_BOLT.get());
-                        output.accept(ModItems.TITANIUM_BOLT.get());
-                        output.accept(ModItems.IRON_ROD.get());
-                        output.accept(ModItems.COPPER_ROD.get());
-                        output.accept(ModItems.TIN_ROD.get());
-                        output.accept(ModItems.STEEL_ROD.get());
-                        output.accept(ModItems.ALUMINUM_ROD.get());
-                        output.accept(ModItems.TITANIUM_ROD.get());
-                        output.accept(ModItems.TUNGSTEN_ROD.get());
-                        output.accept(ModItems.COBALT_ROD.get());
-                        output.accept(ModItems.NICKEL_ROD.get());
-                        output.accept(ModItems.COBALT_BRONZE_ROD.get());
-                        output.accept(ModItems.CUPRONICKEL_ROD.get());
-                        output.accept(ModItems.HOT_TIN_ROD.get());
-                        output.accept(ModItems.HOT_COBALT_BRONZE_ROD.get());
-                        output.accept(ModItems.HOT_CUPRONICKEL_ROD.get());
-                        output.accept(ModItems.COPPER_WIRE.get());
-                        output.accept(ModItems.TIN_WIRE.get());
-                        output.accept(ModItems.STEEL_WIRE.get());
-                        output.accept(ModItems.COBALT_WIRE.get());
-                        output.accept(ModItems.COBALT_BRONZE_WIRE.get());
-                        output.accept(ModItems.CUPRONICKEL_WIRE.get());
-                        output.accept(ModItems.COPPER_COIL.get());
-                        output.accept(ModItems.STEEL_BEARING.get());
-                        output.accept(ModItems.NICKEL_TURBINE.get());
-                        output.accept(ModItems.TITANIUM_TURBINE_BLADE.get());
-                        output.accept(ModItems.ELECTRIC_MOTOR.get());
-                        output.accept(ModItems.HYDRAULIC_COMPONENT.get());
-                        output.accept(ModItems.WIRE_CUTTERS.get());
-                        output.accept(ModItems.WRENCH.get());
-                        output.accept(ModItems.FORGING_HAMMER.get());
-                        output.accept(ModItems.STEEL_TONGS.get());
-                        output.accept(ModItems.REMOTE_DETONATOR.get());
-                        output.accept(ModItems.GEIGER_COUNTER.get());
-                        output.accept(ModItems.TITANIUM_SWORD.get());
-                        output.accept(ModItems.TITANIUM_PICKAXE.get());
-                        output.accept(ModItems.TITANIUM_AXE.get());
-                        output.accept(ModItems.TITANIUM_SHOVEL.get());
-                        output.accept(ModItems.TITANIUM_HOE.get());
-                        output.accept(ModItems.TUNGSTEN_SWORD.get());
-                        output.accept(ModItems.TUNGSTEN_PICKAXE.get());
-                        output.accept(ModItems.TUNGSTEN_AXE.get());
-                        output.accept(ModItems.TUNGSTEN_SHOVEL.get());
-                        output.accept(ModItems.TUNGSTEN_HOE.get());
-                        output.accept(ModItems.COPPER_WIRE_DRUM.get());
-                        output.accept(ModItems.STEEL_WIRE_DRUM.get());
-                        output.accept(ModItems.COBALT_BRONZE_WIRE_DRUM.get());
-                        output.accept(ModItems.LV_RJ_CONVERTER.get());
-                        output.accept(ModItems.LV_FE_CONVERTER.get());
-                        output.accept(ModItems.LV_MV_TRANSFORMER.get());
-                    })
+                    .title(Component.translatable("itemGroup.skyent.machines_and_tools"))
+                    .icon(() -> ModItems.LV_CRUSHER.get().getDefaultInstance())
+                    .displayItems((parameters, output) -> addMachinesAndTools(output))
+                    .build()
+    );
+
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> MATERIALS = CREATIVE_TABS.register(
+            "materials",
+            () -> CreativeModeTab.builder()
+                    .title(Component.translatable("itemGroup.skyent.materials"))
+                    .icon(() -> ModItems.COBALT_INGOT.get().getDefaultInstance())
+                    .displayItems((parameters, output) -> addMaterials(output))
+                    .build()
+    );
+
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> BLOCKS = CREATIVE_TABS.register(
+            "blocks",
+            () -> CreativeModeTab.builder()
+                    .title(Component.translatable("itemGroup.skyent.blocks"))
+                    .icon(() -> ModItems.VITRIFIED_STONE.get().getDefaultInstance())
+                    .displayItems((parameters, output) -> addBlocks(output))
                     .build()
     );
 
@@ -203,6 +49,208 @@ public final class ModCreativeTabs {
 
     public static void register(IEventBus modEventBus) {
         CREATIVE_TABS.register(modEventBus);
+    }
+
+    private static void addMachinesAndTools(CreativeModeTab.Output output) {
+        add(output,
+                ModItems.BASIC_FLUID_DUCT,
+                ModItems.BASIC_CONVEYOR_BELT,
+                ModItems.CONVEYOR_SPLITTER,
+                ModItems.CONVEYOR_EXPORTER,
+                ModItems.CONVEYOR_ELEVATOR,
+                ModItems.CONVEYOR_CHUTE,
+                ModItems.COMBUSTION_GENERATOR,
+                ModItems.ELECTRIC_FURNACE,
+                ModItems.LV_CRUSHER,
+                ModItems.BRICK_BLAST_FURNACE,
+                ModItems.COAL_FORGE,
+                ModItems.FORGING_ANVIL,
+                ModItems.STEAM_FORGE_HAMMER,
+                ModItems.HEATING_CHAMBER,
+                ModItems.ROLLING_MILL,
+                ModItems.INDUSTRIAL_PRESS,
+                ModItems.WIRE_MILL,
+                ModItems.LV_ELECTRIC_PUMP,
+                ModItems.LV_STEAM_TURBINE,
+                ModItems.LV_CONNECTOR,
+                ModItems.COPPER_WIRE_DRUM,
+                ModItems.MV_CONNECTOR,
+                ModItems.STEEL_WIRE_DRUM,
+                ModItems.COBALT_BRONZE_WIRE_DRUM,
+                ModItems.LV_MV_TRANSFORMER,
+                ModItems.LV_RJ_CONVERTER,
+                ModItems.LV_FE_CONVERTER,
+                ModItems.NUCLEAR_CHARGE,
+                ModItems.STEEL_FLUID_BARREL
+        );
+        addSteelFluidBarrelVariants(output);
+        add(output,
+                ModItems.WIRE_CUTTERS,
+                ModItems.WRENCH,
+                ModItems.FORGING_HAMMER,
+                ModItems.STEEL_TONGS,
+                ModItems.REMOTE_DETONATOR,
+                ModItems.GEIGER_COUNTER,
+                ModItems.TITANIUM_SWORD,
+                ModItems.TITANIUM_PICKAXE,
+                ModItems.TITANIUM_AXE,
+                ModItems.TITANIUM_SHOVEL,
+                ModItems.TITANIUM_HOE,
+                ModItems.TUNGSTEN_SWORD,
+                ModItems.TUNGSTEN_PICKAXE,
+                ModItems.TUNGSTEN_AXE,
+                ModItems.TUNGSTEN_SHOVEL,
+                ModItems.TUNGSTEN_HOE
+        );
+    }
+
+    private static void addBlocks(CreativeModeTab.Output output) {
+        add(output,
+                ModItems.ALUMINUM_BLOCK,
+                ModItems.TITANIUM_BLOCK,
+                ModItems.TUNGSTEN_BLOCK,
+                ModItems.STEEL_BLOCK,
+                ModItems.COBALT_BLOCK,
+                ModItems.NICKEL_BLOCK,
+                ModItems.LEAD_BLOCK,
+                ModItems.URANIUM_BLOCK,
+                ModItems.CORIUM_BLOCK,
+                ModItems.RADIOACTIVE_SCRAP_METAL,
+                ModItems.ALUMINUM_ORE,
+                ModItems.DEEPSLATE_ALUMINUM_ORE,
+                ModItems.TITANIUM_ORE,
+                ModItems.DEEPSLATE_TITANIUM_ORE,
+                ModItems.TUNGSTEN_ORE,
+                ModItems.DEEPSLATE_TUNGSTEN_ORE,
+                ModItems.LEAD_ORE,
+                ModItems.URANIUM_ORE,
+                ModItems.DEEPSLATE_URANIUM_ORE,
+                ModItems.FIRE_BRICKS,
+                ModItems.CRACKED_CONCRETE_BRICKS,
+                ModItems.CONCRETE_BRICKS,
+                ModItems.REINFORCED_CONCRETE,
+                ModItems.REINFORCED_GLASS,
+                ModItems.TUNGSTEN_REINFORCED_CONCRETE,
+                ModItems.PLATED_CONCRETE,
+                ModItems.SILT,
+                ModItems.CHARRED_LOG,
+                ModItems.CONTAMINATED_GRASS_BLOCK,
+                ModItems.DEAD_GRASS,
+                ModItems.DEAD_SHORT_GRASS,
+                ModItems.DEAD_TALL_GRASS,
+                ModItems.DEAD_OAK_LEAVES,
+                ModItems.DEAD_BIRCH_LEAVES,
+                ModItems.DEAD_SPRUCE_LEAVES,
+                ModItems.DEAD_JUNGLE_LEAVES,
+                ModItems.DEAD_ACACIA_LEAVES,
+                ModItems.DEAD_DARK_OAK_LEAVES,
+                ModItems.DEAD_MANGROVE_LEAVES,
+                ModItems.DEAD_CHERRY_LEAVES,
+                ModItems.DEAD_AZALEA_LEAVES,
+                ModItems.DEAD_FLOWERING_AZALEA_LEAVES,
+                ModItems.VITRIFIED_STONE,
+                ModItems.BAKED_VITRIFIED_STONE,
+                ModItems.SCORCHED_VITRIFIED_STONE,
+                ModItems.IRRADIATED_VITRIFIED_STONE,
+                ModItems.RADIANT_VITRIFIED_STONE,
+                ModItems.INFERNAL_VITRIFIED_STONE
+        );
+    }
+
+    private static void addMaterials(CreativeModeTab.Output output) {
+        add(output,
+                ModItems.TIN_INGOT,
+                ModItems.COBALT_BRONZE_INGOT,
+                ModItems.STEEL_INGOT,
+                ModItems.NICKEL_INGOT,
+                ModItems.COBALT_INGOT,
+                ModItems.CUPRONICKEL_INGOT,
+                ModItems.ALUMINUM_INGOT,
+                ModItems.TITANIUM_INGOT,
+                ModItems.TUNGSTEN_INGOT,
+                ModItems.LEAD_INGOT,
+                ModItems.URANIUM_INGOT,
+                ModItems.RAW_NICKEL,
+                ModItems.RAW_COBALT,
+                ModItems.RAW_ALUMINUM,
+                ModItems.RAW_TITANIUM,
+                ModItems.RAW_TUNGSTEN,
+                ModItems.RAW_LEAD,
+                ModItems.RAW_URANIUM,
+                ModItems.IRON_POWDER,
+                ModItems.COPPER_POWDER,
+                ModItems.TIN_POWDER,
+                ModItems.SMALL_TIN_POWDER,
+                ModItems.STEEL_POWDER,
+                ModItems.NICKEL_POWDER,
+                ModItems.COBALT_POWDER,
+                ModItems.ALUMINUM_POWDER,
+                ModItems.TITANIUM_POWDER,
+                ModItems.TUNGSTEN_POWDER,
+                ModItems.GOLD_POWDER,
+                ModItems.LEAD_POWDER,
+                ModItems.URANIUM_POWDER,
+                ModItems.IRON_PLATE,
+                ModItems.COPPER_PLATE,
+                ModItems.COBALT_BRONZE_PLATE,
+                ModItems.STEEL_PLATE,
+                ModItems.NICKEL_PLATE,
+                ModItems.COBALT_PLATE,
+                ModItems.CUPRONICKEL_PLATE,
+                ModItems.ALUMINUM_PLATE,
+                ModItems.TITANIUM_PLATE,
+                ModItems.TUNGSTEN_PLATE,
+                ModItems.GOLD_PLATE,
+                ModItems.LEAD_PLATE,
+                ModItems.IRON_ROD,
+                ModItems.COPPER_ROD,
+                ModItems.TIN_ROD,
+                ModItems.COBALT_BRONZE_ROD,
+                ModItems.STEEL_ROD,
+                ModItems.NICKEL_ROD,
+                ModItems.COBALT_ROD,
+                ModItems.CUPRONICKEL_ROD,
+                ModItems.ALUMINUM_ROD,
+                ModItems.TITANIUM_ROD,
+                ModItems.TUNGSTEN_ROD,
+                ModItems.IRON_BOLT,
+                ModItems.COPPER_BOLT,
+                ModItems.STEEL_BOLT,
+                ModItems.NICKEL_BOLT,
+                ModItems.COBALT_BOLT,
+                ModItems.ALUMINUM_BOLT,
+                ModItems.TITANIUM_BOLT,
+                ModItems.TUNGSTEN_BOLT,
+                ModItems.COPPER_WIRE,
+                ModItems.TIN_WIRE,
+                ModItems.STEEL_WIRE,
+                ModItems.COBALT_WIRE,
+                ModItems.COBALT_BRONZE_WIRE,
+                ModItems.CUPRONICKEL_WIRE,
+                ModItems.COPPER_COIL,
+                ModItems.STEEL_BEARING,
+                ModItems.FIRE_CLAY,
+                ModItems.FIRE_BRICK,
+                ModItems.NICKEL_TURBINE,
+                ModItems.TITANIUM_TURBINE_BLADE,
+                ModItems.ELECTRIC_MOTOR,
+                ModItems.HYDRAULIC_COMPONENT,
+                ModItems.MOLTEN_CORIUM_BUCKET
+        );
+    }
+
+    @SafeVarargs
+    private static void add(CreativeModeTab.Output output, DeferredItem<? extends Item>... items) {
+        for (DeferredItem<? extends Item> item : items) {
+            if (!isHotItem(item)) {
+                output.accept(item.get());
+            }
+        }
+    }
+
+    private static boolean isHotItem(DeferredItem<? extends Item> item) {
+        String id = item.getId().getPath();
+        return id.contains("hot_") || id.contains("_hot") || id.contains("heated_") || id.contains("glowing_");
     }
 
     private static void addSteelFluidBarrelVariants(CreativeModeTab.Output output) {

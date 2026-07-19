@@ -10,11 +10,12 @@
     }
   },
   "pattern": [
+    "RCR",
     "CRC",
-    "RRR",
-    "CRC"
+    "RCR"
   ],
   "result": {
-    "id": "skyent:reinforced_concrete"
+    "id": "skyent:reinforced_concrete",
+    "count": 4
   }
 }

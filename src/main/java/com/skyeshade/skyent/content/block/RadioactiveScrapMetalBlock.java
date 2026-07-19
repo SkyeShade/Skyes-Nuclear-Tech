@@ -63,7 +63,9 @@ public class RadioactiveScrapMetalBlock extends RadioactiveBlock {
 
     @Override
     public void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
+        RadiationSourceTickSystem.recordRadioactiveBlockRandomTick(state);
         RadioactiveSourceRegistry.register(level, pos);
+        RadiationSourceTickSystem.registerActiveSourceIfNeeded(level, pos, state);
         RadiationSourceTickSystem.debugRadioactiveScrapMetalRegistered(level, pos, "random tick registry refresh");
     }
 }

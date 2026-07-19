@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public final class NuclearBlastRayPlanner {
     private static final int MAX_OBSIDIAN_DEBUG_HIT_LOGS = 200;
     private static final int MAX_OBSIDIAN_DEBUG_STEP_LOGS = 20;
+    private static final int MAX_NUKE_BLOCK_RESISTANCE_DEBUG_LOGS = 200;
     private static final int MIN_RAYS = 512;
     private static final double GOLDEN_ANGLE = Math.PI * (3.0D - Math.sqrt(5.0D));
     private static final double NUKE_BASELINE_RADIUS = 200.0D;
@@ -77,6 +78,7 @@ public final class NuclearBlastRayPlanner {
     private int obsidianDebugHitLogs;
     private int obsidianDebugStepLogs;
     private int obsidianDebugTraceRayIndex = -1;
+    private int nukeBlockResistanceDebugLogs;
 
     public NuclearBlastRayPlanner(
             ServerLevel level,
@@ -329,7 +331,8 @@ public final class NuclearBlastRayPlanner {
                 boolean canDestroy = (flags & NuclearBlockSnapshot.FLAG_CAN_DESTROY) != 0;
                 boolean markSucceeded = false;
                 boolean concreteBricks = (flags & NuclearBlockSnapshot.FLAG_CONCRETE_BRICKS) != 0;
-                if (!concreteBricks && rayEnergy > 0.0D && canDestroy) {
+                boolean resistanceGatedRemoval = concreteBricks || highResistance;
+                if (!resistanceGatedRemoval && rayEnergy > 0.0D && canDestroy) {
                     if (targetMask.mark(blockX, blockY, blockZ)) {
                         markSucceeded = true;
                         marked++;
@@ -387,11 +390,39 @@ public final class NuclearBlastRayPlanner {
                                 && targetMask.markReplacement(blockX, blockY, blockZ, ModBlocks.CRACKED_CONCRETE_BRICKS.get().defaultBlockState())) {
                             counters.crackedConcreteBricksPlanned++;
                         }
+                    } else if (resistanceGatedRemoval && rayEnergyBefore > 0.0D && canDestroy && rayEnergyBefore >= cost) {
+                        if (targetMask.mark(blockX, blockY, blockZ)) {
+                            markSucceeded = true;
+                            marked++;
+                            if (hasBlockEntity) {
+                                counters.blockEntityBlocksMarked++;
+                            }
+                            if (fragile) {
+                                counters.fragileBlocksMarked++;
+                            }
+                            if (nonSolid) {
+                                counters.nonSolidBlocksMarked++;
+                            }
+                            if (fluid) {
+                                counters.fluidBlocksMarked++;
+                            }
+                            if (highResistance) {
+                                counters.highResistanceBlocksMarked++;
+                            }
+                            if (obsidian) {
+                                counters.obsidianBlocksMarked++;
+                                obsidianBlocksMarkedThisRay++;
+                                counters.maxObsidianDepthMarkedOnSingleRay = Math.max(counters.maxObsidianDepthMarkedOnSingleRay, obsidianBlocksMarkedThisRay);
+                            }
+                        } else {
+                            counters.duplicateMaskMarkAttempts++;
+                        }
                     }
                     rayEnergy -= cost;
                     if (allowSharedDebugLogging) {
                         logHighResistanceHit(index, pos, state, traveled, rayEnergyBefore, resistance, resistance, rayBlocking, canDestroy, hasBlockEntity, markSucceeded, rawCost, rayEnergy, rayEnergy <= 0.0D ? StopReason.ENERGY : null);
                         logObsidianStepTrace(index, pos, state, traveled, rayEnergyBefore, resistance, resistance, closeRangeApplied, cost, rayEnergy, markSucceeded);
+                        logNukeBlockResistanceDecision(index, pos, state, traveled, rayEnergyBefore, resistance, rawCost, cost, rayEnergy, canDestroy, markSucceeded, resistanceGatedRemoval, concreteBricks);
                     }
                     if (rayEnergy <= 0.0D) {
                         if (highResistance) {
@@ -520,6 +551,67 @@ public final class NuclearBlastRayPlanner {
                 finalCost,
                 rayEnergyAfter,
                 markSucceeded
+        );
+    }
+
+    private void logNukeBlockResistanceDecision(
+            int rayIndex,
+            BlockPos pos,
+            BlockState state,
+            double traveled,
+            double rayEnergyBefore,
+            float effectiveResistance,
+            double rawCost,
+            double finalCost,
+            double rayEnergyAfter,
+            boolean canDestroy,
+            boolean removed,
+            boolean resistanceGatedRemoval,
+            boolean concreteBricks
+    ) {
+        if (!NuclearResistanceCache.DEBUG_NUKE_BLOCK_RESISTANCE
+                || nukeBlockResistanceDebugLogs >= MAX_NUKE_BLOCK_RESISTANCE_DEBUG_LOGS
+                || state == null
+                || !NuclearResistanceCache.isConcreteFamily(state)) {
+            return;
+        }
+
+        nukeBlockResistanceDebugLogs++;
+        double distanceProgress = Mth.clamp(traveled / radius, 0.0D, 1.0D);
+        double effectivePower = effectiveResistancePower(distanceProgress);
+        float blockExplosionResistance = state.getBlock().getExplosionResistance();
+        float destroySpeed = state.getDestroySpeed(level, pos);
+        String reason;
+        if (!canDestroy) {
+            reason = "cannot_destroy";
+        } else if (!resistanceGatedRemoval) {
+            reason = removed ? "removed_low_resistance_positive_energy" : "survived_low_resistance_duplicate_or_no_energy";
+        } else if (removed) {
+            reason = "removed_energy_met_resistance_cost";
+        } else if (concreteBricks && rayEnergyBefore >= finalCost * CONCRETE_BRICKS_CRACK_THRESHOLD_FRACTION) {
+            reason = "survived_or_cracked_energy_met_partial_concrete_threshold";
+        } else {
+            reason = "survived_energy_below_resistance_cost";
+        }
+
+        SkyesNuclearTech.LOGGER.info(
+                "Nuke block resistance decision: ray={} pos={} block={} blockExplosionResistance={} tooltipBlastResistance={} destroySpeed={} effectiveResistance={} distanceProgress={} effectivePower={} rayEnergyBefore={} rawCost={} finalCost={} rayEnergyAfter={} resistanceGated={} removed={} reason={}",
+                rayIndex,
+                pos,
+                BuiltInRegistries.BLOCK.getKey(state.getBlock()),
+                blockExplosionResistance,
+                blockExplosionResistance,
+                destroySpeed,
+                effectiveResistance,
+                distanceProgress,
+                effectivePower,
+                rayEnergyBefore,
+                rawCost,
+                finalCost,
+                rayEnergyAfter,
+                resistanceGatedRemoval,
+                removed,
+                reason
         );
     }
 

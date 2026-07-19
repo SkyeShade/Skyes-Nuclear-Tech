@@ -178,6 +178,9 @@ public final class NuclearColumnCollapsePass {
     private long vitrificationSkippedFluid;
     private long vitrificationSkippedUnloaded;
     private long vitrificationReplacementsPlanned;
+    private long vitrificationHigherTierReplacements;
+    private long vitrificationSameOrLowerSkipped;
+    private long vitrificationDowngradePrevented;
     private int vitrificationDebugFailureLogs;
     private int vitrificationBoundaryDebugLogs;
     private int maxVitrificationDepthSeen;
@@ -938,14 +941,24 @@ public final class NuclearColumnCollapsePass {
                 firstVitrifiableY = y;
             }
             int tier = Math.max(0, topTier - replacements);
-            BlockState replacement = combineVitrifiedState(state, tier);
-            if (state.is(replacement.getBlock())) {
+            VitrifiedPlacement placement = resolveVitrifiedPlacement(state, tier);
+            if (!placement.shouldPlace()) {
+                if (placement.preventedDowngrade()) {
+                    vitrificationDowngradePrevented++;
+                }
+                if (placement.skippedSameOrLower()) {
+                    vitrificationSameOrLowerSkipped++;
+                }
                 replacements++;
                 continue;
             }
+            BlockState replacement = placement.state();
             planSet(pos, replacement);
             plannedVitrifiedStoneReplacements++;
             vitrificationReplacementsPlanned++;
+            if (placement.replacedLowerTier()) {
+                vitrificationHigherTierReplacements++;
+            }
             plannedVitrifiedTierReplacements[tier]++;
             replacements++;
         }
@@ -1200,13 +1213,22 @@ public final class NuclearColumnCollapsePass {
         };
     }
 
-    private static BlockState combineVitrifiedState(BlockState currentState, int incomingTier) {
-        int incomingSeverity = Mth.clamp(incomingTier, 0, 6) + 1;
+    private static VitrifiedPlacement resolveVitrifiedPlacement(BlockState currentState, int incomingTier) {
+        int clampedIncomingTier = Mth.clamp(incomingTier, 0, 6);
+        BlockState incomingState = vitrifiedStateForTier(clampedIncomingTier);
+        int incomingSeverity = vitrifiedSeverity(incomingState);
+        if (incomingSeverity <= 0) {
+            return VitrifiedPlacement.place(incomingState, false);
+        }
+
         int currentSeverity = vitrifiedSeverity(currentState);
         if (currentSeverity <= 0) {
-            return vitrifiedStateForTier(incomingTier);
+            return VitrifiedPlacement.place(incomingState, false);
         }
-        return vitrifiedStateForSeverity(currentSeverity + incomingSeverity);
+        if (incomingSeverity > currentSeverity) {
+            return VitrifiedPlacement.place(incomingState, true);
+        }
+        return VitrifiedPlacement.skip(currentSeverity > incomingSeverity);
     }
 
     private static int vitrifiedSeverity(BlockState state) {
@@ -1234,16 +1256,20 @@ public final class NuclearColumnCollapsePass {
         return 0;
     }
 
-    private static BlockState vitrifiedStateForSeverity(int severity) {
-        return switch (Mth.clamp(severity, 1, 7)) {
-            case 2 -> ModBlocks.BAKED_VITRIFIED_STONE.get().defaultBlockState();
-            case 3 -> ModBlocks.SCORCHED_VITRIFIED_STONE.get().defaultBlockState();
-            case 4 -> ModBlocks.IRRADIATED_VITRIFIED_STONE.get().defaultBlockState();
-            case 5 -> ModBlocks.HOT_VITRIFIED_STONE.get().defaultBlockState();
-            case 6 -> ModBlocks.RADIANT_VITRIFIED_STONE.get().defaultBlockState();
-            case 7 -> ModBlocks.INFERNAL_VITRIFIED_STONE.get().defaultBlockState();
-            default -> ModBlocks.VITRIFIED_STONE.get().defaultBlockState();
-        };
+    private record VitrifiedPlacement(
+            BlockState state,
+            boolean shouldPlace,
+            boolean replacedLowerTier,
+            boolean skippedSameOrLower,
+            boolean preventedDowngrade
+    ) {
+        private static VitrifiedPlacement place(BlockState state, boolean replacedLowerTier) {
+            return new VitrifiedPlacement(state, true, replacedLowerTier, false, false);
+        }
+
+        private static VitrifiedPlacement skip(boolean preventedDowngrade) {
+            return new VitrifiedPlacement(null, false, false, true, preventedDowngrade);
+        }
     }
 
     private static BlockState deadVegetationReplacement(BlockState state) {
@@ -1957,7 +1983,10 @@ public final class NuclearColumnCollapsePass {
                 + ",outerFadeConsidered=" + vitrificationOuterFadeConsidered
                 + ",outerFadePlaced=" + vitrificationOuterFadePlaced
                 + ",outerFadeSkipped=" + vitrificationOuterFadeSkipped
-                + ",weakEdgePlacements=" + vitrificationWeakEdgePlacements;
+                + ",weakEdgePlacements=" + vitrificationWeakEdgePlacements
+                + ",higherTierReplacements=" + vitrificationHigherTierReplacements
+                + ",sameOrLowerSkipped=" + vitrificationSameOrLowerSkipped
+                + ",downgradePrevented=" + vitrificationDowngradePrevented;
     }
 
     public String vitrificationDowngradeDebug() {
