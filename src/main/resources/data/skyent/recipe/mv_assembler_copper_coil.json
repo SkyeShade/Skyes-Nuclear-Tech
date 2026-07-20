@@ -1,0 +1,23 @@
+{
+  "type": "skyent:mv_assembler",
+  "ingredients": [
+    {
+      "ingredient": {
+        "item": "skyent:copper_wire"
+      },
+      "count": 6
+    },
+    {
+      "ingredient": {
+        "item": "skyent:iron_rod"
+      },
+      "count": 1
+    }
+  ],
+  "result": {
+    "id": "skyent:copper_coil",
+    "count": 1
+  },
+  "process_time": 80,
+  "energy_per_tick": 48
+}

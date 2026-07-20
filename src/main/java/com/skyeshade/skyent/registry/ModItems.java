@@ -492,6 +492,7 @@ public final class ModItems {
     public static final DeferredItem<Item> COBALT_BRONZE_WIRE = simpleItem("cobalt_bronze_wire");
     public static final DeferredItem<Item> CUPRONICKEL_WIRE = simpleItem("cupronickel_wire");
     public static final DeferredItem<Item> COPPER_COIL = simpleItem("copper_coil");
+    public static final DeferredItem<Item> TRANSFORMER_COIL = simpleItem("transformer_coil");
     public static final DeferredItem<Item> STEEL_BEARING = simpleItem("steel_bearing");
     public static final DeferredItem<Item> NICKEL_TURBINE = simpleItem("nickel_turbine");
     public static final DeferredItem<Item> TITANIUM_TURBINE_BLADE = simpleItem("titanium_turbine_blade");

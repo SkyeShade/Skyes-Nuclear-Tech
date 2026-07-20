@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "MCM",
+    "SCS",
+    "SCS"
+  ],
+  "key": {
+    "M": {
+      "item": "skyent:mv_connector"
+    },
+    "C": {
+      "item": "skyent:transformer_coil"
+    },
+    "S": {
+      "item": "skyent:steel_plate"
+    }
+  },
+  "result": {
+    "id": "skyent:lv_mv_transformer",
+    "count": 1
+  }
+}

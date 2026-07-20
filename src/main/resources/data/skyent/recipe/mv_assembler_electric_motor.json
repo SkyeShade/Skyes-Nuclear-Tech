@@ -1,0 +1,35 @@
+{
+  "type": "skyent:mv_assembler",
+  "ingredients": [
+    {
+      "ingredient": {
+        "item": "skyent:steel_plate"
+      },
+      "count": 2
+    },
+    {
+      "ingredient": {
+        "item": "skyent:steel_bearing"
+      },
+      "count": 2
+    },
+    {
+      "ingredient": {
+        "item": "skyent:copper_coil"
+      },
+      "count": 2
+    },
+    {
+      "ingredient": {
+        "item": "skyent:iron_rod"
+      },
+      "count": 1
+    }
+  ],
+  "result": {
+    "id": "skyent:electric_motor",
+    "count": 1
+  },
+  "process_time": 120,
+  "energy_per_tick": 64
+}

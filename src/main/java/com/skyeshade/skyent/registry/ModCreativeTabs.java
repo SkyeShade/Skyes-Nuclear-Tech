@@ -229,6 +229,7 @@ public final class ModCreativeTabs {
                 ModItems.COBALT_BRONZE_WIRE,
                 ModItems.CUPRONICKEL_WIRE,
                 ModItems.COPPER_COIL,
+                ModItems.TRANSFORMER_COIL,
                 ModItems.STEEL_BEARING,
                 ModItems.FIRE_CLAY,
                 ModItems.FIRE_BRICK,

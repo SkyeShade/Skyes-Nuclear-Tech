@@ -27,10 +27,10 @@ public final class MVAssemblerRecipeCategory implements IRecipeCategory<MVAssemb
     public static final ResourceLocation UID = ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "assembler");
     public static final RecipeType<MVAssemblerRecipe> RECIPE_TYPE = new RecipeType<>(UID, MVAssemblerRecipe.class);
 
-    private static final int CROP_X = 4;
-    private static final int CROP_Y = 13;
-    private static final int WIDTH = 142;
-    private static final int HEIGHT = 60;
+    private static final int CROP_X = 7;
+    private static final int CROP_Y = 16;
+    private static final int WIDTH = 135;
+    private static final int HEIGHT = 54;
     private static final int PROGRESS_TICKS = 40;
 
     private final IDrawable background;

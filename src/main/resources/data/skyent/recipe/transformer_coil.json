@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    " C ",
+    "CSC",
+    " C "
+  ],
+  "key": {
+    "C": {
+      "item": "skyent:copper_coil"
+    },
+    "S": {
+      "item": "skyent:steel_plate"
+    }
+  },
+  "result": {
+    "id": "skyent:transformer_coil",
+    "count": 1
+  }
+}

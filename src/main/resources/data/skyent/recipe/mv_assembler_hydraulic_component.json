@@ -1,0 +1,35 @@
+{
+  "type": "skyent:mv_assembler",
+  "ingredients": [
+    {
+      "ingredient": {
+        "item": "skyent:steel_plate"
+      },
+      "count": 2
+    },
+    {
+      "ingredient": {
+        "item": "skyent:nickel_plate"
+      },
+      "count": 3
+    },
+    {
+      "ingredient": {
+        "item": "skyent:steel_fluid_barrel"
+      },
+      "count": 1
+    },
+    {
+      "ingredient": {
+        "item": "skyent:iron_rod"
+      },
+      "count": 2
+    }
+  ],
+  "result": {
+    "id": "skyent:hydraulic_component",
+    "count": 1
+  },
+  "process_time": 120,
+  "energy_per_tick": 64
+}
