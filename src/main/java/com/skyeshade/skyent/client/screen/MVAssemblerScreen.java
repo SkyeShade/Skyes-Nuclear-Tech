@@ -28,8 +28,8 @@ public class MVAssemblerScreen extends AbstractContainerScreen<MVAssemblerMenu> 
     private static final int BASE_GUI_WIDTH = 176;
     private static final int BASE_GUI_HEIGHT = 166;
     private static final int FULL_GUI_WIDTH = 214;
-    private static final int JEI_BUFFER_LEFT = 24;
-    private static final int JEI_BUFFER_RIGHT = 48;
+    private static final int JEI_BUFFER_LEFT = 0;
+    private static final int JEI_BUFFER_RIGHT = 0;
     public static final int GUI_TEXTURE_WIDTH = 256;
     public static final int GUI_TEXTURE_HEIGHT = 256;
 
@@ -239,7 +239,7 @@ public class MVAssemblerScreen extends AbstractContainerScreen<MVAssemblerMenu> 
     private List<Component> recipeTooltip(RecipeHolder<MVAssemblerRecipe> recipe) {
         List<Component> tooltip = new ArrayList<>();
         tooltip.add(recipe.value().result().getHoverName());
-        for (MVAssemblerRecipe.CountedIngredient ingredient : recipe.value().countedIngredients()) {
+        for (MVAssemblerRecipe.CountedIngredient ingredient : recipe.value().countedIngredientsSortedByCountDescending()) {
             ItemStack[] items = ingredient.ingredient().getItems();
             Component name = items.length == 0 ? Component.literal("Unknown") : items[0].getHoverName();
             boolean hasEnough = menu.getBlockEntity().countMatchingInput(ingredient) >= ingredient.count();

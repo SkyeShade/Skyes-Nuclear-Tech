@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "WWW",
+    "WTW",
+    "WWW"
+  ],
+  "key": {
+    "W": {
+      "item": "skyent:cupronickel_wire"
+    },
+    "T": {
+      "item": "skyent:steel_rod"
+    }
+  },
+  "result": {
+    "id": "skyent:heating_element"
+  }
+}

@@ -1,8 +1,12 @@
 package com.skyeshade.skyent.content.block;
 
+import com.skyeshade.skyent.SkyesNuclearTech;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.TagKey;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.LeavesBlock;
@@ -11,6 +15,10 @@ import net.minecraft.world.level.block.state.BlockState;
 import java.util.function.Supplier;
 
 public class DeadLeavesBlock extends LeavesBlock {
+    private static final TagKey<Block> BURNT_LOGS = BlockTags.create(ResourceLocation.fromNamespaceAndPath(
+            SkyesNuclearTech.MOD_ID,
+            "burnt_logs"
+    ));
     private static final int RECOVERY_CHANCE = 4;
     private static final boolean DEBUG_RECOVERY = Boolean.getBoolean("skyent.debugDeadLeavesRecovery");
     private static final boolean DEBUG_ALWAYS_RECOVER = Boolean.getBoolean("skyent.debugDeadLeavesAlwaysRecover");
@@ -28,10 +36,11 @@ public class DeadLeavesBlock extends LeavesBlock {
 
     @Override
     public void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-        boolean matchingLeavesNearby = hasMatchingLiveLeavesNearby(level, pos);
-        boolean recovered = matchingLeavesNearby && (DEBUG_ALWAYS_RECOVER || random.nextInt(RECOVERY_CHANCE) == 0);
+        RecoverySource recoverySource = findRecoverySourceNearby(level, pos);
+        boolean recovered = recoverySource != RecoverySource.NONE
+                && (DEBUG_ALWAYS_RECOVER || random.nextInt(RECOVERY_CHANCE) == 0);
         if (DEBUG_RECOVERY) {
-            logRecoveryTick(level, pos, matchingLeavesNearby, recovered);
+            logRecoveryTick(level, pos, recoverySource, recovered);
         }
         if (recovered) {
             boolean changed = level.setBlock(pos, copyLeafProperties(state, livingLeaves.get().defaultBlockState()), Block.UPDATE_ALL | Block.UPDATE_SUPPRESS_DROPS);
@@ -41,21 +50,30 @@ public class DeadLeavesBlock extends LeavesBlock {
         }
     }
 
-    private boolean hasMatchingLiveLeavesNearby(ServerLevel level, BlockPos pos) {
+    private RecoverySource findRecoverySourceNearby(ServerLevel level, BlockPos pos) {
         Block livingBlock = livingLeaves.get();
+        boolean foundLivingLog = false;
         for (int dx = -1; dx <= 1; dx++) {
             for (int dy = -1; dy <= 1; dy++) {
                 for (int dz = -1; dz <= 1; dz++) {
                     if (dx == 0 && dy == 0 && dz == 0) {
                         continue;
                     }
-                    if (level.getBlockState(pos.offset(dx, dy, dz)).is(livingBlock)) {
-                        return true;
+                    BlockState neighborState = level.getBlockState(pos.offset(dx, dy, dz));
+                    if (neighborState.is(livingBlock)) {
+                        return RecoverySource.LIVE_LEAVES;
+                    }
+                    if (isLivingRecoveryLog(neighborState)) {
+                        foundLivingLog = true;
                     }
                 }
             }
         }
-        return false;
+        return foundLivingLog ? RecoverySource.LIVE_LOG : RecoverySource.NONE;
+    }
+
+    private static boolean isLivingRecoveryLog(BlockState state) {
+        return state.is(BlockTags.LOGS) && !state.is(BURNT_LOGS);
     }
 
     private static BlockState copyLeafProperties(BlockState source, BlockState target) {
@@ -72,16 +90,22 @@ public class DeadLeavesBlock extends LeavesBlock {
         return target;
     }
 
-    private void logRecoveryTick(ServerLevel level, BlockPos pos, boolean matchingLeavesNearby, boolean recovered) {
+    private void logRecoveryTick(ServerLevel level, BlockPos pos, RecoverySource recoverySource, boolean recovered) {
         Block deadBlock = level.getBlockState(pos).getBlock();
         Block livingBlock = livingLeaves.get();
-        com.skyeshade.skyent.SkyesNuclearTech.LOGGER.info(
-                "Dead leaves randomTick fired: pos={} dead={} expectedMatchingLive={} matchingLiveNearby={} recovered={}",
+        SkyesNuclearTech.LOGGER.info(
+                "Dead leaves randomTick fired: pos={} dead={} expectedMatchingLive={} recoverySource={} recovered={}",
                 pos,
                 BuiltInRegistries.BLOCK.getKey(deadBlock),
                 BuiltInRegistries.BLOCK.getKey(livingBlock),
-                matchingLeavesNearby,
+                recoverySource,
                 recovered
         );
+    }
+
+    private enum RecoverySource {
+        NONE,
+        LIVE_LEAVES,
+        LIVE_LOG
     }
 }

@@ -45,6 +45,7 @@ import com.skyeshade.skyent.content.block.UraniumBlock;
 import com.skyeshade.skyent.content.block.WireMillBlock;
 import com.skyeshade.skyent.content.block.WireMillPartBlock;
 import com.skyeshade.skyent.content.radiation.EnvironmentalRadiationMode;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.SoundType;
@@ -575,7 +576,7 @@ public final class ModBlocks {
     private ModBlocks() {
     }
 
-    private static DeferredBlock<DeadLeavesBlock> deadLeaves(String name, net.minecraft.world.level.block.Block livingLeaves) {
+    private static DeferredBlock<DeadLeavesBlock> deadLeaves(String name, Block livingLeaves) {
         return BLOCKS.registerBlock(
                 name,
                 properties -> new DeadLeavesBlock(properties, () -> livingLeaves),

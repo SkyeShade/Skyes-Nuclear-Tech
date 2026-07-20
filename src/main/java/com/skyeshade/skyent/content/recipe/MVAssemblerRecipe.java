@@ -4,7 +4,10 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import com.skyeshade.skyent.registry.ModRecipes;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -20,12 +23,14 @@ import net.minecraft.world.level.Level;
 
 public final class MVAssemblerRecipe implements Recipe<RecipeInput> {
     private final List<CountedIngredient> ingredients;
+    private final List<CountedIngredient> ingredientsSortedByCountDescending;
     private final ItemStack result;
     private final int processTime;
     private final int energyPerTick;
 
     public MVAssemblerRecipe(List<CountedIngredient> ingredients, ItemStack result, int processTime, int energyPerTick) {
         this.ingredients = List.copyOf(ingredients);
+        this.ingredientsSortedByCountDescending = sortIngredientsByCountDescending(this.ingredients);
         this.result = result;
         this.processTime = Math.max(1, processTime);
         this.energyPerTick = Math.max(0, energyPerTick);
@@ -74,6 +79,10 @@ public final class MVAssemblerRecipe implements Recipe<RecipeInput> {
         return ingredients;
     }
 
+    public List<CountedIngredient> countedIngredientsSortedByCountDescending() {
+        return ingredientsSortedByCountDescending;
+    }
+
     public ItemStack result() {
         return result.copy();
     }
@@ -103,6 +112,35 @@ public final class MVAssemblerRecipe implements Recipe<RecipeInput> {
         public CountedIngredient {
             count = Math.max(1, count);
         }
+    }
+
+    private static List<CountedIngredient> sortIngredientsByCountDescending(List<CountedIngredient> ingredients) {
+        List<IndexedIngredient> indexedIngredients = new ArrayList<>(ingredients.size());
+        for (int index = 0; index < ingredients.size(); index++) {
+            indexedIngredients.add(new IndexedIngredient(index, ingredients.get(index)));
+        }
+
+        indexedIngredients.sort(Comparator
+                .comparingInt((IndexedIngredient indexed) -> indexed.ingredient().count()).reversed()
+                .thenComparing(indexed -> firstIngredientItemId(indexed.ingredient()))
+                .thenComparingInt(IndexedIngredient::index));
+
+        List<CountedIngredient> sorted = new ArrayList<>(indexedIngredients.size());
+        for (IndexedIngredient indexedIngredient : indexedIngredients) {
+            sorted.add(indexedIngredient.ingredient());
+        }
+        return List.copyOf(sorted);
+    }
+
+    private static String firstIngredientItemId(CountedIngredient ingredient) {
+        ItemStack[] stacks = ingredient.ingredient().getItems();
+        if (stacks.length == 0 || stacks[0].isEmpty()) {
+            return "";
+        }
+        return BuiltInRegistries.ITEM.getKey(stacks[0].getItem()).toString();
+    }
+
+    private record IndexedIngredient(int index, CountedIngredient ingredient) {
     }
 
     public static final class Serializer implements RecipeSerializer<MVAssemblerRecipe> {

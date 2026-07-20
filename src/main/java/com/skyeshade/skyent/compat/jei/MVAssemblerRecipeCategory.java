@@ -63,7 +63,7 @@ public final class MVAssemblerRecipeCategory implements IRecipeCategory<MVAssemb
 
     @Override
     public void setRecipe(IRecipeLayoutBuilder builder, MVAssemblerRecipe recipe, IFocusGroup focuses) {
-        List<MVAssemblerRecipe.CountedIngredient> ingredients = recipe.countedIngredients();
+        List<MVAssemblerRecipe.CountedIngredient> ingredients = recipe.countedIngredientsSortedByCountDescending();
         for (int index = 0; index < Math.min(MVAssemblerMenu.INPUT_COLUMNS * MVAssemblerMenu.INPUT_ROWS, ingredients.size()); index++) {
             MVAssemblerRecipe.CountedIngredient ingredient = ingredients.get(index);
             int column = index % MVAssemblerMenu.INPUT_COLUMNS;

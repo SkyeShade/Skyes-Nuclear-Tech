@@ -4,6 +4,12 @@ import com.skyeshade.skyent.client.model.SkyentModelData;
 import com.skyeshade.skyent.client.render.HeatingChamberLighting;
 import com.skyeshade.skyent.client.render.MVAssemblerLightRefreshTracker;
 import com.skyeshade.skyent.content.block.MVAssemblerBlock;
+import com.skyeshade.skyent.content.conveyor.ConveyorBeltSurface;
+import com.skyeshade.skyent.content.conveyor.ConveyorDirectTransfer;
+import com.skyeshade.skyent.content.conveyor.ConveyorGateSurface;
+import com.skyeshade.skyent.content.conveyor.ConveyorInsertionUtil;
+import com.skyeshade.skyent.content.conveyor.ConveyorLogicConstants;
+import com.skyeshade.skyent.content.entity.ConveyorMovingItemEntity;
 import com.skyeshade.skyent.content.energy.ElectricalTier;
 import com.skyeshade.skyent.content.energy.RJEnergyInfo;
 import com.skyeshade.skyent.content.energy.RJStorage;
@@ -11,6 +17,7 @@ import com.skyeshade.skyent.content.menu.MVAssemblerMenu;
 import com.skyeshade.skyent.content.recipe.MVAssemblerRecipe;
 import com.skyeshade.skyent.content.recipe.MVAssemblerRecipes;
 import com.skyeshade.skyent.registry.ModBlockEntities;
+import com.skyeshade.skyent.registry.ModBlocks;
 import com.skyeshade.skyent.registry.ModSounds;
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -38,8 +45,11 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.client.model.data.ModelData;
+import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import org.jetbrains.annotations.Nullable;
 
@@ -51,6 +61,9 @@ public class MVAssemblerBlockEntity extends BlockEntity implements MenuProvider,
     public static final int MAX_INPUT_RJ_PER_TICK = 512;
     public static final ElectricalTier REQUIRED_TIER = ElectricalTier.MV;
     public static final double RUNNING_CURRENT_AMPS = 1.0D;
+    private static final int OUTPUT_LOCAL_X = 1;
+    private static final int OUTPUT_LOCAL_Y = 0;
+    private static final int OUTPUT_LOCAL_Z = MVAssemblerBlock.SIZE_Z - 1;
     private static final float MOTOR_LOOP_VOLUME = 0.8F;
     private static final float MOTOR_LOOP_PITCH = 1.75F;
     private static final int LIGHT_CHECK_INTERVAL_TICKS = 40;
@@ -73,6 +86,7 @@ public class MVAssemblerBlockEntity extends BlockEntity implements MenuProvider,
 
     private final AssemblerItemStackHandler inventory = new AssemblerItemStackHandler();
     private final RJStorage rjStorage = new RJStorage(ENERGY_CAPACITY_RJ);
+    private final Map<AutomationHandlerKey, IItemHandler> automationItemHandlers = new HashMap<>();
     private final ContainerData data = new ContainerData() {
         @Override
         public int get(int index) {
@@ -129,6 +143,7 @@ public class MVAssemblerBlockEntity extends BlockEntity implements MenuProvider,
         int previousUsage = assembler.currentEnergyUsage;
         Status previousStatus = assembler.status;
         assembler.currentEnergyUsage = 0;
+        boolean changed = assembler.tryAutoOutput();
 
         RecipeHolder<MVAssemblerRecipe> recipeHolder = assembler.getSelectedRecipe();
         if (recipeHolder == null) {
@@ -156,7 +171,7 @@ public class MVAssemblerBlockEntity extends BlockEntity implements MenuProvider,
             }
         }
 
-        if (previousUsage != assembler.currentEnergyUsage || previousStatus != assembler.status) {
+        if (previousUsage != assembler.currentEnergyUsage || previousStatus != assembler.status || changed) {
             assembler.setChangedAndSync();
         } else if (assembler.currentEnergyUsage > 0) {
             setChanged(level, pos, state);
@@ -178,6 +193,15 @@ public class MVAssemblerBlockEntity extends BlockEntity implements MenuProvider,
 
     public ItemStackHandler getInventory() {
         return inventory;
+    }
+
+    public IItemHandler getAutomationItemHandler(@Nullable Direction side) {
+        return getAutomationItemHandler(worldPosition, side);
+    }
+
+    public IItemHandler getAutomationItemHandler(BlockPos queriedPos, @Nullable Direction side) {
+        AutomationHandlerKey key = new AutomationHandlerKey(queriedPos.immutable(), side);
+        return automationItemHandlers.computeIfAbsent(key, ignored -> new AutomationItemHandler(queriedPos.immutable(), side));
     }
 
     public ContainerData getData() {
@@ -431,6 +455,69 @@ public class MVAssemblerBlockEntity extends BlockEntity implements MenuProvider,
         }
     }
 
+    private boolean tryAutoOutput() {
+        if (level == null || level.isClientSide) {
+            return false;
+        }
+
+        ItemStack output = inventory.getStackInSlot(OUTPUT_SLOT);
+        if (output.isEmpty()) {
+            return false;
+        }
+
+        Direction facing = getFacing();
+        BlockPos portPos = getOutputFaceBlockPos(facing);
+        BlockPos targetPos = portPos.relative(facing);
+        if (isOwnAssemblerBlock(targetPos)) {
+            return false;
+        }
+        ItemStack remainder = tryInsertOutput(targetPos, facing, output, true);
+        if (remainder.getCount() >= output.getCount()) {
+            return false;
+        }
+
+        ItemStack committedRemainder = tryInsertOutput(targetPos, facing, output, false);
+        inventory.setStackInSlot(OUTPUT_SLOT, committedRemainder);
+        return true;
+    }
+
+    private ItemStack tryInsertOutput(BlockPos targetPos, Direction outputDirection, ItemStack stack, boolean simulate) {
+        var directRemainder = ConveyorDirectTransfer.tryInsert(level, targetPos, stack, outputDirection.getOpposite(), simulate);
+        if (directRemainder.isPresent()) {
+            return directRemainder.get();
+        }
+
+        IItemHandler handler = level.getCapability(Capabilities.ItemHandler.BLOCK, targetPos, outputDirection.getOpposite());
+        if (handler != null) {
+            return ConveyorInsertionUtil.insertIntoHandler(handler, stack, simulate);
+        }
+
+        BlockState targetState = level.getBlockState(targetPos);
+        if (!(targetState.getBlock() instanceof ConveyorBeltSurface surface)) {
+            return stack;
+        }
+        if (targetState.getBlock() instanceof ConveyorGateSurface gate
+                && !gate.skyent$canConveyorItemEnter(level, targetPos, targetState, outputDirection.getOpposite())) {
+            return stack;
+        }
+
+        Vec3 outputStart = new Vec3(
+                targetPos.getX() + 0.5D - outputDirection.getStepX() * 0.45D,
+                targetPos.getY() + ConveyorLogicConstants.ITEM_PATH_Y_OFFSET,
+                targetPos.getZ() + 0.5D - outputDirection.getStepZ() * 0.45D
+        );
+        Vec3 spawnPos = surface.getClosestSnappingPosition(level, targetPos, outputStart);
+        if (!hasRoomAt(spawnPos)) {
+            return stack;
+        }
+
+        if (!simulate) {
+            ConveyorMovingItemEntity entity = new ConveyorMovingItemEntity(level, spawnPos.x, spawnPos.y, spawnPos.z, stack.copy());
+            level.addFreshEntity(entity);
+        }
+        return ItemStack.EMPTY;
+    }
+
     private void resetProgressIfNeeded() {
         if (progress != 0) {
             progress = 0;
@@ -461,6 +548,41 @@ public class MVAssemblerBlockEntity extends BlockEntity implements MenuProvider,
     private Direction getFacing() {
         BlockState state = getBlockState();
         return state.hasProperty(MVAssemblerBlock.FACING) ? state.getValue(MVAssemblerBlock.FACING) : Direction.NORTH;
+    }
+
+    private BlockPos getOutputFaceBlockPos(Direction facing) {
+        return MVAssemblerBlock.localToWorld(
+                worldPosition,
+                facing,
+                OUTPUT_LOCAL_X,
+                OUTPUT_LOCAL_Y,
+                OUTPUT_LOCAL_Z
+        );
+    }
+
+    private boolean isOutputAccess(BlockPos queriedPos, @Nullable Direction side) {
+        Direction facing = getFacing();
+        return side == facing && queriedPos.equals(getOutputFaceBlockPos(facing));
+    }
+
+    private boolean isOwnAssemblerBlock(BlockPos pos) {
+        if (level == null) {
+            return false;
+        }
+
+        BlockState state = level.getBlockState(pos);
+        if (!state.is(ModBlocks.MV_ASSEMBLER.get()) && !state.is(ModBlocks.MV_ASSEMBLER_PART.get())) {
+            return false;
+        }
+        return MVAssemblerBlock.getMasterPos(state, pos).equals(worldPosition);
+    }
+
+    private boolean hasRoomAt(Vec3 position) {
+        if (level == null) {
+            return false;
+        }
+        AABB searchBox = new AABB(position, position).inflate(ConveyorMovingItemEntity.ITEM_SPACING_DISTANCE);
+        return level.getEntitiesOfClass(ConveyorMovingItemEntity.class, searchBox, entity -> !entity.isRemoved()).isEmpty();
     }
 
     private Vec3 getMachineCenter() {
@@ -573,6 +695,59 @@ public class MVAssemblerBlockEntity extends BlockEntity implements MenuProvider,
 
         public String label() {
             return label;
+        }
+    }
+
+    private record AutomationHandlerKey(BlockPos queriedPos, @Nullable Direction side) {
+    }
+
+    private final class AutomationItemHandler implements IItemHandler {
+        private final BlockPos queriedPos;
+        @Nullable
+        private final Direction side;
+
+        private AutomationItemHandler(BlockPos queriedPos, @Nullable Direction side) {
+            this.queriedPos = queriedPos;
+            this.side = side;
+        }
+
+        @Override
+        public int getSlots() {
+            return INVENTORY_SLOT_COUNT;
+        }
+
+        @Override
+        public ItemStack getStackInSlot(int slot) {
+            if (slot < 0 || slot >= INVENTORY_SLOT_COUNT) {
+                return ItemStack.EMPTY;
+            }
+            return inventory.getStackInSlot(slot);
+        }
+
+        @Override
+        public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
+            if (slot < 0 || slot >= INPUT_SLOT_COUNT) {
+                return stack;
+            }
+            return inventory.insertItem(slot, stack, simulate);
+        }
+
+        @Override
+        public ItemStack extractItem(int slot, int amount, boolean simulate) {
+            if (slot != OUTPUT_SLOT || !isOutputAccess(queriedPos, side)) {
+                return ItemStack.EMPTY;
+            }
+            return inventory.extractItem(OUTPUT_SLOT, amount, simulate);
+        }
+
+        @Override
+        public int getSlotLimit(int slot) {
+            return slot >= 0 && slot < INVENTORY_SLOT_COUNT ? inventory.getSlotLimit(slot) : 0;
+        }
+
+        @Override
+        public boolean isItemValid(int slot, ItemStack stack) {
+            return slot >= 0 && slot < INPUT_SLOT_COUNT && inventory.isItemValid(slot, stack);
         }
     }
 

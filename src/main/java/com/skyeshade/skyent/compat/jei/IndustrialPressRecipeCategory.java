@@ -48,7 +48,9 @@ public final class IndustrialPressRecipeCategory extends ConveyorMachineRecipeCa
         return List.of(
                 recipe(ModItems.HOT_COPPER_INGOT.get(), ModItems.COPPER_PLATE.get()),
                 recipe(ModItems.HOT_IRON_INGOT.get(), ModItems.IRON_PLATE.get()),
+                recipe(net.minecraft.world.item.Items.GOLD_INGOT, ModItems.GOLD_PLATE.get()),
                 recipe(ModItems.HOT_GOLD_INGOT.get(), ModItems.GOLD_PLATE.get()),
+                recipe(ModItems.LEAD_INGOT.get(), ModItems.LEAD_PLATE.get()),
                 recipe(ModItems.HOT_STEEL_INGOT.get(), ModItems.STEEL_PLATE.get()),
                 recipe(ModItems.HOT_ALUMINUM_INGOT.get(), ModItems.ALUMINUM_PLATE.get()),
                 recipe(ModItems.HOT_TITANIUM_INGOT.get(), ModItems.TITANIUM_PLATE.get()),

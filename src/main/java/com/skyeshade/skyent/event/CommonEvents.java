@@ -4,6 +4,7 @@ import com.skyeshade.skyent.event.systems.BootstrapSystem;
 import com.skyeshade.skyent.content.block.ConveyorChuteBlock;
 import com.skyeshade.skyent.content.block.ConveyorElevatorBlock;
 import com.skyeshade.skyent.content.block.HeatingChamberPartBlock;
+import com.skyeshade.skyent.content.block.MVAssemblerBlock;
 import com.skyeshade.skyent.content.block.SteamForgeHammerBlock;
 import com.skyeshade.skyent.content.block.SteamForgeHammerPartBlock;
 import com.skyeshade.skyent.content.block.WireMillPartBlock;
@@ -90,6 +91,12 @@ public final class CommonEvents {
 
         event.registerBlockEntity(
                 Capabilities.ItemHandler.BLOCK,
+                ModBlockEntities.MV_ASSEMBLER.get(),
+                (assembler, side) -> assembler.getAutomationItemHandler(side)
+        );
+
+        event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
                 ModBlockEntities.BRICK_BLAST_FURNACE.get(),
                 (furnace, side) -> furnace.getAutomationItemHandler(side)
         );
@@ -140,6 +147,14 @@ public final class CommonEvents {
                 Capabilities.ItemHandler.BLOCK,
                 (level, pos, state, blockEntity, side) -> WireMillPartBlock.getItemHandler(level, pos, state, side),
                 ModBlocks.WIRE_MILL_PART.get()
+        );
+
+        event.registerBlock(
+                Capabilities.ItemHandler.BLOCK,
+                (level, pos, state, blockEntity, side) -> MVAssemblerBlock.getMasterBlockEntity(level, state, pos)
+                        .map(assembler -> assembler.getAutomationItemHandler(pos, side))
+                        .orElse(null),
+                ModBlocks.MV_ASSEMBLER_PART.get()
         );
 
         event.registerBlock(

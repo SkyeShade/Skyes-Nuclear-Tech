@@ -234,6 +234,7 @@ public final class ModCreativeTabs {
                 ModItems.FIRE_BRICK,
                 ModItems.NICKEL_TURBINE,
                 ModItems.TITANIUM_TURBINE_BLADE,
+                ModItems.HEATING_ELEMENT,
                 ModItems.ELECTRIC_MOTOR,
                 ModItems.HYDRAULIC_COMPONENT,
                 ModItems.MOLTEN_CORIUM_BUCKET

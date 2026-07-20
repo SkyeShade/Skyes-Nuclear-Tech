@@ -495,6 +495,7 @@ public final class ModItems {
     public static final DeferredItem<Item> STEEL_BEARING = simpleItem("steel_bearing");
     public static final DeferredItem<Item> NICKEL_TURBINE = simpleItem("nickel_turbine");
     public static final DeferredItem<Item> TITANIUM_TURBINE_BLADE = simpleItem("titanium_turbine_blade");
+    public static final DeferredItem<Item> HEATING_ELEMENT = simpleItem("heating_element");
     public static final DeferredItem<Item> ELECTRIC_MOTOR = simpleItem("electric_motor");
     public static final DeferredItem<Item> HYDRAULIC_COMPONENT = simpleItem("hydraulic_component");
     public static final DeferredItem<WireCuttersItem> WIRE_CUTTERS = ITEMS.register(

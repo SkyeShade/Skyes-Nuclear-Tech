@@ -3,39 +3,51 @@
   "ingredients": [
     {
       "ingredient": {
-        "item": "skyent:steel_plate"
-      },
-      "count": 12
-    },
-    {
-      "ingredient": {
-        "item": "skyent:steel_rod"
-      },
-      "count": 6
-    },
-    {
-      "ingredient": {
-        "item": "skyent:steel_bearing"
-      },
-      "count": 4
-    },
-    {
-      "ingredient": {
-        "item": "skyent:electric_motor"
+        "item": "skyent:basic_conveyor_belt"
       },
       "count": 2
     },
     {
       "ingredient": {
-        "item": "skyent:steel_bolt"
+        "item": "skyent:electric_motor"
+      },
+      "count": 8
+    },
+    {
+      "ingredient": {
+        "item": "skyent:steel_plate"
+      },
+      "count": 24
+    },
+    {
+      "ingredient": {
+        "item": "skyent:steel_rod"
       },
       "count": 12
+    },
+    {
+      "ingredient": {
+        "item": "skyent:steel_block"
+      },
+      "count": 4
+    },
+    {
+      "ingredient": {
+        "item": "skyent:iron_plate"
+      },
+      "count": 8
+    },
+    {
+      "ingredient": {
+        "item": "skyent:copper_coil"
+      },
+      "count": 4
     }
   ],
   "result": {
     "id": "skyent:rolling_mill",
     "count": 1
   },
-  "process_time": 240,
-  "energy_per_tick": 96
+  "process_time": 360,
+  "energy_per_tick": 128
 }

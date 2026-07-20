@@ -748,7 +748,7 @@ public class IndustrialPressBlockEntity extends BlockEntity implements RJEnergyI
         if (output == null) {
             return ItemStack.EMPTY;
         }
-        if (!HotItemUtil.isForgeReady(stack)) {
+        if (!isColdPressablePlateInput(stack) && !HotItemUtil.isForgeReady(stack)) {
             return ItemStack.EMPTY;
         }
         return new ItemStack(output, outputCount);
@@ -760,6 +760,7 @@ public class IndustrialPressBlockEntity extends BlockEntity implements RJEnergyI
         if (item == Items.COPPER_INGOT) return ModItems.COPPER_PLATE.get();
         if (item == Items.IRON_INGOT) return ModItems.IRON_PLATE.get();
         if (item == Items.GOLD_INGOT) return ModItems.GOLD_PLATE.get();
+        if (item == ModItems.LEAD_INGOT.get()) return ModItems.LEAD_PLATE.get();
         if (item == ModItems.STEEL_INGOT.get()) return ModItems.STEEL_PLATE.get();
         if (item == ModItems.ALUMINUM_INGOT.get()) return ModItems.ALUMINUM_PLATE.get();
         if (item == ModItems.TITANIUM_INGOT.get()) return ModItems.TITANIUM_PLATE.get();
@@ -769,6 +770,11 @@ public class IndustrialPressBlockEntity extends BlockEntity implements RJEnergyI
         if (item == ModItems.COBALT_BRONZE_INGOT.get()) return ModItems.COBALT_BRONZE_PLATE.get();
         if (item == ModItems.CUPRONICKEL_INGOT.get()) return ModItems.CUPRONICKEL_PLATE.get();
         return null;
+    }
+
+    private static boolean isColdPressablePlateInput(ItemStack stack) {
+        Item item = HotMetalItems.getLookupItem(stack.getItem());
+        return item == Items.GOLD_INGOT || item == ModItems.LEAD_INGOT.get();
     }
 
     @Nullable

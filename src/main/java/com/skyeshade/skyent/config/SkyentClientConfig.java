@@ -36,4 +36,5 @@ public final class SkyentClientConfig {
     public static boolean onlyShowRadiationNoiseOverlayInSurvival() {
         return ONLY_SHOW_RADIATION_NOISE_OVERLAY_IN_SURVIVAL.get();
     }
+
 }

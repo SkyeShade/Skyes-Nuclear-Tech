@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "GGG",
+    "MHM",
+    "SCS"
+  ],
+  "key": {
+    "G": {
+      "item": "skyent:reinforced_glass"
+    },
+    "M": {
+      "item": "skyent:electric_motor"
+    },
+    "H": {
+      "item": "skyent:hydraulic_component"
+    },
+    "S": {
+      "item": "skyent:steel_block"
+    },
+    "C": {
+      "item": "minecraft:copper_block"
+    }
+  },
+  "result": {
+    "id": "skyent:mv_assembler"
+  }
+}

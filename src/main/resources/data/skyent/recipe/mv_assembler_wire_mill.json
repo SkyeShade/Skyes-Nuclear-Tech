@@ -5,55 +5,61 @@
       "ingredient": {
         "item": "skyent:basic_conveyor_belt"
       },
-      "count": 2
-    },
-    {
-      "ingredient": {
-        "item": "skyent:iron_plate"
-      },
       "count": 8
-    },
-    {
-      "ingredient": {
-        "item": "skyent:steel_plate"
-      },
-      "count": 24
-    },
-    {
-      "ingredient": {
-        "item": "skyent:hydraulic_component"
-      },
-      "count": 4
-    },
-    {
-      "ingredient": {
-        "item": "skyent:heating_element"
-      },
-      "count": 6
     },
     {
       "ingredient": {
         "item": "skyent:electric_motor"
       },
-      "count": 4
+      "count": 16
+    },
+    {
+      "ingredient": {
+        "item": "skyent:steel_plate"
+      },
+      "count": 32
+    },
+    {
+      "ingredient": {
+        "item": "skyent:copper_plate"
+      },
+      "count": 16
+    },
+    {
+      "ingredient": {
+        "item": "skyent:nickel_plate"
+      },
+      "count": 8
+    },
+    {
+      "ingredient": {
+        "item": "skyent:tungsten_plate"
+      },
+      "count": 24
     },
     {
       "ingredient": {
         "item": "skyent:copper_coil"
       },
-      "count": 4
+      "count": 12
+    },
+    {
+      "ingredient": {
+        "item": "skyent:steel_block"
+      },
+      "count": 2
     },
     {
       "ingredient": {
         "item": "skyent:steel_rod"
       },
-      "count": 4
+      "count": 16
     }
   ],
   "result": {
-    "id": "skyent:heating_chamber",
+    "id": "skyent:wire_mill",
     "count": 1
   },
-  "process_time": 300,
-  "energy_per_tick": 96
+  "process_time": 480,
+  "energy_per_tick": 160
 }

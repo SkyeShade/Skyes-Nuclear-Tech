@@ -2,7 +2,7 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "pattern": [
-    "PSP",
+    "PHP",
     "SFS",
     "PCP"
   ],
@@ -12,6 +12,9 @@
     },
     "S": {
       "item": "skyent:steel_wire"
+    },
+    "H": {
+      "item": "skyent:heating_element"
     },
     "F": {
       "item": "minecraft:furnace"

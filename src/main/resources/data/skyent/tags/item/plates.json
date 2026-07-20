@@ -6,9 +6,11 @@
     "skyent:gold_plate",
     "skyent:aluminum_plate",
     "skyent:titanium_plate",
+    "skyent:tungsten_plate",
     "skyent:copper_plate",
     "skyent:cobalt_plate",
     "skyent:nickel_plate",
+    "skyent:cobalt_bronze_plate",
     "skyent:cupronickel_plate",
     "skyent:lead_plate"
   ]

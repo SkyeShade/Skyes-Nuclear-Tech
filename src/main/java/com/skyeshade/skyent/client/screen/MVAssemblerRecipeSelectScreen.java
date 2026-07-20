@@ -88,7 +88,7 @@ public class MVAssemblerRecipeSelectScreen extends AbstractContainerScreen<MVAss
     private List<Component> recipeTooltip(RecipeHolder<MVAssemblerRecipe> recipe) {
         List<Component> tooltip = new ArrayList<>();
         tooltip.add(recipe.value().result().getHoverName());
-        for (MVAssemblerRecipe.CountedIngredient ingredient : recipe.value().countedIngredients()) {
+        for (MVAssemblerRecipe.CountedIngredient ingredient : recipe.value().countedIngredientsSortedByCountDescending()) {
             ItemStack[] items = ingredient.ingredient().getItems();
             Component name = items.length == 0 ? Component.literal("Unknown") : items[0].getHoverName();
             boolean hasEnough = menu.countMatchingInput(ingredient) >= ingredient.count();
