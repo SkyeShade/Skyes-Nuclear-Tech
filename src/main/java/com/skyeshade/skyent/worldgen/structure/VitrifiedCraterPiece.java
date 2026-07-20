@@ -30,6 +30,8 @@ public final class VitrifiedCraterPiece extends StructurePiece {
     private static final double DEPTH_NOISE_BLOCKS = 0.5D;
     private static final double MIN_VITRIFY_DEPTH = 0.35D;
     private static final double EDGE_VITRIFY_NORMALIZED_LIMIT = 0.97D;
+    private static final int TIER_IRRADIATED = 4;
+    private static final int WORLDGEN_MAX_VITRIFIED_TIER = TIER_IRRADIATED;
 
     private final BlockPos origin;
     private final VitrifiedCraterParams params;
@@ -144,15 +146,11 @@ public final class VitrifiedCraterPiece extends StructurePiece {
     }
 
     private BlockState vitrifiedStateFor(BlockPos pos, double normalized, int layer) {
-        if (layer == 0 && pos.getX() == origin.getX() && pos.getZ() == origin.getZ()) {
-            return ModBlocks.RADIANT_VITRIFIED_STONE.get().defaultBlockState();
-        }
-
         double centerStrength = 1.0D - Mth.clamp(normalized, 0.0D, 1.0D);
         double heat = Math.pow(centerStrength, 1.65D);
         heat += signedNoise(params.seed(), pos.getX(), pos.getZ(), 73L) * 0.08D;
         int tier = tierForHeat(Mth.clamp(heat, 0.0D, 1.0D));
-        tier = Math.max(1, tier - layer);
+        tier = Math.min(WORLDGEN_MAX_VITRIFIED_TIER, Math.max(1, tier - layer));
         return vitrifiedStateForTier(tier);
     }
 
@@ -274,7 +272,7 @@ public final class VitrifiedCraterPiece extends StructurePiece {
     }
 
     private static int tierForHeat(double heat) {
-        // 1 normal, 2 baked, 3 scorched, 4 irradiated, 5 hot, 6 infernal. Radiant is placed only at the center.
+        // 1 normal, 2 baked, 3 scorched, 4 irradiated. Higher heat is capped for natural craters.
         if (heat < 0.20D) {
             return 1;
         }
@@ -287,19 +285,14 @@ public final class VitrifiedCraterPiece extends StructurePiece {
         if (heat < 0.78D) {
             return 4;
         }
-        if (heat < 0.90D) {
-            return 5;
-        }
-        return 6;
+        return WORLDGEN_MAX_VITRIFIED_TIER;
     }
 
     private static BlockState vitrifiedStateForTier(int tier) {
-        return switch (tier) {
+        return switch (Math.min(tier, WORLDGEN_MAX_VITRIFIED_TIER)) {
             case 2 -> ModBlocks.BAKED_VITRIFIED_STONE.get().defaultBlockState();
             case 3 -> ModBlocks.SCORCHED_VITRIFIED_STONE.get().defaultBlockState();
             case 4 -> ModBlocks.IRRADIATED_VITRIFIED_STONE.get().defaultBlockState();
-            case 5 -> ModBlocks.HOT_VITRIFIED_STONE.get().defaultBlockState();
-            case 6 -> ModBlocks.INFERNAL_VITRIFIED_STONE.get().defaultBlockState();
             default -> ModBlocks.VITRIFIED_STONE.get().defaultBlockState();
         };
     }
