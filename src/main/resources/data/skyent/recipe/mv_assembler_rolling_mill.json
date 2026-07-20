@@ -1,0 +1,41 @@
+{
+  "type": "skyent:mv_assembler",
+  "ingredients": [
+    {
+      "ingredient": {
+        "item": "skyent:steel_plate"
+      },
+      "count": 12
+    },
+    {
+      "ingredient": {
+        "item": "skyent:steel_rod"
+      },
+      "count": 6
+    },
+    {
+      "ingredient": {
+        "item": "skyent:steel_bearing"
+      },
+      "count": 4
+    },
+    {
+      "ingredient": {
+        "item": "skyent:electric_motor"
+      },
+      "count": 2
+    },
+    {
+      "ingredient": {
+        "item": "skyent:steel_bolt"
+      },
+      "count": 12
+    }
+  ],
+  "result": {
+    "id": "skyent:rolling_mill",
+    "count": 1
+  },
+  "process_time": 240,
+  "energy_per_tick": 96
+}

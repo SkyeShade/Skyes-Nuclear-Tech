@@ -2,6 +2,7 @@ package com.skyeshade.skyent.mixin.client;
 
 import com.skyeshade.skyent.client.render.HeatingChamberLightRefreshTracker;
 import com.skyeshade.skyent.client.render.IndustrialPressLightRefreshTracker;
+import com.skyeshade.skyent.client.render.MVAssemblerLightRefreshTracker;
 import com.skyeshade.skyent.client.render.RollingMillLightRefreshTracker;
 import com.skyeshade.skyent.client.render.WireMillLightRefreshTracker;
 import net.minecraft.client.Minecraft;
@@ -22,6 +23,7 @@ public class MixinLevelRenderer {
             IndustrialPressLightRefreshTracker.refreshForDirtySection(level, sectionX, sectionY, sectionZ);
             RollingMillLightRefreshTracker.refreshForDirtySection(level, sectionX, sectionY, sectionZ);
             WireMillLightRefreshTracker.refreshForDirtySection(level, sectionX, sectionY, sectionZ);
+            MVAssemblerLightRefreshTracker.refreshForDirtySection(level, sectionX, sectionY, sectionZ);
         }
     }
 }

@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "skyent:block/mv_assembler_part"
+    }
+  }
+}

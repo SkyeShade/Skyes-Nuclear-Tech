@@ -23,6 +23,7 @@ import com.skyeshade.skyent.content.blockentity.LVMVTransformerBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVSteamTurbineBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVRJConverterBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVConnectorBlockEntity;
+import com.skyeshade.skyent.content.blockentity.MVAssemblerBlockEntity;
 import com.skyeshade.skyent.content.blockentity.RollingMillBlockEntity;
 import com.skyeshade.skyent.content.blockentity.SteamForgeHammerBlockEntity;
 import com.skyeshade.skyent.content.blockentity.WireMillBlockEntity;
@@ -102,6 +103,12 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("wire_mill", () -> BlockEntityType.Builder.of(
                     WireMillBlockEntity::new,
                     ModBlocks.WIRE_MILL.get()
+            ).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<MVAssemblerBlockEntity>> MV_ASSEMBLER =
+            BLOCK_ENTITIES.register("mv_assembler", () -> BlockEntityType.Builder.of(
+                    MVAssemblerBlockEntity::new,
+                    ModBlocks.MV_ASSEMBLER.get()
             ).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<LVElectricPumpBlockEntity>> LV_ELECTRIC_PUMP =

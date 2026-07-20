@@ -17,7 +17,7 @@ public final class ModCreativeTabs {
             SkyesNuclearTech.MOD_ID
     );
 
-    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> MACHINES_AND_TOOLS = CREATIVE_TABS.register(
+    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> MACHINES = CREATIVE_TABS.register(
             "machines_and_tools",
             () -> CreativeModeTab.builder()
                     .title(Component.translatable("itemGroup.skyent.machines_and_tools"))
@@ -70,6 +70,7 @@ public final class ModCreativeTabs {
                 ModItems.ROLLING_MILL,
                 ModItems.INDUSTRIAL_PRESS,
                 ModItems.WIRE_MILL,
+                ModItems.MV_ASSEMBLER,
                 ModItems.LV_ELECTRIC_PUMP,
                 ModItems.LV_STEAM_TURBINE,
                 ModItems.LV_CONNECTOR,

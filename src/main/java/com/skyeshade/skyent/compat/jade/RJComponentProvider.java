@@ -4,8 +4,10 @@ import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.block.HeatingChamberBlock;
 import com.skyeshade.skyent.content.block.IndustrialPressBlock;
 import com.skyeshade.skyent.content.block.LVMVTransformerBlock;
+import com.skyeshade.skyent.content.block.MVAssemblerBlock;
 import com.skyeshade.skyent.content.block.RollingMillBlock;
 import com.skyeshade.skyent.content.block.WireMillBlock;
+import com.skyeshade.skyent.content.blockentity.MVAssemblerBlockEntity;
 import com.skyeshade.skyent.content.blockentity.IndustrialPressBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVMVTransformerBlockEntity;
 import com.skyeshade.skyent.content.blockentity.RollingMillBlockEntity;
@@ -120,6 +122,8 @@ public enum RJComponentProvider implements IBlockComponentProvider, IServerDataP
             data.putString(DATA_MACHINE_STATUS, rollingMill.getStatusText());
         } else if (blockEntity instanceof WireMillBlockEntity wireMill) {
             data.putString(DATA_MACHINE_STATUS, wireMill.getStatusText());
+        } else if (blockEntity instanceof MVAssemblerBlockEntity assembler) {
+            data.putString(DATA_MACHINE_STATUS, assembler.getStatusText());
         }
     }
 
@@ -160,7 +164,13 @@ public enum RJComponentProvider implements IBlockComponentProvider, IServerDataP
 
         BlockPos masterPos = LVMVTransformerBlock.getMasterPos(state, accessor.getPosition());
         BlockEntity transformer = accessor.getLevel().getBlockEntity(masterPos);
-        return transformer instanceof RJEnergyInfo ? transformer : blockEntity;
+        if (transformer instanceof RJEnergyInfo) {
+            return transformer;
+        }
+
+        return MVAssemblerBlock.getMasterBlockEntity(accessor.getLevel(), state, accessor.getPosition())
+                .map(BlockEntity.class::cast)
+                .orElse(blockEntity);
     }
 
     @Override

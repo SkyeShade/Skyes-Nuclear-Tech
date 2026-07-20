@@ -30,6 +30,8 @@ import com.skyeshade.skyent.content.block.LVMVTransformerBlock;
 import com.skyeshade.skyent.content.block.LVMVTransformerPartBlock;
 import com.skyeshade.skyent.content.block.LVSteamTurbineBlock;
 import com.skyeshade.skyent.content.block.MoltenCoriumBlock;
+import com.skyeshade.skyent.content.block.MVAssemblerBlock;
+import com.skyeshade.skyent.content.block.MVAssemblerPartBlock;
 import com.skyeshade.skyent.content.block.NuclearChargeBlock;
 import com.skyeshade.skyent.content.block.RadioactiveBlock;
 import com.skyeshade.skyent.content.block.RadioactiveScrapMetalBlock;
@@ -235,6 +237,23 @@ public final class ModBlocks {
     public static final DeferredBlock<WireMillPartBlock> WIRE_MILL_PART = BLOCKS.registerBlock(
             "wire_mill_part",
             WireMillPartBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 12.0F)
+                    .requiresCorrectToolForDrops()
+    );
+
+    public static final DeferredBlock<MVAssemblerBlock> MV_ASSEMBLER = BLOCKS.registerBlock(
+            "mv_assembler",
+            MVAssemblerBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 12.0F)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
+    );
+
+    public static final DeferredBlock<MVAssemblerPartBlock> MV_ASSEMBLER_PART = BLOCKS.registerBlock(
+            "mv_assembler_part",
+            MVAssemblerPartBlock::new,
             BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
                     .strength(5.0F, 12.0F)
                     .requiresCorrectToolForDrops()

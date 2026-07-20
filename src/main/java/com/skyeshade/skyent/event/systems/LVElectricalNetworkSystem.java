@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.event.systems;
 
 import com.skyeshade.skyent.content.block.LVMVTransformerBlock;
+import com.skyeshade.skyent.content.block.MVAssemblerBlock;
 import com.skyeshade.skyent.content.block.HeatingChamberBlock;
 import com.skyeshade.skyent.content.block.IndustrialPressBlock;
 import com.skyeshade.skyent.content.block.RollingMillBlock;
@@ -14,6 +15,7 @@ import com.skyeshade.skyent.content.blockentity.LVSteamTurbineBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVRJConverterBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVConnectorBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVMVTransformerBlockEntity;
+import com.skyeshade.skyent.content.blockentity.MVAssemblerBlockEntity;
 import com.skyeshade.skyent.content.blockentity.RollingMillBlockEntity;
 import com.skyeshade.skyent.content.blockentity.WireMillBlockEntity;
 import com.skyeshade.skyent.content.energy.CopperWireConstants;
@@ -255,6 +257,9 @@ public final class LVElectricalNetworkSystem {
             WireMillBlockEntity wireMill = attachedConnector != null && attachedConnector.getConnectorTier() == ElectricalTier.MV
                     ? resolveWireMill(level, endpointState, endpointPos)
                     : null;
+            MVAssemblerBlockEntity assembler = attachedConnector != null && attachedConnector.getConnectorTier() == ElectricalTier.MV
+                    ? resolveMVAssembler(level, endpointState, endpointPos)
+                    : null;
             LVMVTransformerBlockEntity transformerBody = attachedConnector != null
                     ? resolveTransformerBody(level, endpointState, endpointPos)
                     : null;
@@ -364,6 +369,18 @@ public final class LVElectricalNetworkSystem {
                     @Override
                     public int receiveRJ(int amount, boolean simulate) {
                         return wireMill.receiveRJ(attachedConnector.getConnectorTier(), amount, simulate);
+                    }
+                }));
+            } else if (assembler != null) {
+                consumers.add(new Consumer(connectorPos, new NetworkConsumer() {
+                    @Override
+                    public int availableRJCapacity() {
+                        return assembler.getAvailableRJCapacity();
+                    }
+
+                    @Override
+                    public int receiveRJ(int amount, boolean simulate) {
+                        return assembler.receiveRJ(attachedConnector.getConnectorTier(), amount, simulate);
                     }
                 }));
             } else if (blockEntity instanceof LVSteamTurbineBlockEntity turbine) {
@@ -487,6 +504,11 @@ public final class LVElectricalNetworkSystem {
             return null;
         }
         return WireMillBlock.getMasterBlockEntity(level, state, pos).orElse(null);
+    }
+
+    @Nullable
+    private static MVAssemblerBlockEntity resolveMVAssembler(ServerLevel level, BlockState state, BlockPos pos) {
+        return MVAssemblerBlock.getMasterBlockEntity(level, state, pos).orElse(null);
     }
 
     @Nullable

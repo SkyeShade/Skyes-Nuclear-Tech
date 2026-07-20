@@ -11,6 +11,8 @@ import com.skyeshade.skyent.content.block.LVMVTransformerPartBlock;
 import com.skyeshade.skyent.content.block.LVCrusherBlock;
 import com.skyeshade.skyent.content.block.LVElectricPumpBlock;
 import com.skyeshade.skyent.content.block.LVSteamTurbineBlock;
+import com.skyeshade.skyent.content.block.MVAssemblerBlock;
+import com.skyeshade.skyent.content.block.MVAssemblerPartBlock;
 import com.skyeshade.skyent.content.block.RollingMillBlock;
 import com.skyeshade.skyent.content.block.RollingMillPartBlock;
 import com.skyeshade.skyent.content.block.WireMillBlock;
@@ -38,6 +40,8 @@ public final class SkyentJadePlugin implements IWailaPlugin {
         registration.registerBlockDataProvider(RJComponentProvider.INSTANCE, WireMillPartBlock.class);
         registration.registerBlockDataProvider(RJComponentProvider.INSTANCE, LVMVTransformerBlock.class);
         registration.registerBlockDataProvider(RJComponentProvider.INSTANCE, LVMVTransformerPartBlock.class);
+        registration.registerBlockDataProvider(RJComponentProvider.INSTANCE, MVAssemblerBlock.class);
+        registration.registerBlockDataProvider(RJComponentProvider.INSTANCE, MVAssemblerPartBlock.class);
     }
 
     @Override
@@ -56,5 +60,7 @@ public final class SkyentJadePlugin implements IWailaPlugin {
         registration.registerBlockComponent(RJComponentProvider.INSTANCE, WireMillPartBlock.class);
         registration.registerBlockComponent(RJComponentProvider.INSTANCE, LVMVTransformerBlock.class);
         registration.registerBlockComponent(RJComponentProvider.INSTANCE, LVMVTransformerPartBlock.class);
+        registration.registerBlockComponent(RJComponentProvider.INSTANCE, MVAssemblerBlock.class);
+        registration.registerBlockComponent(RJComponentProvider.INSTANCE, MVAssemblerPartBlock.class);
     }
 }

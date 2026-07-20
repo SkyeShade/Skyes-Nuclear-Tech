@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.compat.jei;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
+import com.skyeshade.skyent.client.screen.MVAssemblerScreen;
 import com.skyeshade.skyent.content.item.SteelFluidBarrelItem;
 import com.skyeshade.skyent.content.item.SteelFluidBarrelVariants;
 import com.skyeshade.skyent.content.item.LVCrusherRecipes;
@@ -12,12 +13,15 @@ import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.ingredients.subtypes.ISubtypeInterpreter;
 import mezz.jei.api.ingredients.subtypes.UidContext;
+import mezz.jei.api.gui.handlers.IGuiContainerHandler;
 import mezz.jei.api.registration.IRecipeCatalystRegistration;
 import mezz.jei.api.registration.IRecipeCategoryRegistration;
 import mezz.jei.api.registration.IRecipeRegistration;
 import mezz.jei.api.registration.IExtraIngredientRegistration;
+import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.registration.ISubtypeRegistration;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
@@ -65,7 +69,8 @@ public final class SkyentJeiPlugin implements IModPlugin {
                 new RollingMillRecipeCategory(registration.getJeiHelpers().getGuiHelper()),
                 new WireMillRecipeCategory(registration.getJeiHelpers().getGuiHelper()),
                 new BrickBlastFurnaceRecipeCategory(registration.getJeiHelpers().getGuiHelper()),
-                new CrusherRecipeCategory(registration.getJeiHelpers().getGuiHelper())
+                new CrusherRecipeCategory(registration.getJeiHelpers().getGuiHelper()),
+                new MVAssemblerRecipeCategory(registration.getJeiHelpers().getGuiHelper())
         );
     }
 
@@ -89,6 +94,13 @@ public final class SkyentJeiPlugin implements IModPlugin {
                 .map(RecipeHolder::value)
                 .toList();
         registration.addRecipes(BrickBlastFurnaceRecipeCategory.RECIPE_TYPE, recipes);
+
+        List<com.skyeshade.skyent.content.recipe.MVAssemblerRecipe> assemblerRecipes = level.getRecipeManager()
+                .getAllRecipesFor(ModRecipes.MV_ASSEMBLER_TYPE.get())
+                .stream()
+                .map(RecipeHolder::value)
+                .toList();
+        registration.addRecipes(MVAssemblerRecipeCategory.RECIPE_TYPE, assemblerRecipes);
     }
 
     @Override
@@ -100,6 +112,17 @@ public final class SkyentJeiPlugin implements IModPlugin {
         registration.addRecipeCatalyst(ModItems.WIRE_MILL.get(), WireMillRecipeCategory.RECIPE_TYPE);
         registration.addRecipeCatalyst(ModItems.BRICK_BLAST_FURNACE.get(), BrickBlastFurnaceRecipeCategory.RECIPE_TYPE);
         registration.addRecipeCatalyst(ModItems.LV_CRUSHER.get(), CrusherRecipeCategory.RECIPE_TYPE);
+        registration.addRecipeCatalyst(ModItems.MV_ASSEMBLER.get(), MVAssemblerRecipeCategory.RECIPE_TYPE);
+    }
+
+    @Override
+    public void registerGuiHandlers(IGuiHandlerRegistration registration) {
+        registration.addGuiContainerHandler(MVAssemblerScreen.class, new IGuiContainerHandler<>() {
+            @Override
+            public List<Rect2i> getGuiExtraAreas(MVAssemblerScreen screen) {
+                return screen.getJeiExtraAreas();
+            }
+        });
     }
 
     private static String getSteelFluidBarrelSubtype(ItemStack stack) {

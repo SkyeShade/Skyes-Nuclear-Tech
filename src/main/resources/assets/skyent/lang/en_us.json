@@ -17,6 +17,8 @@
   "block.skyent.rolling_mill": "Rolling Mill",
   "block.skyent.industrial_press": "Industrial Press",
   "block.skyent.wire_mill": "Wire Mill",
+  "block.skyent.mv_assembler": "MV Assembler",
+  "block.skyent.mv_assembler_part": "MV Assembler",
   "block.skyent.nuclear_charge": "Nuclear Charge",
   "block.skyent.lv_electric_pump": "LV Electric Pump",
   "block.skyent.lv_steam_turbine": "LV Steam Turbine",
@@ -81,6 +83,8 @@
   "container.skyent.lv_electric_pump": "LV Electric Pump",
   "container.skyent.lv_steam_turbine": "LV Steam Turbine",
   "container.skyent.conveyor_exporter": "Conveyor Exporter",
+  "container.skyent.mv_assembler": "MV Assembler",
+  "container.skyent.assembler_recipe_select": "Select Assembler Recipe",
   "jei.skyent.coal_forge": "Coal Forge",
   "jei.skyent.brick_blast_furnace": "Brick Blast Furnace",
   "jei.skyent.crusher": "LV Crusher",
@@ -88,6 +92,7 @@
   "jei.skyent.rolling_mill": "Rolling Mill",
   "jei.skyent.wire_mill": "Wire Mill",
   "jei.skyent.heating_chamber": "Heating Chamber",
+  "jei.skyent.mv_assembler": "MV Assembler",
   "item.skyent.copper_wire_drum": "Copper Wire Drum",
   "item.skyent.steel_wire_drum": "Steel Wire Drum",
   "item.skyent.cobalt_bronze_wire_drum": "Cobalt Bronze Wire Drum",
@@ -253,7 +258,7 @@
   "death.attack.nuclear_explosion": "%1$s was consumed by a nuclear explosion",
   "death.attack.nuclear_explosion.player": "%1$s was consumed by a nuclear explosion while fighting %2$s",
   "itemGroup.skyent.skyent_tab": "Skye's Nuclear Tech",
-  "itemGroup.skyent.machines_and_tools": "Skyes Nuclear Tech: Machines & Tools",
-  "itemGroup.skyent.blocks": "Skyes Nuclear Tech: Blocks",
-  "itemGroup.skyent.materials": "Skyes Nuclear Tech: Materials"
+  "itemGroup.skyent.machines_and_tools": "SkyeNTM Machines",
+  "itemGroup.skyent.blocks": "SkyeNTM Blocks",
+  "itemGroup.skyent.materials": "SkyeNTM Materials"
 }

@@ -125,6 +125,11 @@ public final class ModItems {
             new Item.Properties()
     );
 
+    public static final DeferredItem<BlockItem> MV_ASSEMBLER = ITEMS.registerSimpleBlockItem(
+            ModBlocks.MV_ASSEMBLER,
+            new Item.Properties()
+    );
+
     public static final DeferredItem<BlockItem> NUCLEAR_CHARGE = ITEMS.registerSimpleBlockItem(
             ModBlocks.NUCLEAR_CHARGE,
             new Item.Properties()

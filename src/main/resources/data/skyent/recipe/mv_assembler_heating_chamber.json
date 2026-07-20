@@ -1,0 +1,41 @@
+{
+  "type": "skyent:mv_assembler",
+  "ingredients": [
+    {
+      "ingredient": {
+        "item": "skyent:steel_plate"
+      },
+      "count": 10
+    },
+    {
+      "ingredient": {
+        "item": "skyent:steel_bolt"
+      },
+      "count": 8
+    },
+    {
+      "ingredient": {
+        "item": "skyent:copper_coil"
+      },
+      "count": 2
+    },
+    {
+      "ingredient": {
+        "item": "skyent:electric_motor"
+      },
+      "count": 1
+    },
+    {
+      "ingredient": {
+        "item": "skyent:fire_brick"
+      },
+      "count": 8
+    }
+  ],
+  "result": {
+    "id": "skyent:heating_chamber",
+    "count": 1
+  },
+  "process_time": 200,
+  "energy_per_tick": 64
+}

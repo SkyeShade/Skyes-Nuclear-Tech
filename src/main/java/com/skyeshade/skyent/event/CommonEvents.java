@@ -12,10 +12,14 @@ import com.skyeshade.skyent.network.CameraShakeS2CPacket;
 import com.skyeshade.skyent.network.ClientPayloadHandlers;
 import com.skyeshade.skyent.network.GeigerExposurePayload;
 import com.skyeshade.skyent.network.NukeDetonationEffectsPayload;
+import com.skyeshade.skyent.network.OpenMVAssemblerPayload;
+import com.skyeshade.skyent.network.OpenMVAssemblerRecipeSelectPayload;
 import com.skyeshade.skyent.network.PlayLocalSoundPayload;
 import com.skyeshade.skyent.network.RadiationDebugOverlayPayload;
 import com.skyeshade.skyent.network.RadiationRayBatchPayload;
 import com.skyeshade.skyent.network.RadiationRaysDebugPayload;
+import com.skyeshade.skyent.network.SelectMVAssemblerRecipePayload;
+import com.skyeshade.skyent.network.ServerPayloadHandlers;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import com.skyeshade.skyent.registry.ModBlocks;
 import com.skyeshade.skyent.registry.ModItems;
@@ -227,6 +231,21 @@ public final class CommonEvents {
                         CameraShakeS2CPacket.TYPE,
                         CameraShakeS2CPacket.STREAM_CODEC,
                         ClientPayloadHandlers::handleCameraShake
+                )
+                .playToServer(
+                        OpenMVAssemblerPayload.TYPE,
+                        OpenMVAssemblerPayload.STREAM_CODEC,
+                        ServerPayloadHandlers::handleOpenMVAssembler
+                )
+                .playToServer(
+                        OpenMVAssemblerRecipeSelectPayload.TYPE,
+                        OpenMVAssemblerRecipeSelectPayload.STREAM_CODEC,
+                        ServerPayloadHandlers::handleOpenMVAssemblerRecipeSelect
+                )
+                .playToServer(
+                        SelectMVAssemblerRecipePayload.TYPE,
+                        SelectMVAssemblerRecipePayload.STREAM_CODEC,
+                        ServerPayloadHandlers::handleSelectMVAssemblerRecipe
                 );
     }
 }

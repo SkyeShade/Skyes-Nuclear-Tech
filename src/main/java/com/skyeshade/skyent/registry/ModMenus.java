@@ -8,6 +8,8 @@ import com.skyeshade.skyent.content.menu.ElectricFurnaceMenu;
 import com.skyeshade.skyent.content.menu.LVCrusherMenu;
 import com.skyeshade.skyent.content.menu.LVElectricPumpMenu;
 import com.skyeshade.skyent.content.menu.LVSteamTurbineMenu;
+import com.skyeshade.skyent.content.menu.MVAssemblerMenu;
+import com.skyeshade.skyent.content.menu.MVAssemblerRecipeSelectMenu;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.inventory.MenuType;
 import net.neoforged.bus.api.IEventBus;
@@ -41,6 +43,12 @@ public final class ModMenus {
 
     public static final DeferredHolder<MenuType<?>, MenuType<ConveyorExporterMenu>> CONVEYOR_EXPORTER =
             MENUS.register("conveyor_exporter", () -> IMenuTypeExtension.create(ConveyorExporterMenu::new));
+
+    public static final DeferredHolder<MenuType<?>, MenuType<MVAssemblerMenu>> MV_ASSEMBLER =
+            MENUS.register("mv_assembler", () -> IMenuTypeExtension.create(MVAssemblerMenu::new));
+
+    public static final DeferredHolder<MenuType<?>, MenuType<MVAssemblerRecipeSelectMenu>> ASSEMBLER_RECIPE_SELECT =
+            MENUS.register("assembler_recipe_select", () -> IMenuTypeExtension.create(MVAssemblerRecipeSelectMenu::new));
 
     private ModMenus() {
     }

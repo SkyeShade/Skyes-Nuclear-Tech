@@ -42,6 +42,8 @@ import com.skyeshade.skyent.client.screen.ElectricFurnaceScreen;
 import com.skyeshade.skyent.client.screen.LVCrusherScreen;
 import com.skyeshade.skyent.client.screen.LVElectricPumpScreen;
 import com.skyeshade.skyent.client.screen.LVSteamTurbineScreen;
+import com.skyeshade.skyent.client.screen.MVAssemblerRecipeSelectScreen;
+import com.skyeshade.skyent.client.screen.MVAssemblerScreen;
 import com.skyeshade.skyent.event.systems.BootstrapSystem;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import com.skyeshade.skyent.registry.ModEntities;
@@ -104,6 +106,8 @@ public final class ClientEvents {
         event.register(ModMenus.LV_ELECTRIC_PUMP.get(), LVElectricPumpScreen::new);
         event.register(ModMenus.LV_STEAM_TURBINE.get(), LVSteamTurbineScreen::new);
         event.register(ModMenus.CONVEYOR_EXPORTER.get(), ConveyorExporterScreen::new);
+        event.register(ModMenus.MV_ASSEMBLER.get(), MVAssemblerScreen::new);
+        event.register(ModMenus.ASSEMBLER_RECIPE_SELECT.get(), MVAssemblerRecipeSelectScreen::new);
     }
 
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
