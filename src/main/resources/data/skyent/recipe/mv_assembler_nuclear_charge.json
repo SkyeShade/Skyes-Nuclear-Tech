@@ -1,0 +1,35 @@
+{
+  "type": "skyent:mv_assembler",
+  "ingredients": [
+    {
+      "ingredient": {
+        "item": "skyent:uranium_block"
+      },
+      "count": 16
+    },
+    {
+      "ingredient": {
+        "item": "skyent:tungsten_plate"
+      },
+      "count": 32
+    },
+    {
+      "ingredient": {
+        "item": "skyent:tungsten_bolt"
+      },
+      "count": 32
+    },
+    {
+      "ingredient": {
+        "item": "minecraft:tnt"
+      },
+      "count": 64
+    }
+  ],
+  "result": {
+    "id": "skyent:nuclear_charge",
+    "count": 1
+  },
+  "process_time": 1200,
+  "energy_per_tick": 128
+}

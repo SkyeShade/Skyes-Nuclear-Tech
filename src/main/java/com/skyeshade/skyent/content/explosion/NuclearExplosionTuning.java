@@ -1,7 +1,7 @@
 package com.skyeshade.skyent.content.explosion;
 
 public final class NuclearExplosionTuning {
-    public static final double DEFAULT_NUCLEAR_CHARGE_RADIUS = 200.0D;
+    public static final double DEFAULT_NUCLEAR_CHARGE_RADIUS = 100.0D;
     public static final double MIN_NUCLEAR_CHARGE_RADIUS = 1.0D;
     public static final double MAX_NUCLEAR_CHARGE_RADIUS = 2_000.0D;
 
