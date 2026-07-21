@@ -132,6 +132,9 @@ public final class RadiationUtil {
         if (state.is(Blocks.FLOWERING_AZALEA_LEAVES)) {
             return copyLeafProperties(state, ModBlocks.DEAD_FLOWERING_AZALEA_LEAVES.get().defaultBlockState());
         }
+        if (state.is(ModBlocks.RUBBER_LEAVES.get())) {
+            return copyLeafProperties(state, ModBlocks.DEAD_RUBBER_LEAVES.get().defaultBlockState());
+        }
         return null;
     }
 

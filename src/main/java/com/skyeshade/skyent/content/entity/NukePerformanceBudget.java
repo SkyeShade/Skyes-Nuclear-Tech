@@ -1,12 +1,10 @@
 package com.skyeshade.skyent.content.entity;
 
-import com.skyeshade.skyent.SkyesNuclearTech;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.Mth;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 public final class NukePerformanceBudget {
-    private static final boolean DEBUG_NUKE_PERFORMANCE = Boolean.getBoolean("skyent.debugNukePerformance");
     private static final double TARGET_MSPT = 50.0D;
     private static final double SOFT_THROTTLE_MSPT = 65.0D;
     private static final double HARD_THROTTLE_MSPT = 100.0D;
@@ -54,20 +52,5 @@ public final class NukePerformanceBudget {
     }
 
     public static void logIfEnabled(int entityId, int tick, String phase, int mutationBlocksBudget, int mutationSectionsBudget, int workUnitsBudget, int columnsBudget) {
-        if (!DEBUG_NUKE_PERFORMANCE || tick % 20 != 0) {
-            return;
-        }
-        SkyesNuclearTech.LOGGER.info(
-                "Nuke performance budget: id={} tick={} phase={} averageMspt={} workScale={} mutationBlocksBudget={} mutationSectionsBudget={} aftermathWorkUnitsBudget={} aftermathColumnsBudget={}",
-                entityId,
-                tick,
-                phase,
-                averageMspt,
-                currentWorkScale(null),
-                mutationBlocksBudget,
-                mutationSectionsBudget,
-                workUnitsBudget,
-                columnsBudget
-        );
     }
 }

@@ -1,0 +1,15 @@
+{
+  "type": "skyent:brick_blast_furnace",
+  "input1": {
+    "item": "skyent:resin"
+  },
+  "input1_count": 3,
+  "input2": {
+    "item": "skyent:sulfur"
+  },
+  "input2_count": 1,
+  "result": {
+    "id": "skyent:rubber",
+    "count": 2
+  }
+}

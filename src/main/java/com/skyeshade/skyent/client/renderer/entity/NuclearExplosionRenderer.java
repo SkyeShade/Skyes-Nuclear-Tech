@@ -7,7 +7,6 @@ import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.entity.NuclearExplosionEntity;
 import com.skyeshade.skyent.content.entity.NuclearMushroomCloudSimulation;
 import com.skyeshade.skyent.content.entity.NuclearExplosionEntity.NuclearCloudlet;
-import com.skyeshade.skyent.content.entity.NuclearExplosionEntity.NuclearCloudletType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -21,14 +20,9 @@ import net.minecraft.util.RandomSource;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 
-import java.util.HashMap;
-import java.util.Map;
-
 public class NuclearExplosionRenderer extends EntityRenderer<NuclearExplosionEntity> {
     private static final int RAY_COUNT = 240;
     private static final boolean RENDER_RAYS_OVER_CLOUDS = true;
-    private static final boolean DEBUG_SHOCKWAVE_VISUALS = Boolean.getBoolean("skyent.debugNukeShockwave");
-    private static final Map<Integer, Integer> LAST_DEBUG_RENDER_TICK = new HashMap<>();
     private static final ResourceLocation CLOUDLET_TEXTURE = ResourceLocation.fromNamespaceAndPath(
             SkyesNuclearTech.MOD_ID,
             "textures/particle/particle_base.png"
@@ -126,56 +120,9 @@ public class NuclearExplosionRenderer extends EntityRenderer<NuclearExplosionEnt
 
         VertexConsumer buffer = bufferSource.getBuffer(RenderType.entityTranslucent(CLOUDLET_TEXTURE));
         Quaternionf cameraRotation = Minecraft.getInstance().getEntityRenderDispatcher().cameraOrientation();
-        int shockwaveCount = 0;
-        int renderedShockwaveCount = 0;
-        int activeSweepCount = 0;
-        int renderedActiveSweepCount = 0;
         for (NuclearCloudlet cloudlet : entity.getCloudlets()) {
-            if (cloudlet.type() == NuclearCloudletType.SHOCKWAVE) {
-                shockwaveCount++;
-            } else if (cloudlet.type() == NuclearCloudletType.ACTIVE_BLAST_SWEEP_SMOKE) {
-                activeSweepCount++;
-            }
-
-            boolean rendered = renderCloudlet(buffer, poseStack, cameraRotation, cloudlet, partialTick);
-            if (rendered && cloudlet.type() == NuclearCloudletType.SHOCKWAVE) {
-                renderedShockwaveCount++;
-            } else if (rendered && cloudlet.type() == NuclearCloudletType.ACTIVE_BLAST_SWEEP_SMOKE) {
-                renderedActiveSweepCount++;
-            }
+            renderCloudlet(buffer, poseStack, cameraRotation, cloudlet, partialTick);
         }
-
-        logRenderDebug(entity, shockwaveCount, renderedShockwaveCount, activeSweepCount, renderedActiveSweepCount);
-    }
-
-    private static void logRenderDebug(
-            NuclearExplosionEntity entity,
-            int shockwaveCount,
-            int renderedShockwaveCount,
-            int activeSweepCount,
-            int renderedActiveSweepCount
-    ) {
-        if (!DEBUG_SHOCKWAVE_VISUALS || entity.tickCount % 20 != 0) {
-            return;
-        }
-
-        Integer lastTick = LAST_DEBUG_RENDER_TICK.get(entity.getId());
-        if (lastTick != null && lastTick == entity.tickCount) {
-            return;
-        }
-        LAST_DEBUG_RENDER_TICK.put(entity.getId(), entity.tickCount);
-
-        SkyesNuclearTech.LOGGER.info(
-                "Nuke shockwave renderer debug: id={} tick={} total={} mushroom={} shockwave={} renderedShockwave={} activeSweep={} renderedActiveSweep={}",
-                entity.getId(),
-                entity.tickCount,
-                entity.getCloudlets().size(),
-                entity.getMushroomCloudlets().size(),
-                shockwaveCount,
-                renderedShockwaveCount,
-                activeSweepCount,
-                renderedActiveSweepCount
-        );
     }
 
     private static boolean renderCloudlet(

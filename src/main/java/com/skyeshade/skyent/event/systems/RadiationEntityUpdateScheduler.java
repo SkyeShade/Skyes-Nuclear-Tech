@@ -1,11 +1,8 @@
 package com.skyeshade.skyent.event.systems;
 
-import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.config.SkyentRadiationConfig;
 import java.util.ArrayDeque;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import net.minecraft.server.MinecraftServer;
@@ -18,17 +15,9 @@ public final class RadiationEntityUpdateScheduler {
     private static final int MAX_NON_PLAYER_RADIATION_UPDATES_PER_TICK = 5;
     private static final int NON_PLAYER_RADIATION_MIN_UPDATE_INTERVAL_TICKS = 20;
     private static final int NON_PLAYER_RADIATION_MAX_UPDATE_INTERVAL_TICKS = 20 * 10;
-    private static final int DEBUG_LOG_INTERVAL_TICKS = 100;
-    private static final boolean DEBUG = Boolean.getBoolean("skyent.debugRadiationEntityScheduler");
 
     private static final ArrayDeque<LivingEntity> QUEUE = new ArrayDeque<>();
     private static final Set<UUID> QUEUED_ENTITY_IDS = new HashSet<>();
-
-    private static int windowProcessed;
-    private static int windowDropped;
-    private static long windowElapsedTicks;
-    private static int windowMaxElapsedTicks;
-    private static final Map<String, Integer> windowProcessedByDimension = new HashMap<>();
 
     private RadiationEntityUpdateScheduler() {
     }
@@ -67,29 +56,18 @@ public final class RadiationEntityUpdateScheduler {
             QUEUED_ENTITY_IDS.remove(entity.getUUID());
 
             if (!isSchedulable(entity)) {
-                recordDropped();
                 continue;
             }
 
             int elapsedTicks = elapsedTicks(entity);
             RadiationExposureSystem.tickScheduledNonPlayerEntity(entity, elapsedTicks);
-            recordProcessed(entity, elapsedTicks);
             remainingBudget--;
-        }
-
-        if (DEBUG && server.getTickCount() % DEBUG_LOG_INTERVAL_TICKS == 0) {
-            logDebugSummary(server);
         }
     }
 
     public static void clear() {
         QUEUE.clear();
         QUEUED_ENTITY_IDS.clear();
-        windowProcessed = 0;
-        windowDropped = 0;
-        windowElapsedTicks = 0L;
-        windowMaxElapsedTicks = 0;
-        windowProcessedByDimension.clear();
     }
 
     private static boolean isSchedulable(LivingEntity entity) {
@@ -111,35 +89,4 @@ public final class RadiationEntityUpdateScheduler {
         return Math.max(NON_PLAYER_RADIATION_MIN_UPDATE_INTERVAL_TICKS, SkyentRadiationConfig.exposureEntityUpdateIntervalTicks());
     }
 
-    private static void recordProcessed(LivingEntity entity, int elapsedTicks) {
-        windowProcessed++;
-        windowElapsedTicks += elapsedTicks;
-        windowMaxElapsedTicks = Math.max(windowMaxElapsedTicks, elapsedTicks);
-        String dimension = ((ServerLevel) entity.level()).dimension().location().toString();
-        windowProcessedByDimension.merge(dimension, 1, Integer::sum);
-    }
-
-    private static void recordDropped() {
-        windowDropped++;
-    }
-
-    private static void logDebugSummary(MinecraftServer server) {
-        double averageElapsedTicks = windowProcessed == 0 ? 0.0D : windowElapsedTicks / (double) windowProcessed;
-        SkyesNuclearTech.LOGGER.info(
-                "Radiation entity scheduler: tick={} queued={} processedWindow={} droppedWindow={} averageElapsedTicks={} maxElapsedTicks={} budgetPerTick={} perDimension={}",
-                server.getTickCount(),
-                QUEUE.size(),
-                windowProcessed,
-                windowDropped,
-                String.format("%.2f", averageElapsedTicks),
-                windowMaxElapsedTicks,
-                MAX_NON_PLAYER_RADIATION_UPDATES_PER_TICK,
-                windowProcessedByDimension
-        );
-        windowProcessed = 0;
-        windowDropped = 0;
-        windowElapsedTicks = 0L;
-        windowMaxElapsedTicks = 0;
-        windowProcessedByDimension.clear();
-    }
 }

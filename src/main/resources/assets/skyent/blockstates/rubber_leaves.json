@@ -1,0 +1,9 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "skyent:block/rubber_leaves"
+      }
+    }
+  ]
+}

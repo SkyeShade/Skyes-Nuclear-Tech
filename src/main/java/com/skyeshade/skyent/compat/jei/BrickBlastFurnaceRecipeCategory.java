@@ -76,9 +76,9 @@ public final class BrickBlastFurnaceRecipeCategory implements IRecipeCategory<Br
         builder.addSlot(RecipeIngredientRole.RENDER_ONLY, localX(BrickBlastFurnaceMenu.FUEL_SLOT_X), localY(BrickBlastFurnaceMenu.FUEL_SLOT_Y))
                 .addItemStacks(FUEL_ITEMS);
         builder.addSlot(RecipeIngredientRole.INPUT, localX(BrickBlastFurnaceMenu.TOP_INPUT_SLOT_X), localY(BrickBlastFurnaceMenu.TOP_INPUT_SLOT_Y))
-                .addIngredients(recipe.getFirstInput());
+                .addItemStacks(stacksWithCount(recipe.getFirstInput().getItems(), recipe.getFirstInputCount()));
         builder.addSlot(RecipeIngredientRole.INPUT, localX(BrickBlastFurnaceMenu.BOTTOM_INPUT_SLOT_X), localY(BrickBlastFurnaceMenu.BOTTOM_INPUT_SLOT_Y))
-                .addIngredients(recipe.getSecondInput());
+                .addItemStacks(stacksWithCount(recipe.getSecondInput().getItems(), recipe.getSecondInputCount()));
         builder.addSlot(RecipeIngredientRole.OUTPUT, localX(BrickBlastFurnaceMenu.OUTPUT_SLOT_X), localY(BrickBlastFurnaceMenu.OUTPUT_SLOT_Y))
                 .addItemStack(recipe.getResult());
     }
@@ -156,6 +156,13 @@ public final class BrickBlastFurnaceRecipeCategory implements IRecipeCategory<Br
 
     private static int animationPhase(int ticks) {
         return (int) (Util.getMillis() / 50L % ticks);
+    }
+
+    private static List<ItemStack> stacksWithCount(ItemStack[] stacks, int count) {
+        return java.util.Arrays.stream(stacks)
+                .map(ItemStack::copy)
+                .peek(stack -> stack.setCount(count))
+                .toList();
     }
 
     private static int localX(int guiX) {

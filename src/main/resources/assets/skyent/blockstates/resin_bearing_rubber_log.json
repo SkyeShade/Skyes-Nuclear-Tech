@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "axis=x,facing=north": { "model": "skyent:block/resin_bearing_rubber_log_north" },
+    "axis=x,facing=south": { "model": "skyent:block/resin_bearing_rubber_log_south" },
+    "axis=x,facing=east": { "model": "skyent:block/resin_bearing_rubber_log_east" },
+    "axis=x,facing=west": { "model": "skyent:block/resin_bearing_rubber_log_west" },
+    "axis=y,facing=north": { "model": "skyent:block/resin_bearing_rubber_log_north" },
+    "axis=y,facing=south": { "model": "skyent:block/resin_bearing_rubber_log_south" },
+    "axis=y,facing=east": { "model": "skyent:block/resin_bearing_rubber_log_east" },
+    "axis=y,facing=west": { "model": "skyent:block/resin_bearing_rubber_log_west" },
+    "axis=z,facing=north": { "model": "skyent:block/resin_bearing_rubber_log_north" },
+    "axis=z,facing=south": { "model": "skyent:block/resin_bearing_rubber_log_south" },
+    "axis=z,facing=east": { "model": "skyent:block/resin_bearing_rubber_log_east" },
+    "axis=z,facing=west": { "model": "skyent:block/resin_bearing_rubber_log_west" }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "building",
+  "ingredients": [
+    {
+      "item": "skyent:rubber_log"
+    }
+  ],
+  "result": {
+    "id": "skyent:rubber_planks",
+    "count": 4
+  }
+}

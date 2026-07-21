@@ -2,8 +2,9 @@ package com.skyeshade.skyent.content.blockentity;
 
 import com.skyeshade.skyent.content.block.BrickBlastFurnaceBlock;
 import com.skyeshade.skyent.content.menu.BrickBlastFurnaceMenu;
+import com.skyeshade.skyent.content.recipe.BrickBlastFurnaceRecipe;
 import com.skyeshade.skyent.registry.ModBlockEntities;
-import com.skyeshade.skyent.registry.ModItems;
+import com.skyeshade.skyent.registry.ModRecipes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -18,6 +19,7 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -105,7 +107,7 @@ public class BrickBlastFurnaceBlockEntity extends BlockEntity implements MenuPro
         furnace.active = false;
         boolean changed = furnace.consumeFuelItemIfPossible();
 
-        FurnaceRecipe recipe = furnace.findRecipe();
+        FurnaceRecipe recipe = furnace.findRecipe(level);
         if (recipe == null || !furnace.canOutputRecipe(recipe)) {
             if (furnace.progress != 0) {
                 furnace.progress = 0;
@@ -178,29 +180,38 @@ public class BrickBlastFurnaceBlockEntity extends BlockEntity implements MenuPro
     }
 
     @Nullable
-    private FurnaceRecipe findRecipe() {
-        // TODO: Replace with a data-driven brick_blast_furnace recipe type.
+    private FurnaceRecipe findRecipe(Level level) {
         ItemStack top = inventory.getStackInSlot(TOP_INPUT_SLOT);
         ItemStack bottom = inventory.getStackInSlot(BOTTOM_INPUT_SLOT);
-        if (top.is(Items.IRON_INGOT) && bottom.is(Items.COAL)) {
-            return new FurnaceRecipe(TOP_INPUT_SLOT, 1, BOTTOM_INPUT_SLOT, 1, new ItemStack(ModItems.STEEL_INGOT.get()));
-        }
-        if (top.is(Items.COAL) && bottom.is(Items.IRON_INGOT)) {
-            return new FurnaceRecipe(TOP_INPUT_SLOT, 1, BOTTOM_INPUT_SLOT, 1, new ItemStack(ModItems.STEEL_INGOT.get()));
-        }
-        if (top.is(ModItems.COBALT_INGOT.get()) && bottom.is(Items.COPPER_INGOT) && bottom.getCount() >= 4) {
-            return new FurnaceRecipe(TOP_INPUT_SLOT, 1, BOTTOM_INPUT_SLOT, 4, new ItemStack(ModItems.COBALT_BRONZE_INGOT.get(), 2));
-        }
-        if (top.is(Items.COPPER_INGOT) && top.getCount() >= 4 && bottom.is(ModItems.COBALT_INGOT.get())) {
-            return new FurnaceRecipe(TOP_INPUT_SLOT, 4, BOTTOM_INPUT_SLOT, 1, new ItemStack(ModItems.COBALT_BRONZE_INGOT.get(), 2));
-        }
-        if (top.is(ModItems.NICKEL_INGOT.get()) && bottom.is(Items.COPPER_INGOT) && bottom.getCount() >= 3) {
-            return new FurnaceRecipe(TOP_INPUT_SLOT, 1, BOTTOM_INPUT_SLOT, 3, new ItemStack(ModItems.CUPRONICKEL_INGOT.get(), 4));
-        }
-        if (top.is(Items.COPPER_INGOT) && top.getCount() >= 3 && bottom.is(ModItems.NICKEL_INGOT.get())) {
-            return new FurnaceRecipe(TOP_INPUT_SLOT, 3, BOTTOM_INPUT_SLOT, 1, new ItemStack(ModItems.CUPRONICKEL_INGOT.get(), 4));
+
+        for (var holder : level.getRecipeManager().getAllRecipesFor(ModRecipes.BRICK_BLAST_FURNACE_TYPE.get())) {
+            BrickBlastFurnaceRecipe recipe = holder.value();
+            if (matches(top, recipe.getFirstInput(), recipe.getFirstInputCount())
+                    && matches(bottom, recipe.getSecondInput(), recipe.getSecondInputCount())) {
+                return new FurnaceRecipe(
+                        TOP_INPUT_SLOT,
+                        recipe.getFirstInputCount(),
+                        BOTTOM_INPUT_SLOT,
+                        recipe.getSecondInputCount(),
+                        recipe.getResult()
+                );
+            }
+            if (matches(top, recipe.getSecondInput(), recipe.getSecondInputCount())
+                    && matches(bottom, recipe.getFirstInput(), recipe.getFirstInputCount())) {
+                return new FurnaceRecipe(
+                        TOP_INPUT_SLOT,
+                        recipe.getSecondInputCount(),
+                        BOTTOM_INPUT_SLOT,
+                        recipe.getFirstInputCount(),
+                        recipe.getResult()
+                );
+            }
         }
         return null;
+    }
+
+    private static boolean matches(ItemStack stack, Ingredient ingredient, int count) {
+        return ingredient.test(stack) && stack.getCount() >= count;
     }
 
     private boolean canOutputRecipe(FurnaceRecipe recipe) {

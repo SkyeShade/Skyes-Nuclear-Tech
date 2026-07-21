@@ -18,7 +18,7 @@ import java.util.List;
 
 public final class NuclearMushroomCloudSimulation {
     public static final int MAX_MUSHROOM_CLOUDLETS = 12_000;
-    private static final boolean DEBUG_MUSHROOM = Boolean.getBoolean("skyent.debugNukeMushroom");
+    private static final boolean DEBUG_MUSHROOM = false;
     private static final int MAX_AGE_TICKS = NuclearExplosionEntity.ENTITY_LIFETIME_TICKS;
     private static final int TORUS_SPAWN_TICKS = 2_000;
     private static final int TORUS_CLOUDLETS_PER_TICK = 16;

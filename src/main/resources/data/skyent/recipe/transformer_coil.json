@@ -2,13 +2,16 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "pattern": [
-    " C ",
+    "RCR",
     "CSC",
-    " C "
+    "RCR"
   ],
   "key": {
     "C": {
       "item": "skyent:copper_coil"
+    },
+    "R": {
+      "item": "skyent:rubber"
     },
     "S": {
       "item": "skyent:steel_plate"

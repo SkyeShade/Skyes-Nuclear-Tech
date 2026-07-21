@@ -36,8 +36,10 @@ import com.skyeshade.skyent.content.block.NuclearChargeBlock;
 import com.skyeshade.skyent.content.block.RadioactiveBlock;
 import com.skyeshade.skyent.content.block.RadioactiveScrapMetalBlock;
 import com.skyeshade.skyent.content.block.ReinforcedGlassBlock;
+import com.skyeshade.skyent.content.block.ResinBearingRubberLogBlock;
 import com.skyeshade.skyent.content.block.RollingMillBlock;
 import com.skyeshade.skyent.content.block.RollingMillPartBlock;
+import com.skyeshade.skyent.content.block.RubberLogBlock;
 import com.skyeshade.skyent.content.block.SiltBlock;
 import com.skyeshade.skyent.content.block.SteamForgeHammerBlock;
 import com.skyeshade.skyent.content.block.SteamForgeHammerPartBlock;
@@ -47,12 +49,15 @@ import com.skyeshade.skyent.content.block.WireMillPartBlock;
 import com.skyeshade.skyent.content.radiation.EnvironmentalRadiationMode;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.RotatedPillarBlock;
+import net.minecraft.world.level.block.SaplingBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
+import java.util.function.Supplier;
 
 public final class ModBlocks {
     private static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(SkyesNuclearTech.MOD_ID);
@@ -352,6 +357,35 @@ public final class ModBlocks {
                     .strength(1.5F, 2.0F)
     );
 
+    public static final DeferredBlock<RubberLogBlock> RUBBER_LOG = BLOCKS.registerBlock(
+            "rubber_log",
+            RubberLogBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.OAK_LOG).randomTicks()
+    );
+
+    public static final DeferredBlock<?> RUBBER_PLANKS = BLOCKS.registerSimpleBlock(
+            "rubber_planks",
+            BlockBehaviour.Properties.ofFullCopy(Blocks.OAK_PLANKS)
+    );
+
+    public static final DeferredBlock<ResinBearingRubberLogBlock> RESIN_BEARING_RUBBER_LOG = BLOCKS.registerBlock(
+            "resin_bearing_rubber_log",
+            ResinBearingRubberLogBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.OAK_LOG)
+    );
+
+    public static final DeferredBlock<LeavesBlock> RUBBER_LEAVES = BLOCKS.registerBlock(
+            "rubber_leaves",
+            LeavesBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.OAK_LEAVES)
+    );
+
+    public static final DeferredBlock<SaplingBlock> RUBBER_SAPLING = BLOCKS.registerBlock(
+            "rubber_sapling",
+            properties -> new SaplingBlock(ModTreeGrowers.RUBBER, properties),
+            BlockBehaviour.Properties.ofFullCopy(Blocks.OAK_SAPLING)
+    );
+
     public static final DeferredBlock<DeadLeavesBlock> DEAD_OAK_LEAVES = deadLeaves("dead_oak_leaves", Blocks.OAK_LEAVES);
     public static final DeferredBlock<DeadLeavesBlock> DEAD_BIRCH_LEAVES = deadLeaves("dead_birch_leaves", Blocks.BIRCH_LEAVES);
     public static final DeferredBlock<DeadLeavesBlock> DEAD_SPRUCE_LEAVES = deadLeaves("dead_spruce_leaves", Blocks.SPRUCE_LEAVES);
@@ -362,6 +396,7 @@ public final class ModBlocks {
     public static final DeferredBlock<DeadLeavesBlock> DEAD_CHERRY_LEAVES = deadLeaves("dead_cherry_leaves", Blocks.CHERRY_LEAVES);
     public static final DeferredBlock<DeadLeavesBlock> DEAD_AZALEA_LEAVES = deadLeaves("dead_azalea_leaves", Blocks.AZALEA_LEAVES);
     public static final DeferredBlock<DeadLeavesBlock> DEAD_FLOWERING_AZALEA_LEAVES = deadLeaves("dead_flowering_azalea_leaves", Blocks.FLOWERING_AZALEA_LEAVES);
+    public static final DeferredBlock<DeadLeavesBlock> DEAD_RUBBER_LEAVES = deadLeaves("dead_rubber_leaves", RUBBER_LEAVES);
 
     public static final DeferredBlock<?> TITANIUM_ORE = BLOCKS.registerSimpleBlock(
             "titanium_ore",
@@ -443,6 +478,11 @@ public final class ModBlocks {
     public static final DeferredBlock<?> LEAD_BLOCK = BLOCKS.registerSimpleBlock(
             "lead_block",
             BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+    );
+
+    public static final DeferredBlock<?> NETHER_SULFUR_ORE = BLOCKS.registerSimpleBlock(
+            "nether_sulfur_ore",
+            BlockBehaviour.Properties.ofFullCopy(Blocks.NETHER_QUARTZ_ORE)
     );
 
     public static final DeferredBlock<RadioactiveBlock> URANIUM_ORE = BLOCKS.registerBlock(
@@ -577,10 +617,18 @@ public final class ModBlocks {
     }
 
     private static DeferredBlock<DeadLeavesBlock> deadLeaves(String name, Block livingLeaves) {
+        return deadLeaves(name, () -> livingLeaves, livingLeaves);
+    }
+
+    private static DeferredBlock<DeadLeavesBlock> deadLeaves(String name, Supplier<? extends Block> livingLeaves) {
+        return deadLeaves(name, livingLeaves, Blocks.OAK_LEAVES);
+    }
+
+    private static DeferredBlock<DeadLeavesBlock> deadLeaves(String name, Supplier<? extends Block> livingLeaves, Block propertiesSource) {
         return BLOCKS.registerBlock(
                 name,
-                properties -> new DeadLeavesBlock(properties, () -> livingLeaves),
-                BlockBehaviour.Properties.ofFullCopy(livingLeaves).randomTicks().noOcclusion()
+                properties -> new DeadLeavesBlock(properties, livingLeaves),
+                BlockBehaviour.Properties.ofFullCopy(propertiesSource).randomTicks().noOcclusion()
         );
     }
 

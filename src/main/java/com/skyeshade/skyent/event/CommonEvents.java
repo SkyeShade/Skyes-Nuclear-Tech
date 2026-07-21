@@ -62,6 +62,7 @@ public final class CommonEvents {
         fire.setFlammable(ModBlocks.DEAD_CHERRY_LEAVES.get(), 30, 60);
         fire.setFlammable(ModBlocks.DEAD_AZALEA_LEAVES.get(), 30, 60);
         fire.setFlammable(ModBlocks.DEAD_FLOWERING_AZALEA_LEAVES.get(), 30, 60);
+        fire.setFlammable(ModBlocks.DEAD_RUBBER_LEAVES.get(), 30, 60);
     }
 
     public static void onRegisterCapabilities(RegisterCapabilitiesEvent event) {

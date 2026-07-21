@@ -10,6 +10,8 @@
     "skyent:dead_mangrove_leaves",
     "skyent:dead_cherry_leaves",
     "skyent:dead_azalea_leaves",
-    "skyent:dead_flowering_azalea_leaves"
+    "skyent:dead_flowering_azalea_leaves",
+    "skyent:rubber_leaves",
+    "skyent:dead_rubber_leaves"
   ]
 }

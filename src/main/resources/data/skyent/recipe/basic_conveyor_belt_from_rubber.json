@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "RRR",
+    "III",
+    "RRR"
+  ],
+  "key": {
+    "R": {
+      "item": "skyent:rubber"
+    },
+    "I": {
+      "item": "skyent:iron_rod"
+    }
+  },
+  "result": {
+    "id": "skyent:basic_conveyor_belt",
+    "count": 16
+  }
+}

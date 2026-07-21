@@ -14,6 +14,7 @@ import net.minecraft.world.phys.Vec3;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class NuclearBlastRayPlanner {
+    //TODO: ngl kinda spaghetti (but works mostly?) clean up later
     private static final int MAX_OBSIDIAN_DEBUG_HIT_LOGS = 200;
     private static final int MAX_OBSIDIAN_DEBUG_STEP_LOGS = 20;
     private static final int MAX_NUKE_BLOCK_RESISTANCE_DEBUG_LOGS = 200;

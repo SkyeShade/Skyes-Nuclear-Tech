@@ -2,7 +2,6 @@ package com.skyeshade.skyent.content.block;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
@@ -20,8 +19,6 @@ public class DeadLeavesBlock extends LeavesBlock {
             "burnt_logs"
     ));
     private static final int RECOVERY_CHANCE = 4;
-    private static final boolean DEBUG_RECOVERY = Boolean.getBoolean("skyent.debugDeadLeavesRecovery");
-    private static final boolean DEBUG_ALWAYS_RECOVER = Boolean.getBoolean("skyent.debugDeadLeavesAlwaysRecover");
     private final Supplier<? extends Block> livingLeaves;
 
     public DeadLeavesBlock(Properties properties, Supplier<? extends Block> livingLeaves) {
@@ -37,16 +34,8 @@ public class DeadLeavesBlock extends LeavesBlock {
     @Override
     public void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
         RecoverySource recoverySource = findRecoverySourceNearby(level, pos);
-        boolean recovered = recoverySource != RecoverySource.NONE
-                && (DEBUG_ALWAYS_RECOVER || random.nextInt(RECOVERY_CHANCE) == 0);
-        if (DEBUG_RECOVERY) {
-            logRecoveryTick(level, pos, recoverySource, recovered);
-        }
-        if (recovered) {
-            boolean changed = level.setBlock(pos, copyLeafProperties(state, livingLeaves.get().defaultBlockState()), Block.UPDATE_ALL | Block.UPDATE_SUPPRESS_DROPS);
-            if (DEBUG_RECOVERY) {
-                com.skyeshade.skyent.SkyesNuclearTech.LOGGER.info("Dead leaves recovery setBlock: pos={} changed={}", pos, changed);
-            }
+        if (recoverySource != RecoverySource.NONE && random.nextInt(RECOVERY_CHANCE) == 0) {
+            level.setBlock(pos, copyLeafProperties(state, livingLeaves.get().defaultBlockState()), Block.UPDATE_ALL | Block.UPDATE_SUPPRESS_DROPS);
         }
     }
 
@@ -88,19 +77,6 @@ public class DeadLeavesBlock extends LeavesBlock {
         }
 
         return target;
-    }
-
-    private void logRecoveryTick(ServerLevel level, BlockPos pos, RecoverySource recoverySource, boolean recovered) {
-        Block deadBlock = level.getBlockState(pos).getBlock();
-        Block livingBlock = livingLeaves.get();
-        SkyesNuclearTech.LOGGER.info(
-                "Dead leaves randomTick fired: pos={} dead={} expectedMatchingLive={} recoverySource={} recovered={}",
-                pos,
-                BuiltInRegistries.BLOCK.getKey(deadBlock),
-                BuiltInRegistries.BLOCK.getKey(livingBlock),
-                recoverySource,
-                recovered
-        );
     }
 
     private enum RecoverySource {

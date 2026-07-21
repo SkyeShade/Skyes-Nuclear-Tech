@@ -58,7 +58,7 @@ public final class NuclearColumnCollapsePass {
     private static final int COLUMN_WORK_MAX_SECTIONS_PER_TICK = 32;
     private static final int DEFERRED_WORK_RETRY_INTERVAL_TICKS = 20;
     private static final int DEFERRED_WORK_CHECKS_PER_TICK = 64;
-    private static final boolean DEBUG_NUKE_MUTATIONS = Boolean.getBoolean("skyent.debugNukeMutations");
+    private static final boolean DEBUG_NUKE_MUTATIONS = false;
 
     private final ServerLevel level;
     private final List<ChunkWorkUnit> orderedWorkUnits;

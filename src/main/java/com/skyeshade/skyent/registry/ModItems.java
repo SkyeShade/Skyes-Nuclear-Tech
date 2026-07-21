@@ -16,6 +16,7 @@ import com.skyeshade.skyent.content.item.TooltipBlockItem;
 import com.skyeshade.skyent.content.item.ToxicBlockItem;
 import com.skyeshade.skyent.content.item.ToxicItem;
 import com.skyeshade.skyent.content.item.SteelTongsItem;
+import com.skyeshade.skyent.content.item.TreeTapItem;
 import com.skyeshade.skyent.content.item.UraniumBlockItem;
 import com.skyeshade.skyent.content.item.WireCuttersItem;
 import com.skyeshade.skyent.content.item.WrenchItem;
@@ -200,6 +201,31 @@ public final class ModItems {
             new Item.Properties()
     );
 
+    public static final DeferredItem<BlockItem> RUBBER_LOG = ITEMS.registerSimpleBlockItem(
+            ModBlocks.RUBBER_LOG,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> RUBBER_PLANKS = ITEMS.registerSimpleBlockItem(
+            ModBlocks.RUBBER_PLANKS,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> RESIN_BEARING_RUBBER_LOG = ITEMS.registerSimpleBlockItem(
+            ModBlocks.RESIN_BEARING_RUBBER_LOG,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> RUBBER_LEAVES = ITEMS.registerSimpleBlockItem(
+            ModBlocks.RUBBER_LEAVES,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> RUBBER_SAPLING = ITEMS.registerSimpleBlockItem(
+            ModBlocks.RUBBER_SAPLING,
+            new Item.Properties()
+    );
+
     public static final DeferredItem<BlockItem> DEAD_OAK_LEAVES = ITEMS.registerSimpleBlockItem(
             ModBlocks.DEAD_OAK_LEAVES,
             new Item.Properties()
@@ -247,6 +273,11 @@ public final class ModItems {
 
     public static final DeferredItem<BlockItem> DEAD_FLOWERING_AZALEA_LEAVES = ITEMS.registerSimpleBlockItem(
             ModBlocks.DEAD_FLOWERING_AZALEA_LEAVES,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> DEAD_RUBBER_LEAVES = ITEMS.registerSimpleBlockItem(
+            ModBlocks.DEAD_RUBBER_LEAVES,
             new Item.Properties()
     );
 
@@ -320,6 +351,11 @@ public final class ModItems {
             () -> new ToxicBlockItem(ModBlocks.LEAD_BLOCK.get(), new Item.Properties())
     );
 
+    public static final DeferredItem<BlockItem> NETHER_SULFUR_ORE = ITEMS.registerSimpleBlockItem(
+            ModBlocks.NETHER_SULFUR_ORE,
+            new Item.Properties()
+    );
+
     public static final DeferredItem<RadioactiveBlockItem> URANIUM_ORE = ITEMS.register(
             "uranium_ore",
             () -> new RadioactiveBlockItem(ModBlocks.URANIUM_ORE.get(), new Item.Properties())
@@ -383,6 +419,7 @@ public final class ModItems {
     public static final DeferredItem<Item> RAW_TITANIUM = simpleItem("raw_titanium");
     public static final DeferredItem<Item> RAW_TUNGSTEN = simpleItem("raw_tungsten");
     public static final DeferredItem<Item> RAW_ALUMINUM = simpleItem("raw_aluminum");
+    public static final DeferredItem<Item> SULFUR = simpleItem("sulfur");
     public static final DeferredItem<ToxicItem> RAW_LEAD = ITEMS.register(
             "raw_lead",
             () -> new ToxicItem(new Item.Properties())
@@ -499,6 +536,8 @@ public final class ModItems {
     public static final DeferredItem<Item> HEATING_ELEMENT = simpleItem("heating_element");
     public static final DeferredItem<Item> ELECTRIC_MOTOR = simpleItem("electric_motor");
     public static final DeferredItem<Item> HYDRAULIC_COMPONENT = simpleItem("hydraulic_component");
+    public static final DeferredItem<Item> RESIN = simpleItem("resin");
+    public static final DeferredItem<Item> RUBBER = simpleItem("rubber");
     public static final DeferredItem<WireCuttersItem> WIRE_CUTTERS = ITEMS.register(
             "wire_cutters",
             () -> new WireCuttersItem(new Item.Properties().durability(341))
@@ -514,6 +553,10 @@ public final class ModItems {
     public static final DeferredItem<SteelTongsItem> STEEL_TONGS = ITEMS.register(
             "steel_tongs",
             () -> new SteelTongsItem(new Item.Properties().stacksTo(1))
+    );
+    public static final DeferredItem<TreeTapItem> TREE_TAP = ITEMS.register(
+            "tree_tap",
+            () -> new TreeTapItem(new Item.Properties().durability(50))
     );
     public static final DeferredItem<RemoteDetonatorItem> REMOTE_DETONATOR = ITEMS.register(
             "remote_detonator",

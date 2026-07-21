@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "particle": "skyent:block/rubber_log",
+    "down": "skyent:block/rubber_log_top",
+    "up": "skyent:block/rubber_log_top",
+    "north": "skyent:block/rubber_log_resin",
+    "south": "skyent:block/rubber_log",
+    "east": "skyent:block/rubber_log",
+    "west": "skyent:block/rubber_log"
+  }
+}
