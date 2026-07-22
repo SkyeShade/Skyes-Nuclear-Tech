@@ -24,6 +24,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.material.Fluids;
 
+import java.util.Comparator;
 import java.util.List;
 
 public final class BrickBlastFurnaceRecipeCategory implements IRecipeCategory<BrickBlastFurnaceRecipe> {
@@ -31,17 +32,14 @@ public final class BrickBlastFurnaceRecipeCategory implements IRecipeCategory<Br
     public static final RecipeType<BrickBlastFurnaceRecipe> RECIPE_TYPE =
             new RecipeType<>(UID, BrickBlastFurnaceRecipe.class);
 
-    private static final int CROP_X = 12;
-    private static final int CROP_Y = 11;
-    private static final int WIDTH = 152;
-    private static final int HEIGHT = 63;
+    private static final int CROP_X = 16;
+    private static final int CROP_Y = 16;
+    private static final int WIDTH = 144;
+    private static final int HEIGHT = 54;
     private static final int FUEL_DRAIN_TICKS = 40;
     private static final int FIRE_TICKS = 28;
     private static final int ARROW_TICKS = 48;
-    private static final List<ItemStack> FUEL_ITEMS = BuiltInRegistries.ITEM.stream()
-            .map(ItemStack::new)
-            .filter(BrickBlastFurnaceBlockEntity::isFuel)
-            .toList();
+    private static List<ItemStack> fuelItems;
 
     private final IDrawable background;
     private final IDrawable icon;
@@ -73,8 +71,8 @@ public final class BrickBlastFurnaceRecipeCategory implements IRecipeCategory<Br
 
     @Override
     public void setRecipe(IRecipeLayoutBuilder builder, BrickBlastFurnaceRecipe recipe, IFocusGroup focuses) {
-        builder.addSlot(RecipeIngredientRole.RENDER_ONLY, localX(BrickBlastFurnaceMenu.FUEL_SLOT_X), localY(BrickBlastFurnaceMenu.FUEL_SLOT_Y))
-                .addItemStacks(FUEL_ITEMS);
+        builder.addSlot(RecipeIngredientRole.INPUT, localX(BrickBlastFurnaceMenu.FUEL_SLOT_X), localY(BrickBlastFurnaceMenu.FUEL_SLOT_Y))
+                .addItemStacks(getFuelItems());
         builder.addSlot(RecipeIngredientRole.INPUT, localX(BrickBlastFurnaceMenu.TOP_INPUT_SLOT_X), localY(BrickBlastFurnaceMenu.TOP_INPUT_SLOT_Y))
                 .addItemStacks(stacksWithCount(recipe.getFirstInput().getItems(), recipe.getFirstInputCount()));
         builder.addSlot(RecipeIngredientRole.INPUT, localX(BrickBlastFurnaceMenu.BOTTOM_INPUT_SLOT_X), localY(BrickBlastFurnaceMenu.BOTTOM_INPUT_SLOT_Y))
@@ -163,6 +161,20 @@ public final class BrickBlastFurnaceRecipeCategory implements IRecipeCategory<Br
                 .map(ItemStack::copy)
                 .peek(stack -> stack.setCount(count))
                 .toList();
+    }
+
+    private static List<ItemStack> getFuelItems() {
+        if (fuelItems == null) {
+            fuelItems = BuiltInRegistries.ITEM.stream()
+                    .map(ItemStack::new)
+                    .filter(BrickBlastFurnaceBlockEntity::isFuel)
+                    .sorted(Comparator.<ItemStack>comparingInt(BrickBlastFurnaceBlockEntity::getFuelHeat)
+                            .reversed()
+                            .thenComparing(stack -> BuiltInRegistries.ITEM.getKey(stack.getItem()).toString()))
+                    .toList();
+        }
+
+        return fuelItems;
     }
 
     private static int localX(int guiX) {

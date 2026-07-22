@@ -3,7 +3,7 @@
   "category": "redstone",
   "pattern": [
     "RRR",
-    "III",
+    "IEI",
     "RRR"
   ],
   "key": {
@@ -12,6 +12,9 @@
     },
     "I": {
       "item": "skyent:iron_rod"
+    },
+    "E": {
+      "item": "skyent:electric_motor"
     }
   },
   "result": {

@@ -30,10 +30,10 @@ public final class CrusherRecipeCategory implements IRecipeCategory<LVCrusherRec
             SkyesNuclearTech.MOD_ID,
             "textures/gui/jei/crusher_jei.png"
     );
-    private static final int CROP_X = 40;
-    private static final int CROP_Y = 6;
-    private static final int WIDTH = 107;
-    private static final int HEIGHT = 55;
+    private static final int CROP_X = 45;
+    private static final int CROP_Y = 8;
+    private static final int WIDTH = 97;
+    private static final int HEIGHT = 51;
     private static final int PROGRESS_TICKS = 40;
 
     private final IDrawable background;

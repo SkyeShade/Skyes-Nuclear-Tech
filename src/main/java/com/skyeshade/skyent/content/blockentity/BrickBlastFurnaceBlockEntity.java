@@ -147,7 +147,7 @@ public class BrickBlastFurnaceBlockEntity extends BlockEntity implements MenuPro
         return !stack.isEmpty();
     }
 
-    private static int getFuelHeat(ItemStack stack) {
+    public static int getFuelHeat(ItemStack stack) {
         if (stack.isEmpty()) {
             return 0;
         }
