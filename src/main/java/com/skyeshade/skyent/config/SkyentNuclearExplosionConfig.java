@@ -140,7 +140,7 @@ public final class SkyentNuclearExplosionConfig {
                 .comment("Maximum nuclear destruction block changes applied per server tick.")
                 .defineInRange("max_blocks_per_tick", 524_288, 1, 1_048_576);
         MUTATION_MAX_MILLISECONDS_PER_TICK = BUILDER
-                .comment("Approximate max milliseconds spent applying nuclear destruction mutations per tick.")
+                .comment("Approximate max milliseconds spent applying nuclear destruction mutations per tick. Increasing this will make the destruction pass more laggy but also faster.")
                 .defineInRange("max_milliseconds_per_tick", 100.0D, 1.0D, 250.0D);
         MUTATION_MAX_SECTIONS_PER_TICK = BUILDER
                 .comment(
