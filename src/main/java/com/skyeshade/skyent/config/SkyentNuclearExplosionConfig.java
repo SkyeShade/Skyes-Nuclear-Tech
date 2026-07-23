@@ -141,7 +141,7 @@ public final class SkyentNuclearExplosionConfig {
                 .defineInRange("max_blocks_per_tick", 524_288, 1, 1_048_576);
         MUTATION_MAX_MILLISECONDS_PER_TICK = BUILDER
                 .comment("Approximate max milliseconds spent applying nuclear destruction mutations per tick.")
-                .defineInRange("max_milliseconds_per_tick", 12.0D, 1.0D, 50.0D);
+                .defineInRange("max_milliseconds_per_tick", 100.0D, 1.0D, 250.0D);
         MUTATION_MAX_SECTIONS_PER_TICK = BUILDER
                 .comment(
                         "Maximum destruction mask sections the mutation queue may complete per tick.",
