@@ -56,6 +56,7 @@ public class MediumTankScreen extends AbstractContainerScreen<MediumTankMenu> {
 
     @Override
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+        guiGraphics.drawString(font, title, 8, 6, 0x404040, false);
     }
 
     private void renderFluidGauge(GuiGraphics guiGraphics) {

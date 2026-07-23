@@ -100,7 +100,8 @@ public class MediumTankBlockEntity extends BlockEntity implements MenuProvider {
         }
     };
     private final IItemHandler automationItemHandler = new AutomationItemHandler();
-    private final IFluidHandler automationFluidHandler = new AutomationFluidHandler();
+    private final IFluidHandler passivePortFluidHandler = new SidedFluidHandler(true, false);
+    private final IFluidHandler pumpExtractionFluidHandler = new SidedFluidHandler(true, true);
 
     private final ContainerData data = new ContainerData() {
         @Override
@@ -378,12 +379,17 @@ public class MediumTankBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     public IFluidHandler getAutomationFluidHandler() {
-        return automationFluidHandler;
+        return passivePortFluidHandler;
     }
 
     @Nullable
     public IFluidHandler getAutomationFluidHandler(Direction side) {
-        return MediumTankBlock.isValidPipeConnection(getBlockState(), side) ? automationFluidHandler : null;
+        return MediumTankBlock.isValidPipeConnection(getBlockState(), side) ? passivePortFluidHandler : null;
+    }
+
+    @Nullable
+    public IFluidHandler getPumpExtractionFluidHandler(BlockState queriedState, @Nullable Direction side) {
+        return MediumTankBlock.isValidPipeConnection(queriedState, side) ? pumpExtractionFluidHandler : null;
     }
 
     public ContainerData getData() {
@@ -583,7 +589,15 @@ public class MediumTankBlockEntity extends BlockEntity implements MenuProvider {
         }
     }
 
-    private final class AutomationFluidHandler implements IFluidHandler {
+    private final class SidedFluidHandler implements IFluidHandler {
+        private final boolean allowFill;
+        private final boolean allowDrain;
+
+        private SidedFluidHandler(boolean allowFill, boolean allowDrain) {
+            this.allowFill = allowFill;
+            this.allowDrain = allowDrain;
+        }
+
         @Override
         public int getTanks() {
             return fluidTank.getTanks();
@@ -601,22 +615,22 @@ public class MediumTankBlockEntity extends BlockEntity implements MenuProvider {
 
         @Override
         public boolean isFluidValid(int tank, FluidStack stack) {
-            return fluidTank.isFluidValid(tank, stack);
+            return allowFill && fluidTank.isFluidValid(tank, stack);
         }
 
         @Override
         public int fill(FluidStack resource, FluidAction action) {
-            return fluidTank.fill(resource, action);
+            return allowFill ? fluidTank.fill(resource, action) : 0;
         }
 
         @Override
         public FluidStack drain(FluidStack resource, FluidAction action) {
-            return fluidTank.drain(resource, action);
+            return allowDrain ? fluidTank.drain(resource, action) : FluidStack.EMPTY;
         }
 
         @Override
         public FluidStack drain(int maxDrain, FluidAction action) {
-            return fluidTank.drain(maxDrain, action);
+            return allowDrain ? fluidTank.drain(maxDrain, action) : FluidStack.EMPTY;
         }
     }
 }

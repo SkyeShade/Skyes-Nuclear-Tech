@@ -25,6 +25,7 @@ import com.skyeshade.skyent.content.blockentity.LVRJConverterBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVConnectorBlockEntity;
 import com.skyeshade.skyent.content.blockentity.MediumTankBlockEntity;
 import com.skyeshade.skyent.content.blockentity.MVAssemblerBlockEntity;
+import com.skyeshade.skyent.content.blockentity.MVInlinePumpBlockEntity;
 import com.skyeshade.skyent.content.blockentity.RollingMillBlockEntity;
 import com.skyeshade.skyent.content.blockentity.SteamForgeHammerBlockEntity;
 import com.skyeshade.skyent.content.blockentity.WireMillBlockEntity;
@@ -128,6 +129,12 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("lv_steam_turbine", () -> BlockEntityType.Builder.of(
                     LVSteamTurbineBlockEntity::new,
                     ModBlocks.LV_STEAM_TURBINE.get()
+            ).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<MVInlinePumpBlockEntity>> MV_INLINE_PUMP =
+            BLOCK_ENTITIES.register("mv_inline_pump", () -> BlockEntityType.Builder.of(
+                    MVInlinePumpBlockEntity::new,
+                    ModBlocks.MV_INLINE_PUMP.get()
             ).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<BasicFluidDuctBlockEntity>> BASIC_FLUID_DUCT =

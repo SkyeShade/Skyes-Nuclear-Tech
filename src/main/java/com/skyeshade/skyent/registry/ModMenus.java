@@ -11,6 +11,7 @@ import com.skyeshade.skyent.content.menu.LVSteamTurbineMenu;
 import com.skyeshade.skyent.content.menu.MediumTankMenu;
 import com.skyeshade.skyent.content.menu.MVAssemblerMenu;
 import com.skyeshade.skyent.content.menu.MVAssemblerRecipeSelectMenu;
+import com.skyeshade.skyent.content.menu.MVInlinePumpMenu;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.inventory.MenuType;
 import net.neoforged.bus.api.IEventBus;
@@ -44,6 +45,9 @@ public final class ModMenus {
 
     public static final DeferredHolder<MenuType<?>, MenuType<LVSteamTurbineMenu>> LV_STEAM_TURBINE =
             MENUS.register("lv_steam_turbine", () -> IMenuTypeExtension.create(LVSteamTurbineMenu::new));
+
+    public static final DeferredHolder<MenuType<?>, MenuType<MVInlinePumpMenu>> MV_INLINE_PUMP =
+            MENUS.register("mv_inline_pump", () -> IMenuTypeExtension.create(MVInlinePumpMenu::new));
 
     public static final DeferredHolder<MenuType<?>, MenuType<ConveyorExporterMenu>> CONVEYOR_EXPORTER =
             MENUS.register("conveyor_exporter", () -> IMenuTypeExtension.create(ConveyorExporterMenu::new));

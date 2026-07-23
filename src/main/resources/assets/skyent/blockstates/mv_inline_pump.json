@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "skyent:block/mv_inline_pump", "y": 0 },
+    "facing=east": { "model": "skyent:block/mv_inline_pump", "y": 90 },
+    "facing=south": { "model": "skyent:block/mv_inline_pump", "y": 180 },
+    "facing=west": { "model": "skyent:block/mv_inline_pump", "y": 270 }
+  }
+}

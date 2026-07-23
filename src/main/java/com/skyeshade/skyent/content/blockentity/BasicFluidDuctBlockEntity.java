@@ -6,8 +6,9 @@ import com.skyeshade.skyent.content.block.BasicFluidDuctBlock;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -77,8 +78,9 @@ public class BasicFluidDuctBlockEntity extends BlockEntity {
         }
 
         BlockPos excludedNeighbor = side == null ? null : worldPosition.relative(side);
-        Set<BlockPos> network = collectNetwork(serverLevel, worldPosition);
-        List<Endpoint> endpoints = collectEndpoints(serverLevel, network, excludedNeighbor);
+        Map<BlockPos, Integer> distances = collectNetworkDistances(serverLevel, worldPosition);
+        Set<BlockPos> network = distances.keySet();
+        List<Endpoint> endpoints = collectEndpoints(serverLevel, network, excludedNeighbor, distances);
         int remaining = Math.min(resource.getAmount(), BASIC_FLUID_DUCT_TRANSFER_MB_PER_TICK);
 
         for (Endpoint endpoint : endpoints) {
@@ -95,33 +97,47 @@ public class BasicFluidDuctBlockEntity extends BlockEntity {
     }
 
     private static Set<BlockPos> collectNetwork(ServerLevel level, BlockPos start) {
-        Set<BlockPos> network = new HashSet<>();
+        return collectNetworkDistances(level, start).keySet();
+    }
+
+    private static Map<BlockPos, Integer> collectNetworkDistances(ServerLevel level, BlockPos start) {
+        Map<BlockPos, Integer> distances = new HashMap<>();
         ArrayDeque<BlockPos> queue = new ArrayDeque<>();
         queue.add(start);
+        distances.put(start, 0);
 
         while (!queue.isEmpty()) {
             BlockPos pos = queue.removeFirst();
-            if (!network.add(pos)) {
-                continue;
-            }
+            int distance = distances.get(pos);
 
             for (Direction direction : Direction.values()) {
                 BlockPos neighbor = pos.relative(direction);
                 BlockState state = level.getBlockState(pos);
                 BlockState neighborState = level.getBlockState(neighbor);
-                if (!network.contains(neighbor) && BasicFluidDuctBlock.canConnectDucts(state, direction, neighborState)) {
+                if (!distances.containsKey(neighbor) && BasicFluidDuctBlock.canConnectDucts(state, direction, neighborState)) {
+                    distances.put(neighbor, distance + 1);
                     queue.add(neighbor);
                 }
             }
         }
 
-        return network;
+        return distances;
     }
 
     private static List<Endpoint> collectEndpoints(ServerLevel level, Set<BlockPos> network, @Nullable BlockPos excludedNeighbor) {
+        return collectEndpoints(level, network, excludedNeighbor, null);
+    }
+
+    private static List<Endpoint> collectEndpoints(
+            ServerLevel level,
+            Set<BlockPos> network,
+            @Nullable BlockPos excludedNeighbor,
+            @Nullable Map<BlockPos, Integer> distances
+    ) {
         List<Endpoint> endpoints = new ArrayList<>();
         for (BlockPos ductPos : network) {
             BlockState ductState = level.getBlockState(ductPos);
+            int distance = distances == null ? 0 : distances.getOrDefault(ductPos, Integer.MAX_VALUE);
             for (Direction direction : Direction.values()) {
                 if (!BasicFluidDuctBlock.canUseSide(ductState, direction)) {
                     continue;
@@ -134,11 +150,17 @@ public class BasicFluidDuctBlockEntity extends BlockEntity {
 
                 IFluidHandler handler = level.getCapability(Capabilities.FluidHandler.BLOCK, neighborPos, direction.getOpposite());
                 if (handler != null) {
-                    endpoints.add(new Endpoint(neighborPos, direction.getOpposite(), handler));
+                    endpoints.add(new Endpoint(neighborPos, direction.getOpposite(), distance, handler));
                 }
             }
         }
 
+        endpoints.sort(Comparator
+                .comparingInt(Endpoint::distance)
+                .thenComparingInt(endpoint -> endpoint.pos().getX())
+                .thenComparingInt(endpoint -> endpoint.pos().getY())
+                .thenComparingInt(endpoint -> endpoint.pos().getZ())
+                .thenComparingInt(endpoint -> endpoint.side().ordinal()));
         return endpoints;
     }
 
@@ -192,7 +214,7 @@ public class BasicFluidDuctBlockEntity extends BlockEntity {
         }
     }
 
-    private record Endpoint(BlockPos pos, Direction side, IFluidHandler handler) {
+    private record Endpoint(BlockPos pos, Direction side, int distance, IFluidHandler handler) {
         private boolean sameConnection(Endpoint other) {
             return pos.equals(other.pos) && side == other.side;
         }

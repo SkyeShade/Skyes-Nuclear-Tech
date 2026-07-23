@@ -22,6 +22,8 @@
   "block.skyent.medium_tank": "Medium Tank",
   "block.skyent.medium_tank_part": "Medium Tank",
   "container.skyent.medium_tank": "Medium Tank",
+  "block.skyent.mv_inline_pump": "MV Inline Pump",
+  "container.skyent.mv_inline_pump": "MV Inline Pump",
   "block.skyent.nuclear_charge": "Nuclear Charge",
   "block.skyent.lv_electric_pump": "LV Electric Pump",
   "block.skyent.lv_steam_turbine": "LV Steam Turbine",

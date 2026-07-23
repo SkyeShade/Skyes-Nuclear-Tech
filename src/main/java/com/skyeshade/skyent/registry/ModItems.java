@@ -151,6 +151,11 @@ public final class ModItems {
             new Item.Properties()
     );
 
+    public static final DeferredItem<BlockItem> MV_INLINE_PUMP = ITEMS.registerSimpleBlockItem(
+            ModBlocks.MV_INLINE_PUMP,
+            new Item.Properties()
+    );
+
     public static final DeferredItem<BlockItem> BASIC_FLUID_DUCT = ITEMS.registerSimpleBlockItem(
             ModBlocks.BASIC_FLUID_DUCT,
             new Item.Properties()

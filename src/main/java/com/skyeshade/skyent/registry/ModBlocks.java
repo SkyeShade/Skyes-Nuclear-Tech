@@ -34,6 +34,7 @@ import com.skyeshade.skyent.content.block.MediumTankPartBlock;
 import com.skyeshade.skyent.content.block.MoltenCoriumBlock;
 import com.skyeshade.skyent.content.block.MVAssemblerBlock;
 import com.skyeshade.skyent.content.block.MVAssemblerPartBlock;
+import com.skyeshade.skyent.content.block.MVInlinePumpBlock;
 import com.skyeshade.skyent.content.block.NuclearChargeBlock;
 import com.skyeshade.skyent.content.block.RadioactiveBlock;
 import com.skyeshade.skyent.content.block.RadioactiveScrapMetalBlock;
@@ -302,6 +303,15 @@ public final class ModBlocks {
             "lv_steam_turbine",
             LVSteamTurbineBlock::new,
             BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+    );
+
+    public static final DeferredBlock<MVInlinePumpBlock> MV_INLINE_PUMP = BLOCKS.registerBlock(
+            "mv_inline_pump",
+            MVInlinePumpBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 12.0F)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
     );
 
     public static final DeferredBlock<BasicFluidDuctBlock> BASIC_FLUID_DUCT = BLOCKS.registerBlock(

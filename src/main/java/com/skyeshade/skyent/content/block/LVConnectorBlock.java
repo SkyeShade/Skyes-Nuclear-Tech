@@ -153,6 +153,10 @@ public class LVConnectorBlock extends BaseEntityBlock {
         Direction facing = state.getValue(FACING);
         BlockPos supportPos = pos.relative(facing.getOpposite());
         BlockState supportState = level.getBlockState(supportPos);
+        if (supportState.is(ModBlocks.MV_INLINE_PUMP.get())) {
+            return MVInlinePumpBlock.isValidEnergyConnection(supportState, facing);
+        }
+
         return supportState.isFaceSturdy(level, supportPos, facing)
                 || LVMVTransformerBlock.isConnectorSupportCell(supportState)
                 || HeatingChamberBlock.isConnectorSupportCell(supportState)

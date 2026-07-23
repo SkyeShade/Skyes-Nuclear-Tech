@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "bonus_rolls": 0.0,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "skyent:mv_inline_pump"
+        }
+      ],
+      "rolls": 1.0
+    }
+  ],
+  "random_sequence": "skyent:blocks/mv_inline_pump"
+}

@@ -129,6 +129,18 @@ public final class CommonEvents {
 
         event.registerBlockEntity(
                 Capabilities.ItemHandler.BLOCK,
+                ModBlockEntities.MV_INLINE_PUMP.get(),
+                (pump, side) -> pump.getAutomationItemHandler()
+        );
+
+        event.registerBlockEntity(
+                Capabilities.FluidHandler.BLOCK,
+                ModBlockEntities.MV_INLINE_PUMP.get(),
+                (pump, side) -> pump.getAutomationFluidHandler(side)
+        );
+
+        event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
                 ModBlockEntities.LV_STEAM_TURBINE.get(),
                 (turbine, side) -> turbine.getAutomationItemHandler()
         );

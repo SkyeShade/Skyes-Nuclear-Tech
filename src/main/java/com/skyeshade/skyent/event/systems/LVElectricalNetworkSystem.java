@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.event.systems;
 
 import com.skyeshade.skyent.content.block.LVMVTransformerBlock;
+import com.skyeshade.skyent.content.block.MVInlinePumpBlock;
 import com.skyeshade.skyent.content.block.MVAssemblerBlock;
 import com.skyeshade.skyent.content.block.HeatingChamberBlock;
 import com.skyeshade.skyent.content.block.IndustrialPressBlock;
@@ -16,6 +17,7 @@ import com.skyeshade.skyent.content.blockentity.LVRJConverterBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVConnectorBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVMVTransformerBlockEntity;
 import com.skyeshade.skyent.content.blockentity.MVAssemblerBlockEntity;
+import com.skyeshade.skyent.content.blockentity.MVInlinePumpBlockEntity;
 import com.skyeshade.skyent.content.blockentity.RollingMillBlockEntity;
 import com.skyeshade.skyent.content.blockentity.WireMillBlockEntity;
 import com.skyeshade.skyent.content.energy.CopperWireConstants;
@@ -260,6 +262,12 @@ public final class LVElectricalNetworkSystem {
             MVAssemblerBlockEntity assembler = attachedConnector != null && attachedConnector.getConnectorTier() == ElectricalTier.MV
                     ? resolveMVAssembler(level, endpointState, endpointPos)
                     : null;
+            MVInlinePumpBlockEntity inlinePump = attachedConnector != null
+                    && attachedConnector.getConnectorTier() == ElectricalTier.MV
+                    && blockEntity instanceof MVInlinePumpBlockEntity pump
+                    && MVInlinePumpBlock.isValidEnergyConnection(endpointState, direction.getOpposite())
+                    ? pump
+                    : null;
             LVMVTransformerBlockEntity transformerBody = attachedConnector != null
                     ? resolveTransformerBody(level, endpointState, endpointPos)
                     : null;
@@ -309,6 +317,18 @@ public final class LVElectricalNetworkSystem {
                     @Override
                     public int receiveRJ(int amount, boolean simulate) {
                         return converter.receiveRJ(amount, simulate);
+                    }
+                }));
+            } else if (inlinePump != null) {
+                consumers.add(new Consumer(connectorPos, new NetworkConsumer() {
+                    @Override
+                    public int availableRJCapacity() {
+                        return inlinePump.getAvailableRJCapacity();
+                    }
+
+                    @Override
+                    public int receiveRJ(int amount, boolean simulate) {
+                        return inlinePump.receiveRJ(attachedConnector.getConnectorTier(), amount, simulate);
                     }
                 }));
             } else if (transformerBody != null && transformerBody.canReceiveFromLVSide(attachedConnector.getConnectorTier())) {
