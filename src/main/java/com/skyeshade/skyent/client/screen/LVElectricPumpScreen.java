@@ -8,12 +8,9 @@ import java.util.List;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.level.material.Fluid;
-import net.minecraft.world.level.material.Fluids;
 
 public class LVElectricPumpScreen extends AbstractContainerScreen<LVElectricPumpMenu> {
     private static final int GUI_WIDTH = 176;
@@ -132,17 +129,8 @@ public class LVElectricPumpScreen extends AbstractContainerScreen<LVElectricPump
 
     private List<Component> fluidTooltip() {
         return List.of(
-                Component.literal(fluidName(menu.getFluid())),
+                FluidGaugeRenderer.fluidDisplayName(menu.getFluid(), menu.getFluidAmount()),
                 Component.literal(menu.getFluidAmount() + " / " + menu.getFluidCapacity() + " mB")
         );
-    }
-
-    private static String fluidName(Fluid fluid) {
-        if (fluid == Fluids.EMPTY) {
-            return "Empty";
-        }
-
-        ResourceLocation key = BuiltInRegistries.FLUID.getKey(fluid);
-        return key == null ? "Fluid" : key.toString();
     }
 }
