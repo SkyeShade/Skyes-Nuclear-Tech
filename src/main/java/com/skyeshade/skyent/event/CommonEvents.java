@@ -4,6 +4,7 @@ import com.skyeshade.skyent.event.systems.BootstrapSystem;
 import com.skyeshade.skyent.content.block.ConveyorChuteBlock;
 import com.skyeshade.skyent.content.block.ConveyorElevatorBlock;
 import com.skyeshade.skyent.content.block.HeatingChamberPartBlock;
+import com.skyeshade.skyent.content.block.MediumTankBlock;
 import com.skyeshade.skyent.content.block.MVAssemblerBlock;
 import com.skyeshade.skyent.content.block.SteamForgeHammerBlock;
 import com.skyeshade.skyent.content.block.SteamForgeHammerPartBlock;
@@ -116,6 +117,18 @@ public final class CommonEvents {
 
         event.registerBlockEntity(
                 Capabilities.ItemHandler.BLOCK,
+                ModBlockEntities.MEDIUM_TANK.get(),
+                (tank, side) -> tank.getAutomationItemHandler()
+        );
+
+        event.registerBlockEntity(
+                Capabilities.FluidHandler.BLOCK,
+                ModBlockEntities.MEDIUM_TANK.get(),
+                (tank, side) -> tank.getAutomationFluidHandler(side)
+        );
+
+        event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
                 ModBlockEntities.LV_STEAM_TURBINE.get(),
                 (turbine, side) -> turbine.getAutomationItemHandler()
         );
@@ -156,6 +169,23 @@ public final class CommonEvents {
                         .map(assembler -> assembler.getAutomationItemHandler(pos, side))
                         .orElse(null),
                 ModBlocks.MV_ASSEMBLER_PART.get()
+        );
+
+        event.registerBlock(
+                Capabilities.ItemHandler.BLOCK,
+                (level, pos, state, blockEntity, side) -> MediumTankBlock.getMasterBlockEntity(level, state, pos)
+                        .map(tank -> tank.getAutomationItemHandler())
+                        .orElse(null),
+                ModBlocks.MEDIUM_TANK_PART.get()
+        );
+
+        event.registerBlock(
+                Capabilities.FluidHandler.BLOCK,
+                (level, pos, state, blockEntity, side) -> MediumTankBlock.getMasterBlockEntity(level, state, pos)
+                        .filter(tank -> MediumTankBlock.isValidPipeConnection(state, side))
+                        .map(tank -> tank.getAutomationFluidHandler())
+                        .orElse(null),
+                ModBlocks.MEDIUM_TANK_PART.get()
         );
 
         event.registerBlock(

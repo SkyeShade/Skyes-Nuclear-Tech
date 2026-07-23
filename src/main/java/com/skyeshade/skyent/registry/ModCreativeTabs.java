@@ -71,6 +71,7 @@ public final class ModCreativeTabs {
                 ModItems.INDUSTRIAL_PRESS,
                 ModItems.WIRE_MILL,
                 ModItems.MV_ASSEMBLER,
+                ModItems.MEDIUM_TANK,
                 ModItems.LV_ELECTRIC_PUMP,
                 ModItems.LV_STEAM_TURBINE,
                 ModItems.LV_CONNECTOR,

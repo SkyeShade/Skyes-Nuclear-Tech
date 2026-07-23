@@ -20,6 +20,7 @@ import com.skyeshade.skyent.client.renderer.blockentity.GeigerCounterPlacedRende
 import com.skyeshade.skyent.client.renderer.blockentity.HeatingChamberRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.IndustrialPressRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.LVMVTransformerRenderer;
+import com.skyeshade.skyent.client.renderer.blockentity.MediumTankRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.RollingMillRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.SteamForgeHammerRenderer;
 import com.skyeshade.skyent.client.renderer.entity.ConveyorMovingItemRenderer;
@@ -42,6 +43,7 @@ import com.skyeshade.skyent.client.screen.ElectricFurnaceScreen;
 import com.skyeshade.skyent.client.screen.LVCrusherScreen;
 import com.skyeshade.skyent.client.screen.LVElectricPumpScreen;
 import com.skyeshade.skyent.client.screen.LVSteamTurbineScreen;
+import com.skyeshade.skyent.client.screen.MediumTankScreen;
 import com.skyeshade.skyent.client.screen.MVAssemblerRecipeSelectScreen;
 import com.skyeshade.skyent.client.screen.MVAssemblerScreen;
 import com.skyeshade.skyent.event.systems.BootstrapSystem;
@@ -104,6 +106,7 @@ public final class ClientEvents {
         event.register(ModMenus.LV_CRUSHER.get(), LVCrusherScreen::new);
         event.register(ModMenus.BRICK_BLAST_FURNACE.get(), BrickBlastFurnaceScreen::new);
         event.register(ModMenus.LV_ELECTRIC_PUMP.get(), LVElectricPumpScreen::new);
+        event.register(ModMenus.MEDIUM_TANK.get(), MediumTankScreen::new);
         event.register(ModMenus.LV_STEAM_TURBINE.get(), LVSteamTurbineScreen::new);
         event.register(ModMenus.CONVEYOR_EXPORTER.get(), ConveyorExporterScreen::new);
         event.register(ModMenus.MV_ASSEMBLER.get(), MVAssemblerScreen::new);
@@ -123,6 +126,7 @@ public final class ClientEvents {
         event.registerBlockEntityRenderer(ModBlockEntities.INDUSTRIAL_PRESS.get(), IndustrialPressRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.ROLLING_MILL.get(), RollingMillRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.LV_MV_TRANSFORMER.get(), LVMVTransformerRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.MEDIUM_TANK.get(), MediumTankRenderer::new);
     }
 
     public static void onRegisterAdditionalModels(ModelEvent.RegisterAdditional event) {

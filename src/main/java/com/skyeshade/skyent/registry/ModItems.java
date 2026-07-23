@@ -131,6 +131,11 @@ public final class ModItems {
             new Item.Properties()
     );
 
+    public static final DeferredItem<BlockItem> MEDIUM_TANK = ITEMS.registerSimpleBlockItem(
+            ModBlocks.MEDIUM_TANK,
+            new Item.Properties()
+    );
+
     public static final DeferredItem<BlockItem> NUCLEAR_CHARGE = ITEMS.registerSimpleBlockItem(
             ModBlocks.NUCLEAR_CHARGE,
             new Item.Properties()

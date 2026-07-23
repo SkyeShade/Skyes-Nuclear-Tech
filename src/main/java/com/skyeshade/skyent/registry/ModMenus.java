@@ -8,6 +8,7 @@ import com.skyeshade.skyent.content.menu.ElectricFurnaceMenu;
 import com.skyeshade.skyent.content.menu.LVCrusherMenu;
 import com.skyeshade.skyent.content.menu.LVElectricPumpMenu;
 import com.skyeshade.skyent.content.menu.LVSteamTurbineMenu;
+import com.skyeshade.skyent.content.menu.MediumTankMenu;
 import com.skyeshade.skyent.content.menu.MVAssemblerMenu;
 import com.skyeshade.skyent.content.menu.MVAssemblerRecipeSelectMenu;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -37,6 +38,9 @@ public final class ModMenus {
 
     public static final DeferredHolder<MenuType<?>, MenuType<LVElectricPumpMenu>> LV_ELECTRIC_PUMP =
             MENUS.register("lv_electric_pump", () -> IMenuTypeExtension.create(LVElectricPumpMenu::new));
+
+    public static final DeferredHolder<MenuType<?>, MenuType<MediumTankMenu>> MEDIUM_TANK =
+            MENUS.register("medium_tank", () -> IMenuTypeExtension.create(MediumTankMenu::new));
 
     public static final DeferredHolder<MenuType<?>, MenuType<LVSteamTurbineMenu>> LV_STEAM_TURBINE =
             MENUS.register("lv_steam_turbine", () -> IMenuTypeExtension.create(LVSteamTurbineMenu::new));

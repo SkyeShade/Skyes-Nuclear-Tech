@@ -1,0 +1,9 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "skyent:block/medium_tank_part"
+      }
+    }
+  ]
+}

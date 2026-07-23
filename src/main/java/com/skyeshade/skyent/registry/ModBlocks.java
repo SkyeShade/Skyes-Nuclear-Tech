@@ -29,6 +29,8 @@ import com.skyeshade.skyent.content.block.LVElectricPumpBlock;
 import com.skyeshade.skyent.content.block.LVMVTransformerBlock;
 import com.skyeshade.skyent.content.block.LVMVTransformerPartBlock;
 import com.skyeshade.skyent.content.block.LVSteamTurbineBlock;
+import com.skyeshade.skyent.content.block.MediumTankBlock;
+import com.skyeshade.skyent.content.block.MediumTankPartBlock;
 import com.skyeshade.skyent.content.block.MoltenCoriumBlock;
 import com.skyeshade.skyent.content.block.MVAssemblerBlock;
 import com.skyeshade.skyent.content.block.MVAssemblerPartBlock;
@@ -260,6 +262,23 @@ public final class ModBlocks {
     public static final DeferredBlock<MVAssemblerPartBlock> MV_ASSEMBLER_PART = BLOCKS.registerBlock(
             "mv_assembler_part",
             MVAssemblerPartBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 12.0F)
+                    .requiresCorrectToolForDrops()
+    );
+
+    public static final DeferredBlock<MediumTankBlock> MEDIUM_TANK = BLOCKS.registerBlock(
+            "medium_tank",
+            MediumTankBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 12.0F)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
+    );
+
+    public static final DeferredBlock<MediumTankPartBlock> MEDIUM_TANK_PART = BLOCKS.registerBlock(
+            "medium_tank_part",
+            MediumTankPartBlock::new,
             BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
                     .strength(5.0F, 12.0F)
                     .requiresCorrectToolForDrops()

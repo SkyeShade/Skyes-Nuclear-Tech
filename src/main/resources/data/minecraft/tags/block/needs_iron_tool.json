@@ -33,6 +33,8 @@
     "skyent:wire_mill_part",
     "skyent:mv_assembler",
     "skyent:mv_assembler_part",
+    "skyent:medium_tank",
+    "skyent:medium_tank_part",
     "skyent:lv_mv_transformer",
     "skyent:lv_mv_transformer_part",
     "skyent:lv_steam_turbine",
