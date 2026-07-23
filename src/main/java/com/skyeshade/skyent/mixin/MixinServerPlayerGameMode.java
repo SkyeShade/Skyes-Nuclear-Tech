@@ -5,6 +5,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.skyeshade.skyent.content.block.HeatingChamberBlock;
 import com.skyeshade.skyent.content.block.IndustrialPressBlock;
 import com.skyeshade.skyent.content.block.LVMVTransformerBlock;
+import com.skyeshade.skyent.content.block.MediumTankBlock;
 import com.skyeshade.skyent.content.block.MVAssemblerBlock;
 import com.skyeshade.skyent.content.block.RollingMillBlock;
 import com.skyeshade.skyent.content.block.SteamForgeHammerBlock;
@@ -42,6 +43,7 @@ public abstract class MixinServerPlayerGameMode {
         visualPos = WireMillBlock.resolveDestroyProgressPos(this.level, visualPos);
         visualPos = LVMVTransformerBlock.resolveDestroyProgressPos(this.level, visualPos);
         visualPos = MVAssemblerBlock.resolveDestroyProgressPos(this.level, visualPos);
+        visualPos = MediumTankBlock.resolveDestroyProgressPos(this.level, visualPos);
         original.call(level, breakerId, visualPos, progress);
 
         if (progress < 0 && !visualPos.equals(pos)) {

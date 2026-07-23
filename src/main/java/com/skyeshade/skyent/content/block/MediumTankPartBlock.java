@@ -86,12 +86,12 @@ public class MediumTankPartBlock extends Block {
 
     @Override
     protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return Shapes.block();
+        return MediumTankBlock.shapeForLocal(localPartCoordinates(state), state.getValue(FACING));
     }
 
     @Override
     protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return Shapes.block();
+        return MediumTankBlock.shapeForLocal(localPartCoordinates(state), state.getValue(FACING));
     }
 
     @Override
@@ -127,5 +127,13 @@ public class MediumTankPartBlock extends Block {
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(FACING, PART_X, PART_Y, PART_Z);
+    }
+
+    private static BlockPos localPartCoordinates(BlockState state) {
+        return new BlockPos(
+                state.getValue(PART_X),
+                state.getValue(PART_Y),
+                state.getValue(PART_Z)
+        );
     }
 }

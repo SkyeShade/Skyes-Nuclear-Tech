@@ -9,6 +9,7 @@ import net.minecraft.world.phys.Vec3;
 public final class ModMultiblockShapes {
     public static final ResourceLocation ROLLING_MILL = ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "rolling_mill");
     public static final ResourceLocation INDUSTRIAL_PRESS = ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "industrial_press");
+    public static final ResourceLocation MEDIUM_TANK = ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "medium_tank");
 
     private static boolean registered;
 
@@ -41,6 +42,17 @@ public final class ModMultiblockShapes {
                 2,
                 3,
                 1
+        ));
+
+        MultiblockShapeRegistry.register(new MultiblockShapeDefinition(
+                MEDIUM_TANK,
+                ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "models/block/medium_tank.json"),
+                2.0D,
+                Vec3.ZERO,
+                new Vec3(0.0D, 0.0D, 16.0D),
+                2,
+                2,
+                4
         ));
     }
 }

@@ -2,9 +2,11 @@ package com.skyeshade.skyent.content.block;
 
 import com.mojang.serialization.MapCodec;
 import com.skyeshade.skyent.content.blockentity.MediumTankBlockEntity;
+import com.skyeshade.skyent.content.shape.MultiblockShapeRegistry;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import com.skyeshade.skyent.registry.ModBlocks;
 import com.skyeshade.skyent.registry.ModItems;
+import com.skyeshade.skyent.registry.ModMultiblockShapes;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
@@ -142,12 +144,12 @@ public class MediumTankBlock extends BaseEntityBlock {
 
     @Override
     protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return Shapes.block();
+        return shapeForLocal(CONTROLLER_LOCAL_POS, state.getValue(FACING));
     }
 
     @Override
     protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return Shapes.block();
+        return shapeForLocal(CONTROLLER_LOCAL_POS, state.getValue(FACING));
     }
 
     @Override
@@ -270,6 +272,17 @@ public class MediumTankBlock extends BaseEntityBlock {
         return level.getBlockEntity(masterPos) instanceof MediumTankBlockEntity tank ? Optional.of(tank) : Optional.empty();
     }
 
+    public static BlockPos resolveDestroyProgressPos(Level level, BlockPos pos) {
+        BlockState state = level.getBlockState(pos);
+        if (state.is(ModBlocks.MEDIUM_TANK_PART.get())) {
+            BlockPos masterPos = getMasterPos(state, pos);
+            if (level.getBlockState(masterPos).is(ModBlocks.MEDIUM_TANK.get())) {
+                return masterPos;
+            }
+        }
+        return pos;
+    }
+
     public static boolean isValidPipeConnection(BlockState state, Direction side) {
         if (side == null) {
             return false;
@@ -304,6 +317,17 @@ public class MediumTankBlock extends BaseEntityBlock {
 
     public static BlockPos localToWorld(BlockPos origin, Direction facing, int x, int y, int z) {
         return origin.offset(localPartOffset(new BlockPos(x, y, z), facing));
+    }
+
+    public static VoxelShape shapeForLocal(BlockPos local, Direction facing) {
+        return MultiblockShapeRegistry.getShape(
+                ModMultiblockShapes.MEDIUM_TANK,
+                facing,
+                local.getX(),
+                local.getY(),
+                local.getZ(),
+                (fallbackFacing, fallbackX, fallbackY, fallbackZ) -> Shapes.block()
+        );
     }
 
     public static BlockPos getControllerLocalPos() {
