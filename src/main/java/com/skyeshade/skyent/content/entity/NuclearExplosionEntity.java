@@ -41,12 +41,10 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.util.*;
 
 public class NuclearExplosionEntity extends Entity {
     private static final EntityDataAccessor<Boolean> DATA_SPAWN_CLOUD = SynchedEntityData.defineId(
@@ -378,14 +376,19 @@ public class NuclearExplosionEntity extends Entity {
             return;
         }
         rayCalculationLogged = true;
-        long startNs = rayCalculationStartNs < 0L ? System.nanoTime() : rayCalculationStartNs;
-        long elapsedNanos = System.nanoTime() - startNs;
+
+        long finishedNs = System.nanoTime();
+        long elapsedNanos = finishedNs - rayCalculationStartNs;
+
+        double elapsedMs = elapsedNanos / 1_000_000.0D;
+        double mapDataMiB = rayCalculationMapDataBytes / (1024.0D * 1024.0D);
+
         SkyesNuclearTech.LOGGER.info(
                 "Nuclear explosion rays calculated: radius={}, rays={}, elapsedMs={}, mapDataMiB={}",
                 getRadius(),
                 rayCount,
-                elapsedNanos / 1_000_000.0D,
-                rayCalculationMapDataBytes / (1024.0D * 1024.0D)
+                String.format(Locale.ROOT, "%.2f", elapsedMs),
+                String.format(Locale.ROOT, "%.2f", mapDataMiB)
         );
     }
 
