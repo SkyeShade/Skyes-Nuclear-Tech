@@ -190,7 +190,6 @@ public final class NuclearMushroomCloudSimulation {
         spawnCloudlets(level, entityPosition);
         tickCloudlets();
         trimOldestIfNeeded();
-        logDebug();
         age++;
     }
 
@@ -527,7 +526,6 @@ public final class NuclearMushroomCloudSimulation {
             double baseY = Double.isFinite(groundY) ? groundY : 0.0D;
             lowerAirRingSpawnY = baseY + 35.0D * visualScale + AIR_RING_HEIGHT_EXTRA_Y;
             spawnAirRing(random, scaledCount(AIR_RING_LOWER_COUNT), lowerAirRingSpawnY, 10.0D * visualScale, 180.0D * visualScale, AIR_RING_LOWER_LIFETIME, 1.35D * visualScale);
-            logAirRingSpawn("lower", lowerAirRingSpawnY);
         }
 
         if (!spawnedUpperAirRing && age >= AIR_RING_UPPER_DELAY_TICKS) {
@@ -536,7 +534,6 @@ public final class NuclearMushroomCloudSimulation {
             double baseY = Double.isFinite(groundY) ? groundY : 0.0D;
             upperAirRingSpawnY = baseY + 60.0D * visualScale + AIR_RING_HEIGHT_EXTRA_Y;
             spawnAirRing(random, scaledCount(AIR_RING_UPPER_COUNT), upperAirRingSpawnY, 6.0D * visualScale, 115.0D * visualScale, AIR_RING_UPPER_LIFETIME, 0.95D * visualScale);
-            logAirRingSpawn("upper", upperAirRingSpawnY);
         }
     }
 
@@ -568,24 +565,6 @@ public final class NuclearMushroomCloudSimulation {
                     radial.z * expansionSpeed
             ));
         }
-    }
-
-    private void logAirRingSpawn(String ringName, double y) {
-        if (!DEBUG_MUSHROOM) {
-            return;
-        }
-
-        SkyesNuclearTech.LOGGER.info(
-                "Nuke mushroom air ring spawned: ring={} age={} y={} lowerDelay={} upperDelay={} torusCenterY={} torusTopY={} visualScale={}",
-                ringName,
-                age,
-                y,
-                AIR_RING_LOWER_DELAY_TICKS,
-                AIR_RING_UPPER_DELAY_TICKS,
-                torusCenterY,
-                torusCenterY + minorRadius,
-                visualScale
-        );
     }
 
     private void spawnTorusCloudlet(RandomSource random) {
@@ -762,125 +741,6 @@ public final class NuclearMushroomCloudSimulation {
 
     private int scaledInitialTorusFillCount() {
         return Math.max(150, Mth.floor(INITIAL_TORUS_FILL_COUNT * particleScale));
-    }
-
-    private void logDebug() {
-        if (!DEBUG_MUSHROOM || age % 40 != 0) {
-            return;
-        }
-
-        SkyesNuclearTech.LOGGER.info(
-                "Nuke mushroom debug: age={} cloudlets={} nukeRadius={} visualCloudRadius={} rawRadiusScale={} radiusScaleExponent={} groundY={} groundYInitialized={} visualScale={} particleScale={} cloudScale={} finalHeightScale={} growTicks={} riseTicks={} growthSpeedMultiplier={} growthProgress={} torusInitialHorizontalCompression={} torusHorizontalCompression={} headRandomnessProgress={} headPositionJitterScale={} headVelocityJitterScale={} headShapeCorrectionMultiplier={} headSourceSpread={} spawnedInitialChaosSphere={} initialChaosSphereCount={} scaledInitialChaosSphereCount={} initialChaosSphereRadius={} initialChaosSphereInwardVelocity={} initialChaosSphereUpwardVelocity={} initialChaosSphereUpwardVelocityRandom={} craterSmokeRadius={} craterSmokeSpawnTicks={} craterSmokeAttemptsPerCloudlet={} craterSmokeMinEdgeSizeScale={} craterSmokeMinEdgeSpeedScale={} craterSmokeDistanceScalePower={} craterSmokeSizeScaleRange=[{},{}] craterSmokeSpeedScaleRange=[{},{}] craterSmokeSpawnAttemptsThisTick={} craterSmokeSpawnedThisTick={} craterSmokeSkippedNoVitrifiedThisTick={} craterSmokeSkippedChunkUnavailableThisTick={} filledInitialTorus={} initialTorusFillCount={} scaledInitialTorusFillCount={} horizontalMajorRadius={} finalHorizontalMajorRadius={} horizontalMinorRadius={} verticalMinorRadius={} torusCenterY={} torusBottomY={} torusTopY={} secondaryMajorRadius={} secondaryFinalWidthScale={} secondaryRingScale={} secondaryMinorRadius={} secondaryOuterRadius={} secondaryInnerRadius={} secondaryCenterY={} stemBaseDepthBelowExplosion={} scaledStemDepth={} stemBottomY={} stemTopY={} stemHeight={} stemRadius0={} stemRadius030={} stemRadius075={} stemRadius1={} globalHeat={} stemHotSpawnHeatFactor={} stemHotSpawnChance={} torusSpawnTicks={} stemExtraSpawnTicks={} stemSpawnTicks={} torusSpawnRate={} scaledTorusSpawnRate={} secondarySpawnRate={} scaledSecondarySpawnRate={} stemSpawnRate={} scaledStemSpawnRate={} stemLifetimeMin={} stemLifetimeRandom={} airRingHeightExtraY={} airRingLowerDelay={} airRingUpperDelay={} airRingLowerLifetime={} airRingUpperLifetime={} lowerAirRingSpawnY={} upperAirRingSpawnY={} sourceAvgRadialOffset={} sourceAvgVerticalOffset={} torusScale={} angularSpeed={} targetTubeSpeed={} maxSpeed={} smokeDark={} smokeMedium={} smokeLight={} spawnedLowerAirRing={} spawnedUpperAirRing={} INITIAL_FIREBALL_CHAOS={} CRATER_SMOKE={} TORUS_FIREBALL={} SECONDARY_TORUS={} STEM={} WHITE_AIR_RING={} hotSTEM={}",
-                age,
-                cloudlets.size(),
-                nukeRadius,
-                visualCloudRadius,
-                rawRadiusScale,
-                CLOUD_RADIUS_SCALE_EXPONENT,
-                groundY,
-                groundYInitialized,
-                visualScale,
-                particleScale,
-                cloudScale,
-                CLOUD_FINAL_HEIGHT_SCALE,
-                TORUS_GROW_TICKS,
-                TORUS_RISE_TICKS,
-                CLOUD_GROWTH_SPEED_MULTIPLIER,
-                growthProgress(TORUS_GROW_TICKS),
-                TORUS_INITIAL_HORIZONTAL_COMPRESSION,
-                torusHorizontalCompression,
-                headRandomnessProgress(),
-                headPositionJitterScale(),
-                headVelocityJitterScale(),
-                headShapeCorrectionMultiplier(),
-                headSourceSpread(),
-                spawnedInitialChaosSphere,
-                INITIAL_CHAOS_SPHERE_COUNT,
-                scaledCount(INITIAL_CHAOS_SPHERE_COUNT),
-                initialChaosSphereRadius,
-                INITIAL_CHAOS_SPHERE_INWARD_VELOCITY,
-                INITIAL_CHAOS_SPHERE_UPWARD_VELOCITY,
-                INITIAL_CHAOS_SPHERE_UPWARD_VELOCITY_RANDOM,
-                craterSmokeRadius,
-                CRATER_SMOKE_SPAWN_TICKS,
-                CRATER_SMOKE_SPAWN_ATTEMPTS_PER_CLOUDLET,
-                CRATER_SMOKE_MIN_EDGE_SIZE_SCALE,
-                CRATER_SMOKE_MIN_EDGE_SPEED_SCALE,
-                CRATER_SMOKE_DISTANCE_SCALE_POWER,
-                craterSmokeSpawnedThisTick == 0 ? 0.0D : craterSmokeSizeScaleMinThisTick,
-                craterSmokeSpawnedThisTick == 0 ? 0.0D : craterSmokeSizeScaleMaxThisTick,
-                craterSmokeSpawnedThisTick == 0 ? 0.0D : craterSmokeSpeedScaleMinThisTick,
-                craterSmokeSpawnedThisTick == 0 ? 0.0D : craterSmokeSpeedScaleMaxThisTick,
-                craterSmokeSpawnAttemptsThisTick,
-                craterSmokeSpawnedThisTick,
-                craterSmokeSkippedNoVitrifiedThisTick,
-                craterSmokeSkippedChunkUnavailableThisTick,
-                filledInitialTorus,
-                INITIAL_TORUS_FILL_COUNT,
-                scaledInitialTorusFillCount(),
-                majorRadius,
-                TORUS_FINAL_MAJOR_RADIUS * visualScale,
-                horizontalMinorRadius,
-                minorRadius,
-                torusCenterY,
-                torusCenterY - minorRadius,
-                torusCenterY + minorRadius,
-                secondaryMajorRadius,
-                SECONDARY_TORUS_FINAL_WIDTH_SCALE,
-                SECONDARY_TORUS_RING_SCALE,
-                secondaryMinorRadius,
-                secondaryMajorRadius + secondaryMinorRadius,
-                Math.max(0.0D, secondaryMajorRadius - secondaryMinorRadius),
-                secondaryCenterY,
-                STEM_BASE_DEPTH_BELOW_EXPLOSION,
-                scaledStemDepth,
-                stemBottomY,
-                stemTopY,
-                stemHeight,
-                stemRadiusAt(0.0D),
-                stemRadiusAt(0.30D),
-                stemRadiusAt(0.75D),
-                stemRadiusAt(1.0D),
-                heat,
-                stemHotSpawnHeatFactor(),
-                stemHotSpawnChance(),
-                TORUS_SPAWN_TICKS,
-                STEM_EXTRA_SPAWN_TICKS,
-                STEM_SPAWN_TICKS,
-                TORUS_CLOUDLETS_PER_TICK,
-                scaledCount(TORUS_CLOUDLETS_PER_TICK),
-                SECONDARY_TORUS_CLOUDLETS_PER_TICK,
-                scaledCount(SECONDARY_TORUS_CLOUDLETS_PER_TICK),
-                STEM_CLOUDLETS_PER_TICK,
-                scaledCount(STEM_CLOUDLETS_PER_TICK),
-                STEM_LIFETIME_MIN_TICKS,
-                STEM_LIFETIME_RANDOM_TICKS,
-                AIR_RING_HEIGHT_EXTRA_Y,
-                AIR_RING_LOWER_DELAY_TICKS,
-                AIR_RING_UPPER_DELAY_TICKS,
-                AIR_RING_LOWER_LIFETIME,
-                AIR_RING_UPPER_LIFETIME,
-                lowerAirRingSpawnY,
-                upperAirRingSpawnY,
-                sourceSpawnCountThisTick == 0 ? 0.0D : sourceSpawnRadialOffsetSum / sourceSpawnCountThisTick,
-                sourceSpawnCountThisTick == 0 ? 0.0D : sourceSpawnVerticalOffsetSum / sourceSpawnCountThisTick,
-                torusScale,
-                torusAngularSpeed(),
-                targetTubeSpeedAtMinorRadius(),
-                maxTorusSpeed(),
-                countSmokeShade(0.0F),
-                countSmokeShade(0.5F),
-                countSmokeShade(1.0F),
-                spawnedLowerAirRing,
-                spawnedUpperAirRing,
-                countCloudlets(MushroomCloudletType.INITIAL_FIREBALL_CHAOS),
-                countCloudlets(MushroomCloudletType.CRATER_SMOKE),
-                countCloudlets(MushroomCloudletType.TORUS_FIREBALL),
-                countCloudlets(MushroomCloudletType.SECONDARY_TORUS),
-                countCloudlets(MushroomCloudletType.STEM),
-                countCloudlets(MushroomCloudletType.WHITE_AIR_RING),
-                countHotStemCloudlets()
-        );
     }
 
     private int countCloudlets(MushroomCloudletType type) {
@@ -1477,3 +1337,4 @@ public final class NuclearMushroomCloudSimulation {
         }
     }
 }
+

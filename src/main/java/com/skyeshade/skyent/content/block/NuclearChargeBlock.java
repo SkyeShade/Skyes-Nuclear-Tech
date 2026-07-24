@@ -1,9 +1,7 @@
 package com.skyeshade.skyent.content.block;
 
-import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.explosion.NuclearExplosion;
 import com.skyeshade.skyent.content.explosion.NuclearExplosionTuning;
-import com.skyeshade.skyent.content.entity.NuclearExplosionEntity;
 import com.skyeshade.skyent.registry.ModBlocks;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -46,41 +44,13 @@ public class NuclearChargeBlock extends Block {
     }
 
     public static boolean detonate(ServerLevel level, BlockPos pos, @Nullable Entity source) {
-        long totalStartNs = NuclearExplosionEntity.detonationTimingNowNs();
-        if (NuclearExplosionEntity.isDetonationTimingDebugEnabled()) {
-            SkyesNuclearTech.LOGGER.info(
-                    "Nuke detonation timing: NuclearChargeBlock.detonate entered dimension={} pos={} radius={} thread={}",
-                    level.dimension().location(),
-                    pos,
-                    NuclearExplosionTuning.nuclearChargeRadius,
-                    Thread.currentThread().getName()
-            );
-        }
-
-        long stateStartNs = NuclearExplosionEntity.detonationTimingNowNs();
         boolean validCharge = level.getBlockState(pos).is(ModBlocks.NUCLEAR_CHARGE.get());
-        NuclearExplosionEntity.logDetonationTimingStep(
-                "charge validate block state",
-                stateStartNs,
-                "dimension=" + level.dimension().location() + " pos=" + pos + " valid=" + validCharge
-        );
         if (!validCharge) {
-            NuclearExplosionEntity.logDetonationTimingStep("charge detonate total invalid", totalStartNs, "pos=" + pos);
             return false;
         }
 
-        long removeStartNs = NuclearExplosionEntity.detonationTimingNowNs();
         level.removeBlock(pos, false);
-        NuclearExplosionEntity.logDetonationTimingStep("charge remove block", removeStartNs, "pos=" + pos);
-
-        long explodeStartNs = NuclearExplosionEntity.detonationTimingNowNs();
         NuclearExplosion.explode(level, pos.getCenter(), (float) NuclearExplosionTuning.nuclearChargeRadius, source, true, true, true, true);
-        NuclearExplosionEntity.logDetonationTimingStep("charge shared NuclearExplosion.explode", explodeStartNs, "pos=" + pos);
-        NuclearExplosionEntity.logDetonationTimingStep(
-                "charge detonate total",
-                totalStartNs,
-                "dimension=" + level.dimension().location() + " pos=" + pos + " radius=" + NuclearExplosionTuning.nuclearChargeRadius
-        );
         return true;
     }
 

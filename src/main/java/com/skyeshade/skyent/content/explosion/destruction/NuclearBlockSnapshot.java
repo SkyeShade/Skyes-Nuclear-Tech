@@ -31,13 +31,7 @@ public final class NuclearBlockSnapshot implements NuclearBlastRayPlanner.RayWor
     private final int sectionCountY;
     private final int sectionCountZ;
     private final SectionSnapshot[] sections;
-    private final int sectionCount;
     private final int fullSectionCount;
-    private final int allAirSectionCount;
-    private final long sampledBlocks;
-    private final long blockEntityLookups;
-    private final long collisionShapeLookups;
-    private final double buildMs;
     private final int minBuildHeight;
     private final int maxBuildHeight;
 
@@ -49,13 +43,7 @@ public final class NuclearBlockSnapshot implements NuclearBlastRayPlanner.RayWor
             int sectionCountY,
             int sectionCountZ,
             SectionSnapshot[] sections,
-            int sectionCount,
             int fullSectionCount,
-            int allAirSectionCount,
-            long sampledBlocks,
-            long blockEntityLookups,
-            long collisionShapeLookups,
-            double buildMs,
             int minBuildHeight,
             int maxBuildHeight
     ) {
@@ -66,19 +54,12 @@ public final class NuclearBlockSnapshot implements NuclearBlastRayPlanner.RayWor
         this.sectionCountY = sectionCountY;
         this.sectionCountZ = sectionCountZ;
         this.sections = sections;
-        this.sectionCount = sectionCount;
         this.fullSectionCount = fullSectionCount;
-        this.allAirSectionCount = allAirSectionCount;
-        this.sampledBlocks = sampledBlocks;
-        this.blockEntityLookups = blockEntityLookups;
-        this.collisionShapeLookups = collisionShapeLookups;
-        this.buildMs = buildMs;
         this.minBuildHeight = minBuildHeight;
         this.maxBuildHeight = maxBuildHeight;
     }
 
     public static NuclearBlockSnapshot build(ServerLevel level, Vec3 center, int radius, NuclearResistanceCache resistanceCache) {
-        long startNs = System.nanoTime();
         int centerX = Mth.floor(center.x);
         int centerY = Mth.floor(center.y);
         int centerZ = Mth.floor(center.z);
@@ -98,12 +79,7 @@ public final class NuclearBlockSnapshot implements NuclearBlastRayPlanner.RayWor
         int sectionCountY = maxSectionY - minSectionY + 1;
         int sectionCountZ = maxSectionZ - minSectionZ + 1;
         SectionSnapshot[] sections = new SectionSnapshot[sectionCountX * sectionCountY * sectionCountZ];
-        int sectionCount = 0;
         int fullSectionCount = 0;
-        int allAirSectionCount = 0;
-        long sampledBlocks = 0;
-        long blockEntityLookups = 0;
-        long collisionShapeLookups = 0;
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
         for (int sectionX = minSectionX; sectionX <= maxSectionX; sectionX++) {
@@ -150,7 +126,6 @@ public final class NuclearBlockSnapshot implements NuclearBlastRayPlanner.RayWor
                                 boolean hasBlockEntity = false;
                                 boolean protectedBlockEntity = false;
                                 if (classification.hasBlockEntity()) {
-                                    blockEntityLookups++;
                                     sampleFlags |= FLAG_BLOCK_ENTITY_LOOKUP_COUNTED;
                                     hasBlockEntity = level.getBlockEntity(pos) != null;
                                     protectedBlockEntity = hasBlockEntity && resistanceCache.isProtectedBlockEntity(state, level, pos);
@@ -166,7 +141,6 @@ public final class NuclearBlockSnapshot implements NuclearBlastRayPlanner.RayWor
                                 }
                                 boolean nonSolid = false;
                                 if (classification.collisionShapeLookupNeeded()) {
-                                    collisionShapeLookups++;
                                     sampleFlags |= FLAG_COLLISION_SHAPE_LOOKUP_COUNTED;
                                     nonSolid = state.getCollisionShape(level, pos).isEmpty();
                                 }
@@ -187,7 +161,6 @@ public final class NuclearBlockSnapshot implements NuclearBlastRayPlanner.RayWor
                                 int localIndex = NuclearDestructionMask.localBitIndex(x, y, z);
                                 resistances[localIndex] = resistance;
                                 flags[localIndex] = sampleFlags;
-                                sampledBlocks++;
                                 hasAnySample = true;
                             }
                         }
@@ -196,12 +169,10 @@ public final class NuclearBlockSnapshot implements NuclearBlastRayPlanner.RayWor
                         int index = sectionIndex(sectionX, sectionY, sectionZ, minSectionX, minSectionY, minSectionZ, sectionCountX, sectionCountY);
                         if (allAir) {
                             sections[index] = AllAirSectionSnapshot.INSTANCE;
-                            allAirSectionCount++;
                         } else {
                             sections[index] = new FullSectionSnapshot(resistances, flags);
                             fullSectionCount++;
                         }
-                        sectionCount++;
                     }
                 }
             }
@@ -215,13 +186,7 @@ public final class NuclearBlockSnapshot implements NuclearBlastRayPlanner.RayWor
                 sectionCountY,
                 sectionCountZ,
                 sections,
-                sectionCount,
                 fullSectionCount,
-                allAirSectionCount,
-                sampledBlocks,
-                blockEntityLookups,
-                collisionShapeLookups,
-                (System.nanoTime() - startNs) / 1_000_000.0D,
                 level.getMinBuildHeight(),
                 level.getMaxBuildHeight()
         );
@@ -249,42 +214,9 @@ public final class NuclearBlockSnapshot implements NuclearBlastRayPlanner.RayWor
         section.fill(NuclearDestructionMask.localBitIndex(x, y, z), sample);
     }
 
-    public int sectionCount() {
-        return sectionCount;
-    }
-
-    public int fullSectionCount() {
-        return fullSectionCount;
-    }
-
-    public int allAirSectionCount() {
-        return allAirSectionCount;
-    }
-
-    public long sampledBlocks() {
-        return sampledBlocks;
-    }
-
-    public long blockEntityLookups() {
-        return blockEntityLookups;
-    }
-
-    public long collisionShapeLookups() {
-        return collisionShapeLookups;
-    }
-
-    public double buildMs() {
-        return buildMs;
-    }
-
-    public long estimatedBytes() {
-        return fullSectionCount * (4096L * Float.BYTES + 4096L * Integer.BYTES + 64L)
-                + allAirSectionCount * 32L
+    public long mapDataBytes() {
+        return fullSectionCount * (4096L * Float.BYTES + 4096L * Integer.BYTES)
                 + (long) sections.length * Long.BYTES;
-    }
-
-    public long oldStyleEstimatedBytes() {
-        return sampledBlocks * 64L + sectionCount * 4096L * Long.BYTES;
     }
 
     @Override

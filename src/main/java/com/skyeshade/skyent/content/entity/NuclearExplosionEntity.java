@@ -156,17 +156,9 @@ public class NuclearExplosionEntity extends Entity {
     public static final int RAY_FADE_TICKS = 40;
     public static final int RAY_TOTAL_TICKS = RAY_GROW_TICKS + RAY_FADE_TICKS;
     public static final float RAY_SCALE = 56.0F;
-    private static final boolean DEBUG_SHOCKWAVE_VISUALS = false;
-    private static final boolean DEBUG_FORCE_SHOCKWAVE_TEST_CLOUDLET = false;
     private static final boolean ENABLE_NUCLEAR_BLOCK_DESTRUCTION = true;
     private static final boolean NUKE_DESTRUCTION_PLAN_ONLY = false;
     private static final boolean SAVE_NUKE_DESTRUCTION_PROGRESS = false;
-    private static final boolean DEBUG_NUKE_DESTRUCTION = false;
-    private static final boolean DEBUG_NUKE_LIFECYCLE = false;
-    private static final boolean DEBUG_NUKE_ITEM_DROPS = false;
-    private static final boolean DEBUG_NUKE_THERMAL_FLASH = false;
-    private static final boolean DEBUG_NUKE_VISUAL_SYNC = false;
-    private static final boolean DEBUG_NUKE_ENTITY_DAMAGE = false;
     private static final int NUKE_RAY_PLANNER_MAX_RAYS_PER_TICK = 8_128;
     private static final int NUKE_RAY_PLANNER_MAX_STEPS_PER_TICK = 128_000;
     private static final int NUKE_WATER_CLEAR_START_DELAY_TICKS = 1;
@@ -220,15 +212,6 @@ public class NuclearExplosionEntity extends Entity {
     private boolean chunksForced;
     private ChunkPos retainedCenterChunk;
     private UUID aftermathChunkLoadingOwnerUuid;
-    private boolean loggedInitialChunkLoadingState;
-    private boolean loggedFirstServerTickTiming;
-    private double worstRayPlanningTickMs;
-    private double worstBlockMutationTickMs;
-    private double syncRayPlanningTotalMs;
-    private int syncRayPlanningTicks;
-    private long syncRayPlanningTotalRays;
-    private long syncRayPlanningTotalSteps;
-    private boolean debugShockwaveTestCloudletSpawned;
     @Nullable
     private NuclearDestructionMask destructionMask;
     @Nullable
@@ -254,7 +237,6 @@ public class NuclearExplosionEntity extends Entity {
     private int aftermathStartTick = -1;
     private int mutationStartTick = -1;
     private String aftermathStartReason = "not_started";
-    private boolean destructionCleanupLogged;
     private DestructionPhase destructionPhase = DestructionPhase.NOT_STARTED;
     private int destructionTicks;
     private long destructionProgressCounter;
@@ -266,6 +248,12 @@ public class NuclearExplosionEntity extends Entity {
     private double originY = Double.NaN;
     private double originZ = Double.NaN;
     private double explosionGroundY = Double.NaN;
+    private boolean nuclearExplosionStartedLogged;
+    private long rayCalculationStartNs = -1L;
+    private long rayCalculationMapDataBytes;
+    private boolean rayCalculationLogged;
+    private long destructionMutationStartNs = -1L;
+    private boolean destructionMutationLogged;
 
     public NuclearExplosionEntity(EntityType<NuclearExplosionEntity> entityType, Level level) {
         super(entityType, level);
@@ -276,48 +264,6 @@ public class NuclearExplosionEntity extends Entity {
     public NuclearExplosionEntity(Level level, Vec3 center) {
         this(ModEntities.NUCLEAR_EXPLOSION.get(), level);
         setFixedOrigin(center.x, center.y, center.z);
-    }
-
-    public static boolean isDetonationTimingDebugEnabled() {
-        return SkyentNuclearExplosionConfig.debugDetonationTiming();
-    }
-
-    public static long detonationTimingNowNs() {
-        return System.nanoTime();
-    }
-
-    public static double detonationTimingElapsedMs(long startNs) {
-        return (System.nanoTime() - startNs) / 1_000_000.0D;
-    }
-
-    public static double detonationTimingElapsedMs(long startNs, long endNs) {
-        return (endNs - startNs) / 1_000_000.0D;
-    }
-
-    public static void logDetonationTimingStep(String label, long startNs) {
-        logDetonationTimingStep(label, startNs, "");
-    }
-
-    public static void logDetonationTimingStep(String label, long startNs, String details) {
-        if (!SkyentNuclearExplosionConfig.debugDetonationTiming()) {
-            return;
-        }
-        double elapsedMs = detonationTimingElapsedMs(startNs);
-        if (elapsedMs > 50.0D) {
-            SkyesNuclearTech.LOGGER.warn(
-                    "Nuke detonation timing: {} took {} ms{}",
-                    label,
-                    elapsedMs,
-                    details.isEmpty() ? "" : " " + details
-            );
-        } else {
-            SkyesNuclearTech.LOGGER.info(
-                    "Nuke detonation timing: {} took {} ms{}",
-                    label,
-                    elapsedMs,
-                    details.isEmpty() ? "" : " " + details
-            );
-        }
     }
 
     public void configure(float strength, boolean destroyBlocks, boolean spawnCloud, boolean flashSky, boolean playSounds, @Nullable Entity source) {
@@ -352,7 +298,6 @@ public class NuclearExplosionEntity extends Entity {
             forcedExplosionChunks.add(retainedCenterChunk);
         }
         chunksForced = !forcedExplosionChunks.isEmpty();
-        NuclearExplosionChunkLoading.debugAdopted(getChunkLoadingOwnerUuid(), getId(), forcedExplosionChunks.size());
     }
 
     @Override
@@ -382,22 +327,9 @@ public class NuclearExplosionEntity extends Entity {
             tickClientEffects();
         } else {
             entityData.set(DATA_VISUAL_AGE, tickCount);
-            long serverTickStartNs = detonationTimingNowNs();
+            logNuclearExplosionStarted();
             tickServerEffects();
             entityData.set(DATA_ACTIVE_BLAST_PHASE, isActiveBlastPhase());
-            if (!loggedFirstServerTickTiming) {
-                loggedFirstServerTickTiming = true;
-                logDetonationTimingStep(
-                        "first NuclearExplosionEntity server tick",
-                        serverTickStartNs,
-                        "id=" + getId()
-                                + " tick=" + tickCount
-                                + " phase=" + destructionPhase
-                                + " waterClearActive=" + (fluidEvaporationPass != null)
-                                + " rayPlannerActive=" + (rayPlanner != null)
-                                + " mutationQueueActive=" + (mutationQueue != null)
-                );
-            }
         }
 
         if (tickCount > ENTITY_LIFETIME_TICKS && canReleaseImmediateChunks()) {
@@ -408,12 +340,8 @@ public class NuclearExplosionEntity extends Entity {
 
     private void tickServerEffects() {
         if (!chunksForced && !canReleaseImmediateChunks()) {
-            NuclearExplosionChunkLoading.debugFallbackForce(getChunkLoadingOwnerUuid(), getId());
             forceExplosionChunks();
-        } else if (!loggedInitialChunkLoadingState) {
-            NuclearExplosionChunkLoading.debugAlreadyForced(getChunkLoadingOwnerUuid(), getId(), forcedExplosionChunks.size());
         }
-        loggedInitialChunkLoadingState = true;
 
 
         tickNuclearDestruction();
@@ -432,7 +360,52 @@ public class NuclearExplosionEntity extends Entity {
             tickCenterRadiation();
             centerRadiationTicks++;
         }
-        logLifecycleDebug();
+    }
+
+    private void logNuclearExplosionStarted() {
+        if (nuclearExplosionStartedLogged) {
+            return;
+        }
+        nuclearExplosionStartedLogged = true;
+        SkyesNuclearTech.LOGGER.info(
+                "Nuclear explosion started: radius={}",
+                getRadius()
+        );
+    }
+
+    private void logRayCalculationFinished(long rayCount) {
+        if (rayCalculationLogged) {
+            return;
+        }
+        rayCalculationLogged = true;
+        long startNs = rayCalculationStartNs < 0L ? System.nanoTime() : rayCalculationStartNs;
+        long elapsedNanos = System.nanoTime() - startNs;
+        SkyesNuclearTech.LOGGER.info(
+                "Nuclear explosion rays calculated: radius={}, rays={}, elapsedMs={}, mapDataMiB={}",
+                getRadius(),
+                rayCount,
+                elapsedNanos / 1_000_000.0D,
+                rayCalculationMapDataBytes / (1024.0D * 1024.0D)
+        );
+    }
+
+    private void startDestructionMutationTimer() {
+        if (destructionMutationStartNs < 0L) {
+            destructionMutationStartNs = System.nanoTime();
+        }
+    }
+
+    private void logDestructionMutationFinished() {
+        if (destructionMutationLogged || destructionMutationStartNs < 0L) {
+            return;
+        }
+        destructionMutationLogged = true;
+        long elapsedNanos = System.nanoTime() - destructionMutationStartNs;
+        SkyesNuclearTech.LOGGER.info(
+                "Nuclear explosion destruction finished: radius={}, elapsedMs={}",
+                getRadius(),
+                elapsedNanos / 1_000_000.0D
+        );
     }
 
     private void tickNuclearDestruction() {
@@ -477,111 +450,28 @@ public class NuclearExplosionEntity extends Entity {
         tickFluidEvaporation();
 
         if (destructionPhase == DestructionPhase.PLANNING && rayPlanner != null && destructionMask != null) {
-            long rayPlanningStartNs = System.nanoTime();
+            if (rayCalculationStartNs < 0L) {
+                rayCalculationStartNs = System.nanoTime();
+            }
             int rayBudget = NukePerformanceBudget.scaleInt(NUKE_RAY_PLANNER_MAX_RAYS_PER_TICK, 512, serverLevel.getServer());
             int stepBudget = NukePerformanceBudget.scaleInt(NUKE_RAY_PLANNER_MAX_STEPS_PER_TICK, 8_192, serverLevel.getServer());
             NuclearBlastRayPlanner.PlannerResult result = rayPlanner.tickBudget(
                     rayBudget,
                     stepBudget
             );
-            double rayPlanningElapsedMs = elapsedMs(rayPlanningStartNs);
-            worstRayPlanningTickMs = Math.max(worstRayPlanningTickMs, rayPlanningElapsedMs);
-            syncRayPlanningTotalMs += rayPlanningElapsedMs;
-            syncRayPlanningTicks++;
-            syncRayPlanningTotalRays += result.raysProcessed();
-            syncRayPlanningTotalSteps += result.stepsProcessed();
             if (result.raysProcessed() > 0 || result.stepsProcessed() > 0 || result.blocksMarked() > 0) {
                 markDestructionProgress(serverLevel, "ray_planning");
             }
-            logRayTimingDebug(result, rayPlanningElapsedMs);
-            logRayPlannerDebug(result);
             NukePerformanceBudget.logIfEnabled(getId(), tickCount, destructionPhase.name(), 0, 0, rayBudget, stepBudget);
 
             if (rayPlanner.isComplete()) {
+                logRayCalculationFinished(rayPlanner.totalRays());
                 sectionCompletionTracker = new NuclearSectionCompletionTracker();
                 sectionCompletionTracker.initializeFromDestructionMask(destructionMask);
                 mutationQueue = new NuclearBlockMutationQueue(serverLevel, destructionMask, fixedOrigin(), sectionCompletionTracker, resistanceCache);
                 destructionPhase = DestructionPhase.MUTATING;
                 mutationStartTick = tickCount;
                 markDestructionProgress(serverLevel, "sync_planning_complete");
-                SkyesNuclearTech.LOGGER.info(
-                        "Nuke destruction planning complete: id={} selectedMode=SYNC syncPlanningTotalMs={} planningTicks={} worstPlanningTickMs={} averagePlanningTickMs={} averageRaysPerTick={} averageStepsPerTick={} rays={}/{} rayDensityMultiplier={} rawRayEstimate={} minRays={} maxRays={} totalRays={} rayCountClamped={} rayCountFormula={} baselineRadius={} radiusScale={} inverseRadiusScale={} smallRadiusProgressBoost={} visualRayScale={} initialRayEnergy={} rayEnergyJitterAtRadius200={} rayEnergyJitterSmallRadiusBonus={} rayEnergyJitterAmount={} rayEnergyJitterRange=[{},{}] rayEnergyJitterSamples={} distanceDecayPerBlock={} scaledDistanceDecayPerBlock={} resistanceCostMultiplier={} resistanceCostOffset={} resistancePowerNear={} resistancePowerFar={} resistancePowerCurve={} distanceResistanceGrowth={} scaledDistanceResistanceGrowth={} materialStackingGrowth={} scaledMaterialStackingGrowth={} closePierceFraction={} closeResistanceMultiplier={} scaledClosePierceFraction={} scaledCloseResistanceMultiplier={} resistanceSamples={} steps={} maskSections={} estimatedBlocks={} plannedReplacements={} trackerPendingSections={} initiallyPrunedEmptySections={} initiallyPrunedAirSections={} mutationUpdateFlags={} suppressDrops=true unloadedStops={} energyStops={} blockedStops={} unbreakableStops={} outOfWorldStops={} fragileMarked={} nonSolidMarked={} fluidMarked={} airSkipped={} blockEntityHits={} blockEntityMarked={} protectedBlockEntitySkips={} crackedConcreteBricksPlanned={} blockEntitySkips={} highResHit={} highResMarked={} highResBlocked={} highResEnergyStops={} obsidianHit={} obsidianMarked={} obsidianBlocked={} obsidianEnergyStops={} maxObsidianDepthMarkedOnSingleRay={}",
-                        getId(),
-                        syncRayPlanningTotalMs,
-                        syncRayPlanningTicks,
-                        worstRayPlanningTickMs,
-                        syncRayPlanningTicks <= 0 ? 0.0D : syncRayPlanningTotalMs / syncRayPlanningTicks,
-                        syncRayPlanningTicks <= 0 ? 0.0D : syncRayPlanningTotalRays / (double) syncRayPlanningTicks,
-                        syncRayPlanningTicks <= 0 ? 0.0D : syncRayPlanningTotalSteps / (double) syncRayPlanningTicks,
-                        rayPlanner.rayIndex(),
-                        rayPlanner.totalRays(),
-                        rayPlanner.rayDensityMultiplier(),
-                        rayPlanner.rawRayEstimate(),
-                        rayPlanner.minRays(),
-                        rayPlanner.maxRays(),
-                        rayPlanner.totalRays(),
-                        rayPlanner.rayCountClamped(),
-                        rayPlanner.rayCountFormula(),
-                        rayPlanner.baselineRadius(),
-                        rayPlanner.radiusScale(),
-                        rayPlanner.inverseRadiusScale(),
-                        rayPlanner.smallRadiusProgressBoost(),
-                        getVisualRayScale(),
-                        rayPlanner.initialRayEnergy(),
-                        rayPlanner.rayEnergyJitterAtRadius200(),
-                        rayPlanner.rayEnergyJitterSmallRadiusBonus(),
-                        rayPlanner.rayEnergyJitterAmount(),
-                        rayPlanner.rayEnergyJitterMinMultiplier(),
-                        rayPlanner.rayEnergyJitterMaxMultiplier(),
-                        rayPlanner.rayEnergyJitterSamples(),
-                        rayPlanner.distanceDecayPerBlock(),
-                        rayPlanner.scaledDistanceDecayPerBlock(),
-                        rayPlanner.resistanceCostMultiplier(),
-                        rayPlanner.resistanceCostOffset(),
-                        rayPlanner.resistancePowerNear(),
-                        rayPlanner.resistancePowerFar(),
-                        rayPlanner.resistancePowerDistanceCurve(),
-                        rayPlanner.distanceResistanceGrowth(),
-                        rayPlanner.scaledDistanceResistanceGrowth(),
-                        rayPlanner.materialPenetrationStackingGrowth(),
-                        rayPlanner.scaledMaterialPenetrationStackingGrowth(),
-                        rayPlanner.closeRangeArmorPiercingRadiusFraction(),
-                        rayPlanner.closeRangeResistanceCostMultiplier(),
-                        rayPlanner.scaledCloseRangeArmorPiercingRadiusFraction(),
-                        rayPlanner.scaledCloseRangeResistanceCostMultiplier(),
-                        rayPlanner.resistanceCostSamples(),
-                        rayPlanner.stepsProcessedTotal(),
-                        destructionMask.sectionCount(),
-                        destructionMask.estimatedBlockCount(),
-                        destructionMask.estimatedReplacementCount(),
-                        sectionCompletionTracker.pendingCount(),
-                        mutationQueue.initiallyPrunedEmptySections(),
-                        mutationQueue.initiallyPrunedAirSections(),
-                        NuclearBlockMutationQueue.NUKE_BLOCK_UPDATE_FLAGS,
-                        rayPlanner.unloadedChunkStops(),
-                        rayPlanner.energyStops(),
-                        rayPlanner.blockedRayStops(),
-                        rayPlanner.unbreakableStops(),
-                        rayPlanner.outOfWorldStops(),
-                        rayPlanner.fragileBlocksMarked(),
-                        rayPlanner.nonSolidBlocksMarked(),
-                        rayPlanner.fluidBlocksMarked(),
-                        rayPlanner.airBlocksSkipped(),
-                        rayPlanner.blockEntityBlocksHit(),
-                        rayPlanner.blockEntityBlocksMarked(),
-                        rayPlanner.protectedBlockEntitySkips(),
-                        rayPlanner.crackedConcreteBricksPlanned(),
-                        rayPlanner.blockEntitySkips(),
-                        rayPlanner.highResistanceBlocksHit(),
-                        rayPlanner.highResistanceBlocksMarked(),
-                        rayPlanner.highResistanceBlocksBlocked(),
-                        rayPlanner.highResistanceBlocksStoppedByEnergy(),
-                        rayPlanner.obsidianBlocksHit(),
-                        rayPlanner.obsidianBlocksMarked(),
-                        rayPlanner.obsidianBlocksBlocked(),
-                        rayPlanner.obsidianBlocksStoppedByEnergy(),
-                        rayPlanner.maxObsidianDepthMarkedOnSingleRay()
-                );
             }
         }
 
@@ -591,12 +481,6 @@ public class NuclearExplosionEntity extends Entity {
 
         if (destructionPhase == DestructionPhase.MUTATING && mutationQueue != null) {
             if (NUKE_DESTRUCTION_PLAN_ONLY) {
-                SkyesNuclearTech.LOGGER.info(
-                        "Nuke destruction plan-only complete: id={} plannedSections={} plannedBlocks={}",
-                        getId(),
-                        destructionMask == null ? 0 : destructionMask.sectionCount(),
-                        destructionMask == null ? 0 : destructionMask.estimatedBlockCount()
-                );
                 markPrimaryDestructionComplete();
                 destructionPhase = DestructionPhase.COMPLETE;
                 cleanupDestructionState("plan_only");
@@ -619,18 +503,16 @@ public class NuclearExplosionEntity extends Entity {
                     1.0D,
                     serverLevel.getServer()
             );
+            startDestructionMutationTimer();
             NuclearBlockMutationQueue.MutationResult result = mutationQueue.tick(
                     mutationSectionsBudget,
                     mutationBlocksBudget,
                     mutationMsBudget
             );
             double mutationElapsedMs = elapsedMs(mutationStartNs);
-            worstBlockMutationTickMs = Math.max(worstBlockMutationTickMs, mutationElapsedMs);
             if (result.sectionsTouched() > 0 || result.blocksRemoved() > 0 || result.complete()) {
                 markDestructionProgress(serverLevel, "mutation_applied_or_advanced");
             }
-            logRayMutationTimingDebug(result, mutationElapsedMs);
-            logMutationDebug(result);
             NukePerformanceBudget.logIfEnabled(getId(), tickCount, destructionPhase.name(), mutationBlocksBudget, mutationSectionsBudget, 0, 0);
             if (!aftermathStarted && sectionCompletionTracker != null) {
                 int readySections = sectionCompletionTracker.completedCount() + sectionCompletionTracker.skippedCount();
@@ -643,58 +525,8 @@ public class NuclearExplosionEntity extends Entity {
             tickColumnCollapseTasks(serverLevel);
 
             if (mutationQueue.isComplete()) {
-                SkyesNuclearTech.LOGGER.info(
-                        "Nuke destruction mutation complete: id={} mutationTicks={} totalMutationTickMs={} worstMutationTickMs={} averageMutationTickMs={} blocksPerTickAverage={} sectionsPerTickAverage={} maxBlocksInSingleTick={} maxSectionsInSingleTick={} worstMutationTickIndex={} worstMutationTickSections={} configuredMaxBlocksPerTick={} configuredMaxMillisecondsPerTick={} configuredMaxSectionsPerTick={} stoppedByBlockBudget={} stoppedByTimeBudget={} stoppedBySectionBudget={} stoppedByQueueEmpty={} removedBlocks={} replacedBlocks={} touchedSections={} obsidianRemoved={} highResistanceRemoved={} blockEntitiesRemoved={} containersCleared={} protectedBlockEntitySkips={} unloadedSkips={} prunedEmptySections={} prunedAirSections={} processedRadius={} processedFraction={} trackerCompleted={} trackerSkipped={} aftermathStarted={} aftermathStartTick={}",
-                        getId(),
-                        mutationQueue.mutationTicks(),
-                        mutationQueue.totalMutationTickMs(),
-                        mutationQueue.worstMutationTickMs(),
-                        mutationQueue.averageMutationTickMs(),
-                        mutationQueue.averageBlocksChangedPerTick(),
-                        mutationQueue.averageSectionsTouchedPerTick(),
-                        mutationQueue.maxBlocksChangedInSingleTick(),
-                        mutationQueue.maxSectionsTouchedInSingleTick(),
-                        mutationQueue.worstMutationTickIndex(),
-                        mutationQueue.worstMutationTickSections(),
-                        SkyentNuclearExplosionConfig.mutationMaxBlocksPerTick(),
-                        SkyentNuclearExplosionConfig.mutationMaxMillisecondsPerTick(),
-                        SkyentNuclearExplosionConfig.mutationMaxSectionsPerTick(),
-                        mutationQueue.stoppedByBlockBudgetCount(),
-                        mutationQueue.stoppedByTimeBudgetCount(),
-                        mutationQueue.stoppedBySectionBudgetCount(),
-                        mutationQueue.stoppedByQueueEmptyCount(),
-                        mutationQueue.totalBlocksRemoved(),
-                        mutationQueue.totalBlocksReplaced(),
-                        mutationQueue.totalSectionsTouched(),
-                        mutationQueue.obsidianBlocksRemoved(),
-                        mutationQueue.highResistanceBlocksRemoved(),
-                        mutationQueue.blockEntitiesRemoved(),
-                        mutationQueue.containerBlockEntitiesCleared(),
-                        mutationQueue.protectedBlockEntitySkips(),
-                        mutationQueue.unloadedSectionSkips(),
-                        mutationQueue.prunedEmptySections(),
-                        mutationQueue.prunedAirSections(),
-                        mutationQueue.processedRadius(),
-                        mutationQueue.processedRadiusFraction(),
-                        sectionCompletionTracker == null ? 0 : sectionCompletionTracker.completedCount(),
-                        sectionCompletionTracker == null ? 0 : sectionCompletionTracker.skippedCount(),
-                        aftermathStarted,
-                        aftermathStartTick
-                );
+                logDestructionMutationFinished();
                 markPrimaryDestructionComplete();
-                if (DEBUG_NUKE_ENTITY_DAMAGE) {
-                    SkyesNuclearTech.LOGGER.info(
-                            "Nuke primary explosive destruction complete: id={} tick={} primaryDestructionCompleteAge={} postDestructionDamageTicks={} activeNuclearDamagePhase={} activeSweepSmokeAllowed={} aftermathStarted={} aftermathStartTick={}",
-                            getId(),
-                            tickCount,
-                            primaryDestructionCompleteAge,
-                            NUCLEAR_EXPLOSION_POST_DESTRUCTION_DAMAGE_TICKS,
-                            isActiveBlastPhase(),
-                            isActiveBlastPhase(),
-                            aftermathStarted,
-                            aftermathStartTick
-                    );
-                }
                 destructionMask = null;
                 resistanceCache = null;
                 rayPlanner = null;
@@ -744,24 +576,6 @@ public class NuclearExplosionEntity extends Entity {
         int evaporationRadius = Mth.ceil(getRadius() * SkyentNuclearExplosionConfig.waterEvaporationRadiusScale());
         fluidEvaporationPass = new NuclearWaterEvaporationPass(serverLevel, fixedOrigin(), evaporationRadius);
         markDestructionProgress(serverLevel, "water_evaporation_started");
-        if (SkyentNuclearExplosionConfig.debugWaterClear()) {
-            SkyesNuclearTech.LOGGER.info(
-                    "Nuke water clearing started: id={} tick={} center={} entityRadius={} clearRadius={} radiusScale={} radialLayersPerStep={} recheckOverlap={} maxBlockChecksPerTick={} maxBlockChangesPerTick={} startDelayTicks={} shellEstimate={} chunkRadius={}",
-                    getId(),
-                    tickCount,
-                    fixedOrigin(),
-                    getRadius(),
-                    evaporationRadius,
-                    SkyentNuclearExplosionConfig.waterEvaporationRadiusScale(),
-                    SkyentNuclearExplosionConfig.waterEvaporationRadialLayersPerStep(),
-                    fluidEvaporationPass.recheckOverlap(),
-                    SkyentNuclearExplosionConfig.waterEvaporationMaxBlocksPerTick(),
-                    SkyentNuclearExplosionConfig.waterEvaporationMaxBlocksPerTick(),
-                    NUKE_WATER_CLEAR_START_DELAY_TICKS,
-                    fluidEvaporationPass.sectionCount(),
-                    NuclearExplosionChunkLoading.computeChunkRadius(getRadius())
-            );
-        }
     }
 
     private void tickFluidEvaporation() {
@@ -789,20 +603,7 @@ public class NuclearExplosionEntity extends Entity {
                 || result.complete()) {
             markDestructionProgress(serverLevel, "water_evaporation");
         }
-        logFluidEvaporationDebug(result);
         if (fluidEvaporationPass.isComplete()) {
-            SkyesNuclearTech.LOGGER.info(
-                    "Nuke water clearing complete: id={} radius={} shellsProcessed={} blockChecks={} waterRemoved={} lavaRemoved={} waterloggedCleared={} skippedUnloadedColumns={} skippedBlockEntities={}",
-                    getId(),
-                    fluidEvaporationPass.radius(),
-                    fluidEvaporationPass.totalSectionsProcessed(),
-                    fluidEvaporationPass.totalBlocksChecked(),
-                    fluidEvaporationPass.totalWaterBlocksRemoved(),
-                    fluidEvaporationPass.totalLavaBlocksRemoved(),
-                    fluidEvaporationPass.totalWaterloggedBlocksCleared(),
-                    fluidEvaporationPass.skippedUnloadedSections(),
-                    fluidEvaporationPass.skippedBlockEntities()
-            );
             fluidEvaporationPass = null;
         }
     }
@@ -816,7 +617,6 @@ public class NuclearExplosionEntity extends Entity {
         }
 
         double columnCollapseRadius = getRadius();
-        long aftermathStartNs = System.nanoTime();
         columnCollapsePass = new NuclearColumnCollapsePass(
                 serverLevel,
                 fixedOrigin(),
@@ -827,50 +627,11 @@ public class NuclearExplosionEntity extends Entity {
                 getAftermathChunkLoadingOwnerUuid(),
                 sectionCompletionTracker
         );
-        double aftermathBuildWorkUnitsMs = elapsedMs(aftermathStartNs);
         columnCollapseMutationQueue = null;
         aftermathStarted = true;
         aftermathStartTick = tickCount;
         aftermathStartReason = reason;
         markDestructionProgress(serverLevel, "aftermath_started_" + reason);
-        SkyesNuclearTech.LOGGER.info(
-                "Nuke column aftermath work started: id={} tick={} phase={} reason={} mutationTicks={} aftermathBuildWorkUnitsMs={} queuesOnly=true mutatesImmediately=false workUnits={} currentRing={} maxRing={} columnsApprox={} collapseRadius={} charredLogRadius={} contaminatedGrassRadius={} contaminatedGrassBlend={} deadVegetationRadius={} vitrificationGenerationScale={} unscaledVitrificationRadius={} scaledVitrificationRadius={} unscaledVitrificationFeatherRadius={} scaledVitrificationFeatherRadius={} vitrificationHotTierFalloffPower={} vitrificationSizeTierCap={} postCollapseSurfaceUsed={} vitrificationSkips={} fireRadius={} leafEvaporationRadius={} trackerPending={} trackerCompleted={} trackerSkipped={} minCompletedSections={} forceStartAfterTicks={} maxResistance={} maxDropBlocks={} maxRunsPerColumn={} scanDepth={}",
-                getId(),
-                tickCount,
-                destructionPhase,
-                aftermathStartReason,
-                mutationStartTick < 0 ? 0 : tickCount - mutationStartTick,
-                aftermathBuildWorkUnitsMs,
-                columnCollapsePass.workUnitsTotal(),
-                columnCollapsePass.currentRing(),
-                columnCollapsePass.maxRing(),
-                columnCollapsePass.columnsRemaining(),
-                columnCollapsePass.collapseRadius(),
-                columnCollapsePass.charredLogRadius(),
-                columnCollapsePass.contaminatedGrassRadius(),
-                columnCollapsePass.contaminatedGrassBlendDebug(),
-                columnCollapsePass.deadVegetationRadius(),
-                columnCollapsePass.vitrificationGenerationScale(),
-                columnCollapsePass.unscaledVitrificationRadius(),
-                columnCollapsePass.vitrificationRadius(),
-                columnCollapsePass.unscaledVitrificationFeatherRadius(),
-                columnCollapsePass.vitrificationFeatherRadius(),
-                columnCollapsePass.vitrificationHotTierFalloffPower(),
-                columnCollapsePass.vitrificationSizeTierCap(),
-                columnCollapsePass.vitrificationUsesPostCollapseSurface(),
-                columnCollapsePass.vitrificationSkipDebug(),
-                columnCollapsePass.fireRadius(),
-                columnCollapsePass.leafEvaporationRadius(),
-                sectionCompletionTracker.pendingCount(),
-                sectionCompletionTracker.completedCount(),
-                sectionCompletionTracker.skippedCount(),
-                SkyentNuclearExplosionConfig.mutationMinCompletedSectionsBeforeAftermath(),
-                SkyentNuclearExplosionConfig.mutationAftermathForceStartAfterTicks(),
-                COLUMN_COLLAPSE_MAX_RESISTANCE,
-                COLUMN_COLLAPSE_MAX_DROP_BLOCKS,
-                columnCollapsePass.maxRunsPerColumn(),
-                columnCollapsePass.scanDepthBelowSurface()
-        );
     }
 
     private void tickColumnCollapseTasks(ServerLevel serverLevel) {
@@ -889,7 +650,6 @@ public class NuclearExplosionEntity extends Entity {
                     || result.columnsDeferred() > 0
                     || result.unloadedWorkUnitsSkipped() > 0
                     || result.mutationsPlanned() > 0
-                    || result.workUnitsPlanned() > 0
                     || result.workUnitsProcessed() > 0
                     || result.sectionsMutated() > 0
                     || result.mutationsApplied() > 0
@@ -899,96 +659,7 @@ public class NuclearExplosionEntity extends Entity {
                         : result.unloadedWorkUnitsSkipped() > 0 ? "aftermath_skipped_unloaded_chunks" : "column_aftermath";
                 markDestructionProgress(serverLevel, reason);
             }
-            logColumnCollapseDebug(result, budget);
-            if (SkyentNuclearExplosionConfig.debugContamination()
-                    && sectionCompletionTracker != null
-                    && sectionCompletionTracker.isExplosionMutationComplete()
-                    && columnCollapsePass.blockedByPendingSections()
-                    && columnCollapsePass.blockedTicks() > 200
-                    && tickCount % 100 == 0) {
-                SkyesNuclearTech.LOGGER.warn(
-                        "Nuke column aftermath still blocked after explosion mutation complete: id={} ring={} chunk={} blockedTicks={} trackerPending={} trackerCompleted={} trackerSkipped={}",
-                        getId(),
-                        columnCollapsePass.blockedRing(),
-                        columnCollapsePass.blockedWorkUnitDebug(),
-                        columnCollapsePass.blockedTicks(),
-                        sectionCompletionTracker.pendingCount(),
-                        sectionCompletionTracker.completedCount(),
-                        sectionCompletionTracker.skippedCount()
-                );
-            }
-
             if (columnCollapsePass.isComplete()) {
-                SkyesNuclearTech.LOGGER.info(
-                        "Nuke column aftermath complete: id={} processedColumns={} workUnitsCompleted={}/{} workUnitsPlanned={} noOpWorkUnits={} startReason={} currentRing={} maxRing={} deferredRemaining={} deferredChecks={} deferredQueued={} collapseRadius={} charredLogRadius={} contaminatedGrassRadius={} contaminatedGrassBlend={} deadVegetationRadius={} vitrificationGenerationScale={} unscaledVitrificationRadius={} scaledVitrificationRadius={} unscaledVitrificationFeatherRadius={} scaledVitrificationFeatherRadius={} vitrificationHotTierFalloffPower={} vitrificationSizeTierCap={} postCollapseSurfaceUsed={} fireRadius={} leafEvaporationRadius={} totalMutationsApplied={} totalSectionsMutated={} movementMutations={} charredLogs={} leafEvaporated={} contaminatedGrass={} deadGrass={} deadLeaves={} vitrifiedStone={} vitrifiedTiers={} vitrifiedTopTiers={} vitrificationBaseTiers={} vitrificationFinalTiers={} vitrificationDowngrades={} vitrificationColumnsChecked={} vitrificationColumnsAffected={} maxVitrificationDepth={} vitrificationEdgeFeatherPlacements={} vitrificationSkippedBySoftEdge={} vitrificationSkips={} plannedPlantRemovals={} plannedFires={} placedFires={} mutationUnloadedSkips={} mutationBlockEntitySkips={} skippedUnloadedColumns={} barriers={} movableBlocks={} maxDropBlocks={} maxRunsPerColumn={} scanDepth={} runsFound={} runsMoved={} averageDrop={} maxDropSeen={} skippedBarrier={} skippedFluid={} skippedBlockEntity={} updateFlags={} suppressDrops=true",
-                        getId(),
-                        columnCollapsePass.totalColumnsProcessed(),
-                        columnCollapsePass.workUnitsCompleted(),
-                        columnCollapsePass.workUnitsTotal(),
-                        columnCollapsePass.workUnitsPlanned(),
-                        columnCollapsePass.noOpWorkUnitsSkipped(),
-                        aftermathStartReason,
-                        columnCollapsePass.currentRing(),
-                        columnCollapsePass.maxRing(),
-                        columnCollapsePass.deferredWorkUnitsRemaining(),
-                        columnCollapsePass.deferredColumnChecks(),
-                        columnCollapsePass.deferredColumnsQueued(),
-                        columnCollapsePass.collapseRadius(),
-                        columnCollapsePass.charredLogRadius(),
-                        columnCollapsePass.contaminatedGrassRadius(),
-                        columnCollapsePass.contaminatedGrassBlendDebug(),
-                        columnCollapsePass.deadVegetationRadius(),
-                        columnCollapsePass.vitrificationGenerationScale(),
-                        columnCollapsePass.unscaledVitrificationRadius(),
-                        columnCollapsePass.vitrificationRadius(),
-                        columnCollapsePass.unscaledVitrificationFeatherRadius(),
-                        columnCollapsePass.vitrificationFeatherRadius(),
-                        columnCollapsePass.vitrificationHotTierFalloffPower(),
-                        columnCollapsePass.vitrificationSizeTierCap(),
-                        columnCollapsePass.vitrificationUsesPostCollapseSurface(),
-                        columnCollapsePass.fireRadius(),
-                        columnCollapsePass.leafEvaporationRadius(),
-                        columnCollapsePass.totalMutationsApplied(),
-                        columnCollapsePass.totalSectionsMutated(),
-                        columnCollapsePass.plannedMovementMutations(),
-                        columnCollapsePass.plannedCharredLogReplacements(),
-                        columnCollapsePass.plannedLeafEvaporations(),
-                        columnCollapsePass.plannedContaminatedGrassReplacements(),
-                        columnCollapsePass.plannedDeadGrassReplacements(),
-                        columnCollapsePass.plannedDeadLeafReplacements(),
-                        columnCollapsePass.plannedVitrifiedStoneReplacements(),
-                        columnCollapsePass.plannedVitrifiedTierReplacementsDebug(),
-                        columnCollapsePass.plannedVitrifiedTopTierCountsDebug(),
-                        columnCollapsePass.vitrificationBaseTierCountsDebug(),
-                        columnCollapsePass.vitrificationFinalTierCountsDebug(),
-                        columnCollapsePass.vitrificationDowngradeDebug(),
-                        columnCollapsePass.vitrificationColumnsChecked(),
-                        columnCollapsePass.vitrificationColumnsAffected(),
-                        columnCollapsePass.maxVitrificationDepthSeen(),
-                        columnCollapsePass.vitrificationEdgeFeatherPlacements(),
-                        columnCollapsePass.vitrificationSkippedBySoftEdge(),
-                        columnCollapsePass.vitrificationSkipDebug(),
-                        columnCollapsePass.plannedPlantRemovals(),
-                        columnCollapsePass.plannedFireBlocks(),
-                        columnCollapsePass.placedFireBlocks(),
-                        columnCollapsePass.mutationUnloadedSectionSkips(),
-                        columnCollapsePass.mutationBlockEntitySkips(),
-                        columnCollapsePass.skippedUnloadedColumns(),
-                        columnCollapsePass.barriersEncountered(),
-                        columnCollapsePass.movableBlocksCollected(),
-                        columnCollapsePass.maxDropBlocks(),
-                        columnCollapsePass.maxRunsPerColumn(),
-                        columnCollapsePass.scanDepthBelowSurface(),
-                        columnCollapsePass.surfaceRunsFound(),
-                        columnCollapsePass.surfaceRunsMoved(),
-                        columnCollapsePass.averageDropDistance(),
-                        columnCollapsePass.maxDropDistanceSeen(),
-                        columnCollapsePass.skippedBarriersBeforeSurface(),
-                        columnCollapsePass.skippedFluidsBeforeSurface(),
-                        columnCollapsePass.skippedBlockEntitiesBeforeSurface(),
-                        NuclearBlockMutationQueue.NUKE_BLOCK_UPDATE_FLAGS
-                );
-                logAftermathItemEntityCount(serverLevel);
                 columnCollapsePass.clear();
                 columnCollapsePass = null;
             }
@@ -1008,16 +679,6 @@ public class NuclearExplosionEntity extends Entity {
     }
 
     private void cleanupDestructionState(String reason) {
-        int forcedBefore = forcedExplosionChunks.size();
-        int maskSections = destructionMask == null ? 0 : destructionMask.sectionCount();
-        int mutationSections = mutationQueue == null ? 0 : mutationQueue.sectionsRemaining();
-        int columnColumns = columnCollapsePass == null ? 0 : columnCollapsePass.columnsRemaining();
-        int columnDeferred = columnCollapsePass == null ? 0 : columnCollapsePass.deferredColumnsRemaining();
-        int plannedSections = columnCollapsePass == null ? 0 : columnCollapsePass.currentLocalPlannedSections();
-        int trackerPending = sectionCompletionTracker == null ? 0 : sectionCompletionTracker.pendingCount();
-        int trackerCompleted = sectionCompletionTracker == null ? 0 : sectionCompletionTracker.completedCount();
-        int trackerSkipped = sectionCompletionTracker == null ? 0 : sectionCompletionTracker.skippedCount();
-
         if (mutationQueue != null) {
             mutationQueue.clear();
         }
@@ -1056,27 +717,6 @@ public class NuclearExplosionEntity extends Entity {
         lastDestructionProgressReason = "cleaned_" + reason;
         markPrimaryDestructionComplete();
         entityData.set(DATA_ACTIVE_BLAST_PHASE, isActiveBlastPhase());
-
-        if (!destructionCleanupLogged) {
-            destructionCleanupLogged = true;
-            SkyesNuclearTech.LOGGER.info(
-                    "Nuke destruction cleanup: id={} reason={} tick={} phase={} maskSections={} mutationSections={} columnColumns={} columnDeferred={} localPlannedSections={} trackerPending={} trackerCompleted={} trackerSkipped={} chunksForced={} canReleaseChunks={} queuesCleared=true",
-                    getId(),
-                    reason,
-                    tickCount,
-                    destructionPhase,
-                    maskSections,
-                    mutationSections,
-                    columnColumns,
-                    columnDeferred,
-                    plannedSections,
-                    trackerPending,
-                    trackerCompleted,
-                    trackerSkipped,
-                    forcedBefore,
-                    canReleaseImmediateChunks()
-            );
-        }
     }
 
     private void startNuclearDestructionPlanning(ServerLevel serverLevel) {
@@ -1086,7 +726,6 @@ public class NuclearExplosionEntity extends Entity {
         double baselineStartingEnergy = NUKE_RAY_BASE_STARTING_ENERGY
                 + NUKE_BASELINE_RADIUS * NUKE_RAY_STARTING_ENERGY_PER_RADIUS;
         double destructionStrength = baselineStartingEnergy * energyScale;
-        destructionCleanupLogged = false;
         primaryDestructionComplete = false;
         primaryDestructionCompleteAge = -1;
         entityData.set(DATA_ACTIVE_BLAST_PHASE, true);
@@ -1096,12 +735,6 @@ public class NuclearExplosionEntity extends Entity {
         markDestructionProgress(serverLevel, "planning_started");
         aftermathStarted = false;
         waterClearStarted = false;
-        worstRayPlanningTickMs = 0.0D;
-        worstBlockMutationTickMs = 0.0D;
-        syncRayPlanningTotalMs = 0.0D;
-        syncRayPlanningTicks = 0;
-        syncRayPlanningTotalRays = 0L;
-        syncRayPlanningTotalSteps = 0L;
         aftermathStartTick = -1;
         mutationStartTick = -1;
         aftermathStartReason = "not_started";
@@ -1123,101 +756,24 @@ public class NuclearExplosionEntity extends Entity {
         );
         mutationQueue = null;
         asyncRayPlanningHandle = null;
+        rayCalculationStartNs = System.nanoTime();
+        rayCalculationMapDataBytes = 0L;
+        rayCalculationLogged = false;
+        destructionMutationStartNs = -1L;
+        destructionMutationLogged = false;
         boolean asyncEnabled = SkyentNuclearExplosionConfig.asyncRayPlanning();
         int asyncMinRays = SkyentNuclearExplosionConfig.asyncMinRays();
         int asyncWorkerCount = SkyentNuclearExplosionConfig.asyncRayWorkers();
         boolean asyncEligible = rayPlanner.totalRays() >= asyncMinRays && asyncWorkerCount > 1;
-        String selectedMode = asyncEnabled && asyncEligible ? "ASYNC" : "SYNC";
-        String syncReason = asyncEnabled
-                ? (asyncEligible ? "" : asyncWorkerCount <= 1 ? "worker count <= 1" : "ray count below threshold")
-                : "async disabled";
-        boolean useAsyncRayPlanning = "ASYNC".equals(selectedMode);
+        boolean useAsyncRayPlanning = asyncEnabled && asyncEligible;
         if (useAsyncRayPlanning) {
-            long snapshotStartNs = System.nanoTime();
             NuclearBlockSnapshot snapshot = NuclearBlockSnapshot.build(serverLevel, fixedOrigin(), destructionRadius, resistanceCache);
-            double snapshotBuildMs = elapsedMs(snapshotStartNs);
+            rayCalculationMapDataBytes = snapshot.mapDataBytes();
             asyncRayPlanningHandle = NuclearRayPlanningExecutor.submit(rayPlanner, snapshot, asyncWorkerCount);
             destructionPhase = DestructionPhase.ASYNC_PLANNING;
-            if (SkyentNuclearExplosionConfig.debugRayTiming()) {
-                SkyesNuclearTech.LOGGER.info(
-                        "Nuke async ray planning started: id={} radius={} rays={} workerCount={} minRaysForAsync={} snapshotBuildMs={} snapshotReportedBuildMs={} snapshotSections={} snapshotFullSections={} snapshotAllAirSections={} snapshotBlocks={} snapshotEstimatedBytes={} snapshotOldStyleEstimatedBytes={} snapshotBytesPerSampleApprox={} snapshotBlockEntityLookups={} snapshotCollisionShapeLookups={}",
-                        getId(),
-                        destructionRadius,
-                        rayPlanner.totalRays(),
-                        asyncRayPlanningHandle.workerCount(),
-                        asyncMinRays,
-                        snapshotBuildMs,
-                        snapshot.buildMs(),
-                        snapshot.sectionCount(),
-                        snapshot.fullSectionCount(),
-                        snapshot.allAirSectionCount(),
-                        snapshot.sampledBlocks(),
-                        snapshot.estimatedBytes(),
-                        snapshot.oldStyleEstimatedBytes(),
-                        snapshot.sampledBlocks() <= 0 ? 0.0D : snapshot.estimatedBytes() / (double) snapshot.sampledBlocks(),
-                        snapshot.blockEntityLookups(),
-                        snapshot.collisionShapeLookups()
-                );
-            }
         } else {
             destructionPhase = DestructionPhase.PLANNING;
         }
-        SkyesNuclearTech.LOGGER.info(
-                "Nuke ray planning mode: id={} selectedMode={} syncReason={} asyncEnabled={} asyncEligible={} totalRays={} minRaysForAsync={} requestedWorkerCount={} activeWorkerCount={} entityRadius={} destructionRadius={} chunkRadius={} baselineRadius={} radiusScale={} inverseRadiusScale={} energyScale={} baselineStartingEnergy={} visualRayScale={} strength={} rayBaseEnergy={} rayEnergyPerRadius={} energyRadiusPower={} rayDensityMultiplier={} rawRayEstimate={} minRays={} maxRays={} rayCountClamped={} rayCountFormula={} initialRayEnergy={} rayEnergyJitterAtRadius200={} rayEnergyJitterSmallRadiusBonus={} rayEnergyJitterAmount={} rayEnergyJitterRange=[{},{}] rayEnergyJitterSamples={} smallRadiusProgressBoost={} distanceDecayPerBlock={} scaledDistanceDecayPerBlock={} resistanceCostMultiplier={} resistanceCostOffset={} resistancePowerNear={} resistancePowerFar={} resistancePowerCurve={} distanceResistanceGrowth={} scaledDistanceResistanceGrowth={} materialStackingGrowth={} scaledMaterialStackingGrowth={} closePierceFraction={} closeResistanceMultiplier={} scaledClosePierceFraction={} scaledCloseResistanceMultiplier={} resistanceSamples={} planOnly={}",
-                getId(),
-                selectedMode,
-                syncReason,
-                asyncEnabled,
-                asyncEligible,
-                rayPlanner.totalRays(),
-                asyncMinRays,
-                asyncWorkerCount,
-                useAsyncRayPlanning && asyncRayPlanningHandle != null ? asyncRayPlanningHandle.workerCount() : 0,
-                getRadius(),
-                destructionRadius,
-                NuclearExplosionChunkLoading.computeChunkRadius(getRadius()),
-                NUKE_BASELINE_RADIUS,
-                radiusScale,
-                1.0D / radiusScale,
-                energyScale,
-                baselineStartingEnergy,
-                getVisualRayScale(),
-                destructionStrength,
-                NUKE_RAY_BASE_STARTING_ENERGY,
-                NUKE_RAY_STARTING_ENERGY_PER_RADIUS,
-                NUKE_RAY_STARTING_ENERGY_RADIUS_POWER,
-                rayPlanner.rayDensityMultiplier(),
-                rayPlanner.rawRayEstimate(),
-                rayPlanner.minRays(),
-                rayPlanner.maxRays(),
-                rayPlanner.rayCountClamped(),
-                rayPlanner.rayCountFormula(),
-                rayPlanner.initialRayEnergy(),
-                rayPlanner.rayEnergyJitterAtRadius200(),
-                rayPlanner.rayEnergyJitterSmallRadiusBonus(),
-                rayPlanner.rayEnergyJitterAmount(),
-                rayPlanner.rayEnergyJitterMinMultiplier(),
-                rayPlanner.rayEnergyJitterMaxMultiplier(),
-                rayPlanner.rayEnergyJitterSamples(),
-                rayPlanner.smallRadiusProgressBoost(),
-                rayPlanner.distanceDecayPerBlock(),
-                rayPlanner.scaledDistanceDecayPerBlock(),
-                rayPlanner.resistanceCostMultiplier(),
-                rayPlanner.resistanceCostOffset(),
-                rayPlanner.resistancePowerNear(),
-                rayPlanner.resistancePowerFar(),
-                rayPlanner.resistancePowerDistanceCurve(),
-                rayPlanner.distanceResistanceGrowth(),
-                rayPlanner.scaledDistanceResistanceGrowth(),
-                rayPlanner.materialPenetrationStackingGrowth(),
-                rayPlanner.scaledMaterialPenetrationStackingGrowth(),
-                rayPlanner.closeRangeArmorPiercingRadiusFraction(),
-                rayPlanner.closeRangeResistanceCostMultiplier(),
-                rayPlanner.scaledCloseRangeArmorPiercingRadiusFraction(),
-                rayPlanner.scaledCloseRangeResistanceCostMultiplier(),
-                rayPlanner.resistanceCostSamples(),
-                NUKE_DESTRUCTION_PLAN_ONLY
-        );
     }
 
     private void tickAsyncRayPlanning(ServerLevel serverLevel) {
@@ -1230,10 +786,9 @@ public class NuclearExplosionEntity extends Entity {
         }
 
         try {
-            long mergeStartNs = System.nanoTime();
             NuclearRayPlanningExecutor.AsyncPlanningResult asyncResult = asyncRayPlanningHandle.collect();
             if (asyncResult.canceled()) {
-                SkyesNuclearTech.LOGGER.warn("Nuke async ray planning canceled before merge: id={}", getId());
+                SkyesNuclearTech.LOGGER.warn("Nuclear explosion async ray planning canceled; aborting destruction phase: id={}", getId());
                 cleanupDestructionState("async_ray_canceled");
                 destructionPhase = DestructionPhase.COMPLETE;
                 return;
@@ -1242,7 +797,7 @@ public class NuclearExplosionEntity extends Entity {
                 rayPlanner.mergeWorkerResult(workerResult);
             }
             rayPlanner.finishAsyncPlanning();
-            double mergeMs = elapsedMs(mergeStartNs);
+            logRayCalculationFinished(asyncResult.raysProcessed());
             sectionCompletionTracker = new NuclearSectionCompletionTracker();
             sectionCompletionTracker.initializeFromDestructionMask(destructionMask);
             mutationQueue = new NuclearBlockMutationQueue(serverLevel, destructionMask, fixedOrigin(), sectionCompletionTracker, resistanceCache);
@@ -1250,44 +805,12 @@ public class NuclearExplosionEntity extends Entity {
             mutationStartTick = tickCount;
             asyncRayPlanningHandle = null;
             markDestructionProgress(serverLevel, "async_planning_merged");
-
-            SkyesNuclearTech.LOGGER.info(
-                    "Nuke async destruction planning complete: id={} selectedMode=ASYNC rays={}/{} steps={} workers={} submittedRayRanges={} asyncWallMs={} slowestWorkerMs={} fastestWorkerMs={} totalWorkerCpuMs={} mergeMs={} snapshotBuildMs={} snapshotSections={} snapshotFullSections={} snapshotAllAirSections={} snapshotSamples={} snapshotEstimatedBytes={} snapshotOldStyleEstimatedBytes={} snapshotBytesPerSampleApprox={} snapshotBlockEntityLookups={} snapshotCollisionShapeLookups={} mergedMaskSections={} estimatedBlocks={} plannedReplacements={} trackerPendingSections={} initiallyPrunedEmptySections={} initiallyPrunedAirSections={} mutationUpdateFlags={} suppressDrops=true",
-                    getId(),
-                    asyncResult.raysProcessed(),
-                    rayPlanner.totalRays(),
-                    asyncResult.stepsProcessed(),
-                    asyncResult.workerCount(),
-                    asyncResult.rayRanges(),
-                    asyncResult.wallMs(),
-                    asyncResult.slowestWorkerMs(),
-                    asyncResult.fastestWorkerMs(),
-                    asyncResult.totalWorkerMs(),
-                    mergeMs,
-                    asyncResult.snapshot().buildMs(),
-                    asyncResult.snapshot().sectionCount(),
-                    asyncResult.snapshot().fullSectionCount(),
-                    asyncResult.snapshot().allAirSectionCount(),
-                    asyncResult.snapshot().sampledBlocks(),
-                    asyncResult.snapshot().estimatedBytes(),
-                    asyncResult.snapshot().oldStyleEstimatedBytes(),
-                    asyncResult.snapshot().sampledBlocks() <= 0 ? 0.0D : asyncResult.snapshot().estimatedBytes() / (double) asyncResult.snapshot().sampledBlocks(),
-                    asyncResult.snapshot().blockEntityLookups(),
-                    asyncResult.snapshot().collisionShapeLookups(),
-                    destructionMask.sectionCount(),
-                    destructionMask.estimatedBlockCount(),
-                    destructionMask.estimatedReplacementCount(),
-                    sectionCompletionTracker.pendingCount(),
-                    mutationQueue.initiallyPrunedEmptySections(),
-                    mutationQueue.initiallyPrunedAirSections(),
-                    NuclearBlockMutationQueue.NUKE_BLOCK_UPDATE_FLAGS
-            );
         } catch (RuntimeException exception) {
-            SkyesNuclearTech.LOGGER.error("Nuke async ray planning failed; falling back to synchronous planning: id={}", getId(), exception);
             asyncRayPlanningHandle = null;
             if (destructionMask != null) {
                 destructionMask.clear();
             }
+            rayCalculationMapDataBytes = 0L;
             rayPlanner = new NuclearBlastRayPlanner(
                     serverLevel,
                     fixedOrigin(),
@@ -1336,274 +859,16 @@ public class NuclearExplosionEntity extends Entity {
     }
 
     private void logDestructionTimeout(ServerLevel serverLevel, String timeoutReason) {
-        long noProgressTicks = lastDestructionProgressGameTime < 0L
-                ? destructionTicks
-                : serverLevel.getGameTime() - lastDestructionProgressGameTime;
         SkyesNuclearTech.LOGGER.warn(
-                "Nuke destruction timed out safely: id={} reason={} phase={} ticks={} noProgressTicks={} noProgressTimeoutTicks={} maxTotalDestructionTicks={} lastProgressReason={} progressCounter={} rayIndex={} totalRays={} maskSections={} estimatedBlocks={} mutationSections={} mutationRemoved={} mutationReplaced={} trackerPending={} trackerCompleted={} trackerSkipped={} columnColumns={} columnDeferred={} columnWorkUnitsCompleted={} columnWorkUnitsTotal={} waterActive={} waterRadius={} waterRemaining={} chunksForced={}",
+                "Nuclear explosion destruction timed out; aborting remaining gameplay work: id={}, reason={}, phase={}",
                 getId(),
                 timeoutReason,
-                destructionPhase,
-                destructionTicks,
-                noProgressTicks,
-                SkyentNuclearExplosionConfig.mutationNoProgressTimeoutTicks(),
-                SkyentNuclearExplosionConfig.mutationMaxTotalDestructionTicks(),
-                lastDestructionProgressReason,
-                destructionProgressCounter,
-                rayPlanner == null ? 0 : rayPlanner.rayIndex(),
-                rayPlanner == null ? 0 : rayPlanner.totalRays(),
-                destructionMask == null ? 0 : destructionMask.sectionCount(),
-                destructionMask == null ? 0 : destructionMask.estimatedBlockCount(),
-                mutationQueue == null ? 0 : mutationQueue.sectionsRemaining(),
-                mutationQueue == null ? 0 : mutationQueue.totalBlocksRemoved(),
-                mutationQueue == null ? 0 : mutationQueue.totalBlocksReplaced(),
-                sectionCompletionTracker == null ? 0 : sectionCompletionTracker.pendingCount(),
-                sectionCompletionTracker == null ? 0 : sectionCompletionTracker.completedCount(),
-                sectionCompletionTracker == null ? 0 : sectionCompletionTracker.skippedCount(),
-                columnCollapsePass == null ? 0 : columnCollapsePass.columnsRemaining(),
-                columnCollapsePass == null ? 0 : columnCollapsePass.deferredColumnsRemaining(),
-                columnCollapsePass == null ? 0 : columnCollapsePass.workUnitsCompleted(),
-                columnCollapsePass == null ? 0 : columnCollapsePass.workUnitsTotal(),
-                fluidEvaporationPass != null,
-                fluidEvaporationPass == null ? 0 : fluidEvaporationPass.radius(),
-                fluidEvaporationPass == null ? 0 : fluidEvaporationPass.sectionsRemaining(),
-                forcedExplosionChunks.size()
-        );
-    }
-
-    private void logRayPlannerDebug(NuclearBlastRayPlanner.PlannerResult result) {
-        if (!SkyentNuclearExplosionConfig.debugRayPlanner() || tickCount % 20 != 0 || rayPlanner == null || destructionMask == null) {
-            return;
-        }
-
-        SkyesNuclearTech.LOGGER.info(
-                "Nuke ray planner debug: id={} tick={} phase={} rayIndex={}/{} rayDensityMultiplier={} rawRayEstimate={} minRays={} maxRays={} rayCountClamped={} rayCountFormula={} baselineRadius={} radiusScale={} inverseRadiusScale={} smallRadiusProgressBoost={} visualRayScale={} initialRayEnergy={} rayEnergyJitterAmount={} rayEnergyJitterRange=[{},{}] rayEnergyJitterSamples={} distanceDecayPerBlock={} scaledDistanceDecayPerBlock={} resistanceCostMultiplier={} resistanceCostOffset={} resistancePowerNear={} resistancePowerFar={} resistancePowerCurve={} distanceResistanceGrowth={} scaledDistanceResistanceGrowth={} materialStackingGrowth={} scaledMaterialStackingGrowth={} closePierceFraction={} closeResistanceMultiplier={} scaledClosePierceFraction={} scaledCloseResistanceMultiplier={} resistanceSamples={} tickRays={} tickSteps={} totalRays={} totalSteps={} tickMarked={} totalMarked={} maskSections={} estimatedBlocks={} plannedReplacements={} unloadedStops={} energyStops={} blockedStops={} unbreakableStops={} outOfWorldStops={} fragileMarked={} nonSolidMarked={} fluidMarked={} airSkipped={} blockEntityHits={} blockEntityMarked={} protectedBlockEntitySkips={} crackedConcreteBricksPlanned={} blockEntitySkips={} highResHit={} highResMarked={} highResBlocked={} highResEnergyStops={} obsidianHit={} obsidianMarked={} obsidianBlocked={} obsidianEnergyStops={} maxObsidianDepthMarkedOnSingleRay={}",
-                getId(),
-                tickCount,
-                destructionPhase,
-                rayPlanner.rayIndex(),
-                rayPlanner.totalRays(),
-                rayPlanner.rayDensityMultiplier(),
-                rayPlanner.rawRayEstimate(),
-                rayPlanner.minRays(),
-                rayPlanner.maxRays(),
-                rayPlanner.rayCountClamped(),
-                rayPlanner.rayCountFormula(),
-                rayPlanner.baselineRadius(),
-                rayPlanner.radiusScale(),
-                rayPlanner.inverseRadiusScale(),
-                rayPlanner.smallRadiusProgressBoost(),
-                getVisualRayScale(),
-                rayPlanner.initialRayEnergy(),
-                rayPlanner.rayEnergyJitterAmount(),
-                rayPlanner.rayEnergyJitterMinMultiplier(),
-                rayPlanner.rayEnergyJitterMaxMultiplier(),
-                rayPlanner.rayEnergyJitterSamples(),
-                rayPlanner.distanceDecayPerBlock(),
-                rayPlanner.scaledDistanceDecayPerBlock(),
-                rayPlanner.resistanceCostMultiplier(),
-                rayPlanner.resistanceCostOffset(),
-                rayPlanner.resistancePowerNear(),
-                rayPlanner.resistancePowerFar(),
-                rayPlanner.resistancePowerDistanceCurve(),
-                rayPlanner.distanceResistanceGrowth(),
-                rayPlanner.scaledDistanceResistanceGrowth(),
-                rayPlanner.materialPenetrationStackingGrowth(),
-                rayPlanner.scaledMaterialPenetrationStackingGrowth(),
-                rayPlanner.closeRangeArmorPiercingRadiusFraction(),
-                rayPlanner.closeRangeResistanceCostMultiplier(),
-                rayPlanner.scaledCloseRangeArmorPiercingRadiusFraction(),
-                rayPlanner.scaledCloseRangeResistanceCostMultiplier(),
-                rayPlanner.resistanceCostSamples(),
-                result.raysProcessed(),
-                result.stepsProcessed(),
-                rayPlanner.raysProcessedTotal(),
-                rayPlanner.stepsProcessedTotal(),
-                result.blocksMarked(),
-                rayPlanner.blocksMarkedTotal(),
-                destructionMask.sectionCount(),
-                destructionMask.estimatedBlockCount(),
-                destructionMask.estimatedReplacementCount(),
-                rayPlanner.unloadedChunkStops(),
-                rayPlanner.energyStops(),
-                rayPlanner.blockedRayStops(),
-                rayPlanner.unbreakableStops(),
-                rayPlanner.outOfWorldStops(),
-                rayPlanner.fragileBlocksMarked(),
-                rayPlanner.nonSolidBlocksMarked(),
-                rayPlanner.fluidBlocksMarked(),
-                rayPlanner.airBlocksSkipped(),
-                rayPlanner.blockEntityBlocksHit(),
-                rayPlanner.blockEntityBlocksMarked(),
-                rayPlanner.protectedBlockEntitySkips(),
-                rayPlanner.crackedConcreteBricksPlanned(),
-                rayPlanner.blockEntitySkips(),
-                rayPlanner.highResistanceBlocksHit(),
-                rayPlanner.highResistanceBlocksMarked(),
-                rayPlanner.highResistanceBlocksBlocked(),
-                rayPlanner.highResistanceBlocksStoppedByEnergy(),
-                rayPlanner.obsidianBlocksHit(),
-                rayPlanner.obsidianBlocksMarked(),
-                rayPlanner.obsidianBlocksBlocked(),
-                rayPlanner.obsidianBlocksStoppedByEnergy(),
-                rayPlanner.maxObsidianDepthMarkedOnSingleRay()
-        );
-    }
-
-    private void logRayTimingDebug(NuclearBlastRayPlanner.PlannerResult result, double elapsedMs) {
-        if (!SkyentNuclearExplosionConfig.debugRayTiming() || rayPlanner == null || destructionMask == null) {
-            return;
-        }
-
-        double averageStepsPerRay = result.raysProcessed() <= 0
-                ? 0.0D
-                : result.stepsProcessed() / (double) result.raysProcessed();
-        double msPerTenThousandRays = result.raysProcessed() <= 0
-                ? 0.0D
-                : elapsedMs * 10_000.0D / result.raysProcessed();
-        SkyesNuclearTech.LOGGER.info(
-                "Nuke ray timing: id={} tick={} phase={} tickRays={} tickSteps={} averageStepsPerRay={} tickMarked={} elapsedMs={} msPer10kRays={} worstRayPlanningTickMs={} rayIndex={}/{} totalSteps={} maskSections={} estimatedBlocks={} plannedReplacements={} tickBlockStateReads={} totalBlockStateReads={} tickBlockEntityLookups={} totalBlockEntityLookups={} tickCollisionShapeLookups={} totalCollisionShapeLookups={} tickAirFastPaths={} totalAirFastPaths={} tickFluidFastPaths={} totalFluidFastPaths={} tickClassificationCacheHits={} tickClassificationCacheMisses={} totalClassificationCacheHits={} totalClassificationCacheMisses={} tickDuplicateMaskMarks={} totalDuplicateMaskMarks={} unloadedStops={} energyStops={} blockedStops={} unbreakableStops={} outOfWorldStops={}",
-                getId(),
-                tickCount,
-                destructionPhase,
-                result.raysProcessed(),
-                result.stepsProcessed(),
-                averageStepsPerRay,
-                result.blocksMarked(),
-                elapsedMs,
-                msPerTenThousandRays,
-                worstRayPlanningTickMs,
-                rayPlanner.rayIndex(),
-                rayPlanner.totalRays(),
-                rayPlanner.stepsProcessedTotal(),
-                destructionMask.sectionCount(),
-                destructionMask.estimatedBlockCount(),
-                destructionMask.estimatedReplacementCount(),
-                result.blockStateReads(),
-                rayPlanner.blockStateReadCount(),
-                result.blockEntityLookups(),
-                rayPlanner.blockEntityLookupCount(),
-                result.collisionShapeLookups(),
-                rayPlanner.collisionShapeLookupCount(),
-                result.airFastPaths(),
-                rayPlanner.airFastPathCount(),
-                result.fluidFastPaths(),
-                rayPlanner.fluidFastPathCount(),
-                result.classificationCacheHits(),
-                result.classificationCacheMisses(),
-                rayPlanner.classificationCacheHits(),
-                rayPlanner.classificationCacheMisses(),
-                result.duplicateMaskMarkAttempts(),
-                rayPlanner.duplicateMaskMarkAttempts(),
-                rayPlanner.unloadedChunkStops(),
-                rayPlanner.energyStops(),
-                rayPlanner.blockedRayStops(),
-                rayPlanner.unbreakableStops(),
-                rayPlanner.outOfWorldStops()
-        );
-    }
-
-    private void logRayMutationTimingDebug(NuclearBlockMutationQueue.MutationResult result, double elapsedMs) {
-        if (!SkyentNuclearExplosionConfig.debugRayTiming() || mutationQueue == null) {
-            return;
-        }
-
-        SkyesNuclearTech.LOGGER.info(
-                "Nuke mutation timing: id={} tick={} phase={} sectionsTouched={} blocksChanged={} elapsedMs={} queueElapsedMs={} configuredMaxSectionsPerTick={} configuredMaxBlocksPerTick={} configuredMaxMillisecondsPerTick={} stoppedByBlockBudget={} stoppedByTimeBudget={} stoppedBySectionBudget={} stoppedByQueueEmpty={} stopCounts=[block={},time={},section={},queueEmpty={}] worstBlockMutationTickMs={} queueWorstMutationTickMs={} queueAverageMutationTickMs={} queueBlocksPerTickAverage={} queueSectionsPerTickAverage={} queueMaxBlocksInSingleTick={} queueMaxSectionsInSingleTick={} queueWorstMutationTickIndex={} queueWorstMutationTickSections={} totalRemoved={} totalReplaced={} totalSectionsTouched={} sectionsRemaining={} prunedEmpty={} prunedAir={} unloadedSkips={} processedRadius={} processedFraction={}",
-                getId(),
-                tickCount,
-                destructionPhase,
-                result.sectionsTouched(),
-                result.blocksRemoved(),
-                elapsedMs,
-                result.elapsedMs(),
-                SkyentNuclearExplosionConfig.mutationMaxSectionsPerTick(),
-                SkyentNuclearExplosionConfig.mutationMaxBlocksPerTick(),
-                SkyentNuclearExplosionConfig.mutationMaxMillisecondsPerTick(),
-                result.stoppedByBlockBudget(),
-                result.stoppedByTimeBudget(),
-                result.stoppedBySectionBudget(),
-                result.stoppedByQueueEmpty(),
-                mutationQueue.stoppedByBlockBudgetCount(),
-                mutationQueue.stoppedByTimeBudgetCount(),
-                mutationQueue.stoppedBySectionBudgetCount(),
-                mutationQueue.stoppedByQueueEmptyCount(),
-                worstBlockMutationTickMs,
-                mutationQueue.worstMutationTickMs(),
-                mutationQueue.averageMutationTickMs(),
-                mutationQueue.averageBlocksChangedPerTick(),
-                mutationQueue.averageSectionsTouchedPerTick(),
-                mutationQueue.maxBlocksChangedInSingleTick(),
-                mutationQueue.maxSectionsTouchedInSingleTick(),
-                mutationQueue.worstMutationTickIndex(),
-                mutationQueue.worstMutationTickSections(),
-                mutationQueue.totalBlocksRemoved(),
-                mutationQueue.totalBlocksReplaced(),
-                mutationQueue.totalSectionsTouched(),
-                mutationQueue.sectionsRemaining(),
-                mutationQueue.prunedEmptySections(),
-                mutationQueue.prunedAirSections(),
-                mutationQueue.unloadedSectionSkips(),
-                mutationQueue.processedRadius(),
-                mutationQueue.processedRadiusFraction()
+                destructionPhase
         );
     }
 
     private static double elapsedMs(long startNs) {
         return (System.nanoTime() - startNs) / 1_000_000.0D;
-    }
-
-    private void logMutationDebug(NuclearBlockMutationQueue.MutationResult result) {
-        if (!DEBUG_NUKE_DESTRUCTION || tickCount % 20 != 0 || mutationQueue == null) {
-            return;
-        }
-
-        SkyesNuclearTech.LOGGER.info(
-                "Nuke destruction mutation debug: id={} tick={} phase={} sectionsRemaining={} tickSections={} tickBlocksChanged={} configuredMaxSectionsPerTick={} configuredMaxBlocksPerTick={} configuredMaxMillisecondsPerTick={} stoppedByBlockBudget={} stoppedByTimeBudget={} stoppedBySectionBudget={} stoppedByQueueEmpty={} stopCounts=[block={},time={},section={},queueEmpty={}] totalBlocksRemoved={} totalBlocksReplaced={} totalSectionsTouched={} averageSectionsPerTick={} maxSectionsInSingleTick={} obsidianRemoved={} highResistanceRemoved={} blockEntitiesRemoved={} containersCleared={} protectedBlockEntitySkips={} unloadedSkips={} prunedEmptySections={} prunedAirSections={} initiallyPrunedEmptySections={} initiallyPrunedAirSections={} processedRadius={} maxPlannedRadius={} processedFraction={} trackerPending={} trackerCompleted={} trackerSkipped={} aftermathStarted={} aftermathStartTick={} aftermathStartReason={} minCompletedSectionsToStart={} forceStartAfterTicks={}",
-                getId(),
-                tickCount,
-                destructionPhase,
-                mutationQueue.sectionsRemaining(),
-                result.sectionsTouched(),
-                result.blocksRemoved(),
-                SkyentNuclearExplosionConfig.mutationMaxSectionsPerTick(),
-                SkyentNuclearExplosionConfig.mutationMaxBlocksPerTick(),
-                SkyentNuclearExplosionConfig.mutationMaxMillisecondsPerTick(),
-                result.stoppedByBlockBudget(),
-                result.stoppedByTimeBudget(),
-                result.stoppedBySectionBudget(),
-                result.stoppedByQueueEmpty(),
-                mutationQueue.stoppedByBlockBudgetCount(),
-                mutationQueue.stoppedByTimeBudgetCount(),
-                mutationQueue.stoppedBySectionBudgetCount(),
-                mutationQueue.stoppedByQueueEmptyCount(),
-                mutationQueue.totalBlocksRemoved(),
-                mutationQueue.totalBlocksReplaced(),
-                mutationQueue.totalSectionsTouched(),
-                mutationQueue.averageSectionsTouchedPerTick(),
-                mutationQueue.maxSectionsTouchedInSingleTick(),
-                mutationQueue.obsidianBlocksRemoved(),
-                mutationQueue.highResistanceBlocksRemoved(),
-                mutationQueue.blockEntitiesRemoved(),
-                mutationQueue.containerBlockEntitiesCleared(),
-                mutationQueue.protectedBlockEntitySkips(),
-                mutationQueue.unloadedSectionSkips(),
-                mutationQueue.prunedEmptySections(),
-                mutationQueue.prunedAirSections(),
-                mutationQueue.initiallyPrunedEmptySections(),
-                mutationQueue.initiallyPrunedAirSections(),
-                mutationQueue.processedRadius(),
-                mutationQueue.maxPlannedHorizontalDistance(),
-                mutationQueue.processedRadiusFraction(),
-                sectionCompletionTracker == null ? 0 : sectionCompletionTracker.pendingCount(),
-                sectionCompletionTracker == null ? 0 : sectionCompletionTracker.completedCount(),
-                sectionCompletionTracker == null ? 0 : sectionCompletionTracker.skippedCount(),
-                aftermathStarted,
-                aftermathStartTick,
-                aftermathStartReason,
-                SkyentNuclearExplosionConfig.mutationMinCompletedSectionsBeforeAftermath(),
-                SkyentNuclearExplosionConfig.mutationAftermathForceStartAfterTicks()
-        );
     }
 
     private AftermathThrottleBudget computeAftermathThrottleBudget(ServerLevel serverLevel) {
@@ -1646,259 +911,6 @@ public class NuclearExplosionEntity extends Entity {
         return new AftermathThrottleBudget(avgTickMs, tpsEstimate, multiplier, workUnitsBudget, columnsBudget, timeBudgetMs);
     }
 
-    private void logColumnCollapseDebug(NuclearColumnCollapsePass.CollapseResult result, AftermathThrottleBudget budget) {
-        if (!SkyentNuclearExplosionConfig.debugContamination() || tickCount % 20 != 0 || columnCollapsePass == null) {
-            return;
-        }
-
-        SkyesNuclearTech.LOGGER.info(
-                "Nuke column aftermath debug: id={} tick={} phase={} aftermathStarted={} aftermathStartTick={} startReason={} tpsEstimate={} avgTickMs={} adaptiveThrottle={} adaptiveMultiplier={} workUnitsBudget={} columnsBudget={} timeBudgetMs={} tickWorkUnitsProcessed={} tickChunksPlanned={} tickColumns={} tickDeferred={} tickUnloadedWorkUnitsSkipped={} elapsedMs={} stoppedByWorkBudget={} stoppedByColumnBudget={} stoppedByTimeBudget={} stoppedByNoWork={} unloadedChunkSkipCooldownTicks={} trackerPending={} trackerCompleted={} trackerSkipped={} collapseRadius={} charredLogRadius={} contaminatedGrassRadius={} contaminatedGrassBlend={} deadVegetationRadius={} vitrificationGenerationScale={} unscaledVitrificationRadius={} scaledVitrificationRadius={} unscaledVitrificationFeatherRadius={} scaledVitrificationFeatherRadius={} vitrificationHotTierFalloffPower={} vitrificationSizeTierCap={} postCollapseSurfaceUsed={} fireRadius={} leafEvaporationRadius={} currentRing={} maxRing={} workUnitsCompleted={}/{} readyWorkUnits={} deferredWorkUnits={} outerWorkUnitsNotStarted={} currentChunk={} forcedMutationChunks={} mutationChunksForced={} mutationChunksUnforced={} mutationChunkLoadWaits={} mutationChunkForceFailures={} blockedByPending={} blockedChunk={} blockedRing={} blockedTicks={} longestBlockedTicks={} tickPlannedMutations={} tickSectionsMutated={} tickMutationsApplied={} totalMutationsApplied={} totalSectionsMutated={} currentLocalMutations={} currentLocalSections={} noOpWorkUnits={} deferredChecks={} deferredQueued={} deferredRequeued={} movementMutations={} charredLogs={} leafEvaporated={} contaminatedGrass={} deadGrass={} deadLeaves={} vitrifiedStone={} vitrifiedTiers={} vitrifiedTopTiers={} vitrificationBaseTiers={} vitrificationFinalTiers={} vitrificationDowngrades={} vitrificationColumnsChecked={} vitrificationColumnsAffected={} maxVitrificationDepth={} vitrificationEdgeFeatherPlacements={} vitrificationSkippedBySoftEdge={} vitrificationSkips={} plannedPlantRemovals={} plannedFires={} placedFires={} totalColumnsProcessed={} skippedUnloadedColumns={} mutationUnloadedSkips={} mutationBlockEntitySkips={} barriers={} movableBlocks={} maxDropBlocks={} maxRunsPerColumn={} scanDepth={} runsFound={} runsMoved={} averageDrop={} maxDropSeen={} skippedBarrier={} skippedFluid={} skippedBlockEntity={}",
-                getId(),
-                tickCount,
-                destructionPhase,
-                aftermathStarted,
-                aftermathStartTick,
-                aftermathStartReason,
-                budget.tpsEstimate(),
-                budget.avgTickMs(),
-                SkyentNuclearExplosionConfig.aftermathAdaptiveTpsThrottle(),
-                budget.multiplier(),
-                budget.workUnitsBudget(),
-                budget.columnsBudget(),
-                budget.timeBudgetMs(),
-                result.workUnitsProcessed(),
-                result.workUnitsPlanned(),
-                result.columnsProcessed(),
-                result.columnsDeferred(),
-                result.unloadedWorkUnitsSkipped(),
-                result.elapsedMs(),
-                result.stoppedByWorkBudget(),
-                result.stoppedByColumnBudget(),
-                result.stoppedByTimeBudget(),
-                result.stoppedByNoWork(),
-                SkyentNuclearExplosionConfig.aftermathUnloadedChunkSkipCooldownTicks(),
-                sectionCompletionTracker == null ? 0 : sectionCompletionTracker.pendingCount(),
-                sectionCompletionTracker == null ? 0 : sectionCompletionTracker.completedCount(),
-                sectionCompletionTracker == null ? 0 : sectionCompletionTracker.skippedCount(),
-                columnCollapsePass.collapseRadius(),
-                columnCollapsePass.charredLogRadius(),
-                columnCollapsePass.contaminatedGrassRadius(),
-                columnCollapsePass.contaminatedGrassBlendDebug(),
-                columnCollapsePass.deadVegetationRadius(),
-                columnCollapsePass.vitrificationGenerationScale(),
-                columnCollapsePass.unscaledVitrificationRadius(),
-                columnCollapsePass.vitrificationRadius(),
-                columnCollapsePass.unscaledVitrificationFeatherRadius(),
-                columnCollapsePass.vitrificationFeatherRadius(),
-                columnCollapsePass.vitrificationHotTierFalloffPower(),
-                columnCollapsePass.vitrificationSizeTierCap(),
-                columnCollapsePass.vitrificationUsesPostCollapseSurface(),
-                columnCollapsePass.fireRadius(),
-                columnCollapsePass.leafEvaporationRadius(),
-                columnCollapsePass.currentRing(),
-                columnCollapsePass.maxRing(),
-                columnCollapsePass.workUnitsCompleted(),
-                columnCollapsePass.workUnitsTotal(),
-                columnCollapsePass.readyWorkUnitsRemaining(),
-                columnCollapsePass.deferredWorkUnitsRemaining(),
-                columnCollapsePass.outerWorkUnitsNotStarted(),
-                columnCollapsePass.currentWorkUnitDebug(),
-                columnCollapsePass.forcedMutationChunks(),
-                columnCollapsePass.mutationChunksForced(),
-                columnCollapsePass.mutationChunksUnforced(),
-                columnCollapsePass.mutationChunkLoadWaits(),
-                columnCollapsePass.mutationChunkForceFailures(),
-                columnCollapsePass.blockedByPendingSections(),
-                columnCollapsePass.blockedWorkUnitDebug(),
-                columnCollapsePass.blockedRing(),
-                columnCollapsePass.blockedTicks(),
-                columnCollapsePass.longestBlockedTicks(),
-                result.mutationsPlanned(),
-                result.sectionsMutated(),
-                result.mutationsApplied(),
-                columnCollapsePass.totalMutationsApplied(),
-                columnCollapsePass.totalSectionsMutated(),
-                columnCollapsePass.currentLocalPlannedMutations(),
-                columnCollapsePass.currentLocalPlannedSections(),
-                columnCollapsePass.noOpWorkUnitsSkipped(),
-                columnCollapsePass.deferredColumnChecks(),
-                columnCollapsePass.deferredColumnsQueued(),
-                columnCollapsePass.deferredWorkUnitsRequeued(),
-                columnCollapsePass.plannedMovementMutations(),
-                columnCollapsePass.plannedCharredLogReplacements(),
-                columnCollapsePass.plannedLeafEvaporations(),
-                columnCollapsePass.plannedContaminatedGrassReplacements(),
-                columnCollapsePass.plannedDeadGrassReplacements(),
-                columnCollapsePass.plannedDeadLeafReplacements(),
-                columnCollapsePass.plannedVitrifiedStoneReplacements(),
-                columnCollapsePass.plannedVitrifiedTierReplacementsDebug(),
-                columnCollapsePass.plannedVitrifiedTopTierCountsDebug(),
-                columnCollapsePass.vitrificationBaseTierCountsDebug(),
-                columnCollapsePass.vitrificationFinalTierCountsDebug(),
-                columnCollapsePass.vitrificationDowngradeDebug(),
-                columnCollapsePass.vitrificationColumnsChecked(),
-                columnCollapsePass.vitrificationColumnsAffected(),
-                columnCollapsePass.maxVitrificationDepthSeen(),
-                columnCollapsePass.vitrificationEdgeFeatherPlacements(),
-                columnCollapsePass.vitrificationSkippedBySoftEdge(),
-                columnCollapsePass.vitrificationSkipDebug(),
-                columnCollapsePass.plannedPlantRemovals(),
-                columnCollapsePass.plannedFireBlocks(),
-                columnCollapsePass.placedFireBlocks(),
-                columnCollapsePass.totalColumnsProcessed(),
-                columnCollapsePass.skippedUnloadedColumns(),
-                columnCollapsePass.mutationUnloadedSectionSkips(),
-                columnCollapsePass.mutationBlockEntitySkips(),
-                columnCollapsePass.barriersEncountered(),
-                columnCollapsePass.movableBlocksCollected(),
-                columnCollapsePass.maxDropBlocks(),
-                columnCollapsePass.maxRunsPerColumn(),
-                columnCollapsePass.scanDepthBelowSurface(),
-                columnCollapsePass.surfaceRunsFound(),
-                columnCollapsePass.surfaceRunsMoved(),
-                columnCollapsePass.averageDropDistance(),
-                columnCollapsePass.maxDropDistanceSeen(),
-                columnCollapsePass.skippedBarriersBeforeSurface(),
-                columnCollapsePass.skippedFluidsBeforeSurface(),
-                columnCollapsePass.skippedBlockEntitiesBeforeSurface()
-        );
-    }
-
-    private void logColumnCollapseMutationDebug(NuclearPlannedBlockMutationQueue.MutationResult result) {
-        if (!SkyentNuclearExplosionConfig.debugContamination() || tickCount % 20 != 0 || columnCollapseMutationQueue == null) {
-            return;
-        }
-
-        SkyesNuclearTech.LOGGER.info(
-                "Nuke column collapse mutation debug: id={} tick={} phase={} aftermathStarted={} aftermathStartTick={} sectionsRemaining={} tickSections={} tickBlocksChanged={} totalBlocksChanged={} totalSectionsTouched={} unloadedSkips={} blockEntitySkips={} placedFires={}",
-                getId(),
-                tickCount,
-                destructionPhase,
-                aftermathStarted,
-                aftermathStartTick,
-                columnCollapseMutationQueue.sectionsRemaining(),
-                result.sectionsTouched(),
-                result.blocksChanged(),
-                columnCollapseMutationQueue.totalBlocksChanged(),
-                columnCollapseMutationQueue.totalSectionsTouched(),
-                columnCollapseMutationQueue.unloadedSectionSkips(),
-                columnCollapseMutationQueue.blockEntitySkips(),
-                columnCollapseMutationQueue.totalFireBlocksPlaced()
-        );
-    }
-
-    private void logFluidEvaporationDebug(NuclearWaterEvaporationPass.EvaporationResult result) {
-        if (!SkyentNuclearExplosionConfig.debugWaterClear() || (tickCount % 5 != 0 && !result.complete() && !result.capHit()) || fluidEvaporationPass == null) {
-            return;
-        }
-
-        SkyesNuclearTech.LOGGER.info(
-                "Nuke water clearing debug: id={} tick={} phase={} innerRadius={} currentRadius={} targetRadius={} currentLayerY={} remainingRadius={} radialLayersPerStep={} recheckOverlap={} tickShells={} tickColumns={} tickBlockChecks={} tickWaterRemoved={} tickLavaRemoved={} tickWaterloggedCleared={} tickSkippedUnloadedColumns={} tickSkippedBlockEntities={} elapsedMs={} capHit={} totalShellsProcessed={} totalBlockChecks={} totalWaterRemoved={} totalLavaRemoved={} totalWaterloggedCleared={} totalSkippedUnloadedColumns={} totalSkippedBlockEntities={} complete={}",
-                getId(),
-                tickCount,
-                destructionPhase,
-                result.innerRadius(),
-                result.currentRadius(),
-                fluidEvaporationPass.radius(),
-                result.currentY(),
-                fluidEvaporationPass.sectionsRemaining(),
-                SkyentNuclearExplosionConfig.waterEvaporationRadialLayersPerStep(),
-                fluidEvaporationPass.recheckOverlap(),
-                result.sectionsProcessed(),
-                result.columnsScanned(),
-                result.blockChecks(),
-                result.waterBlocksRemoved(),
-                result.lavaBlocksRemoved(),
-                result.waterloggedBlocksCleared(),
-                result.skippedUnloadedSections(),
-                result.skippedBlockEntities(),
-                result.elapsedMs(),
-                result.capHit(),
-                fluidEvaporationPass.totalSectionsProcessed(),
-                fluidEvaporationPass.totalBlocksChecked(),
-                fluidEvaporationPass.totalWaterBlocksRemoved(),
-                fluidEvaporationPass.totalLavaBlocksRemoved(),
-                fluidEvaporationPass.totalWaterloggedBlocksCleared(),
-                fluidEvaporationPass.skippedUnloadedSections(),
-                fluidEvaporationPass.skippedBlockEntities(),
-                result.complete()
-        );
-    }
-
-    private void logLifecycleDebug() {
-        if (!DEBUG_NUKE_LIFECYCLE || tickCount % 100 != 0) {
-            return;
-        }
-
-        SkyesNuclearTech.LOGGER.info(
-                "Nuke lifecycle debug: id={} tick={} phase={} fluidActive={} rayPlannerActive={} mutationQueueActive={} columnPassActive={} columnMutationActive={} sectionTrackerActive={} maskSections={} mutationSectionsRemaining={} columnColumnsRemaining={} columnDeferredRemaining={} localPlannedSectionsRemaining={} columnWorkUnitsCompleted={} columnWorkUnitsTotal={} trackerPending={} trackerCompleted={} trackerSkipped={} forcedChunkCount={} chunksForced={} canReleaseChunks={} cloudlets={} mushroomCloudlets={} alive={}",
-                getId(),
-                tickCount,
-                destructionPhase,
-                fluidEvaporationPass != null,
-                rayPlanner != null,
-                mutationQueue != null,
-                columnCollapsePass != null,
-                columnCollapseMutationQueue != null,
-                sectionCompletionTracker != null,
-                destructionMask == null ? 0 : destructionMask.sectionCount(),
-                mutationQueue == null ? 0 : mutationQueue.sectionsRemaining(),
-                columnCollapsePass == null ? 0 : columnCollapsePass.columnsRemaining(),
-                columnCollapsePass == null ? 0 : columnCollapsePass.deferredColumnsRemaining(),
-                columnCollapsePass == null ? 0 : columnCollapsePass.currentLocalPlannedSections(),
-                columnCollapsePass == null ? 0 : columnCollapsePass.workUnitsCompleted(),
-                columnCollapsePass == null ? 0 : columnCollapsePass.workUnitsTotal(),
-                sectionCompletionTracker == null ? 0 : sectionCompletionTracker.pendingCount(),
-                sectionCompletionTracker == null ? 0 : sectionCompletionTracker.completedCount(),
-                sectionCompletionTracker == null ? 0 : sectionCompletionTracker.skippedCount(),
-                forcedExplosionChunks.size(),
-                chunksForced,
-                canReleaseImmediateChunks(),
-                cloudlets.size(),
-                mushroomCloudSimulation == null ? 0 : mushroomCloudSimulation.cloudlets().size(),
-                !isRemoved()
-        );
-    }
-
-    private void logAftermathItemEntityCount(ServerLevel serverLevel) {
-        if (!DEBUG_NUKE_ITEM_DROPS && !NUKE_CLEANUP_DROPPED_ITEMS_IN_AFTERMATH) {
-            return;
-        }
-
-        Vec3 origin = fixedOrigin();
-        double radius = getRadius() * NUKE_ITEM_CLEANUP_RADIUS_SCALE;
-        double radiusSqr = radius * radius;
-        AABB bounds = new AABB(
-                origin.x - radius,
-                origin.y - radius,
-                origin.z - radius,
-                origin.x + radius,
-                origin.y + radius,
-                origin.z + radius
-        );
-        List<ItemEntity> itemEntities = serverLevel.getEntitiesOfClass(ItemEntity.class, bounds, item -> {
-            double dx = item.getX() - origin.x;
-            double dz = item.getZ() - origin.z;
-            return dx * dx + dz * dz <= radiusSqr;
-        });
-        int removed = 0;
-        if (NUKE_CLEANUP_DROPPED_ITEMS_IN_AFTERMATH) {
-            for (ItemEntity itemEntity : itemEntities) {
-                itemEntity.discard();
-                removed++;
-            }
-        }
-
-        SkyesNuclearTech.LOGGER.info(
-                "Nuke aftermath item entity check: id={} radius={} itemEntities={} cleanupEnabled={} removed={}",
-                getId(),
-                radius,
-                itemEntities.size(),
-                NUKE_CLEANUP_DROPPED_ITEMS_IN_AFTERMATH,
-                removed
-        );
-    }
-
     private void tickCenterRadiation() {
         if (!(level() instanceof ServerLevel serverLevel)) {
             return;
@@ -1916,43 +928,14 @@ public class NuclearExplosionEntity extends Entity {
             return;
         }
 
-        RadiationExposureSystem.PointSourceTickResult result = RadiationExposureSystem.tickPointSource(
+        RadiationExposureSystem.tickPointSource(
                 serverLevel,
                 fixedOrigin(),
                 sourceMillisievertsPerSecond,
                 radiationRadius,
                 1,
-                SkyentNuclearExplosionConfig.debugCenterRadiation()
+                false
         );
-
-        if (SkyentNuclearExplosionConfig.debugCenterRadiation() && centerRadiationTicks % 10 == 0) {
-            SkyesNuclearTech.LOGGER.info(
-                    "Nuke center radiation point source: id={} entityRadius={} radiusScale={} age={} durationTicks={} progress={} initialMsvPerSecond={} radiationRadius={} sourceMsvPerSecond={} checked={} exposed={} playersChecked={} playersExposed={} immunePlayersSkippedDamage={} maxEntityExposureMsvPerSecond={} maxPlayerExposureMsvPerSecond={} nearestPlayer={} nearestDistance={} nearestExposureMsvPerSecond={} nearestDoseMsvThisTick={} nearestTransmission={} nearestImmune={} players=[{}]",
-                    getId(),
-                    getRadius(),
-                    radiusScaleFromBaseline(),
-                    centerRadiationTicks,
-                    durationTicks,
-                    Mth.clamp(centerRadiationTicks / (double) durationTicks, 0.0D, 1.0D),
-                    initialMsvPerSecond,
-                    radiationRadius,
-                    sourceMillisievertsPerSecond,
-                    result.checkedEntities(),
-                    result.exposedEntities(),
-                    result.checkedPlayers(),
-                    result.exposedPlayers(),
-                    result.immunePlayersSkippedDamage(),
-                    result.maxEntityExposureMillisievertsPerSecond(),
-                    result.maxPlayerExposureMillisievertsPerSecond(),
-                    result.nearestPlayerName(),
-                    result.nearestPlayerDistance(),
-                    result.nearestPlayerExposureMillisievertsPerSecond(),
-                    result.nearestPlayerDoseMillisievertsThisTick(),
-                    result.nearestPlayerTransmission(),
-                    result.nearestPlayerImmune(),
-                    result.playerDetails()
-            );
-        }
     }
 
     private double radiusScaleFromBaseline() {
@@ -2004,7 +987,6 @@ public class NuclearExplosionEntity extends Entity {
             added++;
         }
         chunksForced = !forcedExplosionChunks.isEmpty();
-        NuclearExplosionChunkLoading.debugForced(getChunkLoadingOwnerUuid(), getId(), centerChunk, chunkRadius, forcedExplosionChunks.size(), added);
     }
 
     private void unforceExplosionChunks() {
@@ -2037,7 +1019,6 @@ public class NuclearExplosionEntity extends Entity {
         if (releaseRetainedCenterChunk) {
             retainedCenterChunk = null;
         }
-        NuclearExplosionChunkLoading.debugUnforced(getChunkLoadingOwnerUuid(), getId(), released);
     }
 
     private boolean canReleaseImmediateChunks() {
@@ -2210,19 +1191,6 @@ public class NuclearExplosionEntity extends Entity {
             entitiesIgnited++;
         }
 
-        if (DEBUG_NUKE_THERMAL_FLASH) {
-            SkyesNuclearTech.LOGGER.info(
-                    "Nuke initial thermal flash: id={} radius={} entitiesChecked={} skippedNoLoS={} skippedCreativeSpectator={} entitiesIgnited={} entitiesDamaged={} maxDamageApplied={}",
-                    getId(),
-                    thermalFlashRadius,
-                    entitiesChecked,
-                    skippedNoLineOfSight,
-                    skippedCreativeSpectator,
-                    entitiesIgnited,
-                    entitiesDamaged,
-                    maxDamageApplied
-            );
-        }
     }
 
     private boolean hasThermalFlashLineOfSight(LivingEntity entity) {
@@ -2246,10 +1214,6 @@ public class NuclearExplosionEntity extends Entity {
     private void tickClientEffects() {
         tickMushroomCloudSimulation();
         tickCloudlets();
-        if (DEBUG_FORCE_SHOCKWAVE_TEST_CLOUDLET && !debugShockwaveTestCloudletSpawned && tickCount >= 5) {
-            debugShockwaveTestCloudletSpawned = true;
-            cloudlets.add(new NuclearCloudlet(NuclearCloudletType.SHOCKWAVE, 5.0D, 2.0D, 0.0D, 200, 20.0F, 20.0F, getVisualSeed()));
-        }
         boolean shockwaveVisualTick = tickCount % SHOCKWAVE_VISUAL_INTERVAL_TICKS == 0;
         if (shockwaveVisualTick) {
             spawnShockwaveCloudlets();
@@ -2257,7 +1221,6 @@ public class NuclearExplosionEntity extends Entity {
         if (isActiveBlastPhaseVisual()) {
             spawnActiveBlastSweepSmoke();
         }
-        logShockwaveVisualDebug(shockwaveVisualTick);
         tickClientShockwaveArrivalSound();
     }
 
@@ -2276,17 +1239,6 @@ public class NuclearExplosionEntity extends Entity {
             int visualAge = getVisualAge();
             if (visualAge > 0 && level().isClientSide) {
                 mushroomCloudSimulation.skipToAge(level(), visualOrigin, visualAge);
-                if (DEBUG_NUKE_VISUAL_SYNC) {
-                    SkyesNuclearTech.LOGGER.info(
-                            "Nuke visual sync: initialized mushroom simulation id={} clientTick={} visualAge={} localTick={} origin={} groundY={}",
-                            getId(),
-                            tickCount,
-                            visualAge,
-                            tickCount,
-                            visualOrigin,
-                            getExplosionGroundY()
-                    );
-                }
             }
         }
         mushroomCloudSimulation.tick(level(), visualOrigin);
@@ -2352,7 +1304,6 @@ public class NuclearExplosionEntity extends Entity {
                 shockwaveInvalidY++;
             }
             double spawnY = surfaceY + 2.0D + random.nextDouble() * 1.5D;
-            maybeLogShockwaveSurfaceSample(index, count, worldX, worldZ, surface, spawnY);
             addShockwaveCloudlet(random, worldX, spawnY, worldZ, cos, sin, baseSize, distanceFactor);
             addedThisTick++;
         }
@@ -2563,71 +1514,6 @@ public class NuclearExplosionEntity extends Entity {
         return new SurfaceSample(fallbackY, false, false, heightmapValid, false, true, blockX, blockZ, heightmapY, startY, Integer.MIN_VALUE);
     }
 
-    private void maybeLogShockwaveSurfaceSample(int index, int count, double worldX, double worldZ, SurfaceSample surface, double spawnY) {
-        if (!DEBUG_SHOCKWAVE_VISUALS || tickCount % 20 != 0 || index != 0) {
-            return;
-        }
-
-        SkyesNuclearTech.LOGGER.info(
-                "Nuke shockwave surface sample: id={} tick={} sample=1/{} bx={} bz={} worldX={} worldZ={} heightmapY={} startY={} foundY={} surfaceTopY={} spawnY={} heightmapValid={} fallbackHeightmap={} fallbackEntityY={} chunkMissing={}",
-                getId(),
-                tickCount,
-                count,
-                surface.blockX(),
-                surface.blockZ(),
-                worldX,
-                worldZ,
-                surface.heightmapY(),
-                surface.startY(),
-                surface.foundY(),
-                surface.surfaceY(),
-                spawnY,
-                surface.heightmapValid(),
-                surface.usedHeightmapFallback(),
-                surface.usedEntityFallback(),
-                surface.chunkMissing()
-        );
-    }
-
-    private void logShockwaveVisualDebug(boolean shockwaveVisualTick) {
-        if (!DEBUG_SHOCKWAVE_VISUALS || tickCount % 20 != 0) {
-            return;
-        }
-
-        SkyesNuclearTech.LOGGER.info(
-                    "Nuke shockwave client debug: id={} tick={} client={} radius={} max={} intervalTick={} methodCalls={} conditionPasses={} attempted={} added={} skipped={} surfaceFound={} surfaceNotFound={} chunkMissing={} invalidY={} heightmapInvalid={} foundTopDown={} fallbackHeightmap={} fallbackEntityY={} activeBlastPhase={} activeSweepRadius={} activeSweepAttempts={} activeSweepAdded={} activeSweepSkippedSurface={} activeSweepSkippedChunkMissing={} activeSweepCloudlets={} shockwaveCloudlets={} totalCloudlets={} spawnCloud={}",
-                getId(),
-                tickCount,
-                level().isClientSide,
-                getShockwaveRadius(),
-                getShockwaveMaxRadius(),
-                shockwaveVisualTick,
-                shockwaveSpawnMethodCalls,
-                shockwaveSpawnConditionPasses,
-                shockwaveCloudletsAttempted,
-                shockwaveCloudletsAdded,
-                shockwaveCloudletsSkipped,
-                shockwaveSurfaceFound,
-                shockwaveSurfaceNotFound,
-                shockwaveChunkMissing,
-                shockwaveInvalidY,
-                shockwaveHeightmapInvalid,
-                shockwaveFoundSurfaceTopDown,
-                shockwaveFallbackHeightmap,
-                shockwaveFallbackEntityY,
-                isActiveBlastPhaseVisual(),
-                activeNuclearDamageRadius(),
-                activeBlastSweepAttempts,
-                activeBlastSweepAdded,
-                activeBlastSweepSkippedSurface,
-                activeBlastSweepSkippedChunkMissing,
-                activeBlastSweepCloudletCount(),
-                shockwaveCloudletCount(),
-                cloudlets.size(),
-                shouldSpawnCloud()
-        );
-    }
-
     private record SurfaceSample(
             double surfaceY,
             boolean found,
@@ -2777,19 +1663,6 @@ public class NuclearExplosionEntity extends Entity {
             lastDamage = damage;
         }
 
-        if ((DEBUG_SHOCKWAVE_VISUALS || DEBUG_NUKE_ENTITY_DAMAGE) && (damagedThisTick > 0 || coveredThisTick > 0 || tickCount % 20 == 0)) {
-            SkyesNuclearTech.LOGGER.info(
-                    "Nuke shockwave damage tick: visualMaxRadius={} damageRadius={} currentRadius={} falloffPower={} damageMultiplier={} entitiesDamaged={} roofCoveredSkipped={} lastDamage={}",
-                    getShockwaveMaxRadius(),
-                    damageRadius,
-                    currentRadius,
-                    SHOCKWAVE_DAMAGE_FALLOFF_POWER,
-                    SHOCKWAVE_DAMAGE_MULTIPLIER,
-                    damagedThisTick,
-                    coveredThisTick,
-                    lastDamage
-            );
-        }
     }
 
     private void tickNuclearExplosionEntityDamage() {
@@ -2853,28 +1726,6 @@ public class NuclearExplosionEntity extends Entity {
             }
         }
 
-        if (DEBUG_NUKE_ENTITY_DAMAGE) {
-            SkyesNuclearTech.LOGGER.info(
-                    "Nuke nuclear explosion damage tick: id={} tick={} primaryDestructionComplete={} primaryDestructionCompleteAge={} postDestructionDamageTicks={} activeDamagePhase={} nukeRadius={} activeDamageRadius={} activeRadiusMultiplier={} damagePerRadius={} maxDamage={} intervalTicks={} entitiesChecked={} covered={} damaged={} ignited={} maxDamageApplied={}",
-                    getId(),
-                    tickCount,
-                    primaryDestructionComplete,
-                    primaryDestructionCompleteAge,
-                    NUCLEAR_EXPLOSION_POST_DESTRUCTION_DAMAGE_TICKS,
-                    isActiveBlastPhase(),
-                    getRadius(),
-                    damageRadius,
-                    NUCLEAR_EXPLOSION_ACTIVE_DAMAGE_RADIUS_MULTIPLIER,
-                    NUCLEAR_EXPLOSION_DAMAGE_PER_RADIUS,
-                    maxDamage,
-                    NUCLEAR_EXPLOSION_DAMAGE_INTERVAL_TICKS,
-                    checked,
-                    covered,
-                    damaged,
-                    ignited,
-                    maxDamageApplied
-            );
-        }
     }
 
     private boolean isExplosionDestructionComplete() {
@@ -3413,3 +2264,4 @@ public class NuclearExplosionEntity extends Entity {
         }
     }
 }
+

@@ -88,109 +88,49 @@ public class RemoteDetonatorItem extends Item {
     }
 
     private static InteractionResultHolder<ItemStack> trigger(Level level, Player player, InteractionHand hand, ItemStack stack) {
-        long totalStartNs = NuclearExplosionEntity.detonationTimingNowNs();
         if (level.isClientSide) {
             return InteractionResultHolder.sidedSuccess(stack, true);
         }
 
-        long readTargetStartNs = NuclearExplosionEntity.detonationTimingNowNs();
         Target target = readTarget(stack);
-        NuclearExplosionEntity.logDetonationTimingStep(
-                "remote read target",
-                readTargetStartNs,
-                "hasTarget=" + (target != null) + " thread=" + Thread.currentThread().getName()
-        );
         if (target == null) {
             player.displayClientMessage(Component.literal("No target linked."), true);
-            NuclearExplosionEntity.logDetonationTimingStep("remote trigger total no target", totalStartNs);
             return InteractionResultHolder.success(stack);
         }
 
         if (!(player instanceof ServerPlayer serverPlayer)) {
-            NuclearExplosionEntity.logDetonationTimingStep("remote trigger total non-server-player", totalStartNs);
             return InteractionResultHolder.success(stack);
         }
 
-        long resolveLevelStartNs = NuclearExplosionEntity.detonationTimingNowNs();
         ServerLevel targetLevel = serverPlayer.server.getLevel(target.dimension());
-        NuclearExplosionEntity.logDetonationTimingStep(
-                "remote resolve target level",
-                resolveLevelStartNs,
-                "dimension=" + target.dimension().location() + " loaded=" + (targetLevel != null)
-        );
         if (targetLevel == null) {
             player.displayClientMessage(Component.literal("Target dimension is not loaded."), true);
-            NuclearExplosionEntity.logDetonationTimingStep("remote trigger total missing dimension", totalStartNs);
             return InteractionResultHolder.success(stack);
         }
 
-        long ownerStartNs = NuclearExplosionEntity.detonationTimingNowNs();
         UUID ticketOwner = UUID.randomUUID();
         ChunkPos targetChunk = new ChunkPos(target.pos());
-        NuclearExplosionEntity.logDetonationTimingStep("remote generate target ticket uuid/chunk", ownerStartNs, "chunk=" + targetChunk);
 
-        long forceStartNs = NuclearExplosionEntity.detonationTimingNowNs();
         NuclearExplosionChunkLoading.NuclearExplosionChunkLease lease = NuclearExplosionChunkLoading.forceTemporaryDetonationChunk(
                 targetLevel,
                 targetChunk,
                 ticketOwner
         );
-        NuclearExplosionEntity.logDetonationTimingStep(
-                "remote force temporary target chunk",
-                forceStartNs,
-                "dimension=" + targetLevel.dimension().location() + " chunk=" + targetChunk
-        );
         String releaseReason = "invalid_target";
         try {
-            long getChunkStartNs = NuclearExplosionEntity.detonationTimingNowNs();
             targetLevel.getChunkAt(target.pos());
-            NuclearExplosionEntity.logDetonationTimingStep(
-                    "remote synchronous getChunkAt target",
-                    getChunkStartNs,
-                    "dimension=" + targetLevel.dimension().location() + " pos=" + target.pos() + " chunk=" + targetChunk
-            );
 
-            long getBlockStartNs = NuclearExplosionEntity.detonationTimingNowNs();
             BlockState state = targetLevel.getBlockState(target.pos());
-            NuclearExplosionEntity.logDetonationTimingStep(
-                    "remote get target block state",
-                    getBlockStartNs,
-                    "pos=" + target.pos() + " block=" + state.getBlock().builtInRegistryHolder().key().location()
-            );
             boolean validCharge = state.is(ModBlocks.NUCLEAR_CHARGE.get());
-            NuclearExplosionChunkLoading.debugRemoteDetonationTarget(ticketOwner, targetChunk, validCharge);
             if (!validCharge) {
                 player.displayClientMessage(Component.literal("Target is not a valid receiver."), true);
-                NuclearExplosionEntity.logDetonationTimingStep(
-                        "remote trigger total invalid target",
-                        totalStartNs,
-                        "dimension=" + targetLevel.dimension().location() + " pos=" + target.pos()
-                );
                 return InteractionResultHolder.success(stack);
             }
 
-            long detonateStartNs = NuclearExplosionEntity.detonationTimingNowNs();
             releaseReason = NuclearChargeBlock.detonate(targetLevel, target.pos(), player) ? "detonated" : "detonation_failed";
-            NuclearExplosionEntity.logDetonationTimingStep(
-                    "remote NuclearChargeBlock.detonate",
-                    detonateStartNs,
-                    "pos=" + target.pos() + " result=" + releaseReason
-            );
-            NuclearExplosionEntity.logDetonationTimingStep(
-                    "remote trigger total",
-                    totalStartNs,
-                    "dimension=" + targetLevel.dimension().location() + " pos=" + target.pos() + " result=" + releaseReason
-            );
             return InteractionResultHolder.success(stack);
         } finally {
-            long releaseStartNs = NuclearExplosionEntity.detonationTimingNowNs();
-            int released = NuclearExplosionChunkLoading.unforceExplosionChunks(targetLevel, lease.ownerUuid(), lease.chunks());
-            NuclearExplosionEntity.logDetonationTimingStep(
-                    "remote release temporary target chunk",
-                    releaseStartNs,
-                    "chunk=" + targetChunk + " released=" + released + " reason=" + releaseReason
-            );
-            NuclearExplosionChunkLoading.debugTemporaryDetonationChunkReleased(ticketOwner, released, releaseReason);
+            NuclearExplosionChunkLoading.unforceExplosionChunks(targetLevel, lease.ownerUuid(), lease.chunks());
         }
     }
 

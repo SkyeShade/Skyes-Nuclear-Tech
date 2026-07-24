@@ -1,10 +1,8 @@
 package com.skyeshade.skyent.content.explosion.destruction;
 
-import com.skyeshade.skyent.SkyesNuclearTech;
-import com.skyeshade.skyent.config.SkyentNuclearExplosionConfig;
 import com.skyeshade.skyent.registry.ModBlocks;
+import com.skyeshade.skyent.config.SkyentNuclearExplosionConfig;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.Blocks;
@@ -15,9 +13,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class NuclearBlastRayPlanner {
     //TODO: ngl kinda spaghetti (but works mostly?) clean up later
-    private static final int MAX_OBSIDIAN_DEBUG_HIT_LOGS = 200;
-    private static final int MAX_OBSIDIAN_DEBUG_STEP_LOGS = 20;
-    private static final int MAX_NUKE_BLOCK_RESISTANCE_DEBUG_LOGS = 200;
     private static final int MIN_RAYS = 512;
     private static final double GOLDEN_ANGLE = Math.PI * (3.0D - Math.sqrt(5.0D));
     private static final double NUKE_BASELINE_RADIUS = 200.0D;
@@ -55,9 +50,6 @@ public final class NuclearBlastRayPlanner {
     private final double strength;
     private final NuclearDestructionMask mask;
     private final NuclearResistanceCache resistanceCache;
-    private final double rayDensityMultiplier;
-    private final int rawRayEstimate;
-    private final int maxRays;
     private final int totalRays;
     private final double initialRayEnergy;
     private final double radiusScale;
@@ -66,8 +58,6 @@ public final class NuclearBlastRayPlanner {
     private final double scaledDistanceResistanceGrowth;
     private final double scaledDistanceDecayPerBlock;
     private final double scaledMaterialPenetrationStackingGrowth;
-    private final double closeRangeArmorPiercingRadiusFraction;
-    private final double closeRangeResistanceCostMultiplier;
     private final double scaledCloseRangeArmorPiercingRadiusFraction;
     private final double scaledCloseRangeResistanceCostMultiplier;
     private final double rayEnergyJitterAmount;
@@ -76,10 +66,6 @@ public final class NuclearBlastRayPlanner {
     private int rayIndex;
     private boolean complete;
     private final PlannerCounters globalCounters = new PlannerCounters();
-    private int obsidianDebugHitLogs;
-    private int obsidianDebugStepLogs;
-    private int obsidianDebugTraceRayIndex = -1;
-    private int nukeBlockResistanceDebugLogs;
 
     public NuclearBlastRayPlanner(
             ServerLevel level,
@@ -100,10 +86,10 @@ public final class NuclearBlastRayPlanner {
         this.strength = Math.max(1.0D, strength);
         this.mask = mask;
         this.resistanceCache = resistanceCache;
-        this.rayDensityMultiplier = Math.max(1.0D, rayDensityMultiplier);
-        this.rawRayEstimate = Mth.ceil(this.rayDensityMultiplier * Math.PI * this.radius * this.radius / 16.0D);
-        this.maxRays = Math.max(MIN_RAYS, SkyentNuclearExplosionConfig.rayPlanningMaxRays());
-        this.totalRays = Mth.clamp(this.rawRayEstimate, MIN_RAYS, this.maxRays);
+        double effectiveRayDensityMultiplier = Math.max(1.0D, rayDensityMultiplier);
+        int rawRayEstimate = Mth.ceil(effectiveRayDensityMultiplier * Math.PI * this.radius * this.radius / 16.0D);
+        int maxRays = Math.max(MIN_RAYS, SkyentNuclearExplosionConfig.rayPlanningMaxRays());
+        this.totalRays = Mth.clamp(rawRayEstimate, MIN_RAYS, maxRays);
         this.initialRayEnergy = this.strength * initialRayEnergyMultiplier;
         this.radiusScale = Math.max(0.01D, this.radius / NUKE_BASELINE_RADIUS);
         this.inverseRadiusScale = 1.0D / this.radiusScale;
@@ -117,8 +103,6 @@ public final class NuclearBlastRayPlanner {
                 NUKE_MATERIAL_PENETRATION_STACKING_GROWTH * 4.0D,
                 NUKE_MATERIAL_PENETRATION_STACKING_GROWTH * Math.pow(this.inverseRadiusScale, NUKE_MATERIAL_STACKING_RADIUS_POWER)
         );
-        this.closeRangeArmorPiercingRadiusFraction = closeRangeArmorPiercingRadiusFraction;
-        this.closeRangeResistanceCostMultiplier = closeRangeResistanceCostMultiplier;
         this.scaledCloseRangeArmorPiercingRadiusFraction = closeRangeArmorPiercingRadiusFraction
                 * Mth.clamp(Math.pow(this.radiusScale, NUKE_CLOSE_RANGE_FRACTION_RADIUS_POWER), 0.35D, 1.5D);
         this.scaledCloseRangeResistanceCostMultiplier = Mth.clamp(
@@ -194,13 +178,10 @@ public final class NuclearBlastRayPlanner {
         NuclearDestructionMask localMask = new NuclearDestructionMask();
         PlannerCounters localCounters = new PlannerCounters();
         int raysProcessed = 0;
-        int stepsProcessed = 0;
-        long startNs = System.nanoTime();
 
         for (int index = startRayInclusive; index < endRayExclusive && !canceled.get(); index++) {
             RayResult result = traceRay(index, localMask, snapshot, localCounters);
             raysProcessed++;
-            stepsProcessed += result.steps();
             localCounters.raysProcessedTotal++;
             localCounters.stepsProcessedTotal += result.steps();
             localCounters.blocksMarkedTotal += result.blocksMarked();
@@ -219,11 +200,8 @@ public final class NuclearBlastRayPlanner {
                 startRayInclusive,
                 endRayExclusive,
                 raysProcessed,
-                stepsProcessed,
                 localMask,
-                localCounters,
-                (System.nanoTime() - startNs) / 1_000_000.0D,
-                canceled.get()
+                localCounters
         );
     }
 
@@ -302,9 +280,6 @@ public final class NuclearBlastRayPlanner {
                 }
                 if (obsidian) {
                     counters.obsidianBlocksHit++;
-                    if (allowSharedDebugLogging && SkyentNuclearExplosionConfig.debugRayPlanner() && obsidianDebugTraceRayIndex < 0) {
-                        obsidianDebugTraceRayIndex = index;
-                    }
                 }
                 boolean rayBlocking = resistanceCache.isRayBlocking(resistance);
                 if (resistanceCache.isRayBlocking(resistance)) {
@@ -316,7 +291,6 @@ public final class NuclearBlastRayPlanner {
                         counters.obsidianBlocksBlocked++;
                     }
                     if (allowSharedDebugLogging) {
-                        logHighResistanceHit(index, pos, state, traveled, rayEnergy, resistance, resistance, true, false, hasBlockEntity, false, 0.0D, rayEnergy, StopReason.BLOCKED);
                     }
                     return new RayResult(steps, marked, StopReason.BLOCKED);
                 }
@@ -421,9 +395,6 @@ public final class NuclearBlastRayPlanner {
                     }
                     rayEnergy -= cost;
                     if (allowSharedDebugLogging) {
-                        logHighResistanceHit(index, pos, state, traveled, rayEnergyBefore, resistance, resistance, rayBlocking, canDestroy, hasBlockEntity, markSucceeded, rawCost, rayEnergy, rayEnergy <= 0.0D ? StopReason.ENERGY : null);
-                        logObsidianStepTrace(index, pos, state, traveled, rayEnergyBefore, resistance, resistance, closeRangeApplied, cost, rayEnergy, markSucceeded);
-                        logNukeBlockResistanceDecision(index, pos, state, traveled, rayEnergyBefore, resistance, rawCost, cost, rayEnergy, canDestroy, markSucceeded, resistanceGatedRemoval, concreteBricks);
                     }
                     if (rayEnergy <= 0.0D) {
                         if (highResistance) {
@@ -462,158 +433,6 @@ public final class NuclearBlastRayPlanner {
         }
 
         return new RayResult(steps, marked, StopReason.RADIUS);
-    }
-
-    private void logHighResistanceHit(
-            int rayIndex,
-            BlockPos pos,
-            BlockState state,
-            double traveled,
-            double rayEnergyBefore,
-            float rawResistance,
-            float effectiveResistance,
-            boolean rayBlocking,
-            boolean canDestroy,
-            boolean hasBlockEntity,
-            boolean markSucceeded,
-            double rawCost,
-            double rayEnergyAfter,
-            StopReason stopReason
-    ) {
-        if (!SkyentNuclearExplosionConfig.debugRayPlanner() || obsidianDebugHitLogs >= MAX_OBSIDIAN_DEBUG_HIT_LOGS) {
-            return;
-        }
-        if (!state.is(Blocks.OBSIDIAN) && rawResistance < 12.0F && effectiveResistance < 12.0F) {
-            return;
-        }
-
-        obsidianDebugHitLogs++;
-        double distanceProgress = Mth.clamp(traveled / radius, 0.0D, 1.0D);
-        double effectivePower = effectiveResistancePower(distanceProgress);
-        boolean closeRangeApplied = distanceProgress < scaledCloseRangeArmorPiercingRadiusFraction;
-        double finalCost = Math.max(0.0D, rayEnergyBefore - rayEnergyAfter);
-        SkyesNuclearTech.LOGGER.info(
-                "Nuke obsidian/high-res ray hit: ray={} pos={} traveled={} distanceProgress={} effectivePower={} block={} state={} rawResistance={} effectiveResistance={} rayBlocking={} canMark={} hasBlockEntity={} rayEnergyBefore={} rawCost={} closeRangeApplied={} baseCloseFraction={} baseCloseMultiplier={} scaledCloseFraction={} scaledCloseMultiplier={} finalCost={} rayEnergyAfter={} markSucceeded={} stopReason={}",
-                rayIndex,
-                pos,
-                traveled,
-                distanceProgress,
-                effectivePower,
-                BuiltInRegistries.BLOCK.getKey(state.getBlock()),
-                state,
-                rawResistance,
-                effectiveResistance,
-                rayBlocking,
-                canDestroy,
-                hasBlockEntity,
-                rayEnergyBefore,
-                rawCost,
-                closeRangeApplied,
-                closeRangeArmorPiercingRadiusFraction,
-                closeRangeResistanceCostMultiplier,
-                scaledCloseRangeArmorPiercingRadiusFraction,
-                scaledCloseRangeResistanceCostMultiplier,
-                finalCost,
-                rayEnergyAfter,
-                markSucceeded,
-                stopReason
-        );
-    }
-
-    private void logObsidianStepTrace(
-            int rayIndex,
-            BlockPos pos,
-            BlockState state,
-            double traveled,
-            double rayEnergyBefore,
-            float rawResistance,
-            float effectiveResistance,
-            boolean closeRangeApplied,
-            double finalCost,
-            double rayEnergyAfter,
-            boolean markSucceeded
-    ) {
-        if (!SkyentNuclearExplosionConfig.debugRayPlanner() || rayIndex != obsidianDebugTraceRayIndex || obsidianDebugStepLogs >= MAX_OBSIDIAN_DEBUG_STEP_LOGS) {
-            return;
-        }
-
-        obsidianDebugStepLogs++;
-        SkyesNuclearTech.LOGGER.info(
-                "Nuke obsidian DDA trace: ray={} step={} pos={} block={} traveled={} rawResistance={} effectiveResistance={} closeRangeApplied={} energyBefore={} finalCost={} energyAfter={} markSucceeded={}",
-                rayIndex,
-                obsidianDebugStepLogs,
-                pos,
-                BuiltInRegistries.BLOCK.getKey(state.getBlock()),
-                traveled,
-                rawResistance,
-                effectiveResistance,
-                closeRangeApplied,
-                rayEnergyBefore,
-                finalCost,
-                rayEnergyAfter,
-                markSucceeded
-        );
-    }
-
-    private void logNukeBlockResistanceDecision(
-            int rayIndex,
-            BlockPos pos,
-            BlockState state,
-            double traveled,
-            double rayEnergyBefore,
-            float effectiveResistance,
-            double rawCost,
-            double finalCost,
-            double rayEnergyAfter,
-            boolean canDestroy,
-            boolean removed,
-            boolean resistanceGatedRemoval,
-            boolean concreteBricks
-    ) {
-        if (!NuclearResistanceCache.DEBUG_NUKE_BLOCK_RESISTANCE
-                || nukeBlockResistanceDebugLogs >= MAX_NUKE_BLOCK_RESISTANCE_DEBUG_LOGS
-                || state == null
-                || !NuclearResistanceCache.isConcreteFamily(state)) {
-            return;
-        }
-
-        nukeBlockResistanceDebugLogs++;
-        double distanceProgress = Mth.clamp(traveled / radius, 0.0D, 1.0D);
-        double effectivePower = effectiveResistancePower(distanceProgress);
-        float blockExplosionResistance = state.getBlock().getExplosionResistance();
-        float destroySpeed = state.getDestroySpeed(level, pos);
-        String reason;
-        if (!canDestroy) {
-            reason = "cannot_destroy";
-        } else if (!resistanceGatedRemoval) {
-            reason = removed ? "removed_low_resistance_positive_energy" : "survived_low_resistance_duplicate_or_no_energy";
-        } else if (removed) {
-            reason = "removed_energy_met_resistance_cost";
-        } else if (concreteBricks && rayEnergyBefore >= finalCost * CONCRETE_BRICKS_CRACK_THRESHOLD_FRACTION) {
-            reason = "survived_or_cracked_energy_met_partial_concrete_threshold";
-        } else {
-            reason = "survived_energy_below_resistance_cost";
-        }
-
-        SkyesNuclearTech.LOGGER.info(
-                "Nuke block resistance decision: ray={} pos={} block={} blockExplosionResistance={} tooltipBlastResistance={} destroySpeed={} effectiveResistance={} distanceProgress={} effectivePower={} rayEnergyBefore={} rawCost={} finalCost={} rayEnergyAfter={} resistanceGated={} removed={} reason={}",
-                rayIndex,
-                pos,
-                BuiltInRegistries.BLOCK.getKey(state.getBlock()),
-                blockExplosionResistance,
-                blockExplosionResistance,
-                destroySpeed,
-                effectiveResistance,
-                distanceProgress,
-                effectivePower,
-                rayEnergyBefore,
-                rawCost,
-                finalCost,
-                rayEnergyAfter,
-                resistanceGatedRemoval,
-                removed,
-                reason
-        );
     }
 
     private double distanceCost(double previousTraveled, double traveled) {
@@ -692,334 +511,12 @@ public final class NuclearBlastRayPlanner {
         return complete;
     }
 
-    public int rayIndex() {
-        return rayIndex;
-    }
-
     public int totalRays() {
         return totalRays;
     }
 
-    public int rawRayEstimate() {
-        return rawRayEstimate;
-    }
-
-    public double rayDensityMultiplier() {
-        return rayDensityMultiplier;
-    }
-
-    public int minRays() {
-        return MIN_RAYS;
-    }
-
-    public int maxRays() {
-        return maxRays;
-    }
-
-    public boolean rayCountClamped() {
-        return rawRayEstimate < MIN_RAYS || rawRayEstimate > maxRays;
-    }
-
-    public String rayCountFormula() {
-        return "ceil(rayDensityMultiplier*pi*radius^2/16)";
-    }
-
     public double initialRayEnergy() {
         return initialRayEnergy;
-    }
-
-    public double baselineRadius() {
-        return NUKE_BASELINE_RADIUS;
-    }
-
-    public double radiusScale() {
-        return radiusScale;
-    }
-
-    public double inverseRadiusScale() {
-        return inverseRadiusScale;
-    }
-
-    public double smallRadiusProgressBoost() {
-        return smallRadiusProgressBoost;
-    }
-
-    public double resistanceCostMultiplier() {
-        return NUKE_RESISTANCE_COST_MULTIPLIER;
-    }
-
-    public double resistanceNonlinearPower() {
-        return NUKE_RESISTANCE_POWER_FAR;
-    }
-
-    public double resistancePowerNear() {
-        return NUKE_RESISTANCE_POWER_NEAR;
-    }
-
-    public double resistancePowerFar() {
-        return NUKE_RESISTANCE_POWER_FAR;
-    }
-
-    public double resistancePowerDistanceCurve() {
-        return NUKE_RESISTANCE_POWER_DISTANCE_CURVE;
-    }
-
-    public double resistanceCostOffset() {
-        return NUKE_RESISTANCE_COST_OFFSET;
-    }
-
-    public double distanceResistanceGrowth() {
-        return NUKE_DISTANCE_RESISTANCE_GROWTH;
-    }
-
-    public double scaledDistanceResistanceGrowth() {
-        return scaledDistanceResistanceGrowth;
-    }
-
-    public double distanceDecayPerBlock() {
-        return NUKE_RAY_DISTANCE_DECAY_PER_BLOCK;
-    }
-
-    public double scaledDistanceDecayPerBlock() {
-        return scaledDistanceDecayPerBlock;
-    }
-
-    public double materialPenetrationStackingGrowth() {
-        return NUKE_MATERIAL_PENETRATION_STACKING_GROWTH;
-    }
-
-    public double scaledMaterialPenetrationStackingGrowth() {
-        return scaledMaterialPenetrationStackingGrowth;
-    }
-
-    public double closeRangeArmorPiercingRadiusFraction() {
-        return closeRangeArmorPiercingRadiusFraction;
-    }
-
-    public double closeRangeResistanceCostMultiplier() {
-        return closeRangeResistanceCostMultiplier;
-    }
-
-    public double scaledCloseRangeArmorPiercingRadiusFraction() {
-        return scaledCloseRangeArmorPiercingRadiusFraction;
-    }
-
-    public double scaledCloseRangeResistanceCostMultiplier() {
-        return scaledCloseRangeResistanceCostMultiplier;
-    }
-
-    public double rayEnergyJitterAtRadius200() {
-        return NUKE_RAY_ENERGY_JITTER_AT_RADIUS_200;
-    }
-
-    public double rayEnergyJitterSmallRadiusBonus() {
-        return NUKE_RAY_ENERGY_JITTER_SMALL_RADIUS_BONUS;
-    }
-
-    public double rayEnergyJitterAmount() {
-        return rayEnergyJitterAmount;
-    }
-
-    public double rayEnergyJitterMinMultiplier() {
-        return NUKE_RAY_ENERGY_JITTER_MIN_MULTIPLIER;
-    }
-
-    public double rayEnergyJitterMaxMultiplier() {
-        return NUKE_RAY_ENERGY_JITTER_MAX_MULTIPLIER;
-    }
-
-    public String rayEnergyJitterSamples() {
-        return "r0=" + formatCost(rayEnergyJitterMultiplier(0))
-                + ",r1=" + formatCost(rayEnergyJitterMultiplier(1))
-                + ",r2=" + formatCost(rayEnergyJitterMultiplier(2))
-                + ",r3=" + formatCost(rayEnergyJitterMultiplier(3))
-                + ",r4=" + formatCost(rayEnergyJitterMultiplier(4));
-    }
-
-    public String resistanceCostSamples() {
-        return "r0.6[" + sampleResistanceCosts(0.6D)
-                + "] r6[" + sampleResistanceCosts(6.0D)
-                + "] r18[" + sampleResistanceCosts(18.0D)
-                + "] r50[" + sampleResistanceCosts(50.0D)
-                + "] penetration[r18Raw="
-                + formatCost(sampleResistanceCost(18.0D, 0.0D))
-                + ",r18Close="
-                + formatCost(sampleCloseResistanceCost(18.0D))
-                + ",r18CloseDestroyed="
-                + formatCost(estimatedCloseBlocksDestroyed(18.0D))
-                + ",r6Close="
-                + formatCost(sampleCloseResistanceCost(6.0D))
-                + ",r6CloseDestroyed="
-                + formatCost(estimatedCloseBlocksDestroyed(6.0D))
-                + "]";
-    }
-
-    private String sampleResistanceCosts(double resistance) {
-        return sampleResistanceCostEntry("d0", resistance, 0.0D)
-                + "," + sampleResistanceCostEntry("d0.1", resistance, 0.1D)
-                + "," + sampleResistanceCostEntry("d0.25", resistance, 0.25D)
-                + "," + sampleResistanceCostEntry("d0.5", resistance, 0.5D)
-                + "," + sampleResistanceCostEntry("d1", resistance, 1.0D);
-    }
-
-    private String sampleResistanceCostEntry(String label, double resistance, double distanceProgress) {
-        return label + "=p" + formatCost(effectiveResistancePower(distanceProgress))
-                + "/sp" + formatCost(scaledDistanceProgress(distanceProgress))
-                + "/c" + formatCost(sampleResistanceCost(resistance, distanceProgress));
-    }
-
-    private double sampleResistanceCost(double resistance, double distanceProgress) {
-        double distanceCostMultiplier = 1.0D + distanceProgress * distanceProgress * scaledDistanceResistanceGrowth;
-        return resistanceCost(resistance, distanceProgress, distanceCostMultiplier, 1.0D);
-    }
-
-    private double sampleCloseResistanceCost(double resistance) {
-        return resistanceCost(resistance, 0.0D, 1.0D, 1.0D) * scaledCloseRangeResistanceCostMultiplier;
-    }
-
-    private double estimatedCloseBlocksDestroyed(double resistance) {
-        double closeCost = sampleCloseResistanceCost(resistance);
-        return closeCost <= 0.0D ? 0.0D : initialRayEnergy / closeCost;
-    }
-
-    private static String formatCost(double cost) {
-        return String.format(java.util.Locale.ROOT, "%.2f", cost);
-    }
-
-    public long raysProcessedTotal() {
-        return globalCounters.raysProcessedTotal;
-    }
-
-    public long stepsProcessedTotal() {
-        return globalCounters.stepsProcessedTotal;
-    }
-
-    public long blocksMarkedTotal() {
-        return globalCounters.blocksMarkedTotal;
-    }
-
-    public long blockStateReadCount() {
-        return globalCounters.blockStateReadCount;
-    }
-
-    public long blockEntityLookupCount() {
-        return globalCounters.blockEntityLookupCount;
-    }
-
-    public long collisionShapeLookupCount() {
-        return globalCounters.collisionShapeLookupCount;
-    }
-
-    public long duplicateMaskMarkAttempts() {
-        return globalCounters.duplicateMaskMarkAttempts;
-    }
-
-    public long airFastPathCount() {
-        return globalCounters.airFastPathCount;
-    }
-
-    public long fluidFastPathCount() {
-        return globalCounters.fluidFastPathCount;
-    }
-
-    public long classificationCacheHits() {
-        return resistanceCache.classificationCacheHits();
-    }
-
-    public long classificationCacheMisses() {
-        return resistanceCache.classificationCacheMisses();
-    }
-
-    public long unloadedChunkStops() {
-        return globalCounters.unloadedChunkStops;
-    }
-
-    public long blockedRayStops() {
-        return globalCounters.blockedRayStops;
-    }
-
-    public long energyStops() {
-        return globalCounters.energyStops;
-    }
-
-    public long outOfWorldStops() {
-        return globalCounters.outOfWorldStops;
-    }
-
-    public long fragileBlocksMarked() {
-        return globalCounters.fragileBlocksMarked;
-    }
-
-    public long nonSolidBlocksMarked() {
-        return globalCounters.nonSolidBlocksMarked;
-    }
-
-    public long fluidBlocksMarked() {
-        return globalCounters.fluidBlocksMarked;
-    }
-
-    public long airBlocksSkipped() {
-        return globalCounters.airBlocksSkipped;
-    }
-
-    public long blockEntitySkips() {
-        return globalCounters.blockEntitySkips;
-    }
-
-    public long blockEntityBlocksHit() {
-        return globalCounters.blockEntityBlocksHit;
-    }
-
-    public long blockEntityBlocksMarked() {
-        return globalCounters.blockEntityBlocksMarked;
-    }
-
-    public long protectedBlockEntitySkips() {
-        return globalCounters.protectedBlockEntitySkips;
-    }
-
-    public long unbreakableStops() {
-        return globalCounters.unbreakableStops;
-    }
-
-    public long crackedConcreteBricksPlanned() {
-        return globalCounters.crackedConcreteBricksPlanned;
-    }
-
-    public long highResistanceBlocksHit() {
-        return globalCounters.highResistanceBlocksHit;
-    }
-
-    public long highResistanceBlocksMarked() {
-        return globalCounters.highResistanceBlocksMarked;
-    }
-
-    public long highResistanceBlocksBlocked() {
-        return globalCounters.highResistanceBlocksBlocked;
-    }
-
-    public long highResistanceBlocksStoppedByEnergy() {
-        return globalCounters.highResistanceBlocksStoppedByEnergy;
-    }
-
-    public long obsidianBlocksHit() {
-        return globalCounters.obsidianBlocksHit;
-    }
-
-    public long obsidianBlocksMarked() {
-        return globalCounters.obsidianBlocksMarked;
-    }
-
-    public long obsidianBlocksBlocked() {
-        return globalCounters.obsidianBlocksBlocked;
-    }
-
-    public long obsidianBlocksStoppedByEnergy() {
-        return globalCounters.obsidianBlocksStoppedByEnergy;
-    }
-
-    public int maxObsidianDepthMarkedOnSingleRay() {
-        return globalCounters.maxObsidianDepthMarkedOnSingleRay;
     }
 
     public record PlannerResult(
@@ -1042,11 +539,8 @@ public final class NuclearBlastRayPlanner {
             int startRayInclusive,
             int endRayExclusive,
             int raysProcessed,
-            int stepsProcessed,
             NuclearDestructionMask mask,
-            PlannerCounters counters,
-            double elapsedMs,
-            boolean canceled
+            PlannerCounters counters
     ) {
     }
 
@@ -1208,3 +702,5 @@ public final class NuclearBlastRayPlanner {
         }
     }
 }
+
+

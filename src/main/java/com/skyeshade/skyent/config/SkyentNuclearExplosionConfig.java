@@ -1,6 +1,5 @@
 package com.skyeshade.skyent.config;
 
-import com.skyeshade.skyent.SkyesNuclearTech;
 import net.minecraft.util.Mth;
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.neoforge.common.ModConfigSpec;
@@ -10,15 +9,6 @@ public final class SkyentNuclearExplosionConfig {
 
     private static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
     public static final ModConfigSpec SPEC;
-
-    private static final ModConfigSpec.BooleanValue DEBUG_DETONATION_TIMING;
-    private static final ModConfigSpec.BooleanValue DEBUG_CHUNK_LOADING;
-    private static final ModConfigSpec.BooleanValue DEBUG_RAY_TIMING;
-    private static final ModConfigSpec.BooleanValue DEBUG_RAY_PLANNER;
-    private static final ModConfigSpec.BooleanValue DEBUG_WATER_CLEAR;
-    private static final ModConfigSpec.BooleanValue DEBUG_CONTAMINATION;
-    private static final ModConfigSpec.BooleanValue DEBUG_FIRE;
-    private static final ModConfigSpec.BooleanValue DEBUG_CENTER_RADIATION;
 
     private static final ModConfigSpec.BooleanValue ASYNC_RAY_PLANNING;
     private static final ModConfigSpec.IntValue ASYNC_RAY_WORKERS;
@@ -43,8 +33,6 @@ public final class SkyentNuclearExplosionConfig {
     private static final ModConfigSpec.IntValue CHUNK_LOADING_MAX_FORCED_CHUNKS;
     private static final ModConfigSpec.IntValue CHUNK_LOADING_KEEP_IMMEDIATE_CHUNKS_TICKS;
     private static final ModConfigSpec.BooleanValue CHUNK_LOADING_TICKING_TICKETS;
-    private static final ModConfigSpec.IntValue CHUNK_LOADING_DEBUG_FORCE_CHUNK_RADIUS_OVERRIDE;
-
     private static final ModConfigSpec.BooleanValue AFTERMATH_ADAPTIVE_TPS_THROTTLE;
     private static final ModConfigSpec.DoubleValue AFTERMATH_TARGET_TPS;
     private static final ModConfigSpec.DoubleValue AFTERMATH_SOFT_TPS;
@@ -80,33 +68,6 @@ public final class SkyentNuclearExplosionConfig {
                 "Skyes Nuclear Tech nuclear explosion tuning.",
                 "Most values are read at runtime, but restart is recommended after editing."
         );
-
-        BUILDER.push("debug");
-        DEBUG_DETONATION_TIMING = BUILDER
-                .comment("Logs the server-side detonation path and pre-spawn timing.")
-                .define("detonation_timing", false);
-        DEBUG_CHUNK_LOADING = BUILDER
-                .comment("Logs nuclear chunk ticket registration and release timing.")
-                .define("chunk_loading", false);
-        DEBUG_RAY_TIMING = BUILDER
-                .comment("Logs ray planning tick, async worker, snapshot, merge, and mutation timing.")
-                .define("ray_timing", false);
-        DEBUG_RAY_PLANNER = BUILDER
-                .comment("Logs detailed nuclear ray planner counters.")
-                .define("ray_planner", false);
-        DEBUG_WATER_CLEAR = BUILDER
-                .comment("Logs nuclear water evaporation pass progress.")
-                .define("water_clear", false);
-        DEBUG_CONTAMINATION = BUILDER
-                .comment("Logs nuclear aftermath contamination/vitrification planning details.")
-                .define("contamination", false);
-        DEBUG_FIRE = BUILDER
-                .comment("Reserved for nuclear fire/charring debug logging.")
-                .define("fire", false);
-        DEBUG_CENTER_RADIATION = BUILDER
-                .comment("Logs nuclear center radiation burst exposure details.")
-                .define("center_radiation", false);
-        BUILDER.pop();
 
         BUILDER.push("ray_planning");
         ASYNC_RAY_PLANNING = BUILDER
@@ -194,9 +155,6 @@ public final class SkyentNuclearExplosionConfig {
         CHUNK_LOADING_TICKING_TICKETS = BUILDER
                 .comment("Whether nuclear chunk tickets should tick forced chunks.")
                 .define("ticking_tickets", true);
-        CHUNK_LOADING_DEBUG_FORCE_CHUNK_RADIUS_OVERRIDE = BUILDER
-                .comment("Debug override for immediate forced chunk radius. Use -1 to disable.")
-                .defineInRange("debug_force_chunk_radius_override", -1, -1, 64);
         BUILDER.pop();
 
         BUILDER.push("aftermath");
@@ -295,38 +253,6 @@ public final class SkyentNuclearExplosionConfig {
     private SkyentNuclearExplosionConfig() {
     }
 
-    public static boolean debugDetonationTiming() {
-        return DEBUG_DETONATION_TIMING.get();
-    }
-
-    public static boolean debugChunkLoading() {
-        return DEBUG_CHUNK_LOADING.get();
-    }
-
-    public static boolean debugRayTiming() {
-        return DEBUG_RAY_TIMING.get();
-    }
-
-    public static boolean debugRayPlanner() {
-        return DEBUG_RAY_PLANNER.get();
-    }
-
-    public static boolean debugWaterClear() {
-        return DEBUG_WATER_CLEAR.get();
-    }
-
-    public static boolean debugContamination() {
-        return DEBUG_CONTAMINATION.get();
-    }
-
-    public static boolean debugFire() {
-        return DEBUG_FIRE.get();
-    }
-
-    public static boolean debugCenterRadiation() {
-        return DEBUG_CENTER_RADIATION.get();
-    }
-
     public static boolean asyncRayPlanning() {
         return ASYNC_RAY_PLANNING.get();
     }
@@ -409,10 +335,6 @@ public final class SkyentNuclearExplosionConfig {
 
     public static boolean chunkLoadingTickingTickets() {
         return CHUNK_LOADING_TICKING_TICKETS.get();
-    }
-
-    public static int chunkLoadingDebugForceChunkRadiusOverride() {
-        return Mth.clamp(CHUNK_LOADING_DEBUG_FORCE_CHUNK_RADIUS_OVERRIDE.get(), -1, 64);
     }
 
     public static boolean aftermathAdaptiveTpsThrottle() {
@@ -524,31 +446,5 @@ public final class SkyentNuclearExplosionConfig {
             return;
         }
 
-        SkyesNuclearTech.LOGGER.info(
-                "Skyent nuclear explosion config loaded: asyncRayPlanning={} asyncWorkers={} asyncMinRays={} rayDensityMultiplier={} maxRays={} mutationMaxBlocksPerTick={} mutationMaxMsPerTick={} mutationMaxSectionsPerTick={} aftermathMinCompletedSections={} aftermathForceStartAfterTicks={} noProgressTimeoutTicks={} maxTotalDestructionTicks={} maxRadiusForImmediateChunkLoading={} immediateMaxChunkRadius={} maxForcedChunks={} aftermathAdaptiveThrottle={} aftermathBaseWorkUnits={} aftermathBaseColumns={} aftermathMaxMs={} aftermathLaggyMaxMs={} waterRadiusScale={} fireRadiusMultiplier={} radiationBurstEnabled={}",
-                asyncRayPlanning(),
-                asyncRayWorkers(),
-                asyncMinRays(),
-                rayDensityMultiplier(),
-                rayPlanningMaxRays(),
-                mutationMaxBlocksPerTick(),
-                mutationMaxMillisecondsPerTick(),
-                mutationMaxSectionsPerTick(),
-                mutationMinCompletedSectionsBeforeAftermath(),
-                mutationAftermathForceStartAfterTicks(),
-                mutationNoProgressTimeoutTicks(),
-                mutationMaxTotalDestructionTicks(),
-                chunkLoadingMaxRadiusForImmediateChunkLoading(),
-                chunkLoadingImmediateMaxChunkRadius(),
-                chunkLoadingMaxForcedChunks(),
-                aftermathAdaptiveTpsThrottle(),
-                aftermathBaseWorkUnitsPerTick(),
-                aftermathBaseColumnsPerTick(),
-                aftermathMaxMillisecondsPerTick(),
-                aftermathLaggyMaxMillisecondsPerTick(),
-                waterEvaporationRadiusScale(),
-                fireCharringRadiusMultiplier(),
-                radiationCenterBurstEnabled()
-        );
     }
 }

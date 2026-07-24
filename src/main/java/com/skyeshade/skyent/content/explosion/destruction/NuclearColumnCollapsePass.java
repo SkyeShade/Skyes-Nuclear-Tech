@@ -57,7 +57,6 @@ public final class NuclearColumnCollapsePass {
     private static final int COLUMN_WORK_MAX_SECTIONS_PER_TICK = 32;
     private static final int DEFERRED_WORK_RETRY_INTERVAL_TICKS = 20;
     private static final int DEFERRED_WORK_CHECKS_PER_TICK = 64;
-    private static final boolean DEBUG_NUKE_MUTATIONS = false;
 
     private final ServerLevel level;
     private final List<ChunkWorkUnit> orderedWorkUnits;
@@ -106,85 +105,11 @@ public final class NuclearColumnCollapsePass {
     private ChunkWorkUnit currentWorkUnit;
     private boolean complete;
     private int tickCounter;
-    private long totalColumnsProcessed;
     private long workUnitsCompleted;
-    private long workUnitsPlanned;
-    private long noOpWorkUnitsSkipped;
-    private long totalMutationsApplied;
-    private long totalSectionsMutated;
-    private long mutationUnloadedSectionSkips;
-    private long mutationBlockEntitySkips;
-    private long placedFireBlocks;
-    private long deferredColumnChecks;
-    private long deferredColumnsQueued;
-    private long deferredWorkUnitsRequeued;
     private boolean blockedByPendingSections;
     private ChunkWorkUnit blockedWorkUnit;
     private int blockedTicks;
     private int longestBlockedTicks;
-    private long skippedUnloadedColumns;
-    private long mutationChunksForced;
-    private long mutationChunksUnforced;
-    private long mutationChunkLoadWaits;
-    private long mutationChunkForceFailures;
-    private long barriersEncountered;
-    private long movableBlocksCollected;
-    private long surfaceRunsFound;
-    private long surfaceRunsMoved;
-    private long totalDropDistance;
-    private int maxDropDistanceSeen;
-    private long skippedBarriersBeforeSurface;
-    private long skippedFluidsBeforeSurface;
-    private long skippedBlockEntitiesBeforeSurface;
-    private long plannedMovementMutations;
-    private long plannedCharredLogReplacements;
-    private long plannedLeafEvaporations;
-    private long plannedContaminatedGrassReplacements;
-    private long contaminatedGrassGuaranteed;
-    private long contaminatedGrassFeathered;
-    private long contaminatedGrassSkippedByNoise;
-    private long deadGrassInContaminatedFeather;
-    private long plannedDeadGrassReplacements;
-    private long plannedDeadLeafReplacements;
-    private long plannedVitrifiedStoneReplacements;
-    private final long[] plannedVitrifiedTierReplacements = new long[7];
-    private final long[] plannedVitrifiedTopTierCounts = new long[7];
-    private final long[] vitrificationLowerTierCounts = new long[7];
-    private final long[] vitrificationUpperTierCounts = new long[7];
-    private final long[] vitrificationFinalTierCounts = new long[7];
-    private long vitrificationDitherPromotions;
-    private long vitrificationOuterFadeConsidered;
-    private long vitrificationOuterFadePlaced;
-    private long vitrificationOuterFadeSkipped;
-    private long vitrificationWeakEdgePlacements;
-    private long vitrificationContinuousTierSamples;
-    private double vitrificationContinuousTierSum;
-    private double vitrificationContinuousTierMin = Double.POSITIVE_INFINITY;
-    private double vitrificationContinuousTierMax = Double.NEGATIVE_INFINITY;
-    private long vitrificationColumnsConsidered;
-    private long vitrificationColumnsChecked;
-    private long vitrificationColumnsAffected;
-    private long vitrificationSkippedOutsideRadius;
-    private long vitrificationEdgeFeatherPlacements;
-    private long vitrificationSkippedBySoftEdge;
-    private long vitrificationSkippedNoSurface;
-    private long vitrificationSkippedSurfaceAir;
-    private long vitrificationSkippedNoVitrifiableBlock;
-    private long vitrificationSkippedTagMismatch;
-    private long vitrificationSkippedPlannedDeletion;
-    private long vitrificationSkippedPlannedMovementConflict;
-    private long vitrificationSkippedBlockEntity;
-    private long vitrificationSkippedFluid;
-    private long vitrificationSkippedUnloaded;
-    private long vitrificationReplacementsPlanned;
-    private long vitrificationHigherTierReplacements;
-    private long vitrificationSameOrLowerSkipped;
-    private long vitrificationDowngradePrevented;
-    private int vitrificationDebugFailureLogs;
-    private int vitrificationBoundaryDebugLogs;
-    private int maxVitrificationDepthSeen;
-    private long plannedFireBlocks;
-    private long plannedPlantRemovals;
 
     public NuclearColumnCollapsePass(
             ServerLevel level,
@@ -267,7 +192,6 @@ public final class NuclearColumnCollapsePass {
         int columnsThisTick = 0;
         int deferredThisTick = 0;
         int unloadedWorkUnitsSkippedThisTick = 0;
-        int workUnitsPlannedThisTick = 0;
         int workUnitsProcessedThisTick = 0;
         int sectionsMutatedThisTick = 0;
         int mutationsAppliedThisTick = 0;
@@ -291,8 +215,6 @@ public final class NuclearColumnCollapsePass {
                 );
                 sectionsMutatedThisTick += result.sectionsTouched();
                 mutationsAppliedThisTick += result.blocksChanged();
-                totalSectionsMutated += result.sectionsTouched();
-                totalMutationsApplied += result.blocksChanged();
                 if (currentLocalMutationQueue.isComplete()) {
                     finishCurrentWorkUnit();
                     workUnitsProcessedThisTick++;
@@ -358,8 +280,6 @@ public final class NuclearColumnCollapsePass {
             if (!isWorkUnitReady(workUnit)) {
                 releaseMutationChunk(workUnit.chunkPos());
                 deferredWorkUnits.add(workUnit);
-                deferredColumnsQueued += 256L;
-                deferredColumnChecks++;
                 blockedByPendingSections = true;
                 blockedWorkUnit = workUnit;
                 deferredThisTick++;
@@ -376,14 +296,10 @@ public final class NuclearColumnCollapsePass {
             int scanned = planWorkUnit(workUnit);
             activePlan = null;
             columnsThisTick += scanned;
-            totalColumnsProcessed += scanned;
-            workUnitsPlanned++;
-            workUnitsPlannedThisTick++;
             workUnitsProcessedThisTick++;
             plannedThisTick += currentLocalPlan.mutationCount();
 
             if (currentLocalPlan.isEmpty()) {
-                noOpWorkUnitsSkipped++;
                 finishCurrentWorkUnit();
                 continue;
             }
@@ -398,7 +314,6 @@ public final class NuclearColumnCollapsePass {
                 deferredThisTick,
                 unloadedWorkUnitsSkippedThisTick,
                 plannedThisTick,
-                workUnitsPlannedThisTick,
                 workUnitsProcessedThisTick,
                 sectionsMutatedThisTick,
                 mutationsAppliedThisTick,
@@ -438,10 +353,8 @@ public final class NuclearColumnCollapsePass {
             if (workUnit == null) {
                 return;
             }
-            deferredColumnChecks++;
             if (isWorkUnitReady(workUnit)) {
                 readyWorkUnits.add(workUnit);
-                deferredWorkUnitsRequeued++;
             } else {
                 deferredWorkUnits.add(workUnit);
                 blockedByPendingSections = true;
@@ -475,9 +388,6 @@ public final class NuclearColumnCollapsePass {
     private void finishCurrentWorkUnit() {
         ChunkPos finishedChunk = currentWorkUnit == null ? null : currentWorkUnit.chunkPos();
         if (currentLocalMutationQueue != null) {
-            mutationUnloadedSectionSkips += currentLocalMutationQueue.unloadedSectionSkips();
-            mutationBlockEntitySkips += currentLocalMutationQueue.blockEntitySkips();
-            placedFireBlocks += currentLocalMutationQueue.totalFireBlocksPlaced();
             currentLocalMutationQueue.clear();
         }
         if (currentLocalPlan != null) {
@@ -605,7 +515,6 @@ public final class NuclearColumnCollapsePass {
             BlockState state = level.getBlockState(pos);
             if (isMovable(pos, state)) {
                 runStatesTopDown.add(state);
-                movableBlocksCollected++;
                 runBottomY = y;
                 continue;
             }
@@ -620,7 +529,6 @@ public final class NuclearColumnCollapsePass {
         if (runStatesTopDown.isEmpty()) {
             return runBottomY;
         }
-        surfaceRunsFound++;
 
         int dropDistance = findDropDistance(column, runBottomY, endY);
         if (dropDistance <= 0) {
@@ -631,16 +539,12 @@ public final class NuclearColumnCollapsePass {
             return runBottomY;
         }
 
-        surfaceRunsMoved++;
-        totalDropDistance += dropDistance;
-        maxDropDistanceSeen = Math.max(maxDropDistanceSeen, dropDistance);
 
         for (int index = 0; index < runStatesTopDown.size(); index++) {
             int sourceY = runTopY - index;
             int targetY = sourceY - dropDistance;
             BlockState finalState = aftermathReplacement(column, targetY, runStatesTopDown.get(index));
             planSet(column.x(), targetY, column.z(), finalState);
-            plannedMovementMutations++;
             countAftermathReplacement(runStatesTopDown.get(index), finalState);
             if (removesUnsupportedVegetationAbove(finalState)) {
                 planUnsupportedVegetationRemoval(column.x(), targetY + 1, column.z());
@@ -650,7 +554,6 @@ public final class NuclearColumnCollapsePass {
 
         for (int y = runTopY; y > runTopY - dropDistance; y--) {
             planSet(column.x(), y, column.z(), Blocks.AIR.defaultBlockState());
-            plannedMovementMutations++;
         }
         return runBottomY;
     }
@@ -671,13 +574,9 @@ public final class NuclearColumnCollapsePass {
     }
 
     private void countSurfaceBarrierSkip(BlockPos pos, BlockState state) {
-        barriersEncountered++;
         if (!state.getFluidState().isEmpty()) {
-            skippedFluidsBeforeSurface++;
         } else if (level.getBlockEntity(pos) != null) {
-            skippedBlockEntitiesBeforeSurface++;
         } else {
-            skippedBarriersBeforeSurface++;
         }
     }
 
@@ -755,16 +654,12 @@ public final class NuclearColumnCollapsePass {
         double distance = Math.sqrt(column.distanceSqr());
         double chance = contaminatedGrassChance(distance);
         if (chance >= 1.0D) {
-            contaminatedGrassGuaranteed++;
             return ModBlocks.CONTAMINATED_GRASS_BLOCK.get().defaultBlockState();
         }
         if (chance > 0.0D && deterministicColumnNoise(column.x(), column.z()) < chance) {
-            contaminatedGrassFeathered++;
             return ModBlocks.CONTAMINATED_GRASS_BLOCK.get().defaultBlockState();
         }
         if (chance > 0.0D) {
-            contaminatedGrassSkippedByNoise++;
-            deadGrassInContaminatedFeather++;
         }
         if (currentState.is(ModBlocks.CONTAMINATED_GRASS_BLOCK.get())) {
             return currentState;
@@ -793,12 +688,9 @@ public final class NuclearColumnCollapsePass {
     }
 
     private void planVitrifiedSurfaceLayer(ColumnKey column, int startY, int endY) {
-        vitrificationColumnsConsidered++;
         if (vitrificationRadius <= 0.0D || column.distanceSqr() > vitrificationMaxRadiusSqr) {
-            vitrificationSkippedOutsideRadius++;
             return;
         }
-        vitrificationColumnsChecked++;
 
         double distance = Math.sqrt(column.distanceSqr());
         double noise = deterministicColumnNoise(column.x(), column.z());
@@ -831,17 +723,11 @@ public final class NuclearColumnCollapsePass {
         double continuousTier;
         if (noisyStrength <= 0.0D) {
             continuousTier = 0.0D;
-            recordVitrificationContinuousTier(continuousTier);
             if (distance > vitrificationRadius) {
-                vitrificationSkippedBySoftEdge++;
             }
-            vitrificationSkippedNoVitrifiableBlock++;
-            vitrificationOuterFadeSkipped++;
-            logVitrificationBoundarySample(column, distance, startY, endY, Integer.MIN_VALUE, Integer.MIN_VALUE, continuousTier, 0, 0, 0.0D, false, false, true, false, "zero_strength", tierIntensity, featherMultiplier, placementStrength, noisyStrength, edgeChance, edgeNoise, noise);
             return;
         }
         if (noisyStrength < VITRIFICATION_OUTER_FADE_STRENGTH) {
-            vitrificationOuterFadeConsidered++;
             edgeChance = Math.max(
                     VITRIFICATION_MIN_EDGE_PLACEMENT_CHANCE,
                     smoothstep(noisyStrength / VITRIFICATION_OUTER_FADE_STRENGTH)
@@ -849,27 +735,18 @@ public final class NuclearColumnCollapsePass {
             if (edgeNoise > edgeChance) {
                 skippedByOuterFade = true;
                 if (distance > vitrificationRadius) {
-                    vitrificationSkippedBySoftEdge++;
                 }
-                vitrificationSkippedNoVitrifiableBlock++;
-                vitrificationOuterFadeSkipped++;
                 continuousTier = Math.pow(noisyStrength, VITRIFICATION_TIER_CURVE_POWER) * sizeTierCap;
-                recordVitrificationContinuousTier(continuousTier);
-                logVitrificationBoundarySample(column, distance, startY, endY, Integer.MIN_VALUE, Integer.MIN_VALUE, continuousTier, 0, 0, 0.0D, false, false, true, skippedByOuterFade, "outer_fade_skip", tierIntensity, featherMultiplier, placementStrength, noisyStrength, edgeChance, edgeNoise, noise);
                 return;
             }
             continuousTier = 0.0D;
-            recordVitrificationContinuousTier(continuousTier);
             lowerTier = 0;
             upperTier = 0;
             tierFraction = 0.0D;
             topTier = 0;
             weakEdgePlacement = true;
-            vitrificationWeakEdgePlacements++;
-            vitrificationOuterFadePlaced++;
         } else {
             continuousTier = Math.pow(noisyStrength, VITRIFICATION_TIER_CURVE_POWER) * sizeTierCap;
-            recordVitrificationContinuousTier(continuousTier);
             lowerTier = Mth.clamp(Mth.floor(continuousTier), 0, sizeTierCap);
             upperTier = Math.min(sizeTierCap, lowerTier + 1);
             tierFraction = Mth.clamp(continuousTier - lowerTier, 0.0D, 1.0D);
@@ -880,22 +757,14 @@ public final class NuclearColumnCollapsePass {
                 topTier = lowerTier;
             }
             if (ditherPromoted) {
-                vitrificationDitherPromotions++;
             }
         }
-        vitrificationLowerTierCounts[lowerTier]++;
-        vitrificationUpperTierCounts[upperTier]++;
-        vitrificationFinalTierCounts[topTier]++;
         if (distance > vitrificationRadius) {
-            vitrificationEdgeFeatherPlacements++;
         }
 
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(column.x(), startY, column.z());
         int surfaceY = findPostCollapseSurfaceY(column, startY, endY, pos);
         if (surfaceY == Integer.MIN_VALUE) {
-            vitrificationSkippedNoSurface++;
-            logVitrificationFailure(column, distance, startY, endY, Integer.MIN_VALUE, "no_surface");
-            logVitrificationBoundarySample(column, distance, startY, endY, Integer.MIN_VALUE, Integer.MIN_VALUE, continuousTier, lowerTier, upperTier, tierFraction, ditherPromoted, weakEdgePlacement, false, skippedByOuterFade, "no_surface", tierIntensity, featherMultiplier, placementStrength, noisyStrength, edgeChance, edgeNoise, noise);
             return;
         }
 
@@ -905,25 +774,20 @@ public final class NuclearColumnCollapsePass {
         int lowestScanY = Math.max(endY, surfaceY - VITRIFICATION_SURFACE_SCAN_DEPTH);
         for (int y = surfaceY; y >= lowestScanY && replacements <= topTier; y--) {
             if (isSectionPending(column.x(), y, column.z())) {
-                vitrificationSkippedUnloaded++;
                 continue;
             }
             pos.setY(y);
             BlockState state = stateForVitrificationScan(column.x(), y, column.z(), pos);
             if (state.isAir()) {
                 if (isPlannedAir(column.x(), y, column.z())) {
-                    vitrificationSkippedPlannedDeletion++;
                 } else if (y == surfaceY) {
-                    vitrificationSkippedSurfaceAir++;
                 }
                 continue;
             }
             if (!state.getFluidState().isEmpty()) {
-                vitrificationSkippedFluid++;
                 break;
             }
             if (level.getBlockEntity(pos) != null) {
-                vitrificationSkippedBlockEntity++;
                 continue;
             }
 
@@ -932,7 +796,6 @@ public final class NuclearColumnCollapsePass {
                 if (isSoftVitrificationCover(state)) {
                     continue;
                 }
-                vitrificationSkippedPlannedMovementConflict++;
                 break;
             }
 
@@ -943,35 +806,21 @@ public final class NuclearColumnCollapsePass {
             VitrifiedPlacement placement = resolveVitrifiedPlacement(state, tier);
             if (!placement.shouldPlace()) {
                 if (placement.preventedDowngrade()) {
-                    vitrificationDowngradePrevented++;
                 }
                 if (placement.skippedSameOrLower()) {
-                    vitrificationSameOrLowerSkipped++;
                 }
                 replacements++;
                 continue;
             }
             BlockState replacement = placement.state();
             planSet(pos, replacement);
-            plannedVitrifiedStoneReplacements++;
-            vitrificationReplacementsPlanned++;
             if (placement.replacedLowerTier()) {
-                vitrificationHigherTierReplacements++;
             }
-            plannedVitrifiedTierReplacements[tier]++;
             replacements++;
         }
 
         if (replacements > 0) {
-            vitrificationColumnsAffected++;
-            plannedVitrifiedTopTierCounts[topTier]++;
-            maxVitrificationDepthSeen = Math.max(maxVitrificationDepthSeen, replacements);
-            logVitrificationBoundarySample(column, distance, startY, endY, surfaceY, firstVitrifiableY, continuousTier, lowerTier, upperTier, tierFraction, ditherPromoted, weakEdgePlacement, true, skippedByOuterFade, "planned", tierIntensity, featherMultiplier, placementStrength, noisyStrength, edgeChance, edgeNoise, noise);
         } else {
-            vitrificationSkippedNoVitrifiableBlock++;
-            vitrificationSkippedTagMismatch += tagMismatches;
-            logVitrificationFailure(column, distance, startY, endY, surfaceY, "no_vitrifiable_block");
-            logVitrificationBoundarySample(column, distance, startY, endY, surfaceY, firstVitrifiableY, continuousTier, lowerTier, upperTier, tierFraction, ditherPromoted, weakEdgePlacement, false, skippedByOuterFade, "no_vitrifiable_block", tierIntensity, featherMultiplier, placementStrength, noisyStrength, edgeChance, edgeNoise, noise);
         }
     }
 
@@ -1051,140 +900,6 @@ public final class NuclearColumnCollapsePass {
 
     private static boolean isGrassAftermathState(BlockState state) {
         return state.is(ModBlocks.CONTAMINATED_GRASS_BLOCK.get()) || state.is(ModBlocks.DEAD_GRASS.get());
-    }
-
-    private void logVitrificationFailure(ColumnKey column, double distance, int startY, int endY, int surfaceY, String reason) {
-        if (!SkyentNuclearExplosionConfig.debugContamination() || vitrificationDebugFailureLogs >= 20) {
-            return;
-        }
-        vitrificationDebugFailureLogs++;
-        StringBuilder scanned = new StringBuilder();
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(column.x(), surfaceY == Integer.MIN_VALUE ? startY : surfaceY, column.z());
-        int scanStart = surfaceY == Integer.MIN_VALUE ? startY : surfaceY;
-        int scanEnd = Math.max(endY, scanStart - 7);
-        for (int y = scanStart; y >= scanEnd; y--) {
-            pos.setY(y);
-            BlockState actual = level.getBlockState(pos);
-            BlockState planned = activePlan == null ? null : activePlan.plannedState(column.x(), y, column.z());
-            BlockState effective = stateForVitrificationScan(column.x(), y, column.z(), pos);
-            if (!scanned.isEmpty()) {
-                scanned.append(" | ");
-            }
-            scanned.append("y=").append(y)
-                    .append(" actual=").append(actual.getBlock().builtInRegistryHolder().key().location())
-                    .append(" planned=").append(planned == null ? "none" : planned.getBlock().builtInRegistryHolder().key().location())
-                    .append(" effective=").append(effective.getBlock().builtInRegistryHolder().key().location())
-                    .append(" air=").append(effective.isAir())
-                    .append(" fluid=").append(!effective.getFluidState().isEmpty())
-                    .append(" vitrifiable=").append(effective.is(VITRIFIABLE_BLOCKS))
-                    .append(" blockEntity=").append(level.getBlockEntity(pos) != null);
-        }
-        SkyesNuclearTech.LOGGER.info(
-                "Nuke vitrification column skipped: reason={} x={} z={} distance={} hardRadius={} featherRadius={} startY={} endY={} surfaceY={} scanned={}",
-                reason,
-                column.x(),
-                column.z(),
-                distance,
-                vitrificationRadius,
-                vitrificationFeatherRadius,
-                startY,
-                endY,
-                surfaceY == Integer.MIN_VALUE ? "none" : Integer.toString(surfaceY),
-                scanned
-        );
-    }
-
-    private void logVitrificationBoundarySample(
-            ColumnKey column,
-            double distance,
-            int startY,
-            int endY,
-            int surfaceY,
-            int firstVitrifiableY,
-            double continuousTier,
-            int lowerTier,
-            int upperTier,
-            double tierFraction,
-            boolean ditherPromoted,
-            boolean weakEdgePlacement,
-            boolean plannedVitrification,
-            boolean skippedByOuterFade,
-            String reason,
-            double tierIntensity,
-            double featherMultiplier,
-            double placementStrength,
-            double noisyStrength,
-            double edgeChance,
-            double edgeNoise,
-            double noise
-    ) {
-        if (!SkyentNuclearExplosionConfig.debugContamination()
-                || vitrificationBoundaryDebugLogs >= 20
-                || !isNearVitrificationDebugBoundary(distance)) {
-            return;
-        }
-        vitrificationBoundaryDebugLogs++;
-        boolean plannedBiologicalOverlay = hasPlannedBiologicalOverlay(column, surfaceY == Integer.MIN_VALUE ? startY : surfaceY, endY);
-        SkyesNuclearTech.LOGGER.info(
-                "Nuke vitrification boundary sample: x={} z={} distance={} contaminatedGrassRadius={} deadVegetationRadius={} vitrificationRadius={} vitrificationFeatherRadius={} tierIntensity={} featherMultiplier={} placementStrength={} noisyStrength={} outerFadeStrength={} edgeChance={} edgeNoise={} skippedByOuterFade={} continuousTier={} lowerTier={} upperTier={} tierFraction={} noise={} ditherPromoted={} weakEdgePlacement={} sizeTierCap={} startY={} endY={} scanStartY={} firstVitrifiableY={} plannedBiologicalOverlay={} vitrificationPlanned={} reason={}",
-                column.x(),
-                column.z(),
-                distance,
-                contaminatedGrassRadius,
-                deadVegetationRadius,
-                vitrificationRadius,
-                vitrificationFeatherRadius,
-                tierIntensity,
-                featherMultiplier,
-                placementStrength,
-                noisyStrength,
-                VITRIFICATION_OUTER_FADE_STRENGTH,
-                edgeChance,
-                edgeNoise,
-                skippedByOuterFade,
-                continuousTier,
-                lowerTier,
-                upperTier,
-                tierFraction,
-                noise,
-                ditherPromoted,
-                weakEdgePlacement,
-                sizeTierCap(),
-                startY,
-                endY,
-                surfaceY == Integer.MIN_VALUE ? "none" : Integer.toString(surfaceY),
-                firstVitrifiableY == Integer.MIN_VALUE ? "none" : Integer.toString(firstVitrifiableY),
-                plannedBiologicalOverlay,
-                plannedVitrification,
-                reason
-        );
-    }
-
-    private void recordVitrificationContinuousTier(double continuousTier) {
-        vitrificationContinuousTierSamples++;
-        vitrificationContinuousTierSum += continuousTier;
-        vitrificationContinuousTierMin = Math.min(vitrificationContinuousTierMin, continuousTier);
-        vitrificationContinuousTierMax = Math.max(vitrificationContinuousTierMax, continuousTier);
-    }
-
-    private boolean isNearVitrificationDebugBoundary(double distance) {
-        return Math.abs(distance - contaminatedGrassRadius) < 2.0D
-                || Math.abs(distance - vitrificationRadius) < 2.0D
-                || Math.abs(distance - vitrificationMaxRadius) < 2.0D;
-    }
-
-    private boolean hasPlannedBiologicalOverlay(ColumnKey column, int scanStartY, int endY) {
-        if (activePlan == null) {
-            return false;
-        }
-        int scanEndY = Math.max(endY, scanStartY - VITRIFICATION_SURFACE_SCAN_DEPTH);
-        for (int y = scanStartY; y >= scanEndY; y--) {
-            BlockState planned = activePlan.plannedState(column.x(), y, column.z());
-            if (planned != null && isCosmeticAftermathState(planned)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private int sizeTierCap() {
@@ -1303,7 +1018,6 @@ public final class NuclearColumnCollapsePass {
         }
 
         planSet(pos, Blocks.AIR.defaultBlockState());
-        plannedPlantRemovals++;
     }
 
     private static boolean isUnsupportedDecorationAboveGrass(BlockState state) {
@@ -1398,17 +1112,12 @@ public final class NuclearColumnCollapsePass {
             return;
         }
         if (replacement.is(ModBlocks.CHARRED_LOG.get())) {
-            plannedCharredLogReplacements++;
         } else if (original.is(BlockTags.LEAVES) && replacement.isAir()) {
-            plannedLeafEvaporations++;
         } else if (replacement.is(ModBlocks.CONTAMINATED_GRASS_BLOCK.get())) {
-            plannedContaminatedGrassReplacements++;
         } else if (replacement.is(ModBlocks.DEAD_GRASS.get())
                 || replacement.is(ModBlocks.DEAD_SHORT_GRASS.get())
                 || replacement.is(ModBlocks.DEAD_TALL_GRASS.get())) {
-            plannedDeadGrassReplacements++;
         } else if (replacement.getBlock() instanceof LeavesBlock) {
-            plannedDeadLeafReplacements++;
         }
     }
 
@@ -1457,7 +1166,6 @@ public final class NuclearColumnCollapsePass {
         }
 
         planSet(pos, fireState);
-        plannedFireBlocks++;
         return true;
     }
 
@@ -1528,115 +1236,6 @@ public final class NuclearColumnCollapsePass {
         return complete;
     }
 
-    public int columnsRemaining() {
-        return (readyWorkUnits.size() + deferredWorkUnits.size() + outerWorkUnitsNotStarted()) * 256
-                + (currentWorkUnit == null ? 0 : 256);
-    }
-
-    public int deferredColumnsRemaining() {
-        return deferredWorkUnits.size() * 256;
-    }
-
-    public long deferredColumnChecks() {
-        return deferredColumnChecks;
-    }
-
-    public long deferredColumnsQueued() {
-        return deferredColumnsQueued;
-    }
-
-    public int workUnitsTotal() {
-        return workUnitsTotal;
-    }
-
-    public long workUnitsCompleted() {
-        return workUnitsCompleted;
-    }
-
-    public int readyWorkUnitsRemaining() {
-        return readyWorkUnits.size();
-    }
-
-    public int deferredWorkUnitsRemaining() {
-        return deferredWorkUnits.size();
-    }
-
-    public int outerWorkUnitsNotStarted() {
-        return Math.max(0, orderedWorkUnits.size() - nextWorkUnitIndex);
-    }
-
-    public int currentRing() {
-        return currentRing;
-    }
-
-    public int maxRing() {
-        return maxRing;
-    }
-
-    public boolean blockedByPendingSections() {
-        return blockedByPendingSections && !deferredWorkUnits.isEmpty();
-    }
-
-    public int blockedRing() {
-        return blockedWorkUnit == null ? currentRing : blockedWorkUnit.ring();
-    }
-
-    public int blockedTicks() {
-        return blockedTicks;
-    }
-
-    public int longestBlockedTicks() {
-        return longestBlockedTicks;
-    }
-
-    public String blockedWorkUnitDebug() {
-        return blockedWorkUnit == null ? "none" : blockedWorkUnit.chunkPos().x + "," + blockedWorkUnit.chunkPos().z;
-    }
-
-    public long workUnitsPlanned() {
-        return workUnitsPlanned;
-    }
-
-    public long noOpWorkUnitsSkipped() {
-        return noOpWorkUnitsSkipped;
-    }
-
-    public long deferredWorkUnitsRequeued() {
-        return deferredWorkUnitsRequeued;
-    }
-
-    public long totalMutationsApplied() {
-        return totalMutationsApplied;
-    }
-
-    public long totalSectionsMutated() {
-        return totalSectionsMutated;
-    }
-
-    public long mutationUnloadedSectionSkips() {
-        return mutationUnloadedSectionSkips;
-    }
-
-    public long mutationBlockEntitySkips() {
-        return mutationBlockEntitySkips;
-    }
-
-    public long placedFireBlocks() {
-        return placedFireBlocks;
-    }
-
-    public int currentLocalPlannedMutations() {
-        return currentLocalPlan == null ? 0 : (int) Math.min(currentLocalPlan.mutationCount(), Integer.MAX_VALUE);
-    }
-
-    public int currentLocalPlannedSections() {
-        return currentLocalPlan == null ? 0 : currentLocalPlan.sectionCount();
-    }
-
-    public String currentWorkUnitDebug() {
-        return currentWorkUnit == null ? "none" : currentWorkUnit.chunkPos().x + "," + currentWorkUnit.chunkPos().z;
-    }
-
     public void clear() {
         readyWorkUnits.clear();
         deferredWorkUnits.clear();
@@ -1663,34 +1262,13 @@ public final class NuclearColumnCollapsePass {
             return true;
         }
 
-        mutationChunkLoadWaits++;
         if (forceMutationChunk(chunk)) {
             if (level.hasChunk(chunk.x, chunk.z)) {
                 return true;
             }
-            if (DEBUG_NUKE_MUTATIONS && tickCounter % 20 == 0) {
-                SkyesNuclearTech.LOGGER.info(
-                        "Nuke aftermath mutation chunk waiting: owner={} chunk={} forced={} waits={} forcedChunks={}",
-                        chunkTicketOwner,
-                        chunk,
-                        true,
-                        mutationChunkLoadWaits,
-                        forcedMutationChunks.size()
-                );
-            }
             return false;
         }
 
-        mutationChunkForceFailures++;
-        skippedUnloadedColumns += 256L;
-        if (DEBUG_NUKE_MUTATIONS) {
-            SkyesNuclearTech.LOGGER.warn(
-                    "Nuke aftermath mutation chunk force failed: owner={} chunk={} failures={}",
-                    chunkTicketOwner,
-                    chunk,
-                    mutationChunkForceFailures
-            );
-        }
         return false;
     }
 
@@ -1706,7 +1284,6 @@ public final class NuclearColumnCollapsePass {
         );
         if (forced) {
             forcedMutationChunks.add(chunk);
-            mutationChunksForced++;
         }
         return forced;
     }
@@ -1721,7 +1298,6 @@ public final class NuclearColumnCollapsePass {
                 chunk,
                 SkyentNuclearExplosionConfig.chunkLoadingTickingTickets()
         )) {
-            mutationChunksUnforced++;
         }
     }
 
@@ -1739,369 +1315,11 @@ public final class NuclearColumnCollapsePass {
         return currentLocalPlan == null ? emptyPlan : currentLocalPlan;
     }
 
-    public long totalColumnsProcessed() {
-        return totalColumnsProcessed;
-    }
-
-    public long skippedUnloadedColumns() {
-        return skippedUnloadedColumns;
-    }
-
-    public int forcedMutationChunks() {
-        return forcedMutationChunks.size();
-    }
-
-    public long mutationChunksForced() {
-        return mutationChunksForced;
-    }
-
-    public long mutationChunksUnforced() {
-        return mutationChunksUnforced;
-    }
-
-    public long mutationChunkLoadWaits() {
-        return mutationChunkLoadWaits;
-    }
-
-    public long mutationChunkForceFailures() {
-        return mutationChunkForceFailures;
-    }
-
-    public long barriersEncountered() {
-        return barriersEncountered;
-    }
-
-    public long movableBlocksCollected() {
-        return movableBlocksCollected;
-    }
-
-    public long surfaceRunsFound() {
-        return surfaceRunsFound;
-    }
-
-    public long surfaceRunsMoved() {
-        return surfaceRunsMoved;
-    }
-
-    public double averageDropDistance() {
-        return surfaceRunsMoved == 0 ? 0.0D : totalDropDistance / (double) surfaceRunsMoved;
-    }
-
-    public int maxDropDistanceSeen() {
-        return maxDropDistanceSeen;
-    }
-
-    public int maxDropBlocks() {
-        return maxDropBlocks;
-    }
-
-    public int maxRunsPerColumn() {
-        return COLUMN_COLLAPSE_MAX_RUNS_PER_COLUMN;
-    }
-
-    public int scanDepthBelowSurface() {
-        return COLUMN_COLLAPSE_SCAN_DEPTH_BELOW_SURFACE;
-    }
-
-    public double collapseRadius() {
-        return collapseRadius;
-    }
-
-    public double charredLogRadius() {
-        return charredLogRadius;
-    }
-
-    public double contaminatedGrassRadius() {
-        return contaminatedGrassRadius;
-    }
-
-    public double contaminatedGrassFullRadius() {
-        return contaminatedGrassFullRadius;
-    }
-
-    public double contaminatedGrassFeatherRadius() {
-        return contaminatedGrassFeatherRadius;
-    }
-
-    public String contaminatedGrassBlendDebug() {
-        return "fullRadius=" + contaminatedGrassFullRadius
-                + ",featherRadius=" + contaminatedGrassFeatherRadius
-                + ",maxRadius=" + contaminatedGrassRadius
-                + ",guaranteed=" + contaminatedGrassGuaranteed
-                + ",feathered=" + contaminatedGrassFeathered
-                + ",skippedByNoise=" + contaminatedGrassSkippedByNoise
-                + ",deadInFeather=" + deadGrassInContaminatedFeather;
-    }
-
-    public double deadVegetationRadius() {
-        return deadVegetationRadius;
-    }
-
-    public double vitrificationRadius() {
-        return vitrificationRadius;
-    }
-
-    public double unscaledVitrificationRadius() {
-        return unscaledVitrificationRadius;
-    }
-
-    public double vitrificationFeatherRadius() {
-        return vitrificationFeatherRadius;
-    }
-
-    public double unscaledVitrificationFeatherRadius() {
-        return unscaledVitrificationFeatherRadius;
-    }
-
-    public double vitrificationGenerationScale() {
-        return VITRIFICATION_GENERATION_SCALE;
-    }
-
-    public double vitrificationHotTierFalloffPower() {
-        return VITRIFICATION_HOT_TIER_FALLOFF_POWER;
-    }
-
-    public int vitrificationSizeTierCap() {
-        return sizeTierCap();
-    }
-
-    public boolean vitrificationUsesPostCollapseSurface() {
-        return true;
-    }
-
-    public double fireRadius() {
-        return charredLogRadius;
-    }
-
-    public double leafEvaporationRadius() {
-        return leafEvaporationRadius;
-    }
-
-    public long plannedMovementMutations() {
-        return plannedMovementMutations;
-    }
-
-    public long plannedCharredLogReplacements() {
-        return plannedCharredLogReplacements;
-    }
-
-    public long plannedLeafEvaporations() {
-        return plannedLeafEvaporations;
-    }
-
-    public long plannedContaminatedGrassReplacements() {
-        return plannedContaminatedGrassReplacements;
-    }
-
-    public long plannedDeadGrassReplacements() {
-        return plannedDeadGrassReplacements;
-    }
-
-    public long plannedDeadLeafReplacements() {
-        return plannedDeadLeafReplacements;
-    }
-
-    public long plannedVitrifiedStoneReplacements() {
-        return plannedVitrifiedStoneReplacements;
-    }
-
-    public long vitrificationColumnsConsidered() {
-        return vitrificationColumnsConsidered;
-    }
-
-    public String plannedVitrifiedTierReplacementsDebug() {
-        return "vitrified=" + plannedVitrifiedTierReplacements[0]
-                + ",baked=" + plannedVitrifiedTierReplacements[1]
-                + ",scorched=" + plannedVitrifiedTierReplacements[2]
-                + ",irradiated=" + plannedVitrifiedTierReplacements[3]
-                + ",hot=" + plannedVitrifiedTierReplacements[4]
-                + ",radiant=" + plannedVitrifiedTierReplacements[5]
-                + ",infernal=" + plannedVitrifiedTierReplacements[6];
-    }
-
-    public String plannedVitrifiedTopTierCountsDebug() {
-        return "vitrified=" + plannedVitrifiedTopTierCounts[0]
-                + ",baked=" + plannedVitrifiedTopTierCounts[1]
-                + ",scorched=" + plannedVitrifiedTopTierCounts[2]
-                + ",irradiated=" + plannedVitrifiedTopTierCounts[3]
-                + ",hot=" + plannedVitrifiedTopTierCounts[4]
-                + ",radiant=" + plannedVitrifiedTopTierCounts[5]
-                + ",infernal=" + plannedVitrifiedTopTierCounts[6];
-    }
-
-    public String vitrificationLowerTierCountsDebug() {
-        return "vitrified=" + vitrificationLowerTierCounts[0]
-                + ",baked=" + vitrificationLowerTierCounts[1]
-                + ",scorched=" + vitrificationLowerTierCounts[2]
-                + ",irradiated=" + vitrificationLowerTierCounts[3]
-                + ",hot=" + vitrificationLowerTierCounts[4]
-                + ",radiant=" + vitrificationLowerTierCounts[5]
-                + ",infernal=" + vitrificationLowerTierCounts[6];
-    }
-
-    public String vitrificationBaseTierCountsDebug() {
-        return vitrificationLowerTierCountsDebug();
-    }
-
-    public String vitrificationUpperTierCountsDebug() {
-        return "vitrified=" + vitrificationUpperTierCounts[0]
-                + ",baked=" + vitrificationUpperTierCounts[1]
-                + ",scorched=" + vitrificationUpperTierCounts[2]
-                + ",irradiated=" + vitrificationUpperTierCounts[3]
-                + ",hot=" + vitrificationUpperTierCounts[4]
-                + ",radiant=" + vitrificationUpperTierCounts[5]
-                + ",infernal=" + vitrificationUpperTierCounts[6];
-    }
-
-    public String vitrificationFinalTierCountsDebug() {
-        return "vitrified=" + vitrificationFinalTierCounts[0]
-                + ",baked=" + vitrificationFinalTierCounts[1]
-                + ",scorched=" + vitrificationFinalTierCounts[2]
-                + ",irradiated=" + vitrificationFinalTierCounts[3]
-                + ",hot=" + vitrificationFinalTierCounts[4]
-                + ",radiant=" + vitrificationFinalTierCounts[5]
-                + ",infernal=" + vitrificationFinalTierCounts[6];
-    }
-
-    public String vitrificationDitherDebug() {
-        double average = vitrificationContinuousTierSamples == 0
-                ? 0.0D
-                : vitrificationContinuousTierSum / vitrificationContinuousTierSamples;
-        double min = vitrificationContinuousTierSamples == 0 ? 0.0D : vitrificationContinuousTierMin;
-        double max = vitrificationContinuousTierSamples == 0 ? 0.0D : vitrificationContinuousTierMax;
-        return "tierCurvePower=" + VITRIFICATION_TIER_CURVE_POWER
-                + ",outerFadeStrength=" + VITRIFICATION_OUTER_FADE_STRENGTH
-                + ",minEdgePlacementChance=" + VITRIFICATION_MIN_EDGE_PLACEMENT_CHANCE
-                + ",strengthNoise=" + VITRIFICATION_STRENGTH_NOISE
-                + ",generationScale=" + VITRIFICATION_GENERATION_SCALE
-                + ",continuousTierSamples=" + vitrificationContinuousTierSamples
-                + ",continuousTierMin=" + min
-                + ",continuousTierMax=" + max
-                + ",continuousTierAverage=" + average
-                + ",ditherPromotions=" + vitrificationDitherPromotions
-                + ",outerFadeConsidered=" + vitrificationOuterFadeConsidered
-                + ",outerFadePlaced=" + vitrificationOuterFadePlaced
-                + ",outerFadeSkipped=" + vitrificationOuterFadeSkipped
-                + ",weakEdgePlacements=" + vitrificationWeakEdgePlacements
-                + ",higherTierReplacements=" + vitrificationHigherTierReplacements
-                + ",sameOrLowerSkipped=" + vitrificationSameOrLowerSkipped
-                + ",downgradePrevented=" + vitrificationDowngradePrevented;
-    }
-
-    public String vitrificationDowngradeDebug() {
-        return vitrificationDitherDebug();
-    }
-
-    public long vitrificationColumnsChecked() {
-        return vitrificationColumnsChecked;
-    }
-
-    public long vitrificationSkippedOutsideRadius() {
-        return vitrificationSkippedOutsideRadius;
-    }
-
-    public long vitrificationColumnsAffected() {
-        return vitrificationColumnsAffected;
-    }
-
-    public int maxVitrificationDepthSeen() {
-        return maxVitrificationDepthSeen;
-    }
-
-    public long vitrificationEdgeFeatherPlacements() {
-        return vitrificationEdgeFeatherPlacements;
-    }
-
-    public long vitrificationSkippedBySoftEdge() {
-        return vitrificationSkippedBySoftEdge;
-    }
-
-    public long vitrificationSkippedNoSurface() {
-        return vitrificationSkippedNoSurface;
-    }
-
-    public long vitrificationSkippedSurfaceAir() {
-        return vitrificationSkippedSurfaceAir;
-    }
-
-    public long vitrificationSkippedNoVitrifiableBlock() {
-        return vitrificationSkippedNoVitrifiableBlock;
-    }
-
-    public long vitrificationSkippedTagMismatch() {
-        return vitrificationSkippedTagMismatch;
-    }
-
-    public long vitrificationSkippedPlannedDeletion() {
-        return vitrificationSkippedPlannedDeletion;
-    }
-
-    public long vitrificationSkippedPlannedMovementConflict() {
-        return vitrificationSkippedPlannedMovementConflict;
-    }
-
-    public long vitrificationSkippedBlockEntity() {
-        return vitrificationSkippedBlockEntity;
-    }
-
-    public long vitrificationSkippedFluid() {
-        return vitrificationSkippedFluid;
-    }
-
-    public long vitrificationSkippedUnloaded() {
-        return vitrificationSkippedUnloaded;
-    }
-
-    public long vitrificationReplacementsPlanned() {
-        return vitrificationReplacementsPlanned;
-    }
-
-    public String vitrificationSkipDebug() {
-        return "considered=" + vitrificationColumnsConsidered
-                + ",outsideRadius=" + vitrificationSkippedOutsideRadius
-                + ",softEdge=" + vitrificationSkippedBySoftEdge
-                + ",noSurface=" + vitrificationSkippedNoSurface
-                + ",surfaceAir=" + vitrificationSkippedSurfaceAir
-                + ",noVitrifiable=" + vitrificationSkippedNoVitrifiableBlock
-                + ",tagMismatch=" + vitrificationSkippedTagMismatch
-                + ",plannedDeletion=" + vitrificationSkippedPlannedDeletion
-                + ",movementConflict=" + vitrificationSkippedPlannedMovementConflict
-                + ",blockEntity=" + vitrificationSkippedBlockEntity
-                + ",fluid=" + vitrificationSkippedFluid
-                + ",unloaded=" + vitrificationSkippedUnloaded
-                + ",planned=" + vitrificationReplacementsPlanned
-                + ",lowerTiers={" + vitrificationLowerTierCountsDebug() + "}"
-                + ",upperTiers={" + vitrificationUpperTierCountsDebug() + "}"
-                + ",finalTiers={" + vitrificationFinalTierCountsDebug() + "}"
-                + ",dither={" + vitrificationDitherDebug() + "}";
-    }
-
-    public long plannedFireBlocks() {
-        return plannedFireBlocks;
-    }
-
-    public long plannedPlantRemovals() {
-        return plannedPlantRemovals;
-    }
-
-    public long skippedBarriersBeforeSurface() {
-        return skippedBarriersBeforeSurface;
-    }
-
-    public long skippedFluidsBeforeSurface() {
-        return skippedFluidsBeforeSurface;
-    }
-
-    public long skippedBlockEntitiesBeforeSurface() {
-        return skippedBlockEntitiesBeforeSurface;
-    }
-
     public record CollapseResult(
             int columnsProcessed,
             int columnsDeferred,
             int unloadedWorkUnitsSkipped,
             long mutationsPlanned,
-            int workUnitsPlanned,
             int workUnitsProcessed,
             int sectionsMutated,
             int mutationsApplied,
@@ -2120,3 +1338,5 @@ public final class NuclearColumnCollapsePass {
     private record ChunkWorkUnit(ChunkPos chunkPos, double distanceSqr, int ring) {
     }
 }
+
+

@@ -24,7 +24,6 @@ public final class NuclearResistanceCache {
     public static final float MAX_BREAKABLE_RAY_RESISTANCE = 18.0F;
     public static final float RAY_BLOCKING_RESISTANCE = 2_000_000.0F;
     public static final float UNBREAKABLE_RESISTANCE = 3_600_000.0F;
-    public static final boolean DEBUG_NUKE_BLOCK_RESISTANCE = false;
     public static final TagKey<Block> NUKE_FRAGILE = BlockTags.create(
             ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "nuke_fragile")
     );
