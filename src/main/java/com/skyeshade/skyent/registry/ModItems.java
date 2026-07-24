@@ -20,6 +20,7 @@ import com.skyeshade.skyent.content.item.TreeTapItem;
 import com.skyeshade.skyent.content.item.UraniumBlockItem;
 import com.skyeshade.skyent.content.item.WireCuttersItem;
 import com.skyeshade.skyent.content.item.WrenchItem;
+import net.minecraft.ChatFormatting;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.BucketItem;
@@ -151,9 +152,15 @@ public final class ModItems {
             new Item.Properties()
     );
 
-    public static final DeferredItem<BlockItem> MV_INLINE_PUMP = ITEMS.registerSimpleBlockItem(
-            ModBlocks.MV_INLINE_PUMP,
-            new Item.Properties()
+    public static final DeferredItem<TooltipBlockItem> MV_INLINE_PUMP = ITEMS.register(
+            "mv_inline_pump",
+            () -> new TooltipBlockItem(
+                    ModBlocks.MV_INLINE_PUMP.get(),
+                    new Item.Properties(),
+                    ChatFormatting.GRAY,
+                    "tooltip.skyent.mv_inline_pump.line1",
+                    "tooltip.skyent.mv_inline_pump.line2"
+            )
     );
 
     public static final DeferredItem<BlockItem> BASIC_FLUID_DUCT = ITEMS.registerSimpleBlockItem(

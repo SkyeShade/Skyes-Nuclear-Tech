@@ -66,7 +66,7 @@ public class MVInlinePumpBlockEntity extends BlockEntity implements MenuProvider
     public static final int MIN_TRANSFER_MB_PER_TICK = 50;
     private static final int MAX_INPUT_NETWORK_DUCTS = 256;
     private static final String TAG_STORED_RJ = "StoredRJ";
-    private static final float MOTOR_LOOP_VOLUME = 0.75F;
+    private static final float MOTOR_LOOP_VOLUME = 0.35F;
     private static final float MOTOR_LOOP_PITCH = 0.8F;
 
     public static final int DUMP_INPUT_SLOT = 0;

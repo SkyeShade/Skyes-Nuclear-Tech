@@ -241,6 +241,8 @@
   "tooltip.skyent.lv_fe_converter.line1": "Converts FE into LV RJ.",
   "tooltip.skyent.lv_mv_transformer.line1": "Steps power between LV and MV.",
   "tooltip.skyent.lv_mv_transformer.line2": "Rating: 16A LV / 4A MV.",
+  "tooltip.skyent.mv_inline_pump.line1": "Pulls liquids and gases from containers on one side into containers on the other side.",
+  "tooltip.skyent.mv_inline_pump.line2": "Useful for getting fluids out of storage tanks.",
   "tooltip.skyent.nuclear_charge.blast_radius": "Blast Radius: %s blocks",
   "tooltip.skyent.radioactive": "[Radioactive]",
   "tooltip.skyent.pyrophoric": "[Pyrophoric / hot]",

@@ -11,6 +11,7 @@ import net.minecraft.world.level.block.Block;
 
 public class TooltipBlockItem extends BlockItem {
     private final List<String> lineKeys;
+    private final ChatFormatting style;
 
     public TooltipBlockItem(Block block, Item.Properties properties, String firstLineKey, String secondLineKey) {
         this(block, properties, secondLineKey == null ? new String[] {firstLineKey} : new String[] {firstLineKey, secondLineKey});
@@ -21,15 +22,20 @@ public class TooltipBlockItem extends BlockItem {
     }
 
     public TooltipBlockItem(Block block, Item.Properties properties, String... lineKeys) {
+        this(block, properties, ChatFormatting.GRAY, lineKeys);
+    }
+
+    public TooltipBlockItem(Block block, Item.Properties properties, ChatFormatting style, String... lineKeys) {
         super(block, properties);
         this.lineKeys = List.of(lineKeys);
+        this.style = style;
     }
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         for (String lineKey : lineKeys) {
             if (lineKey != null && !lineKey.isBlank()) {
-                tooltipComponents.add(Component.translatable(lineKey).withStyle(ChatFormatting.GRAY));
+                tooltipComponents.add(Component.translatable(lineKey).withStyle(style));
             }
         }
     }
