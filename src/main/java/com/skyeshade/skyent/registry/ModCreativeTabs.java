@@ -241,6 +241,7 @@ public final class ModCreativeTabs {
                 ModItems.COPPER_COIL,
                 ModItems.TRANSFORMER_COIL,
                 ModItems.STEEL_BEARING,
+                ModItems.STEEL_SHELL,
                 ModItems.FIRE_CLAY,
                 ModItems.FIRE_BRICK,
                 ModItems.NICKEL_TURBINE,

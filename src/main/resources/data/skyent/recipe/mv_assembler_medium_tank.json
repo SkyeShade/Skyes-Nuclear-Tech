@@ -1,0 +1,29 @@
+{
+  "type": "skyent:mv_assembler",
+  "ingredients": [
+    {
+      "ingredient": {
+        "item": "skyent:steel_shell"
+      },
+      "count": 2
+    },
+    {
+      "ingredient": {
+        "item": "skyent:steel_bolt"
+      },
+      "count": 4
+    },
+    {
+      "ingredient": {
+        "item": "skyent:steel_plate"
+      },
+      "count": 2
+    }
+  ],
+  "result": {
+    "id": "skyent:medium_tank",
+    "count": 1
+  },
+  "process_time": 200,
+  "energy_per_tick": 64
+}

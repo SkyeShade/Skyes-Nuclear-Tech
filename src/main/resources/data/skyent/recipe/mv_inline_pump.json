@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "SRS",
+    "MBM",
+    "SRS"
+  ],
+  "key": {
+    "S": {
+      "item": "skyent:steel_plate"
+    },
+    "R": {
+      "item": "skyent:rubber"
+    },
+    "M": {
+      "item": "skyent:electric_motor"
+    },
+    "B": {
+      "item": "skyent:steel_fluid_barrel"
+    }
+  },
+  "result": {
+    "id": "skyent:mv_inline_pump",
+    "count": 1
+  }
+}

@@ -32,7 +32,6 @@ public final class NuclearColumnCollapsePass {
     private static final int COLUMN_COLLAPSE_MAX_RUNS_PER_COLUMN = 4;
     private static final int COLUMN_COLLAPSE_SCAN_DEPTH_BELOW_SURFACE = 96;
     private static final double CHARRED_LOG_RADIUS_SCALE = 0.85D;
-    private static final double CONTAMINATED_GRASS_RADIUS_SCALE = 2.0D;
     private static final double CONTAMINATED_GRASS_FULL_RADIUS_SCALE = 1.65D;
     private static final double CONTAMINATED_GRASS_FEATHER_RADIUS_SCALE = 0.55D;
     private static final double DEAD_VEGETATION_RADIUS_SCALE = 3.0D;

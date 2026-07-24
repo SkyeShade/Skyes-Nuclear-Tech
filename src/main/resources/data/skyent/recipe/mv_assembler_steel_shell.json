@@ -1,0 +1,17 @@
+{
+  "type": "skyent:mv_assembler",
+  "ingredients": [
+    {
+      "ingredient": {
+        "item": "skyent:steel_plate"
+      },
+      "count": 5
+    }
+  ],
+  "result": {
+    "id": "skyent:steel_shell",
+    "count": 1
+  },
+  "process_time": 100,
+  "energy_per_tick": 64
+}
