@@ -35,6 +35,8 @@
     "skyent:mv_assembler_part",
     "skyent:medium_tank",
     "skyent:medium_tank_part",
+    "skyent:lv_connector",
+    "skyent:mv_connector",
     "skyent:lv_mv_transformer",
     "skyent:lv_mv_transformer_part",
     "skyent:lv_steam_turbine",

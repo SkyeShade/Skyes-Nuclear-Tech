@@ -8,10 +8,12 @@ import com.skyeshade.skyent.registry.ModBlocks;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.BaseEntityBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RenderShape;
@@ -149,7 +151,7 @@ public class LVConnectorBlock extends BaseEntityBlock {
     }
 
     @Override
-    protected boolean canSurvive(BlockState state, net.minecraft.world.level.LevelReader level, BlockPos pos) {
+    protected boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
         Direction facing = state.getValue(FACING);
         BlockPos supportPos = pos.relative(facing.getOpposite());
         BlockState supportState = level.getBlockState(supportPos);
@@ -157,7 +159,7 @@ public class LVConnectorBlock extends BaseEntityBlock {
             return MVInlinePumpBlock.isValidEnergyConnection(supportState, facing);
         }
 
-        return supportState.isFaceSturdy(level, supportPos, facing)
+        return canSupportConnector(level, supportPos, supportState, facing)
                 || LVMVTransformerBlock.isConnectorSupportCell(supportState)
                 || HeatingChamberBlock.isConnectorSupportCell(supportState)
                 || IndustrialPressBlock.isConnectorSupportCell(supportState)
@@ -165,10 +167,31 @@ public class LVConnectorBlock extends BaseEntityBlock {
                 || WireMillBlock.isConnectorSupportCell(supportState);
     }
 
+    private static boolean canSupportConnector(
+            LevelReader level,
+            BlockPos supportPos,
+            BlockState supportState,
+            Direction supportFace
+    ) {
+        if (supportState.isFaceSturdy(level, supportPos, supportFace)) {
+            return true;
+        }
+
+        boolean fenceOrWall = supportState.is(BlockTags.FENCES) || supportState.is(BlockTags.WALLS);
+        if (!fenceOrWall) {
+            return false;
+        }
+
+        return supportFace == Direction.UP || supportFace == Direction.DOWN;
+    }
+
     @Override
     protected BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
         if (direction == state.getValue(FACING).getOpposite() && !canSurvive(state, level, pos)) {
-            return net.minecraft.world.level.block.Blocks.AIR.defaultBlockState();
+            if (level instanceof Level realLevel && !realLevel.isClientSide) {
+                realLevel.destroyBlock(pos, true);
+            }
+            return state;
         }
 
         return super.updateShape(state, direction, neighborState, level, pos, neighborPos);

@@ -603,6 +603,7 @@ public final class ModBlocks {
             "lv_connector",
             LVConnectorBlock::new,
             BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .requiresCorrectToolForDrops()
                     .noOcclusion()
     );
 
@@ -610,6 +611,7 @@ public final class ModBlocks {
             "mv_connector",
             LVConnectorBlock::new,
             BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .requiresCorrectToolForDrops()
                     .noOcclusion()
     );
 

@@ -58,9 +58,9 @@ public class MVInlinePumpBlockEntity extends BlockEntity implements MenuProvider
     public static final int ENERGY_CAPACITY_RJ = 64_000;
     public static final ElectricalTier REQUIRED_TIER = ElectricalTier.MV;
     public static final int REQUIRED_VOLTAGE = REQUIRED_TIER.voltage();
-    public static final double MAX_INPUT_AMPS = 0.25D;
+    public static final double MAX_INPUT_AMPS = 0.5D;
     public static final int MAX_INPUT_RJ_PER_TICK = (int) Math.round(REQUIRED_VOLTAGE * MAX_INPUT_AMPS);
-    public static final int ENERGY_USAGE_RJ_PER_ACTIVE_TICK = MAX_INPUT_RJ_PER_TICK;
+    public static final int ENERGY_USAGE_RJ_PER_ACTIVE_TICK = MAX_INPUT_RJ_PER_TICK/2; //aka half the input amps in usage
     public static final int TANK_CAPACITY_MB = 32_000;
     public static final int MAX_TRANSFER_MB_PER_TICK = 1_000;
     public static final int MIN_TRANSFER_MB_PER_TICK = 50;
