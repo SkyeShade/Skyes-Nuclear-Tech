@@ -10,7 +10,6 @@ import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.ItemInteractionResult;
@@ -210,15 +209,7 @@ public class BasicFluidDuctBlock extends BaseEntityBlock {
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> blockEntityType) {
-        if (!(level instanceof ServerLevel serverLevel)) {
-            return null;
-        }
-
-        return createTickerHelper(
-                blockEntityType,
-                ModBlockEntities.BASIC_FLUID_DUCT.get(),
-                (tickerLevel, pos, tickerState, duct) -> BasicFluidDuctBlockEntity.serverTick(serverLevel, pos, tickerState, duct)
-        );
+        return null;
     }
 
     @Override

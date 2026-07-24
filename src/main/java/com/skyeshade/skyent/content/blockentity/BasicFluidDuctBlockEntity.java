@@ -27,44 +27,6 @@ public class BasicFluidDuctBlockEntity extends BlockEntity {
         super(ModBlockEntities.BASIC_FLUID_DUCT.get(), pos, blockState);
     }
 
-    public static void serverTick(ServerLevel level, BlockPos pos, BlockState state, BasicFluidDuctBlockEntity duct) {
-        Set<BlockPos> network = collectNetwork(level, pos);
-        BlockPos owner = network.stream().min(Comparator.comparingLong(BlockPos::asLong)).orElse(pos);
-        if (!pos.equals(owner)) {
-            return;
-        }
-
-        List<Endpoint> endpoints = collectEndpoints(level, network, null);
-        for (Endpoint source : endpoints) {
-            FluidStack available = source.handler.drain(BASIC_FLUID_DUCT_TRANSFER_MB_PER_TICK, IFluidHandler.FluidAction.SIMULATE);
-            if (available.isEmpty()) {
-                continue;
-            }
-
-            for (Endpoint target : endpoints) {
-                if (source.sameConnection(target)) {
-                    continue;
-                }
-
-                int accepted = target.handler.fill(available, IFluidHandler.FluidAction.SIMULATE);
-                if (accepted <= 0) {
-                    continue;
-                }
-
-                FluidStack drained = source.handler.drain(copyWithAmount(available, accepted), IFluidHandler.FluidAction.EXECUTE);
-                if (drained.isEmpty()) {
-                    continue;
-                }
-
-                int inserted = target.handler.fill(drained, IFluidHandler.FluidAction.EXECUTE);
-                if (inserted < drained.getAmount()) {
-                    source.handler.fill(copyWithAmount(drained, drained.getAmount() - inserted), IFluidHandler.FluidAction.EXECUTE);
-                }
-                return;
-            }
-        }
-    }
-
     public IFluidHandler getFluidHandler(@Nullable Direction side) {
         return new DuctFluidHandler(side);
     }
@@ -96,10 +58,6 @@ public class BasicFluidDuctBlockEntity extends BlockEntity {
         return Math.min(resource.getAmount(), BASIC_FLUID_DUCT_TRANSFER_MB_PER_TICK) - remaining;
     }
 
-    private static Set<BlockPos> collectNetwork(ServerLevel level, BlockPos start) {
-        return collectNetworkDistances(level, start).keySet();
-    }
-
     private static Map<BlockPos, Integer> collectNetworkDistances(ServerLevel level, BlockPos start) {
         Map<BlockPos, Integer> distances = new HashMap<>();
         ArrayDeque<BlockPos> queue = new ArrayDeque<>();
@@ -122,10 +80,6 @@ public class BasicFluidDuctBlockEntity extends BlockEntity {
         }
 
         return distances;
-    }
-
-    private static List<Endpoint> collectEndpoints(ServerLevel level, Set<BlockPos> network, @Nullable BlockPos excludedNeighbor) {
-        return collectEndpoints(level, network, excludedNeighbor, null);
     }
 
     private static List<Endpoint> collectEndpoints(
@@ -215,8 +169,5 @@ public class BasicFluidDuctBlockEntity extends BlockEntity {
     }
 
     private record Endpoint(BlockPos pos, Direction side, int distance, IFluidHandler handler) {
-        private boolean sameConnection(Endpoint other) {
-            return pos.equals(other.pos) && side == other.side;
-        }
     }
 }

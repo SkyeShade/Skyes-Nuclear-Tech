@@ -100,8 +100,7 @@ public class MediumTankBlockEntity extends BlockEntity implements MenuProvider {
         }
     };
     private final IItemHandler automationItemHandler = new AutomationItemHandler();
-    private final IFluidHandler passivePortFluidHandler = new SidedFluidHandler(true, false);
-    private final IFluidHandler pumpExtractionFluidHandler = new SidedFluidHandler(true, true);
+    private final IFluidHandler portFluidHandler = new SidedFluidHandler(true, true);
 
     private final ContainerData data = new ContainerData() {
         @Override
@@ -379,17 +378,17 @@ public class MediumTankBlockEntity extends BlockEntity implements MenuProvider {
     }
 
     public IFluidHandler getAutomationFluidHandler() {
-        return passivePortFluidHandler;
+        return portFluidHandler;
     }
 
     @Nullable
     public IFluidHandler getAutomationFluidHandler(Direction side) {
-        return MediumTankBlock.isValidPipeConnection(getBlockState(), side) ? passivePortFluidHandler : null;
+        return MediumTankBlock.isValidPipeConnection(getBlockState(), side) ? portFluidHandler : null;
     }
 
     @Nullable
     public IFluidHandler getPumpExtractionFluidHandler(BlockState queriedState, @Nullable Direction side) {
-        return MediumTankBlock.isValidPipeConnection(queriedState, side) ? pumpExtractionFluidHandler : null;
+        return MediumTankBlock.isValidPipeConnection(queriedState, side) ? portFluidHandler : null;
     }
 
     public ContainerData getData() {
