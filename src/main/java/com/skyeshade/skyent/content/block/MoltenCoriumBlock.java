@@ -4,8 +4,6 @@ import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.radiation.RadioactiveSource;
 import com.skyeshade.skyent.content.radiation.RadioactiveSourceRegistry;
 import com.skyeshade.skyent.content.radiation.RadiationBlockProfiles;
-import com.skyeshade.skyent.content.radiation.RadiationHotBlockRayThrottle;
-import com.skyeshade.skyent.content.radiation.RadiationUtil;
 import com.skyeshade.skyent.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -26,8 +24,6 @@ public class MoltenCoriumBlock extends LiquidBlock implements RadioactiveSource 
 
     private static final boolean DEBUG_CORIUM_COOLING = false;
     private static final int SOURCE_COOLING_CHANCE = 60;
-    private static final int RADIATION_ATTEMPTS_PER_TICK = 16;
-    private static final int MAX_RADIATION_CONVERSIONS_PER_TICK = 8;
     private static final int HORIZONTAL_MELT_CHANCE = 3;
     private static final int UP_MELT_CHANCE = 16;
 
@@ -63,7 +59,7 @@ public class MoltenCoriumBlock extends LiquidBlock implements RadioactiveSource 
 
     @Override
     protected void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-        com.skyeshade.skyent.event.systems.RadiationSourceTickSystem.recordRadioactiveBlockRandomTick(state);
+        // Registration fallback only; environmental rays and corium source ticking run through RadiationSourceTickSystem.
         RadioactiveSourceRegistry.register(level, pos);
         com.skyeshade.skyent.event.systems.RadiationSourceTickSystem.registerActiveSourceIfNeeded(level, pos, state);
     }
@@ -74,18 +70,6 @@ public class MoltenCoriumBlock extends LiquidBlock implements RadioactiveSource 
         }
 
         RadioactiveSourceRegistry.register(level, pos);
-        if (RadiationHotBlockRayThrottle.request(level, pos).allowed()) {
-            com.skyeshade.skyent.event.systems.RadiationSourceTickSystem.recordEnvironmentalSpreadAttempt(state, true);
-            RadiationUtil.applyFullEnvironmentalRadiation(
-                    level,
-                    pos,
-                    RadiationBlockProfiles.getRadiationStrength(ModBlocks.MOLTEN_CORIUM_BLOCK.get()),
-                    RadiationBlockProfiles.getEnvironmentalRange(ModBlocks.MOLTEN_CORIUM_BLOCK.get()),
-                    RADIATION_ATTEMPTS_PER_TICK,
-                    MAX_RADIATION_CONVERSIONS_PER_TICK,
-                    random
-            );
-        }
 
         tryMeltNeighbor(level, pos, Direction.DOWN, random);
 

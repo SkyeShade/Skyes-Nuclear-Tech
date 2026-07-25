@@ -36,60 +36,41 @@ public final class RadiationUtil {
     private static final int MIN_ENVIRONMENT_CONVERSIONS_PER_RANDOM_TICK = 1;
     private static final int MAX_ENVIRONMENT_CONVERSIONS_PER_RANDOM_TICK = 3;
     private static final int MAX_FULL_RAY_CONVERSIONS_PER_RANDOM_TICK = 8;
-    private static final int MAX_TARGET_SELECTION_TRIES = 8;
-    private static final double CHEAP_DISTANCE_BIAS_POWER = 2.0D;
-    private static final int ENVIRONMENT_VERTICAL_TARGET_RADIUS = 2;
     private static final double RAY_PATH_STEP = 0.25D;
     private static final double MIN_RAY_MULTIPLIER = 0.01D;
 
     private RadiationUtil() {
     }
 
-    public static void applyCheapEnvironmentalRadiation(ServerLevel level, BlockPos sourcePos, double strength, int range, RandomSource random) {
+    public static int applyFullEnvironmentalRadiation(ServerLevel level, BlockPos sourcePos, double strength, int range, RandomSource random) {
+        return applyFullEnvironmentalRadiation(level, sourcePos, strength, range, fullRayAttempts(strength), fullRayConversions(strength), random);
+    }
+
+    public static int applyFullEnvironmentalRadiation(ServerLevel level, BlockPos sourcePos, double strength, int range, int attempts, int maxConversions, RandomSource random) {
+        return applyFullEnvironmentalRadiation(level, sourcePos, Vec3.atCenterOf(sourcePos), strength, range, attempts, maxConversions, random);
+    }
+
+    public static int applyFullEnvironmentalRadiation(ServerLevel level, Vec3 sourceCenter, double strength, int range, int attempts, int maxConversions, RandomSource random) {
+        return applyFullEnvironmentalRadiation(level, BlockPos.containing(sourceCenter), sourceCenter, strength, range, attempts, maxConversions, random);
+    }
+
+    private static int applyFullEnvironmentalRadiation(ServerLevel level, BlockPos sourcePos, Vec3 sourceCenter, double strength, int range, int attempts, int maxConversions, RandomSource random) {
         if (strength <= 0.0D || range <= 0) {
-            return;
-        }
-
-        DebugRayCollector debugRays = DebugRayCollector.create(level, sourcePos, strength, range);
-        int attempts = environmentAttempts(strength);
-        int maxConversions = environmentConversions(strength);
-        int conversions = 0;
-        for (int attempt = 0; attempt < attempts && conversions < maxConversions; attempt++) {
-            BlockPos targetPos = pickBiasedTarget(sourcePos, range, random, CHEAP_DISTANCE_BIAS_POWER);
-            if (attemptCheapEnvironmentalInteraction(level, sourcePos, targetPos, strength, range, random, debugRays)) {
-                conversions++;
-            }
-        }
-
-        debugRays.send(level);
-    }
-
-    public static void applyFullEnvironmentalRadiation(ServerLevel level, BlockPos sourcePos, double strength, int range, RandomSource random) {
-        applyFullEnvironmentalRadiation(level, sourcePos, strength, range, fullRayAttempts(strength), fullRayConversions(strength), random);
-    }
-
-    public static void applyFullEnvironmentalRadiation(ServerLevel level, BlockPos sourcePos, double strength, int range, int attempts, int maxConversions, RandomSource random) {
-        applyFullEnvironmentalRadiation(level, sourcePos, Vec3.atCenterOf(sourcePos), strength, range, attempts, maxConversions, random);
-    }
-
-    public static void applyFullEnvironmentalRadiation(ServerLevel level, Vec3 sourceCenter, double strength, int range, int attempts, int maxConversions, RandomSource random) {
-        applyFullEnvironmentalRadiation(level, BlockPos.containing(sourceCenter), sourceCenter, strength, range, attempts, maxConversions, random);
-    }
-
-    private static void applyFullEnvironmentalRadiation(ServerLevel level, BlockPos sourcePos, Vec3 sourceCenter, double strength, int range, int attempts, int maxConversions, RandomSource random) {
-        if (strength <= 0.0D || range <= 0) {
-            return;
+            return 0;
         }
 
         DebugRayCollector debugRays = DebugRayCollector.create(level, sourcePos, sourceCenter, strength, range);
         attempts = Mth.clamp(attempts, 0, MAX_FULL_RAY_ATTEMPTS_PER_RANDOM_TICK);
         maxConversions = Mth.clamp(maxConversions, 0, MAX_FULL_RAY_CONVERSIONS_PER_RANDOM_TICK);
         int conversions = 0;
+        int raysTraced = 0;
         for (int attempt = 0; attempt < attempts && conversions < maxConversions; attempt++) {
             conversions += attemptFullRayEnvironmentalInteraction(level, sourcePos, sourceCenter, randomDirection(random), strength, range, random, debugRays, maxConversions - conversions);
+            raysTraced++;
         }
 
         debugRays.send(level);
+        return raysTraced;
     }
 
     private static BlockState getEnvironmentalRadiationConversion(BlockState state) {
@@ -232,72 +213,11 @@ public final class RadiationUtil {
         return target;
     }
 
-    private static BlockPos pickBiasedTarget(BlockPos sourcePos, int range, RandomSource random, double biasPower) {
-        for (int attempt = 0; attempt < MAX_TARGET_SELECTION_TRIES; attempt++) {
-            Vec3 offset = randomDirection(random).scale(range * Math.pow(random.nextDouble(), biasPower));
-            BlockPos targetPos = BlockPos.containing(
-                    sourcePos.getX() + 0.5D + offset.x,
-                    sourcePos.getY() + 0.5D + clampVerticalOffset(offset.y),
-                    sourcePos.getZ() + 0.5D + offset.z
-            );
-            if (isWithinRadiationRange(sourcePos, targetPos, range)) {
-                debugSelectedTarget(sourcePos, targetPos, range, true);
-                return targetPos;
-            }
-        }
-
-        return randomInSphereTarget(sourcePos, range, random);
-    }
-
-    private static BlockPos randomInSphereTarget(BlockPos sourcePos, int range, RandomSource random) {
-        while (true) {
-            BlockPos targetPos = sourcePos.offset(
-                    random.nextInt(range * 2 + 1) - range,
-                    random.nextInt(ENVIRONMENT_VERTICAL_TARGET_RADIUS * 2 + 1) - ENVIRONMENT_VERTICAL_TARGET_RADIUS,
-                    random.nextInt(range * 2 + 1) - range
-            );
-            if (isWithinRadiationRange(sourcePos, targetPos, range)) {
-                debugSelectedTarget(sourcePos, targetPos, range, true);
-                return targetPos;
-            }
-        }
-    }
-
-    private static double clampVerticalOffset(double y) {
-        return Mth.clamp(y, -ENVIRONMENT_VERTICAL_TARGET_RADIUS, ENVIRONMENT_VERTICAL_TARGET_RADIUS);
-    }
-
     private static Vec3 randomDirection(RandomSource random) {
         double theta = random.nextDouble() * Math.PI * 2.0D;
         double y = random.nextDouble() * 2.0D - 1.0D;
         double horizontal = Math.sqrt(Math.max(0.0D, 1.0D - y * y));
         return new Vec3(Math.cos(theta) * horizontal, y, Math.sin(theta) * horizontal);
-    }
-
-    private static boolean attemptCheapEnvironmentalInteraction(ServerLevel level, BlockPos sourcePos, BlockPos targetPos, double strength, int range, RandomSource random, DebugRayCollector debugRays) {
-        if (!level.hasChunkAt(targetPos)) {
-            debugRays.record(targetPos, Vec3.atCenterOf(targetPos), 0.0D, false, false, false, 0, 0);
-            return false;
-        }
-
-        BlockState targetState = level.getBlockState(targetPos);
-        BlockState conversionState = getEnvironmentalRadiationConversion(targetState);
-        if (conversionState == null) {
-            debugRays.record(targetPos, Vec3.atCenterOf(targetPos), 0.0D, false, false, false, 0, 0);
-            return false;
-        }
-
-        double finalChance = interactionChance(sourcePos, targetPos, strength, range);
-        boolean affected = false;
-        if (finalChance > 0.0D && random.nextDouble() < finalChance) {
-            affected = applyEnvironmentalRadiationConversion(level, targetPos, targetState, Block.UPDATE_CLIENTS);
-            if (DEBUG_RADIATION) {
-                SkyesNuclearTech.LOGGER.info("Cheap radiation converted vegetation at {}", targetPos);
-            }
-        }
-
-        debugRays.record(targetPos, Vec3.atCenterOf(targetPos), finalChance, false, true, affected, 1, affected ? 1 : 0);
-        return affected;
     }
 
     private static int attemptFullRayEnvironmentalInteraction(ServerLevel level, BlockPos sourcePos, Vec3 direction, double strength, int range, RandomSource random, DebugRayCollector debugRays, int remainingConversions) {

@@ -7,7 +7,8 @@ public record RadiationBlockProfile(
         double transmission,
         boolean hasCustomTransmission,
         boolean radioactive,
-        boolean showShieldingTooltip
+        boolean showShieldingTooltip,
+        EnvironmentalRadiationRayProfile environmentalRays
 ) {
     public static Builder builder() {
         return new Builder();
@@ -21,6 +22,7 @@ public record RadiationBlockProfile(
         private boolean hasCustomTransmission;
         private boolean radioactive;
         private boolean showShieldingTooltip;
+        private EnvironmentalRadiationRayProfile environmentalRays;
 
         private Builder() {
         }
@@ -44,6 +46,19 @@ public record RadiationBlockProfile(
             return this;
         }
 
+        public Builder environmentalRays(int rayCount, int maxConversions, int baseTickInterval, int maxTickInterval, int priority) {
+            this.environmentalRays = new EnvironmentalRadiationRayProfile(
+                    radiationStrength,
+                    environmentalRange,
+                    rayCount,
+                    maxConversions,
+                    baseTickInterval,
+                    maxTickInterval,
+                    priority
+            );
+            return this;
+        }
+
         public RadiationBlockProfile build() {
             return new RadiationBlockProfile(
                     radiationStrength,
@@ -52,7 +67,8 @@ public record RadiationBlockProfile(
                     transmission,
                     hasCustomTransmission,
                     radioactive,
-                    showShieldingTooltip
+                    showShieldingTooltip,
+                    environmentalRays
             );
         }
     }

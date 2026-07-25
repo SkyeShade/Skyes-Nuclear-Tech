@@ -1,8 +1,7 @@
 package com.skyeshade.skyent.content.blockentity;
 
-import com.skyeshade.skyent.content.radiation.RadiationBlockProfiles;
 import com.skyeshade.skyent.content.radiation.RadioactiveSourceRegistry;
-import com.skyeshade.skyent.content.radiation.RadiationUtil;
+import com.skyeshade.skyent.event.systems.RadiationSourceTickSystem;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -11,12 +10,6 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
 public class CoriumBlockEntity extends BlockEntity {
-    public static final int RADIATION_INTERVAL_TICKS = 20;
-    public static final int RADIATION_ATTEMPTS_PER_RUN = 16;
-    public static final int MAX_CONVERSIONS_PER_RUN = 8;
-
-    private int radiationTickCounter;
-
     public CoriumBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.CORIUM_BLOCK.get(), pos, blockState);
     }
@@ -27,20 +20,6 @@ public class CoriumBlockEntity extends BlockEntity {
         }
 
         RadioactiveSourceRegistry.register(serverLevel, pos);
-        corium.radiationTickCounter++;
-        if (corium.radiationTickCounter < RADIATION_INTERVAL_TICKS) {
-            return;
-        }
-
-        corium.radiationTickCounter = 0;
-        RadiationUtil.applyFullEnvironmentalRadiation(
-                serverLevel,
-                pos,
-                RadiationBlockProfiles.getRadiationStrength(state),
-                RadiationBlockProfiles.getEnvironmentalRange(state),
-                RADIATION_ATTEMPTS_PER_RUN,
-                MAX_CONVERSIONS_PER_RUN,
-                serverLevel.random
-        );
+        RadiationSourceTickSystem.registerActiveSourceIfNeeded(serverLevel, pos, state);
     }
 }

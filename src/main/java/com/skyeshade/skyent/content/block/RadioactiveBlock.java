@@ -4,8 +4,6 @@ import com.skyeshade.skyent.content.radiation.EnvironmentalRadiationMode;
 import com.skyeshade.skyent.content.radiation.RadioactiveSourceRegistry;
 import com.skyeshade.skyent.content.radiation.RadiationMeltdownUtil;
 import com.skyeshade.skyent.content.radiation.RadiationBlockProfiles;
-import com.skyeshade.skyent.content.radiation.RadiationHotBlockRayThrottle;
-import com.skyeshade.skyent.content.radiation.RadiationUtil;
 import com.skyeshade.skyent.content.radiation.RadioactiveSource;
 import com.skyeshade.skyent.event.systems.RadiationSourceTickSystem;
 import net.minecraft.core.BlockPos;
@@ -53,20 +51,10 @@ public class RadioactiveBlock extends Block implements RadioactiveSource {
 
     @Override
     public void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-        RadiationSourceTickSystem.recordRadioactiveBlockRandomTick(state);
+        // Registration/meltdown fallback only; environmental rays run through RadiationSourceTickSystem.
         RadioactiveSourceRegistry.register(level, pos);
+        RadiationSourceTickSystem.registerActiveSourceIfNeeded(level, pos, state);
         RadiationMeltdownUtil.tryTriggerMeltdown(level, pos, random);
-        if (environmentalMode == EnvironmentalRadiationMode.FULL_RAY) {
-            boolean ranEnvironmentalRays = RadiationHotBlockRayThrottle.request(level, pos).allowed();
-            if (ranEnvironmentalRays) {
-                RadiationSourceTickSystem.recordEnvironmentalSpreadAttempt(state, true);
-                RadiationUtil.applyFullEnvironmentalRadiation(level, pos, getRadiationStrength(), getEnvironmentalRadiationRange(), random);
-            }
-            RadiationSourceTickSystem.debugActiveVitrifiedRandomTick(level, pos, state, ranEnvironmentalRays);
-        } else {
-            RadiationSourceTickSystem.recordEnvironmentalSpreadAttempt(state, false);
-            RadiationUtil.applyCheapEnvironmentalRadiation(level, pos, getRadiationStrength(), getEnvironmentalRadiationRange(), random);
-        }
     }
 
     @Override

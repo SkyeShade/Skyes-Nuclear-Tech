@@ -44,6 +44,7 @@ public final class ServerEvents {
         NeoForge.EVENT_BUS.addListener(ServerEvents::onServerTickPre);
         NeoForge.EVENT_BUS.addListener(ServerEvents::onServerTick);
         NeoForge.EVENT_BUS.addListener(ServerEvents::onChunkLoad);
+        NeoForge.EVENT_BUS.addListener(ServerEvents::onChunkUnload);
     }
 
     public static void onServerStarting(ServerStartingEvent event) {
@@ -82,11 +83,10 @@ public final class ServerEvents {
 
     public static void onServerTick(ServerTickEvent.Post event) {
         NukePerformanceBudget.onServerTickPost(event);
-        if (event.getServer().getTickCount() % RadiationSourceTickSystem.MOLTEN_CORIUM_REGISTRY_TICK_INTERVAL == 0) {
-            for (ServerLevel level : event.getServer().getAllLevels()) {
-                RadiationSourceTickSystem.tick(level);
-            }
+        for (ServerLevel level : event.getServer().getAllLevels()) {
+            RadiationSourceTickSystem.tick(level);
         }
+        RadiationSourceTickSystem.finishServerTick(event.getServer().getTickCount());
 
         for (var player : event.getServer().getPlayerList().getPlayers()) {
             RadiationExposureSystem.tickPlayer(player);
@@ -103,6 +103,12 @@ public final class ServerEvents {
     public static void onChunkLoad(ChunkEvent.Load event) {
         if (event.getLevel() instanceof ServerLevel level) {
             RadiationSourceTickSystem.discoverSourcesInChunk(level, event.getChunk());
+        }
+    }
+
+    public static void onChunkUnload(ChunkEvent.Unload event) {
+        if (event.getLevel() instanceof ServerLevel level) {
+            RadiationSourceTickSystem.deactivateSourcesInChunk(level, event.getChunk().getPos());
         }
     }
 

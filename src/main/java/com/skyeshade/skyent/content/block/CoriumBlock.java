@@ -5,6 +5,7 @@ import com.skyeshade.skyent.content.blockentity.CoriumBlockEntity;
 import com.skyeshade.skyent.content.radiation.RadiationBlockProfiles;
 import com.skyeshade.skyent.content.radiation.RadioactiveSourceRegistry;
 import com.skyeshade.skyent.content.radiation.RadioactiveSource;
+import com.skyeshade.skyent.event.systems.RadiationSourceTickSystem;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
@@ -34,6 +35,7 @@ public class CoriumBlock extends BaseEntityBlock implements RadioactiveSource {
         super.onPlace(state, level, pos, oldState, movedByPiston);
         if (level instanceof ServerLevel serverLevel) {
             RadioactiveSourceRegistry.register(serverLevel, pos);
+            RadiationSourceTickSystem.registerActiveSourceIfNeeded(serverLevel, pos, state);
         }
     }
 
@@ -41,6 +43,7 @@ public class CoriumBlock extends BaseEntityBlock implements RadioactiveSource {
     protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
         if (level instanceof ServerLevel serverLevel && !newState.is(state.getBlock())) {
             RadioactiveSourceRegistry.unregister(serverLevel, pos);
+            RadiationSourceTickSystem.unregisterActiveSource(serverLevel, pos);
         }
 
         super.onRemove(state, level, pos, newState, movedByPiston);

@@ -21,17 +21,9 @@ public final class SkyentRadiationConfig {
     private static final ModConfigSpec.BooleanValue EXPOSURE_ENABLE_SOURCE_SAMPLING_CAP;
     private static final ModConfigSpec.BooleanValue EXPOSURE_USE_STREAMING_SOURCE_SELECTION;
 
-    private static final ModConfigSpec.BooleanValue HOT_BLOCK_RAYS_ENABLED;
-    private static final ModConfigSpec.IntValue HOT_BLOCK_RAYS_MAX_EMITTERS_PER_TICK;
-    private static final ModConfigSpec.IntValue HOT_BLOCK_RAYS_SOFT_EMITTERS_PER_TICK;
-    private static final ModConfigSpec.IntValue HOT_BLOCK_RAYS_BASE_EXTRA_DELAY_TICKS;
-    private static final ModConfigSpec.IntValue HOT_BLOCK_RAYS_MAX_EXTRA_DELAY_TICKS;
-    private static final ModConfigSpec.IntValue HOT_BLOCK_RAYS_THROTTLE_RANDOM_JITTER_TICKS;
-
     private static final ModConfigSpec.BooleanValue DEBUG_EXPOSURE_SAMPLING;
     private static final ModConfigSpec.BooleanValue DEBUG_PLAYER_EXPOSURE_SAMPLING;
     private static final ModConfigSpec.BooleanValue DEBUG_ENTITY_EXPOSURE_SAMPLING;
-    private static final ModConfigSpec.BooleanValue DEBUG_HOT_BLOCK_RAY_THROTTLE;
 
     private static final ModConfigSpec.BooleanValue SPATIAL_INDEX_ENABLED;
     private static final ModConfigSpec.IntValue SPATIAL_INDEX_CELL_SIZE;
@@ -133,27 +125,6 @@ public final class SkyentRadiationConfig {
                 .define("aggregate_position_mode", "weighted_center");
         BUILDER.pop();
 
-        BUILDER.push("hot_block_rays");
-        HOT_BLOCK_RAYS_ENABLED = BUILDER
-                .comment("Enables world-effect ray emissions from very hot radioactive blocks.")
-                .define("enabled", true);
-        HOT_BLOCK_RAYS_MAX_EMITTERS_PER_TICK = BUILDER
-                .comment("Hard server-wide cap for hot radioactive block world-effect ray emitters per server tick.")
-                .defineInRange("max_emitters_per_tick", 64, 1, 4096);
-        HOT_BLOCK_RAYS_SOFT_EMITTERS_PER_TICK = BUILDER
-                .comment("Soft cap where extra randomized delay begins increasing for denied emitters.")
-                .defineInRange("soft_emitters_per_tick", 32, 1, 4096);
-        HOT_BLOCK_RAYS_BASE_EXTRA_DELAY_TICKS = BUILDER
-                .comment("Base delay assigned to throttled hot block ray emitters.")
-                .defineInRange("base_extra_delay_ticks", 0, 0, 1200);
-        HOT_BLOCK_RAYS_MAX_EXTRA_DELAY_TICKS = BUILDER
-                .comment("Maximum load-based delay assigned to throttled hot block ray emitters.")
-                .defineInRange("max_extra_delay_ticks", 200, 0, 12000);
-        HOT_BLOCK_RAYS_THROTTLE_RANDOM_JITTER_TICKS = BUILDER
-                .comment("Random jitter added to throttled hot block ray emitter delays so many sources spread out fairly.")
-                .defineInRange("throttle_random_jitter_ticks", 80, 0, 12000);
-        BUILDER.pop();
-
         BUILDER.push("debug");
         DEBUG_EXPOSURE_SAMPLING = BUILDER
                 .comment("Legacy/global exposure sampling debug. If true, enables both player and entity exposure sampling logs.")
@@ -164,9 +135,6 @@ public final class SkyentRadiationConfig {
         DEBUG_ENTITY_EXPOSURE_SAMPLING = BUILDER
                 .comment("Logs non-player entity radiation exposure source sampling.")
                 .define("entity_exposure_sampling", false);
-        DEBUG_HOT_BLOCK_RAY_THROTTLE = BUILDER
-                .comment("Logs periodic server-wide hot radioactive block ray throttle counters.")
-                .define("hot_block_ray_throttle", false);
         BUILDER.pop();
 
         SPEC = BUILDER.build();
@@ -211,30 +179,6 @@ public final class SkyentRadiationConfig {
         return EXPOSURE_USE_STREAMING_SOURCE_SELECTION.get();
     }
 
-    public static boolean hotBlockRaysEnabled() {
-        return HOT_BLOCK_RAYS_ENABLED.get();
-    }
-
-    public static int hotBlockRaysMaxEmittersPerTick() {
-        return Mth.clamp(HOT_BLOCK_RAYS_MAX_EMITTERS_PER_TICK.get(), 1, 4096);
-    }
-
-    public static int hotBlockRaysSoftEmittersPerTick() {
-        return Mth.clamp(HOT_BLOCK_RAYS_SOFT_EMITTERS_PER_TICK.get(), 1, hotBlockRaysMaxEmittersPerTick());
-    }
-
-    public static int hotBlockRaysBaseExtraDelayTicks() {
-        return Mth.clamp(HOT_BLOCK_RAYS_BASE_EXTRA_DELAY_TICKS.get(), 0, 1200);
-    }
-
-    public static int hotBlockRaysMaxExtraDelayTicks() {
-        return Mth.clamp(HOT_BLOCK_RAYS_MAX_EXTRA_DELAY_TICKS.get(), 0, 12000);
-    }
-
-    public static int hotBlockRaysThrottleRandomJitterTicks() {
-        return Mth.clamp(HOT_BLOCK_RAYS_THROTTLE_RANDOM_JITTER_TICKS.get(), 0, 12000);
-    }
-
     public static boolean debugExposureSampling() {
         return DEBUG_EXPOSURE_SAMPLING.get();
     }
@@ -245,10 +189,6 @@ public final class SkyentRadiationConfig {
 
     public static boolean debugEntityExposureSampling() {
         return DEBUG_EXPOSURE_SAMPLING.get() || DEBUG_ENTITY_EXPOSURE_SAMPLING.get();
-    }
-
-    public static boolean debugHotBlockRayThrottle() {
-        return DEBUG_HOT_BLOCK_RAY_THROTTLE.get();
     }
 
     public static boolean radiationSpatialIndexEnabled() {
@@ -314,7 +254,7 @@ public final class SkyentRadiationConfig {
         }
 
         SkyesNuclearTech.LOGGER.info(
-                "Skyent radiation config loaded: playerInterval={} entityInterval={} scanRadius={} samplingCap={} streamingSelection={} spatialIndex={} cellSize={} clustering={} minAggregateSources={} individualStrength={} aggregateMaxStrength={} hottest={} hottestPool={} closest={} random={} legacyExposureSamplingDebug={} playerExposureSamplingDebug={} entityExposureSamplingDebug={} hotBlockRays={} maxEmitters={} softEmitters={}",
+                "Skyent radiation config loaded: playerInterval={} entityInterval={} scanRadius={} samplingCap={} streamingSelection={} spatialIndex={} cellSize={} clustering={} minAggregateSources={} individualStrength={} aggregateMaxStrength={} hottest={} hottestPool={} closest={} random={} legacyExposureSamplingDebug={} playerExposureSamplingDebug={} entityExposureSamplingDebug={}",
                 exposurePlayerUpdateIntervalTicks(),
                 exposureEntityUpdateIntervalTicks(),
                 exposureRadioactiveBlockScanRadius(),
@@ -332,10 +272,7 @@ public final class SkyentRadiationConfig {
                 exposureMaxRandomSources(),
                 debugExposureSampling(),
                 debugPlayerExposureSampling(),
-                debugEntityExposureSampling(),
-                hotBlockRaysEnabled(),
-                hotBlockRaysMaxEmittersPerTick(),
-                hotBlockRaysSoftEmittersPerTick()
+                debugEntityExposureSampling()
         );
     }
 }

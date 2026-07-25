@@ -68,6 +68,10 @@ public final class RadiationBlockProfiles {
         return profile.hasCustomTransmission() ? OptionalDouble.of(profile.transmission()) : OptionalDouble.empty();
     }
 
+    public static Optional<EnvironmentalRadiationRayProfile> getEnvironmentalRayProfile(BlockState state) {
+        return Optional.ofNullable(get(state.getBlock()).environmentalRays());
+    }
+
     public static double coriumStrength() {
         return getRadiationStrength(ModBlocks.CORIUM_BLOCK.get());
     }
@@ -86,24 +90,30 @@ public final class RadiationBlockProfiles {
     }
 
     private static void registerDefaults() {
+        // Environmental ray profiles: low ores are sparse, vitrified tiers scale by heat, and corium keeps the 16 ray / 8 conversion hot-source baseline.
         register(ModBlocks.URANIUM_BLOCK, RadiationBlockProfile.builder()
                 .radiation(50.0D, 6, 40)
+                .environmentalRays(2, 1, 100, 600, 2)
                 .transmission(0.90D)
                 .build());
         register(ModBlocks.URANIUM_ORE, RadiationBlockProfile.builder()
                 .radiation(2.5D, 3, 40)
+                .environmentalRays(1, 1, 240, 1200, 1)
                 .transmission(0.90D)
                 .build());
         register(ModBlocks.DEEPSLATE_URANIUM_ORE, RadiationBlockProfile.builder()
                 .radiation(2.5D, 3, 40)
+                .environmentalRays(1, 1, 240, 1200, 1)
                 .transmission(0.90D)
                 .build());
         register(ModBlocks.CORIUM_BLOCK, RadiationBlockProfile.builder()
                 .radiation(25_000.0D, 48, 180)
+                .environmentalRays(16, 8, 20, 200, 10)
                 .transmission(0.90D)
                 .build());
         register(ModBlocks.RADIOACTIVE_SCRAP_METAL, RadiationBlockProfile.builder()
                 .radiation(1000.0D, 16, 80)
+                .environmentalRays(4, 2, 80, 800, 4)
                 .transmission(0.90D)
                 .build());
         register(ModBlocks.CONTAMINATED_GRASS_BLOCK, RadiationBlockProfile.builder()
@@ -116,30 +126,37 @@ public final class RadiationBlockProfiles {
                 .build());
         register(ModBlocks.BAKED_VITRIFIED_STONE, RadiationBlockProfile.builder()
                 .radiation(25.0D, 5, 36)
+                .environmentalRays(1, 1, 220, 1200, 1)
                 .transmission(0.90D)
                 .build());
         register(ModBlocks.SCORCHED_VITRIFIED_STONE, RadiationBlockProfile.builder()
                 .radiation(75.0D, 6, 44)
+                .environmentalRays(1, 1, 180, 1000, 1)
                 .transmission(0.90D)
                 .build());
         register(ModBlocks.IRRADIATED_VITRIFIED_STONE, RadiationBlockProfile.builder()
                 .radiation(200.0D, 8, 56)
+                .environmentalRays(2, 1, 140, 900, 2)
                 .transmission(0.90D)
                 .build());
         register(ModBlocks.HOT_VITRIFIED_STONE, RadiationBlockProfile.builder()
                 .radiation(750.0D, 12, 72)
+                .environmentalRays(3, 2, 90, 700, 3)
                 .transmission(0.90D)
                 .build());
         register(ModBlocks.RADIANT_VITRIFIED_STONE, RadiationBlockProfile.builder()
                 .radiation(1_500.0D, 18, 96)
+                .environmentalRays(5, 3, 60, 500, 5)
                 .transmission(0.90D)
                 .build());
         register(ModBlocks.INFERNAL_VITRIFIED_STONE, RadiationBlockProfile.builder()
                 .radiation(5_000.0D, 28, 128)
+                .environmentalRays(8, 4, 40, 400, 7)
                 .transmission(0.90D)
                 .build());
         register(ModBlocks.MOLTEN_CORIUM_BLOCK, RadiationBlockProfile.builder()
                 .radiation(25_000.0D, 48, 180)
+                .environmentalRays(16, 8, 20, 200, 10)
                 .transmission(1.0D)
                 .build());
         register(ModBlocks.CRACKED_CONCRETE_BRICKS, RadiationBlockProfile.builder()
