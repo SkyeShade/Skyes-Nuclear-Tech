@@ -33,8 +33,8 @@ public final class NuclearMushroomCloudSimulation {
     private static final int TORUS_FADE_START_TICKS = 200;
     private static final int PARTICLE_HOT_COOL_TICKS = 200;
     private static final int STEM_HOT_COOL_TICKS = PARTICLE_HOT_COOL_TICKS / 2;
-    private static final int STEM_LIFETIME_MIN_TICKS = 250;
-    private static final int STEM_LIFETIME_RANDOM_TICKS = 300;
+    private static final int STEM_LIFETIME_MIN_TICKS = 450;
+    private static final int STEM_LIFETIME_RANDOM_TICKS = 100;
     private static final int STEM_BASE_SIZE_BOOST_FADE_TICKS = 60;
     private static final float STEM_BASE_SIZE_BOOST = 2.0F;
     private static final double STEM_BASE_DEPTH_BELOW_EXPLOSION = 50.0D;
