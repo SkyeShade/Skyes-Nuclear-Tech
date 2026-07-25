@@ -546,15 +546,15 @@ public final class RadiationExposureSystem {
             entity.addEffect(new MobEffectInstance(MobEffects.CONFUSION, 180, 0, true, true));
         }
         if (entity instanceof Player && sickness >= 250.0D && entity.getRandom().nextDouble() < symptomChance(sickness, 0.20D, 0.45D)) {
-            entity.addEffect(new MobEffectInstance(MobEffects.HUNGER, 120, sickness >= 800.0D ? 1 : 0, true, true));
+            entity.addEffect(new MobEffectInstance(MobEffects.HUNGER, 120, sickness >= 500.0D ? 1 : 0, true, true));
         }
         if (sickness >= 250.0D && entity.getRandom().nextDouble() < symptomChance(sickness, 0.15D, 0.40D)) {
-            entity.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 120, sickness >= 800.0D ? 1 : 0, true, true));
+            entity.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 300, sickness >= 700.0D ? 1 : 0, true, true));
         }
         if (sickness >= 500.0D && entity.getRandom().nextDouble() < symptomChance(sickness, 0.15D, 0.35D)) {
-            entity.addEffect(new MobEffectInstance(MobEffects.POISON, 60, sickness >= 800.0D ? 1 : 0, true, true));
+            entity.addEffect(new MobEffectInstance(MobEffects.POISON, 60, sickness >= 850.0D ? 1 : 0, true, true));
         }
-        if (sickness >= 700.0D && entity.getRandom().nextDouble() < symptomChance(sickness, 0.10D, 0.30D)) {
+        if (sickness >= 800.0D && entity.getRandom().nextDouble() < symptomChance(sickness, 0.10D, 0.30D)) {
             entity.addEffect(new MobEffectInstance(MobEffects.WITHER, 60, sickness >= 900.0D ? 1 : 0, true, true));
         }
 
