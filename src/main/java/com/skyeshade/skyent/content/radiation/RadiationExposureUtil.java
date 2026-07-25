@@ -641,7 +641,7 @@ public final class RadiationExposureUtil {
                 result.totalMillis()
         );
     }
-
+    //TODO: eventually remove this before publish bc its only *really* needed for reworking this system bc its a bitch to get good so ive left it here
     private static void logTraceExposureSampling(ServerLevel level, String targetName, String path, boolean immune, ExposureScanResult result) {
         String label = "Radiation exposure trace";
         String sourceSelectionMode = result.spatialIndexEnabled() ? "SPATIAL_INDEX_CLUSTERED" : "CHUNK_BUCKET_FALLBACK";
