@@ -591,10 +591,11 @@ public final class RadiationExposureUtil {
 
     private static void debugExposureSampling(ServerLevel level, LivingEntity target, ExposureScanResult result) {
         boolean player = target instanceof ServerPlayer;
-        if (player && !SkyentRadiationConfig.debugPlayerExposureSampling()) {
-            return;
-        }
-        if (!player && !SkyentRadiationConfig.debugEntityExposureSampling()) {
+        boolean compactDebug = player
+                ? SkyentRadiationConfig.debugPlayerExposureSampling()
+                : SkyentRadiationConfig.debugEntityExposureSampling();
+        boolean traceDebug = SkyentRadiationConfig.traceExposureSampling();
+        if (!compactDebug && !traceDebug) {
             return;
         }
 
@@ -607,20 +608,65 @@ public final class RadiationExposureUtil {
                 ? serverPlayer.getGameProfile().getName()
                 : target == null ? "geiger_or_unknown" : target.getType().toShortString();
         String label = player ? "Radiation player exposure debug" : "Radiation entity exposure debug";
-        String sourceSelectionMode = result.spatialIndexEnabled() ? "SPATIAL_INDEX_CLUSTERED" : "CHUNK_BUCKET_FALLBACK";
+        String path = player
+                ? "RadiationExposureSystem.tickPlayer -> RadiationExposureUtil.scanEnvironmentalExposure"
+                : "RadiationExposureSystem.tickLivingEntity -> RadiationExposureUtil.scanEnvironmentalExposure";
 
+        if (compactDebug) {
+            logCompactExposureSampling(level, targetName, label, immune, result);
+        }
+        if (traceDebug) {
+            logTraceExposureSampling(level, targetName, path, immune, result);
+        }
+    }
+
+    private static void logCompactExposureSampling(ServerLevel level, String targetName, String label, boolean immune, ExposureScanResult result) {
         SkyesNuclearTech.LOGGER.info(
-                "{}: target={} dimension={} immune={} sourceSelectionMode={} spatialIndexEnabled={} cellSize={} cellsVisited={} cellsSkippedByAabb={} cellsWithSources={} aggregateCellsEnabled={} aggregateCellsBlockedSparse={} aggregateCellsBlockedShielding={} aggregateCellsBlockedDominantSource={} aggregateCellsBlockedHotSource={} individualSourcesFromUnaggregatedCells={} forcedIndividualSources={} individualSourceRefsVisited={} aggregateSourceRefsVisited={} aggregateSourcesWithinRadius={} individualSourcesWithinRadius={} clusteredBlockSourcesRepresented={} nearbySources={} contributingSources={} chunkBucketsVisited={} chunkBucketsWithSources={} sourceRefsVisited={} sourcesWithinRadius={} hotCandidatePool={} chosenHottest={} chosenClosest={} chosenRandom={} duplicatesRemoved={} finalSelected={} raycasts={} strongestSourceStrength={} strongestSourceDistance={} strongestSourceSelected={} chosenHottestStrengthRange=[{},{}] chosenHottestNearestDistance={} chosenHottestFarthestDistance={} collectionMs={} selectionMs={} raycastMs={} totalMs={} exposure={} nearestDistance={} strongestContribution={} playerPath={} entityPath={} scanRadius={}",
+                "{}: target={} dim={} immune={} exposure={} mSv/s nearest={} strongest={} contributors={} selected={} raycasts={} sources={} scanRadius={} timings[collect={}ms select={}ms ray={}ms total={}ms]",
                 label,
                 targetName,
                 level.dimension().location(),
                 immune,
+                result.exposureMillisievertsPerSecond(),
+                result.nearestSourceDistance(),
+                result.strongestSourceContribution(),
+                result.contributingSources(),
+                result.sampledSources(),
+                result.exposureRaycasts(),
+                result.sourcesWithinRadius(),
+                result.scanRadius(),
+                result.collectionMillis(),
+                result.selectionMillis(),
+                result.raycastMillis(),
+                result.totalMillis()
+        );
+    }
+
+    private static void logTraceExposureSampling(ServerLevel level, String targetName, String path, boolean immune, ExposureScanResult result) {
+        String label = "Radiation exposure trace";
+        String sourceSelectionMode = result.spatialIndexEnabled() ? "SPATIAL_INDEX_CLUSTERED" : "CHUNK_BUCKET_FALLBACK";
+
+        SkyesNuclearTech.LOGGER.info(
+                "{} spatial: target={} dim={} path={} mode={} spatialIndex={} cellSize={} chunkBucketsVisited={} chunkBucketsWithSources={} sourceRefsVisited={} sourcesWithinRadius={} cellsVisited={} cellsSkippedByAabb={} cellsWithSources={}",
+                label,
+                targetName,
+                level.dimension().location(),
+                path,
                 sourceSelectionMode,
                 result.spatialIndexEnabled(),
                 result.spatialIndexCellSize(),
+                result.chunkBucketsVisited(),
+                result.chunkBucketsWithSources(),
+                result.sourceRefsVisited(),
+                result.sourcesWithinRadius(),
                 result.cellsVisited(),
                 result.cellsSkippedByAabb(),
-                result.cellsWithSources(),
+                result.cellsWithSources()
+        );
+        SkyesNuclearTech.LOGGER.info(
+                "{} aggregation: target={} aggregateCellsEnabled={} blockedSparse={} blockedShielding={} blockedDominant={} blockedHot={} individualFromUnaggregated={} forcedIndividual={} individualRefs={} aggregateRefs={} aggregateWithinRadius={} individualWithinRadius={} clusteredRepresented={}",
+                label,
+                targetName,
                 result.aggregateCellsEnabled(),
                 result.aggregateCellsBlockedSparse(),
                 result.aggregateCellsBlockedShielding(),
@@ -632,13 +678,15 @@ public final class RadiationExposureUtil {
                 result.aggregateSourceRefsVisited(),
                 result.aggregateSourcesWithinRadius(),
                 result.individualSourcesWithinRadius(),
-                result.clusteredBlockSourcesRepresented(),
+                result.clusteredBlockSourcesRepresented()
+        );
+        SkyesNuclearTech.LOGGER.info(
+                "{} selection: target={} registered={} found={} contributing={} hotCandidatePool={} chosenHottest={} chosenClosest={} chosenRandom={} duplicatesRemoved={} finalSelected={} raycasts={} strongestSourceStrength={} strongestSourceDistance={} strongestSourceSelected={} chosenHottestStrengthRange=[{},{}] chosenHottestNearestDistance={} chosenHottestFarthestDistance={}",
+                label,
+                targetName,
+                result.registeredSources(),
                 result.sourcesFound(),
                 result.contributingSources(),
-                result.chunkBucketsVisited(),
-                result.chunkBucketsWithSources(),
-                result.sourceRefsVisited(),
-                result.sourcesWithinRadius(),
                 result.hotCandidatePoolSize(),
                 result.sampledHottestSources(),
                 result.sampledClosestSources(),
@@ -652,17 +700,22 @@ public final class RadiationExposureUtil {
                 result.chosenHottestMinStrength(),
                 result.chosenHottestMaxStrength(),
                 result.chosenHottestNearestDistance(),
-                result.chosenHottestFarthestDistance(),
-                result.collectionMillis(),
-                result.selectionMillis(),
-                result.raycastMillis(),
-                result.totalMillis(),
+                result.chosenHottestFarthestDistance()
+        );
+        SkyesNuclearTech.LOGGER.info(
+                "{} exposure: target={} dim={} immune={} exposure={} mSv/s nearest={} strongestContribution={} scanRadius={} collectionMs={} selectionMs={} raycastMs={} totalMs={}",
+                label,
+                targetName,
+                level.dimension().location(),
+                immune,
                 result.exposureMillisievertsPerSecond(),
                 result.nearestSourceDistance(),
                 result.strongestSourceContribution(),
-                "RadiationExposureSystem.tickPlayer -> RadiationExposureUtil.scanEnvironmentalExposure",
-                "RadiationExposureSystem.tickLivingEntity -> RadiationExposureUtil.scanEnvironmentalExposure",
-                result.scanRadius()
+                result.scanRadius(),
+                result.collectionMillis(),
+                result.selectionMillis(),
+                result.raycastMillis(),
+                result.totalMillis()
         );
     }
 

@@ -24,6 +24,7 @@ public final class SkyentRadiationConfig {
     private static final ModConfigSpec.BooleanValue DEBUG_EXPOSURE_SAMPLING;
     private static final ModConfigSpec.BooleanValue DEBUG_PLAYER_EXPOSURE_SAMPLING;
     private static final ModConfigSpec.BooleanValue DEBUG_ENTITY_EXPOSURE_SAMPLING;
+    private static final ModConfigSpec.BooleanValue TRACE_EXPOSURE_SAMPLING;
 
     private static final ModConfigSpec.BooleanValue SPATIAL_INDEX_ENABLED;
     private static final ModConfigSpec.IntValue SPATIAL_INDEX_CELL_SIZE;
@@ -135,6 +136,9 @@ public final class SkyentRadiationConfig {
         DEBUG_ENTITY_EXPOSURE_SAMPLING = BUILDER
                 .comment("Logs non-player entity radiation exposure source sampling.")
                 .define("entity_exposure_sampling", false);
+        TRACE_EXPOSURE_SAMPLING = BUILDER
+                .comment("Logs detailed radiation exposure sampling internals. Also enabled by -Dskyent.debugRadiationExposureTrace=true.")
+                .define("exposure_sampling_trace", false);
         BUILDER.pop();
 
         SPEC = BUILDER.build();
@@ -189,6 +193,10 @@ public final class SkyentRadiationConfig {
 
     public static boolean debugEntityExposureSampling() {
         return DEBUG_EXPOSURE_SAMPLING.get() || DEBUG_ENTITY_EXPOSURE_SAMPLING.get();
+    }
+
+    public static boolean traceExposureSampling() {
+        return TRACE_EXPOSURE_SAMPLING.get() || Boolean.getBoolean("skyent.debugRadiationExposureTrace");
     }
 
     public static boolean radiationSpatialIndexEnabled() {
@@ -254,7 +262,7 @@ public final class SkyentRadiationConfig {
         }
 
         SkyesNuclearTech.LOGGER.info(
-                "Skyent radiation config loaded: playerInterval={} entityInterval={} scanRadius={} samplingCap={} streamingSelection={} spatialIndex={} cellSize={} clustering={} minAggregateSources={} individualStrength={} aggregateMaxStrength={} hottest={} hottestPool={} closest={} random={} legacyExposureSamplingDebug={} playerExposureSamplingDebug={} entityExposureSamplingDebug={}",
+                "Skyent radiation config loaded: playerInterval={} entityInterval={} scanRadius={} samplingCap={} streamingSelection={} spatialIndex={} cellSize={} clustering={} minAggregateSources={} individualStrength={} aggregateMaxStrength={} hottest={} hottestPool={} closest={} random={} legacyExposureSamplingDebug={} playerExposureSamplingDebug={} entityExposureSamplingDebug={} exposureSamplingTrace={}",
                 exposurePlayerUpdateIntervalTicks(),
                 exposureEntityUpdateIntervalTicks(),
                 exposureRadioactiveBlockScanRadius(),
@@ -272,7 +280,8 @@ public final class SkyentRadiationConfig {
                 exposureMaxRandomSources(),
                 debugExposureSampling(),
                 debugPlayerExposureSampling(),
-                debugEntityExposureSampling()
+                debugEntityExposureSampling(),
+                traceExposureSampling()
         );
     }
 }
