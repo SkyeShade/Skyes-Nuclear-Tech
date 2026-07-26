@@ -11,6 +11,7 @@ import com.skyeshade.skyent.content.menu.LVSteamTurbineMenu;
 import com.skyeshade.skyent.content.menu.MediumTankMenu;
 import com.skyeshade.skyent.content.menu.MVAssemblerMenu;
 import com.skyeshade.skyent.content.menu.MVAssemblerRecipeSelectMenu;
+import com.skyeshade.skyent.content.menu.MVChemicalReactorMenu;
 import com.skyeshade.skyent.content.menu.MVInlinePumpMenu;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.inventory.MenuType;
@@ -54,6 +55,9 @@ public final class ModMenus {
 
     public static final DeferredHolder<MenuType<?>, MenuType<MVAssemblerMenu>> MV_ASSEMBLER =
             MENUS.register("mv_assembler", () -> IMenuTypeExtension.create(MVAssemblerMenu::new));
+
+    public static final DeferredHolder<MenuType<?>, MenuType<MVChemicalReactorMenu>> MV_CHEMICAL_REACTOR =
+            MENUS.register("mv_chemical_reactor", () -> IMenuTypeExtension.create(MVChemicalReactorMenu::new));
 
     public static final DeferredHolder<MenuType<?>, MenuType<MVAssemblerRecipeSelectMenu>> ASSEMBLER_RECIPE_SELECT =
             MENUS.register("assembler_recipe_select", () -> IMenuTypeExtension.create(MVAssemblerRecipeSelectMenu::new));

@@ -1,0 +1,26 @@
+{
+  "type": "skyent:chemical_reactor",
+  "fluid_inputs": [
+    {
+      "fluid": "skyent:diluted_sulfuric_acid",
+      "amount": 1000
+    }
+  ],
+  "item_inputs": [
+    {
+      "ingredient": {
+        "item": "skyent:sulfur"
+      },
+      "count": 1
+    }
+  ],
+  "fluid_outputs": [
+    {
+      "fluid": "skyent:sulfuric_acid",
+      "amount": 1000
+    }
+  ],
+  "item_outputs": [],
+  "process_time": 200,
+  "energy_per_tick": 96
+}

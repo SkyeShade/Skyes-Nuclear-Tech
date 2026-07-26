@@ -7,6 +7,7 @@ import com.skyeshade.skyent.content.item.SteelFluidBarrelItem;
 import com.skyeshade.skyent.content.item.SteelFluidBarrelVariants;
 import com.skyeshade.skyent.content.item.LVCrusherRecipes;
 import com.skyeshade.skyent.content.recipe.BrickBlastFurnaceRecipe;
+import com.skyeshade.skyent.content.recipe.ChemicalReactorRecipe;
 import com.skyeshade.skyent.registry.ModItems;
 import com.skyeshade.skyent.registry.ModRecipes;
 import mezz.jei.api.IModPlugin;
@@ -58,6 +59,7 @@ public final class SkyentJeiPlugin implements IModPlugin {
             WireMillRecipeCategory.UID.toString(),
             HeatingChamberRecipeCategory.UID.toString(),
             MVAssemblerRecipeCategory.UID.toString(),
+            ChemicalReactorRecipeCategory.UID.toString(),
             BrickBlastFurnaceRecipeCategory.UID.toString(),
             CoalForgeRecipeCategory.UID.toString()
     );
@@ -135,6 +137,7 @@ public final class SkyentJeiPlugin implements IModPlugin {
                 new WireMillRecipeCategory(registration.getJeiHelpers().getGuiHelper()),
                 new HeatingChamberRecipeCategory(registration.getJeiHelpers().getGuiHelper()),
                 new MVAssemblerRecipeCategory(registration.getJeiHelpers().getGuiHelper()),
+                new ChemicalReactorRecipeCategory(registration.getJeiHelpers().getGuiHelper()),
                 new BrickBlastFurnaceRecipeCategory(registration.getJeiHelpers().getGuiHelper()),
                 new CoalForgeRecipeCategory(registration.getJeiHelpers().getGuiHelper())
         );
@@ -158,6 +161,13 @@ public final class SkyentJeiPlugin implements IModPlugin {
                     .toList();
             registration.addRecipes(MVAssemblerRecipeCategory.RECIPE_TYPE, assemblerRecipes);
 
+            List<ChemicalReactorRecipe> chemicalReactorRecipes = level.getRecipeManager()
+                    .getAllRecipesFor(ModRecipes.CHEMICAL_REACTOR_TYPE.get())
+                    .stream()
+                    .map(RecipeHolder::value)
+                    .toList();
+            registration.addRecipes(ChemicalReactorRecipeCategory.RECIPE_TYPE, chemicalReactorRecipes);
+
             List<BrickBlastFurnaceRecipe> recipes = level.getRecipeManager()
                     .getAllRecipesFor(ModRecipes.BRICK_BLAST_FURNACE_TYPE.get())
                     .stream()
@@ -178,6 +188,7 @@ public final class SkyentJeiPlugin implements IModPlugin {
         registration.addRecipeCatalyst(ModItems.WIRE_MILL.get(), WireMillRecipeCategory.RECIPE_TYPE);
         registration.addRecipeCatalyst(ModItems.HEATING_CHAMBER.get(), HeatingChamberRecipeCategory.RECIPE_TYPE);
         registration.addRecipeCatalyst(ModItems.MV_ASSEMBLER.get(), MVAssemblerRecipeCategory.RECIPE_TYPE);
+        registration.addRecipeCatalyst(ModItems.MV_CHEMICAL_REACTOR.get(), ChemicalReactorRecipeCategory.RECIPE_TYPE);
         registration.addRecipeCatalyst(ModItems.BRICK_BLAST_FURNACE.get(), BrickBlastFurnaceRecipeCategory.RECIPE_TYPE);
         registration.addRecipeCatalyst(ModItems.COAL_FORGE.get(), CoalForgeRecipeCategory.RECIPE_TYPE);
     }

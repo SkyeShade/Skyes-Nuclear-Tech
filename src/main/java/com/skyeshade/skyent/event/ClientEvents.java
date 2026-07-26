@@ -46,6 +46,7 @@ import com.skyeshade.skyent.client.screen.LVSteamTurbineScreen;
 import com.skyeshade.skyent.client.screen.MediumTankScreen;
 import com.skyeshade.skyent.client.screen.MVAssemblerRecipeSelectScreen;
 import com.skyeshade.skyent.client.screen.MVAssemblerScreen;
+import com.skyeshade.skyent.client.screen.MVChemicalReactorScreen;
 import com.skyeshade.skyent.client.screen.MVInlinePumpScreen;
 import com.skyeshade.skyent.event.systems.BootstrapSystem;
 import com.skyeshade.skyent.registry.ModBlockEntities;
@@ -112,6 +113,7 @@ public final class ClientEvents {
         event.register(ModMenus.MV_INLINE_PUMP.get(), MVInlinePumpScreen::new);
         event.register(ModMenus.CONVEYOR_EXPORTER.get(), ConveyorExporterScreen::new);
         event.register(ModMenus.MV_ASSEMBLER.get(), MVAssemblerScreen::new);
+        event.register(ModMenus.MV_CHEMICAL_REACTOR.get(), MVChemicalReactorScreen::new);
         event.register(ModMenus.ASSEMBLER_RECIPE_SELECT.get(), MVAssemblerRecipeSelectScreen::new);
     }
 

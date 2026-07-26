@@ -3,6 +3,7 @@ package com.skyeshade.skyent.event.systems;
 import com.skyeshade.skyent.content.block.LVMVTransformerBlock;
 import com.skyeshade.skyent.content.block.MVInlinePumpBlock;
 import com.skyeshade.skyent.content.block.MVAssemblerBlock;
+import com.skyeshade.skyent.content.block.MVChemicalReactorBlock;
 import com.skyeshade.skyent.content.block.HeatingChamberBlock;
 import com.skyeshade.skyent.content.block.IndustrialPressBlock;
 import com.skyeshade.skyent.content.block.RollingMillBlock;
@@ -17,6 +18,7 @@ import com.skyeshade.skyent.content.blockentity.LVRJConverterBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVConnectorBlockEntity;
 import com.skyeshade.skyent.content.blockentity.LVMVTransformerBlockEntity;
 import com.skyeshade.skyent.content.blockentity.MVAssemblerBlockEntity;
+import com.skyeshade.skyent.content.blockentity.MVChemicalReactorBlockEntity;
 import com.skyeshade.skyent.content.blockentity.MVInlinePumpBlockEntity;
 import com.skyeshade.skyent.content.blockentity.RollingMillBlockEntity;
 import com.skyeshade.skyent.content.blockentity.WireMillBlockEntity;
@@ -262,6 +264,9 @@ public final class LVElectricalNetworkSystem {
             MVAssemblerBlockEntity assembler = attachedConnector != null && attachedConnector.getConnectorTier() == ElectricalTier.MV
                     ? resolveMVAssembler(level, endpointState, endpointPos)
                     : null;
+            MVChemicalReactorBlockEntity chemicalReactor = attachedConnector != null && attachedConnector.getConnectorTier() == ElectricalTier.MV
+                    ? resolveMVChemicalReactor(level, endpointState, endpointPos)
+                    : null;
             MVInlinePumpBlockEntity inlinePump = attachedConnector != null
                     && attachedConnector.getConnectorTier() == ElectricalTier.MV
                     && blockEntity instanceof MVInlinePumpBlockEntity pump
@@ -403,6 +408,18 @@ public final class LVElectricalNetworkSystem {
                         return assembler.receiveRJ(attachedConnector.getConnectorTier(), amount, simulate);
                     }
                 }));
+            } else if (chemicalReactor != null) {
+                consumers.add(new Consumer(connectorPos, new NetworkConsumer() {
+                    @Override
+                    public int availableRJCapacity() {
+                        return chemicalReactor.getAvailableRJCapacity();
+                    }
+
+                    @Override
+                    public int receiveRJ(int amount, boolean simulate) {
+                        return chemicalReactor.receiveRJ(attachedConnector.getConnectorTier(), amount, simulate);
+                    }
+                }));
             } else if (blockEntity instanceof LVSteamTurbineBlockEntity turbine) {
                 producers.add(new Producer(connectorPos, new NetworkProducer() {
                     @Override
@@ -529,6 +546,11 @@ public final class LVElectricalNetworkSystem {
     @Nullable
     private static MVAssemblerBlockEntity resolveMVAssembler(ServerLevel level, BlockState state, BlockPos pos) {
         return MVAssemblerBlock.getMasterBlockEntity(level, state, pos).orElse(null);
+    }
+
+    @Nullable
+    private static MVChemicalReactorBlockEntity resolveMVChemicalReactor(ServerLevel level, BlockState state, BlockPos pos) {
+        return MVChemicalReactorBlock.getMasterBlockEntity(level, state, pos).orElse(null);
     }
 
     @Nullable

@@ -441,6 +441,13 @@ public final class ModItems {
     public static final DeferredItem<Item> RAW_TUNGSTEN = simpleItem("raw_tungsten");
     public static final DeferredItem<Item> RAW_ALUMINUM = simpleItem("raw_aluminum");
     public static final DeferredItem<Item> SULFUR = simpleItem("sulfur");
+    public static final DeferredItem<Item> FLUORITE_CRYSTAL = simpleItem("fluorite_crystal");
+    public static final DeferredItem<Item> FLUORITE_POWDER = simpleItem("fluorite_powder");
+    public static final DeferredItem<RadioactiveToxicItem> YELLOWCAKE = ITEMS.register(
+            "yellowcake",
+            () -> new RadioactiveToxicItem(new Item.Properties())
+    );
+    public static final DeferredItem<Item> LITHIUM_SALTS = simpleItem("lithium_salts");
     public static final DeferredItem<ToxicItem> RAW_LEAD = ITEMS.register(
             "raw_lead",
             () -> new ToxicItem(new Item.Properties())

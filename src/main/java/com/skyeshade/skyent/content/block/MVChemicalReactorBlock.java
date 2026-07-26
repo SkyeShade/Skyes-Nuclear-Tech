@@ -13,6 +13,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
@@ -71,7 +72,7 @@ public class MVChemicalReactorBlock extends BaseEntityBlock {
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> blockEntityType) {
         return level.isClientSide
                 ? createTickerHelper(blockEntityType, ModBlockEntities.MV_CHEMICAL_REACTOR.get(), MVChemicalReactorBlockEntity::clientTick)
-                : null;
+                : createTickerHelper(blockEntityType, ModBlockEntities.MV_CHEMICAL_REACTOR.get(), MVChemicalReactorBlockEntity::serverTick);
     }
 
     @Nullable
@@ -145,7 +146,12 @@ public class MVChemicalReactorBlock extends BaseEntityBlock {
             return InteractionResult.SUCCESS;
         }
 
-        return level.getBlockEntity(pos) instanceof MVChemicalReactorBlockEntity ? InteractionResult.CONSUME : InteractionResult.PASS;
+        if (level.getBlockEntity(pos) instanceof MVChemicalReactorBlockEntity reactor && player instanceof ServerPlayer serverPlayer) {
+            serverPlayer.openMenu(reactor, pos);
+            return InteractionResult.CONSUME;
+        }
+
+        return InteractionResult.PASS;
     }
 
     @Override
@@ -213,6 +219,9 @@ public class MVChemicalReactorBlock extends BaseEntityBlock {
             BlockState state = level.getBlockState(masterPos);
             Direction facing = state.hasProperty(FACING) ? state.getValue(FACING) : Direction.NORTH;
             spawnDestroyParticles(level, masterPos, facing);
+            if (level.getBlockEntity(masterPos) instanceof MVChemicalReactorBlockEntity reactor) {
+                reactor.dropContents(level, masterPos);
+            }
             removeParts(level, masterPos, facing);
             if (level.getBlockState(masterPos).is(ModBlocks.MV_CHEMICAL_REACTOR.get())) {
                 level.setBlock(masterPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);

@@ -13,6 +13,7 @@ public final class RadiationItemValues {
     public static final double RAW_URANIUM_RADIATION_STRENGTH = 1.0D;
     public static final double URANIUM_INGOT_RADIATION_STRENGTH = 5.0D;
     public static final double URANIUM_POWDER_RADIATION_STRENGTH = 10.0D;
+    public static final double YELLOWCAKE_RADIATION_STRENGTH = 5.0D;
 
     private RadiationItemValues() {
     }
@@ -32,6 +33,9 @@ public final class RadiationItemValues {
         }
         if (stack.is(ModItems.URANIUM_POWDER.get())) {
             return URANIUM_POWDER_RADIATION_STRENGTH;
+        }
+        if (stack.is(ModItems.YELLOWCAKE.get())) {
+            return YELLOWCAKE_RADIATION_STRENGTH;
         }
         if (stack.is(ModItems.URANIUM_BLOCK.get())) {
             return RadiationBlockProfiles.getRadiationStrength(ModBlocks.URANIUM_BLOCK.get());

@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.content.block;
 
 import com.mojang.serialization.MapCodec;
+import com.skyeshade.skyent.content.conveyor.ConveyorVisualFeeder;
 import com.skyeshade.skyent.registry.ModBlocks;
 import com.skyeshade.skyent.registry.ModItems;
 import net.minecraft.core.BlockPos;
@@ -11,6 +12,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
@@ -24,7 +26,7 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-public class MVChemicalReactorPartBlock extends Block {
+public class MVChemicalReactorPartBlock extends Block implements ConveyorVisualFeeder {
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     public static final IntegerProperty PART_X = IntegerProperty.create("part_x", 0, MVChemicalReactorBlock.SIZE_X - 1);
     public static final IntegerProperty PART_Y = IntegerProperty.create("part_y", 0, MVChemicalReactorBlock.SIZE_Y - 1);
@@ -75,9 +77,15 @@ public class MVChemicalReactorPartBlock extends Block {
             return InteractionResult.SUCCESS;
         }
 
-        return MVChemicalReactorBlock.getMasterBlockEntity(level, state, pos).isPresent()
-                ? InteractionResult.CONSUME
-                : InteractionResult.PASS;
+        BlockPos masterPos = MVChemicalReactorBlock.getMasterPos(state, pos);
+        return MVChemicalReactorBlock.getMasterBlockEntity(level, state, pos)
+                .map(reactor -> {
+                    if (player instanceof ServerPlayer serverPlayer) {
+                        serverPlayer.openMenu(reactor, masterPos);
+                    }
+                    return InteractionResult.CONSUME;
+                })
+                .orElse(InteractionResult.PASS);
     }
 
     @Override
@@ -123,5 +131,20 @@ public class MVChemicalReactorPartBlock extends Block {
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(FACING, PART_X, PART_Y, PART_Z);
+    }
+
+    @Override
+    public boolean skyent$feedsConveyorToward(BlockState state, Direction direction) {
+        return isOutputItemPortPart(state) && state.getValue(FACING).getCounterClockWise() == direction;
+    }
+
+    private static boolean isOutputItemPortPart(BlockState state) {
+        return state.is(ModBlocks.MV_CHEMICAL_REACTOR_PART.get())
+                && state.hasProperty(PART_X)
+                && state.hasProperty(PART_Y)
+                && state.hasProperty(PART_Z)
+                && state.getValue(PART_X) == 0
+                && state.getValue(PART_Y) == 0
+                && state.getValue(PART_Z) == 0;
     }
 }

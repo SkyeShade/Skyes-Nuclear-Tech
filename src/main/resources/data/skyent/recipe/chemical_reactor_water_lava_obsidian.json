@@ -1,0 +1,32 @@
+{
+  "type": "skyent:chemical_reactor",
+  "fluid_inputs": [
+    {
+      "fluid": "minecraft:water",
+      "amount": 1000
+    },
+    {
+      "fluid": "minecraft:lava",
+      "amount": 1000
+    }
+  ],
+  "item_inputs": [],
+  "fluid_outputs": [
+    {
+      "fluid": "minecraft:water",
+      "amount": 500
+    },
+    {
+      "fluid": "minecraft:lava",
+      "amount": 500
+    }
+  ],
+  "item_outputs": [
+    {
+      "id": "minecraft:obsidian",
+      "count": 1
+    }
+  ],
+  "process_time": 200,
+  "energy_per_tick": 64
+}

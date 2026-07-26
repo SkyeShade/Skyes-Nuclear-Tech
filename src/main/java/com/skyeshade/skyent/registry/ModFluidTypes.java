@@ -91,7 +91,98 @@ public final class ModFluidTypes {
             }
     );
 
+    public static final DeferredHolder<FluidType, FluidType> SULFURIC_ACID = registerTintedFluidType(
+            "sulfuric_acid",
+            "sulfuric_acid",
+            0xFFF7E783,
+            FluidType.Properties.create()
+                    .density(1300)
+                    .viscosity(1300)
+                    .temperature(295)
+                    .supportsBoating(false)
+    );
+
+    public static final DeferredHolder<FluidType, FluidType> DILUTED_SULFURIC_ACID = registerTintedFluidType(
+            "diluted_sulfuric_acid",
+            "diluted_sulfuric_acid",
+            0xFFCFE6A0,
+            FluidType.Properties.create()
+                    .density(1100)
+                    .viscosity(1000)
+                    .temperature(295)
+                    .supportsBoating(false)
+    );
+
+    public static final DeferredHolder<FluidType, FluidType> MINERAL_SLURRY = registerTintedFluidType(
+            "mineral_slurry",
+            "mineral_slurry",
+            0xFF8A7E68,
+            FluidType.Properties.create()
+                    .density(1600)
+                    .viscosity(2500)
+                    .temperature(295)
+                    .supportsBoating(false)
+    );
+
+    public static final DeferredHolder<FluidType, FluidType> BRINE = registerTintedFluidType(
+            "brine",
+            "brine",
+            0xFFB9D5E5,
+            FluidType.Properties.create()
+                    .density(1100)
+                    .viscosity(1000)
+                    .temperature(295)
+    );
+
+    public static final DeferredHolder<FluidType, FluidType> DEMINERALISED_WATER = registerTintedFluidType(
+            "demineralised_water",
+            "demineralised_water",
+            0xFF3F76E4,
+            FluidType.Properties.create()
+                    .density(1000)
+                    .viscosity(1000)
+                    .temperature(295)
+    );
+
     private ModFluidTypes() {
+    }
+
+    private static DeferredHolder<FluidType, FluidType> registerTintedFluidType(
+            String id,
+            String textureName,
+            int tintColor,
+            FluidType.Properties properties
+    ) {
+        return FLUID_TYPES.register(id, () -> new FluidType(properties) {
+            @Override
+            public void initializeClient(Consumer<IClientFluidTypeExtensions> consumer) {
+                consumer.accept(new IClientFluidTypeExtensions() {
+                    private final ResourceLocation still = ResourceLocation.fromNamespaceAndPath(
+                            SkyesNuclearTech.MOD_ID,
+                            "block/fluid/" + textureName + "_still"
+                    );
+                    private final ResourceLocation flow = ResourceLocation.fromNamespaceAndPath(
+                            SkyesNuclearTech.MOD_ID,
+                            "block/fluid/" + textureName + "_flow"
+                    );
+
+                    @Override
+                    public ResourceLocation getStillTexture() {
+                        return still;
+                    }
+
+                    @Override
+                    public ResourceLocation getFlowingTexture() {
+                        return flow;
+                    }
+
+                    @Override
+                    public int getTintColor() {
+                        return tintColor;
+                    }
+                });
+            }
+        });
     }
 
     public static void register(IEventBus modEventBus) {

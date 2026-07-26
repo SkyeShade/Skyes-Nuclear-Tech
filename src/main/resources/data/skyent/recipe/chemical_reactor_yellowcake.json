@@ -1,0 +1,31 @@
+{
+  "type": "skyent:chemical_reactor",
+  "fluid_inputs": [
+    {
+      "fluid": "skyent:sulfuric_acid",
+      "amount": 1000
+    }
+  ],
+  "item_inputs": [
+    {
+      "ingredient": {
+        "item": "skyent:uranium_powder"
+      },
+      "count": 1
+    }
+  ],
+  "fluid_outputs": [
+    {
+      "fluid": "skyent:mineral_slurry",
+      "amount": 500
+    }
+  ],
+  "item_outputs": [
+    {
+      "id": "skyent:yellowcake",
+      "count": 1
+    }
+  ],
+  "process_time": 240,
+  "energy_per_tick": 128
+}

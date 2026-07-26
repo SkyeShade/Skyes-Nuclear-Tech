@@ -26,6 +26,7 @@ public final class ModSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> ELECTRIC_FURNACE_LOOP = register("electric_furnace_loop");
     public static final DeferredHolder<SoundEvent, SoundEvent> TRANSFORMER_LOOP = register("transformer_loop");
     public static final DeferredHolder<SoundEvent, SoundEvent> HEAVY_ELECTRIC_MOTOR_LOOP = register("heavy_electric_motor_loop");
+    public static final DeferredHolder<SoundEvent, SoundEvent> CHEMICAL_REACTOR = register("chemical_reactor");
     public static final DeferredHolder<SoundEvent, SoundEvent> MECHANICAL_LEVER = register("mechanical_lever");
     public static final DeferredHolder<SoundEvent, SoundEvent> HEAVY_MOVING_METAL = register("heavy_moving_metal");
     public static final DeferredHolder<SoundEvent, SoundEvent> INDUSTRIAL_PRESS = register("industrial_press");

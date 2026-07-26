@@ -63,6 +63,12 @@
     ],
     "subtitle": "subtitle.skyent.heavy_electric_motor_loop"
   },
+  "chemical_reactor": {
+    "sounds": [
+      "skyent:chemical_reactor"
+    ],
+    "subtitle": "subtitle.skyent.chemical_reactor"
+  },
   "mechanical_lever": {
     "sounds": [
       "skyent:mechanical_lever"

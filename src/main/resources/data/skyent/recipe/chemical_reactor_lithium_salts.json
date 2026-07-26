@@ -1,0 +1,24 @@
+{
+  "type": "skyent:chemical_reactor",
+  "fluid_inputs": [
+    {
+      "fluid": "skyent:brine",
+      "amount": 4000
+    }
+  ],
+  "item_inputs": [],
+  "fluid_outputs": [
+    {
+      "fluid": "skyent:demineralised_water",
+      "amount": 500
+    }
+  ],
+  "item_outputs": [
+    {
+      "id": "skyent:lithium_salts",
+      "count": 1
+    }
+  ],
+  "process_time": 240,
+  "energy_per_tick": 96
+}

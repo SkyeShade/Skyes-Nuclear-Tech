@@ -6,6 +6,7 @@ import com.skyeshade.skyent.content.block.ConveyorElevatorBlock;
 import com.skyeshade.skyent.content.block.HeatingChamberPartBlock;
 import com.skyeshade.skyent.content.block.MediumTankBlock;
 import com.skyeshade.skyent.content.block.MVAssemblerBlock;
+import com.skyeshade.skyent.content.block.MVChemicalReactorBlock;
 import com.skyeshade.skyent.content.block.SteamForgeHammerBlock;
 import com.skyeshade.skyent.content.block.SteamForgeHammerPartBlock;
 import com.skyeshade.skyent.content.block.WireMillPartBlock;
@@ -99,6 +100,18 @@ public final class CommonEvents {
 
         event.registerBlockEntity(
                 Capabilities.ItemHandler.BLOCK,
+                ModBlockEntities.MV_CHEMICAL_REACTOR.get(),
+                (reactor, side) -> reactor.getAutomationItemHandler(reactor.getBlockPos(), side)
+        );
+
+        event.registerBlockEntity(
+                Capabilities.FluidHandler.BLOCK,
+                ModBlockEntities.MV_CHEMICAL_REACTOR.get(),
+                (reactor, side) -> reactor.getAutomationFluidHandler(reactor.getBlockPos(), side)
+        );
+
+        event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
                 ModBlockEntities.BRICK_BLAST_FURNACE.get(),
                 (furnace, side) -> furnace.getAutomationItemHandler(side)
         );
@@ -181,6 +194,22 @@ public final class CommonEvents {
                         .map(assembler -> assembler.getAutomationItemHandler(pos, side))
                         .orElse(null),
                 ModBlocks.MV_ASSEMBLER_PART.get()
+        );
+
+        event.registerBlock(
+                Capabilities.ItemHandler.BLOCK,
+                (level, pos, state, blockEntity, side) -> MVChemicalReactorBlock.getMasterBlockEntity(level, state, pos)
+                        .map(reactor -> reactor.getAutomationItemHandler(pos, side))
+                        .orElse(null),
+                ModBlocks.MV_CHEMICAL_REACTOR_PART.get()
+        );
+
+        event.registerBlock(
+                Capabilities.FluidHandler.BLOCK,
+                (level, pos, state, blockEntity, side) -> MVChemicalReactorBlock.getMasterBlockEntity(level, state, pos)
+                        .map(reactor -> reactor.getAutomationFluidHandler(pos, side))
+                        .orElse(null),
+                ModBlocks.MV_CHEMICAL_REACTOR_PART.get()
         );
 
         event.registerBlock(
