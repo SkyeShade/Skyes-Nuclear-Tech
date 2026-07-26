@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "skyent:block/mv_chemical_reactor_part"
+    }
+  }
+}

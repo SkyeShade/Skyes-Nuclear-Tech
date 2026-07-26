@@ -37,6 +37,8 @@
     "skyent:wire_mill_part",
     "skyent:mv_assembler",
     "skyent:mv_assembler_part",
+    "skyent:mv_chemical_reactor",
+    "skyent:mv_chemical_reactor_part",
     "skyent:medium_tank",
     "skyent:medium_tank_part",
     "skyent:mv_inline_pump",
