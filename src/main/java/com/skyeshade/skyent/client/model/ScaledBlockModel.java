@@ -65,6 +65,7 @@ public class ScaledBlockModel implements IUnbakedGeometry<ScaledBlockModel> {
     private final boolean disableDiffuseShading;
     private final boolean forceUniformLight;
     private final boolean ignoreNeighborShading;
+    private final boolean directionalFaceShading;
     private final boolean ignoreCullface;
     private final boolean forceGeneralQuads;
     private final boolean debugForceWhiteFullbright;
@@ -74,7 +75,7 @@ public class ScaledBlockModel implements IUnbakedGeometry<ScaledBlockModel> {
     private final float renderBrightnessMultiplier;
     private final float renderBrightnessFloor;
 
-    public ScaledBlockModel(BlockModel baseModel, float scale, float originX, float originY, float originZ, float translateX, float translateY, float translateZ, int sizeX, int sizeY, int sizeZ, String facingProperty, SharedLightingMode sharedLightingMode, @Nullable Boolean ambientOcclusion, boolean disableDiffuseShading, boolean forceUniformLight, boolean ignoreNeighborShading, boolean ignoreCullface, boolean forceGeneralQuads, boolean debugForceWhiteFullbright, boolean bakeStaticFullbright, boolean runtimeSharedLight, int sharedLightReduction, float renderBrightnessMultiplier, float renderBrightnessFloor) {
+    public ScaledBlockModel(BlockModel baseModel, float scale, float originX, float originY, float originZ, float translateX, float translateY, float translateZ, int sizeX, int sizeY, int sizeZ, String facingProperty, SharedLightingMode sharedLightingMode, @Nullable Boolean ambientOcclusion, boolean disableDiffuseShading, boolean forceUniformLight, boolean ignoreNeighborShading, boolean directionalFaceShading, boolean ignoreCullface, boolean forceGeneralQuads, boolean debugForceWhiteFullbright, boolean bakeStaticFullbright, boolean runtimeSharedLight, int sharedLightReduction, float renderBrightnessMultiplier, float renderBrightnessFloor) {
         this.baseModel = baseModel;
         this.scale = scale;
         this.originX = originX / 16.0F;
@@ -92,6 +93,7 @@ public class ScaledBlockModel implements IUnbakedGeometry<ScaledBlockModel> {
         this.disableDiffuseShading = disableDiffuseShading;
         this.forceUniformLight = forceUniformLight;
         this.ignoreNeighborShading = ignoreNeighborShading;
+        this.directionalFaceShading = directionalFaceShading;
         this.ignoreCullface = ignoreCullface;
         this.forceGeneralQuads = forceGeneralQuads;
         this.debugForceWhiteFullbright = debugForceWhiteFullbright;
@@ -123,7 +125,7 @@ public class ScaledBlockModel implements IUnbakedGeometry<ScaledBlockModel> {
             );
         }
         BakedModel bakedBase = UnbakedGeometryHelper.bake(baseModel, baker, baseModel, spriteGetter, modelState, context.isGui3d());
-        return new Baked(bakedBase, new ScaleTransformer(scale, originX, originY, originZ, translateX, translateY, translateZ), sizeX, sizeY, sizeZ, facingProperty, sharedLightingMode, ambientOcclusion, disableDiffuseShading, forceUniformLight, ignoreNeighborShading, ignoreCullface, forceGeneralQuads, debugForceWhiteFullbright, bakeStaticFullbright, runtimeSharedLight, sharedLightReduction, renderBrightnessMultiplier, renderBrightnessFloor);
+        return new Baked(bakedBase, new ScaleTransformer(scale, originX, originY, originZ, translateX, translateY, translateZ), sizeX, sizeY, sizeZ, facingProperty, sharedLightingMode, ambientOcclusion, disableDiffuseShading, forceUniformLight, ignoreNeighborShading, directionalFaceShading, ignoreCullface, forceGeneralQuads, debugForceWhiteFullbright, bakeStaticFullbright, runtimeSharedLight, sharedLightReduction, renderBrightnessMultiplier, renderBrightnessFloor);
     }
 
     @Override
@@ -143,6 +145,7 @@ public class ScaledBlockModel implements IUnbakedGeometry<ScaledBlockModel> {
         private final boolean disableDiffuseShading;
         private final boolean forceUniformLight;
         private final boolean ignoreNeighborShading;
+        private final boolean directionalFaceShading;
         private final boolean ignoreCullface;
         private final boolean forceGeneralQuads;
         private final boolean debugForceWhiteFullbright;
@@ -152,7 +155,7 @@ public class ScaledBlockModel implements IUnbakedGeometry<ScaledBlockModel> {
         private final float renderBrightnessMultiplier;
         private final float renderBrightnessFloor;
 
-        private Baked(BakedModel originalModel, IQuadTransformer transformer, int sizeX, int sizeY, int sizeZ, String facingProperty, SharedLightingMode sharedLightingMode, @Nullable Boolean ambientOcclusion, boolean disableDiffuseShading, boolean forceUniformLight, boolean ignoreNeighborShading, boolean ignoreCullface, boolean forceGeneralQuads, boolean debugForceWhiteFullbright, boolean bakeStaticFullbright, boolean runtimeSharedLight, int sharedLightReduction, float renderBrightnessMultiplier, float renderBrightnessFloor) {
+        private Baked(BakedModel originalModel, IQuadTransformer transformer, int sizeX, int sizeY, int sizeZ, String facingProperty, SharedLightingMode sharedLightingMode, @Nullable Boolean ambientOcclusion, boolean disableDiffuseShading, boolean forceUniformLight, boolean ignoreNeighborShading, boolean directionalFaceShading, boolean ignoreCullface, boolean forceGeneralQuads, boolean debugForceWhiteFullbright, boolean bakeStaticFullbright, boolean runtimeSharedLight, int sharedLightReduction, float renderBrightnessMultiplier, float renderBrightnessFloor) {
             super(originalModel);
             this.transformer = transformer;
             this.sizeX = sizeX;
@@ -164,6 +167,7 @@ public class ScaledBlockModel implements IUnbakedGeometry<ScaledBlockModel> {
             this.disableDiffuseShading = disableDiffuseShading;
             this.forceUniformLight = forceUniformLight;
             this.ignoreNeighborShading = ignoreNeighborShading;
+            this.directionalFaceShading = directionalFaceShading;
             this.ignoreCullface = ignoreCullface;
             this.forceGeneralQuads = forceGeneralQuads;
             this.debugForceWhiteFullbright = debugForceWhiteFullbright;
@@ -237,6 +241,11 @@ public class ScaledBlockModel implements IUnbakedGeometry<ScaledBlockModel> {
         }
 
         @Override
+        public boolean skyent$usesDirectionalFaceShading() {
+            return directionalFaceShading;
+        }
+
+        @Override
         public boolean skyent$debugForceWhiteFullbright() {
             return debugForceWhiteFullbright;
         }
@@ -247,6 +256,7 @@ public class ScaledBlockModel implements IUnbakedGeometry<ScaledBlockModel> {
                     + "shared_lighting=" + sharedLightingMode
                     + ", ambient_occlusion=" + ambientOcclusion
                     + ", ignore_neighbor_shading=" + ignoreNeighborShading
+                    + ", directional_face_shading=" + directionalFaceShading
                     + ", ignore_cullface=" + ignoreCullface
                     + ", force_general_quads=" + forceGeneralQuads
                     + ", debug_force_white_fullbright=" + debugForceWhiteFullbright
@@ -351,7 +361,7 @@ public class ScaledBlockModel implements IUnbakedGeometry<ScaledBlockModel> {
         private List<BakedQuad> transformQuads(List<BakedQuad> quads, @Nullable RuntimePackedLight runtimePackedLight) {
             List<BakedQuad> transformed = transformer.process(quads);
             boolean shouldForceUniformLight = forceUniformLight && !runtimeSharedLight;
-            if (!disableDiffuseShading && !shouldForceUniformLight && !debugForceWhiteFullbright && !bakeStaticFullbright && runtimePackedLight == null && ambientOcclusion == null) {
+            if (!disableDiffuseShading && !directionalFaceShading && !shouldForceUniformLight && !debugForceWhiteFullbright && !bakeStaticFullbright && runtimePackedLight == null && ambientOcclusion == null) {
                 return transformed;
             }
 
@@ -367,6 +377,11 @@ public class ScaledBlockModel implements IUnbakedGeometry<ScaledBlockModel> {
                     bakeFullbright(vertices);
                 } else if (shouldForceUniformLight) {
                     sanitizeVertexLighting(vertices);
+                }
+                if (directionalFaceShading && !debugForceWhiteFullbright) {
+                    // Apply opt-in face shading to copied quad colors so optimized renderers
+                    // such as Sodium, which consume BakedQuads directly, see the same result.
+                    applyDirectionalFaceColor(vertices, quad.getDirection());
                 }
                 wrapped.add(new BakedQuad(vertices, quad.getTintIndex(), quad.getDirection(), quad.getSprite(), !disableDiffuseShading && quad.isShade(), ambientOcclusion != null ? ambientOcclusion : quad.hasAmbientOcclusion()));
             }
@@ -414,6 +429,26 @@ public class ScaledBlockModel implements IUnbakedGeometry<ScaledBlockModel> {
                 int offset = vertex * IQuadTransformer.STRIDE + IQuadTransformer.COLOR;
                 vertices[offset] = scaleColor(vertices[offset], scale);
             }
+        }
+
+        private static void applyDirectionalFaceColor(int[] vertices, Direction direction) {
+            float shade = directionalFaceShade(direction);
+            if (shade >= 0.999F) {
+                return;
+            }
+            for (int vertex = 0; vertex < 4; vertex++) {
+                int offset = vertex * IQuadTransformer.STRIDE + IQuadTransformer.COLOR;
+                vertices[offset] = scaleColor(vertices[offset], shade);
+            }
+        }
+
+        private static float directionalFaceShade(Direction direction) {
+            return switch (direction) {
+                case UP -> 1.0F;
+                case DOWN -> 0.55F;
+                case NORTH, SOUTH -> 0.82F;
+                case EAST, WEST -> 0.70F;
+            };
         }
 
         private static float renderBrightnessScale(float multiplier, float floor) {
@@ -613,6 +648,7 @@ public class ScaledBlockModel implements IUnbakedGeometry<ScaledBlockModel> {
                     GsonHelper.getAsBoolean(jsonObject, "disable_diffuse_shading", false),
                     GsonHelper.getAsBoolean(jsonObject, "force_uniform_light", false),
                     GsonHelper.getAsBoolean(jsonObject, "ignore_neighbor_shading", false),
+                    GsonHelper.getAsBoolean(jsonObject, "directional_face_shading", false),
                     GsonHelper.getAsBoolean(jsonObject, "ignore_cullface", false),
                     GsonHelper.getAsBoolean(jsonObject, "force_general_quads", false),
                     GsonHelper.getAsBoolean(jsonObject, "debug_force_white_fullbright", false),

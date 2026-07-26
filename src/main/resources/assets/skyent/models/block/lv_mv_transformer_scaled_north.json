@@ -12,6 +12,7 @@
   "shared_lighting": "controller",
   "disable_diffuse_shading": true,
   "ignore_neighbor_shading": true,
+  "directional_face_shading": true,
   "ignore_cullface": true,
   "force_general_quads": true,
   "runtime_shared_light": true,

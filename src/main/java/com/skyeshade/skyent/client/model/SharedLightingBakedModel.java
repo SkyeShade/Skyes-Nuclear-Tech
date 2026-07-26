@@ -17,6 +17,10 @@ public interface SharedLightingBakedModel {
         return false;
     }
 
+    default boolean skyent$usesDirectionalFaceShading() {
+        return false;
+    }
+
     default boolean skyent$debugForceWhiteFullbright() {
         return false;
     }

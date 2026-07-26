@@ -131,6 +131,10 @@ public final class ModItems {
             ModBlocks.MV_ASSEMBLER,
             new Item.Properties()
     );
+    public static final DeferredItem<BlockItem> MV_CHEMICAL_REACTOR = ITEMS.registerSimpleBlockItem(
+            ModBlocks.MV_CHEMICAL_REACTOR,
+            new Item.Properties()
+    );
 
     public static final DeferredItem<BlockItem> MEDIUM_TANK = ITEMS.registerSimpleBlockItem(
             ModBlocks.MEDIUM_TANK,

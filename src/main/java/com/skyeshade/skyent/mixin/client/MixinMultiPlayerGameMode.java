@@ -7,6 +7,7 @@ import com.skyeshade.skyent.content.block.IndustrialPressBlock;
 import com.skyeshade.skyent.content.block.LVMVTransformerBlock;
 import com.skyeshade.skyent.content.block.MediumTankBlock;
 import com.skyeshade.skyent.content.block.MVAssemblerBlock;
+import com.skyeshade.skyent.content.block.MVChemicalReactorBlock;
 import com.skyeshade.skyent.content.block.RollingMillBlock;
 import com.skyeshade.skyent.content.block.SteamForgeHammerBlock;
 import com.skyeshade.skyent.content.block.WireMillBlock;
@@ -44,6 +45,7 @@ public abstract class MixinMultiPlayerGameMode {
         visualPos = WireMillBlock.resolveDestroyProgressPos(level, visualPos);
         visualPos = LVMVTransformerBlock.resolveDestroyProgressPos(level, visualPos);
         visualPos = MVAssemblerBlock.resolveDestroyProgressPos(level, visualPos);
+        visualPos = MVChemicalReactorBlock.resolveDestroyProgressPos(level, visualPos);
         visualPos = MediumTankBlock.resolveDestroyProgressPos(level, visualPos);
         original.call(level, breakerId, visualPos, progress);
 

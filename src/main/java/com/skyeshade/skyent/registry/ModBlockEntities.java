@@ -1,34 +1,7 @@
 package com.skyeshade.skyent.registry;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
-import com.skyeshade.skyent.content.blockentity.BasicConveyorBeltBlockEntity;
-import com.skyeshade.skyent.content.blockentity.BasicFluidDuctBlockEntity;
-import com.skyeshade.skyent.content.blockentity.BrickBlastFurnaceBlockEntity;
-import com.skyeshade.skyent.content.blockentity.CoalForgeBlockEntity;
-import com.skyeshade.skyent.content.blockentity.CombustionGeneratorBlockEntity;
-import com.skyeshade.skyent.content.blockentity.ConveyorChuteBlockEntity;
-import com.skyeshade.skyent.content.blockentity.ConveyorElevatorBlockEntity;
-import com.skyeshade.skyent.content.blockentity.ConveyorExporterBlockEntity;
-import com.skyeshade.skyent.content.blockentity.ConveyorSplitterBlockEntity;
-import com.skyeshade.skyent.content.blockentity.CoriumBlockEntity;
-import com.skyeshade.skyent.content.blockentity.ElectricFurnaceBlockEntity;
-import com.skyeshade.skyent.content.blockentity.ForgingAnvilBlockEntity;
-import com.skyeshade.skyent.content.blockentity.GeigerCounterPlacedBlockEntity;
-import com.skyeshade.skyent.content.blockentity.HeatingChamberBlockEntity;
-import com.skyeshade.skyent.content.blockentity.IndustrialPressBlockEntity;
-import com.skyeshade.skyent.content.blockentity.LVCrusherBlockEntity;
-import com.skyeshade.skyent.content.blockentity.LVFEConverterBlockEntity;
-import com.skyeshade.skyent.content.blockentity.LVElectricPumpBlockEntity;
-import com.skyeshade.skyent.content.blockentity.LVMVTransformerBlockEntity;
-import com.skyeshade.skyent.content.blockentity.LVSteamTurbineBlockEntity;
-import com.skyeshade.skyent.content.blockentity.LVRJConverterBlockEntity;
-import com.skyeshade.skyent.content.blockentity.LVConnectorBlockEntity;
-import com.skyeshade.skyent.content.blockentity.MediumTankBlockEntity;
-import com.skyeshade.skyent.content.blockentity.MVAssemblerBlockEntity;
-import com.skyeshade.skyent.content.blockentity.MVInlinePumpBlockEntity;
-import com.skyeshade.skyent.content.blockentity.RollingMillBlockEntity;
-import com.skyeshade.skyent.content.blockentity.SteamForgeHammerBlockEntity;
-import com.skyeshade.skyent.content.blockentity.WireMillBlockEntity;
+import com.skyeshade.skyent.content.blockentity.*;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.bus.api.IEventBus;
@@ -111,6 +84,12 @@ public final class ModBlockEntities {
             BLOCK_ENTITIES.register("mv_assembler", () -> BlockEntityType.Builder.of(
                     MVAssemblerBlockEntity::new,
                     ModBlocks.MV_ASSEMBLER.get()
+            ).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<MVChemicalReactorBlockEntity>> MV_CHEMICAL_REACTOR =
+            BLOCK_ENTITIES.register("mv_chemical_reactor", () -> BlockEntityType.Builder.of(
+                    MVChemicalReactorBlockEntity::new,
+                    ModBlocks.MV_CHEMICAL_REACTOR.get()
             ).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<MediumTankBlockEntity>> MEDIUM_TANK =

@@ -1,54 +1,7 @@
 package com.skyeshade.skyent.registry;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
-import com.skyeshade.skyent.content.block.BasicConveyorBeltBlock;
-import com.skyeshade.skyent.content.block.BasicFluidDuctBlock;
-import com.skyeshade.skyent.content.block.BrickBlastFurnaceBlock;
-import com.skyeshade.skyent.content.block.CoalForgeBlock;
-import com.skyeshade.skyent.content.block.CombustionGeneratorBlock;
-import com.skyeshade.skyent.content.block.ConveyorChuteBlock;
-import com.skyeshade.skyent.content.block.ConveyorElevatorBlock;
-import com.skyeshade.skyent.content.block.ConveyorExporterBlock;
-import com.skyeshade.skyent.content.block.ConveyorSplitterBlock;
-import com.skyeshade.skyent.content.block.ContaminatedGrassBlock;
-import com.skyeshade.skyent.content.block.CoriumBlock;
-import com.skyeshade.skyent.content.block.DeadGrassBlock;
-import com.skyeshade.skyent.content.block.DeadLeavesBlock;
-import com.skyeshade.skyent.content.block.DeadPlantBlock;
-import com.skyeshade.skyent.content.block.ElectricFurnaceBlock;
-import com.skyeshade.skyent.content.block.ForgingAnvilBlock;
-import com.skyeshade.skyent.content.block.GeigerCounterPlacedBlock;
-import com.skyeshade.skyent.content.block.HeatingChamberBlock;
-import com.skyeshade.skyent.content.block.HeatingChamberPartBlock;
-import com.skyeshade.skyent.content.block.IndustrialPressBlock;
-import com.skyeshade.skyent.content.block.IndustrialPressPartBlock;
-import com.skyeshade.skyent.content.block.LVCrusherBlock;
-import com.skyeshade.skyent.content.block.LVConverterBlock;
-import com.skyeshade.skyent.content.block.LVConnectorBlock;
-import com.skyeshade.skyent.content.block.LVElectricPumpBlock;
-import com.skyeshade.skyent.content.block.LVMVTransformerBlock;
-import com.skyeshade.skyent.content.block.LVMVTransformerPartBlock;
-import com.skyeshade.skyent.content.block.LVSteamTurbineBlock;
-import com.skyeshade.skyent.content.block.MediumTankBlock;
-import com.skyeshade.skyent.content.block.MediumTankPartBlock;
-import com.skyeshade.skyent.content.block.MoltenCoriumBlock;
-import com.skyeshade.skyent.content.block.MVAssemblerBlock;
-import com.skyeshade.skyent.content.block.MVAssemblerPartBlock;
-import com.skyeshade.skyent.content.block.MVInlinePumpBlock;
-import com.skyeshade.skyent.content.block.NuclearChargeBlock;
-import com.skyeshade.skyent.content.block.RadioactiveBlock;
-import com.skyeshade.skyent.content.block.RadioactiveScrapMetalBlock;
-import com.skyeshade.skyent.content.block.ReinforcedGlassBlock;
-import com.skyeshade.skyent.content.block.ResinBearingRubberLogBlock;
-import com.skyeshade.skyent.content.block.RollingMillBlock;
-import com.skyeshade.skyent.content.block.RollingMillPartBlock;
-import com.skyeshade.skyent.content.block.RubberLogBlock;
-import com.skyeshade.skyent.content.block.SiltBlock;
-import com.skyeshade.skyent.content.block.SteamForgeHammerBlock;
-import com.skyeshade.skyent.content.block.SteamForgeHammerPartBlock;
-import com.skyeshade.skyent.content.block.UraniumBlock;
-import com.skyeshade.skyent.content.block.WireMillBlock;
-import com.skyeshade.skyent.content.block.WireMillPartBlock;
+import com.skyeshade.skyent.content.block.*;
 import com.skyeshade.skyent.content.radiation.EnvironmentalRadiationMode;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -263,6 +216,23 @@ public final class ModBlocks {
     public static final DeferredBlock<MVAssemblerPartBlock> MV_ASSEMBLER_PART = BLOCKS.registerBlock(
             "mv_assembler_part",
             MVAssemblerPartBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 12.0F)
+                    .requiresCorrectToolForDrops()
+    );
+
+    public static final DeferredBlock<MVChemicalReactorBlock> MV_CHEMICAL_REACTOR = BLOCKS.registerBlock(
+            "mv_chemical_reactor",
+            MVChemicalReactorBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 12.0F)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
+    );
+
+    public static final DeferredBlock<MVChemicalReactorPartBlock> MV_CHEMICAL_REACTOR_PART = BLOCKS.registerBlock(
+            "mv_chemical_reactor_part",
+            MVChemicalReactorPartBlock::new,
             BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
                     .strength(5.0F, 12.0F)
                     .requiresCorrectToolForDrops()
