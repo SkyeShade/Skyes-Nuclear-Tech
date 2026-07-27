@@ -163,6 +163,7 @@ public final class ModCreativeTabs {
                 ModItems.BAKED_VITRIFIED_STONE,
                 ModItems.SCORCHED_VITRIFIED_STONE,
                 ModItems.IRRADIATED_VITRIFIED_STONE,
+                ModItems.HOT_VITRIFIED_STONE,
                 ModItems.RADIANT_VITRIFIED_STONE,
                 ModItems.INFERNAL_VITRIFIED_STONE
         );
