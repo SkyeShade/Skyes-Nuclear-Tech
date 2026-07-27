@@ -16,6 +16,10 @@
   ],
   "fluid_outputs": [
     {
+      "fluid": "skyent:diluted_sulfuric_acid",
+      "amount": 500
+    },
+    {
       "fluid": "skyent:mineral_slurry",
       "amount": 500
     }
