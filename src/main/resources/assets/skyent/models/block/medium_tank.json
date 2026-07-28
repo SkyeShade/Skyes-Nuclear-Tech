@@ -1,8 +1,8 @@
 {
 	"format_version": "1.9.0",
 	"credit": "Made with Blockbench",
-	"texture_size": [128, 128],
 	"render_type": "minecraft:cutout",
+	"texture_size": [128, 128],
 	"textures": {
 		"0": "skyent:block/medium_tank",
 		"particle": "skyent:block/medium_tank"
@@ -562,7 +562,7 @@
 			"faces": {
 				"north": {"uv": [7.125, 6.875, 8.875, 7], "texture": "#0"},
 				"east": {"uv": [8.875, 8.75, 9, 8.875], "texture": "#0"},
-				"south": {"uv": [7.125, 7, 8.875, 7.125], "texture": "#0"},
+				"south": {"uv": [6.75, 2.625, 8.5, 2.75], "texture": "#0"},
 				"west": {"uv": [8.875, 8.875, 9, 9], "texture": "#0"},
 				"up": {"uv": [8.875, 7.25, 7.125, 7.125], "texture": "#0"},
 				"down": {"uv": [9, 0.125, 7.25, 0.25], "texture": "#0"}
@@ -573,7 +573,7 @@
 			"to": [15, 1, 24],
 			"rotation": {"angle": 0, "axis": "y", "origin": [14, -13, 8]},
 			"faces": {
-				"north": {"uv": [6.75, 2.125, 8.5, 2.25], "texture": "#0"},
+				"north": {"uv": [6.75, 2.625, 8.5, 2.75], "texture": "#0"},
 				"east": {"uv": [8.875, 8.25, 9, 8.375], "texture": "#0"},
 				"south": {"uv": [6.75, 2.25, 8.5, 2.375], "texture": "#0"},
 				"west": {"uv": [8.875, 8.375, 9, 8.5], "texture": "#0"},
