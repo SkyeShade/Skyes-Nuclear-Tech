@@ -15,6 +15,7 @@ import com.skyeshade.skyent.client.model.SlicedScaledBlockModel;
 import com.skyeshade.skyent.client.particle.NukeCloudParticle;
 import com.skyeshade.skyent.client.particle.StreakParticle;
 import com.skyeshade.skyent.client.renderer.blockentity.CoalForgeRenderer;
+import com.skyeshade.skyent.client.renderer.blockentity.BlastDoorRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.ForgingAnvilRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.GeigerCounterPlacedRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.HeatingChamberRenderer;
@@ -131,6 +132,7 @@ public final class ClientEvents {
         event.registerBlockEntityRenderer(ModBlockEntities.ROLLING_MILL.get(), RollingMillRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.LV_MV_TRANSFORMER.get(), LVMVTransformerRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.MEDIUM_TANK.get(), MediumTankRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.BLAST_DOOR.get(), BlastDoorRenderer::new);
     }
 
     public static void onRegisterAdditionalModels(ModelEvent.RegisterAdditional event) {
@@ -138,6 +140,7 @@ public final class ClientEvents {
         event.register(HeatingChamberRenderer.CHAMBER_MODEL);
         event.register(IndustrialPressRenderer.PRESS_HEAD_MODEL);
         event.register(RollingMillRenderer.ROLLERS_MODEL);
+        event.register(BlastDoorRenderer.DOOR_PANEL_MODEL);
     }
 
     public static void onRegisterGeometryLoaders(ModelEvent.RegisterGeometryLoaders event) {

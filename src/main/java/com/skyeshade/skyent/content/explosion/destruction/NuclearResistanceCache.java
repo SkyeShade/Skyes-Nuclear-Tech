@@ -1,7 +1,6 @@
 package com.skyeshade.skyent.content.explosion.destruction;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
-import com.skyeshade.skyent.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.BlockTags;
@@ -21,7 +20,6 @@ public final class NuclearResistanceCache {
     public static final float LAVA_RESISTANCE = 0.4F;
     public static final float OTHER_LIQUID_RESISTANCE = 0.2F;
     public static final float FRAGILE_RESISTANCE = 0.05F;
-    public static final float MAX_BREAKABLE_RAY_RESISTANCE = 18.0F;
     public static final float RAY_BLOCKING_RESISTANCE = 2_000_000.0F;
     public static final float UNBREAKABLE_RESISTANCE = 3_600_000.0F;
     public static final TagKey<Block> NUKE_FRAGILE = BlockTags.create(
@@ -114,7 +112,6 @@ public final class NuclearResistanceCache {
     }
 
     private float computeResistance(BlockState state) {
-        // TODO: Add skyent:nuke_resistant and skyent:nuke_absorber block tags.
         if (isUnbreakable(state)) {
             return UNBREAKABLE_RESISTANCE;
         }
@@ -128,19 +125,7 @@ public final class NuclearResistanceCache {
         if (resistance == 0.0F) {
             return FRAGILE_RESISTANCE;
         }
-        if (isConcreteFamily(state)) {
-            return resistance;
-        }
-        return Math.min(resistance, MAX_BREAKABLE_RAY_RESISTANCE);
-    }
-
-    public static boolean isConcreteFamily(BlockState state) {
-        return state.is(ModBlocks.CONCRETE_BRICKS.get())
-                || state.is(ModBlocks.CRACKED_CONCRETE_BRICKS.get())
-                || state.is(ModBlocks.REINFORCED_CONCRETE.get())
-                || state.is(ModBlocks.REINFORCED_GLASS.get())
-                || state.is(ModBlocks.TUNGSTEN_REINFORCED_CONCRETE.get())
-                || state.is(ModBlocks.PLATED_CONCRETE.get());
+        return resistance;
     }
 
     private static boolean isUnbreakable(BlockState state) {

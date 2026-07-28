@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "facing=north,frame_only=false": { "model": "skyent:block/blast_door_frame_scaled_north" },
+    "facing=east,frame_only=false": { "model": "skyent:block/blast_door_frame_scaled_east", "y": 90 },
+    "facing=south,frame_only=false": { "model": "skyent:block/blast_door_frame_scaled_south", "y": 180 },
+    "facing=west,frame_only=false": { "model": "skyent:block/blast_door_frame_scaled_west", "y": 270 },
+    "facing=north,frame_only=true": { "model": "skyent:block/blast_door_frame_scaled_north" },
+    "facing=east,frame_only=true": { "model": "skyent:block/blast_door_frame_scaled_east", "y": 90 },
+    "facing=south,frame_only=true": { "model": "skyent:block/blast_door_frame_scaled_south", "y": 180 },
+    "facing=west,frame_only=true": { "model": "skyent:block/blast_door_frame_scaled_west", "y": 270 }
+  }
+}

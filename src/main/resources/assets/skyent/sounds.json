@@ -81,6 +81,24 @@
     ],
     "subtitle": "subtitle.skyent.heavy_moving_metal"
   },
+  "heavy_moving_metal_start": {
+    "sounds": [
+      "skyent:heavy_moving_metal_start"
+    ],
+    "subtitle": "subtitle.skyent.heavy_moving_metal"
+  },
+  "heavy_moving_metal_loop": {
+    "sounds": [
+      "skyent:heavy_moving_metal_loop"
+    ],
+    "subtitle": "subtitle.skyent.heavy_moving_metal"
+  },
+  "heavy_moving_metal_end": {
+    "sounds": [
+      "skyent:heavy_moving_metal_end"
+    ],
+    "subtitle": "subtitle.skyent.heavy_moving_metal"
+  },
   "industrial_press": {
     "sounds": [
       "skyent:industrial_press"

@@ -82,6 +82,11 @@ public final class ModItems {
             new Item.Properties()
     );
 
+    public static final DeferredItem<BlockItem> REINFORCED_GLOWSTONE = ITEMS.registerSimpleBlockItem(
+            ModBlocks.REINFORCED_GLOWSTONE,
+            new Item.Properties()
+    );
+
     public static final DeferredItem<BlockItem> REINFORCED_GLASS = ITEMS.registerSimpleBlockItem(
             ModBlocks.REINFORCED_GLASS,
             new Item.Properties()
@@ -133,6 +138,11 @@ public final class ModItems {
     );
     public static final DeferredItem<BlockItem> MV_CHEMICAL_REACTOR = ITEMS.registerSimpleBlockItem(
             ModBlocks.MV_CHEMICAL_REACTOR,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> BLAST_DOOR = ITEMS.registerSimpleBlockItem(
+            ModBlocks.BLAST_DOOR,
             new Item.Properties()
     );
 

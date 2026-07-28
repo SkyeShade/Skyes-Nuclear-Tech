@@ -18,6 +18,9 @@ import java.util.function.Supplier;
 public final class ModBlocks {
     private static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(SkyesNuclearTech.MOD_ID);
     private static final float OBSIDIAN_BLAST_RESISTANCE = 1200.0F;
+    // The door is a 3x3 multiblock, so its resistance is scaled above plated concrete
+    // to make the whole structure survive comparably when explosions can hit any part.
+    private static final float BLAST_DOOR_BLAST_RESISTANCE = 345600.0F;
 
     public static final DeferredBlock<CombustionGeneratorBlock> COMBUSTION_GENERATOR = BLOCKS.registerBlock(
             "combustion_generator",
@@ -80,6 +83,14 @@ public final class ModBlocks {
                     .requiresCorrectToolForDrops()
     );
 
+    public static final DeferredBlock<?> REINFORCED_GLOWSTONE = BLOCKS.registerSimpleBlock(
+            "reinforced_glowstone",
+            BlockBehaviour.Properties.ofFullCopy(Blocks.GRAY_CONCRETE)
+                    .strength(12.0F, OBSIDIAN_BLAST_RESISTANCE * 4.0F)
+                    .requiresCorrectToolForDrops()
+                    .lightLevel(state -> 15)
+    );
+
     public static final DeferredBlock<ReinforcedGlassBlock> REINFORCED_GLASS = BLOCKS.registerBlock(
             "reinforced_glass",
             ReinforcedGlassBlock::new,
@@ -115,6 +126,7 @@ public final class ModBlocks {
                     .strength(5.0F, 12.0F)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()
+                    .dynamicShape()
     );
 
     public static final DeferredBlock<SteamForgeHammerBlock> STEAM_FORGE_HAMMER = BLOCKS.registerBlock(
@@ -159,6 +171,7 @@ public final class ModBlocks {
                     .strength(5.0F, 12.0F)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()
+                    .dynamicShape()
     );
 
     public static final DeferredBlock<RollingMillPartBlock> ROLLING_MILL_PART = BLOCKS.registerBlock(
@@ -167,6 +180,7 @@ public final class ModBlocks {
             BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
                     .strength(5.0F, 12.0F)
                     .requiresCorrectToolForDrops()
+                    .dynamicShape()
     );
 
     public static final DeferredBlock<IndustrialPressBlock> INDUSTRIAL_PRESS = BLOCKS.registerBlock(
@@ -176,6 +190,7 @@ public final class ModBlocks {
                     .strength(5.0F, 12.0F)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()
+                    .dynamicShape()
     );
 
     public static final DeferredBlock<IndustrialPressPartBlock> INDUSTRIAL_PRESS_PART = BLOCKS.registerBlock(
@@ -185,6 +200,7 @@ public final class ModBlocks {
                     .strength(5.0F, 12.0F)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()
+                    .dynamicShape()
     );
 
     public static final DeferredBlock<WireMillBlock> WIRE_MILL = BLOCKS.registerBlock(
@@ -238,6 +254,26 @@ public final class ModBlocks {
                     .requiresCorrectToolForDrops()
     );
 
+    public static final DeferredBlock<BlastDoorBlock> BLAST_DOOR = BLOCKS.registerBlock(
+            "blast_door",
+            BlastDoorBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(8.0F, BLAST_DOOR_BLAST_RESISTANCE)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
+                    .dynamicShape()
+    );
+
+    public static final DeferredBlock<BlastDoorPartBlock> BLAST_DOOR_PART = BLOCKS.registerBlock(
+            "blast_door_part",
+            BlastDoorPartBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(8.0F, BLAST_DOOR_BLAST_RESISTANCE)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
+                    .dynamicShape()
+    );
+
     public static final DeferredBlock<MediumTankBlock> MEDIUM_TANK = BLOCKS.registerBlock(
             "medium_tank",
             MediumTankBlock::new,
@@ -245,6 +281,7 @@ public final class ModBlocks {
                     .strength(5.0F, 12.0F)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()
+                    .dynamicShape()
     );
 
     public static final DeferredBlock<MediumTankPartBlock> MEDIUM_TANK_PART = BLOCKS.registerBlock(
@@ -253,6 +290,7 @@ public final class ModBlocks {
             BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
                     .strength(5.0F, 12.0F)
                     .requiresCorrectToolForDrops()
+                    .dynamicShape()
     );
 
     public static final DeferredBlock<NuclearChargeBlock> NUCLEAR_CHARGE = BLOCKS.registerBlock(

@@ -936,7 +936,7 @@ public final class RadiationExposureUtil {
             }
 
             BlockState state = level.getBlockState(currentPos);
-            transmission *= RadiationUtil.environmentalRadiationTransmission(state, level, currentPos);
+            transmission *= RadiationUtil.entityRadiationTransmission(state, level, currentPos, start, end);
             if (transmission <= MIN_TRANSMISSION) {
                 return 0.0D;
             }

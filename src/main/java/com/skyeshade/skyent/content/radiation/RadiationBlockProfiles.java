@@ -171,6 +171,10 @@ public final class RadiationBlockProfiles {
                 .transmission(0.65D)
                 .showShieldingTooltip()
                 .build());
+        register(ModBlocks.REINFORCED_GLOWSTONE, RadiationBlockProfile.builder()
+                .transmission(0.65D)
+                .showShieldingTooltip()
+                .build());
         register(ModBlocks.REINFORCED_GLASS, RadiationBlockProfile.builder()
                 .transmission(0.20D)
                 .showShieldingTooltip()
@@ -202,6 +206,13 @@ public final class RadiationBlockProfiles {
         register(ModBlocks.LEAD_BLOCK, RadiationBlockProfile.builder()
                 .transmission(0.02D)
                 .showShieldingTooltip()
+                .build());
+        register(ModBlocks.BLAST_DOOR, RadiationBlockProfile.builder()
+                .transmission(0.001D)
+                .showShieldingTooltip()
+                .build());
+        register(ModBlocks.BLAST_DOOR_PART, RadiationBlockProfile.builder()
+                .transmission(0.001D)
                 .build());
     }
 }

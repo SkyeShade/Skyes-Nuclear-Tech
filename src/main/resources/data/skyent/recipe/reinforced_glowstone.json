@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "G": {
+      "item": "minecraft:glowstone"
+    },
+    "R": {
+      "item": "skyent:reinforced_concrete"
+    }
+  },
+  "pattern": [
+    "RGR",
+    "GRG",
+    "RGR"
+  ],
+  "result": {
+    "id": "skyent:reinforced_glowstone",
+    "count": 4
+  }
+}

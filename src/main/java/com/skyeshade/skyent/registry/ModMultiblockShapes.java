@@ -10,6 +10,7 @@ public final class ModMultiblockShapes {
     public static final ResourceLocation ROLLING_MILL = ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "rolling_mill");
     public static final ResourceLocation INDUSTRIAL_PRESS = ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "industrial_press");
     public static final ResourceLocation MEDIUM_TANK = ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "medium_tank");
+    public static final ResourceLocation BLAST_DOOR_FRAME = ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "blast_door_frame");
 
     private static boolean registered;
 
@@ -53,6 +54,20 @@ public final class ModMultiblockShapes {
                 2,
                 2,
                 4
+        ));
+
+        MultiblockShapeRegistry.register(new MultiblockShapeDefinition(
+                BLAST_DOOR_FRAME,
+                ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "models/block/blast_door_frame.json"),
+                2.0D,
+                Vec3.ZERO,
+                // Rendering is centered on the bottom-center controller and translates X by -16px.
+                // The shape slicer indexes the 3-wide footprint from local X 0..48, so compensate
+                // that controller-origin offset here instead of using the visual X translation.
+                new Vec3(0.0D, 0.0D, -8.0D),
+                3,
+                3,
+                1
         ));
     }
 }

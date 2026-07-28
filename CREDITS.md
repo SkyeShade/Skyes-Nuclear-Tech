@@ -15,3 +15,4 @@
 
 - household basement water pump by azumarill -- https://freesound.org/s/528218/ -- License: Attribution 3.0
 - concrete mixer_080513.WAV by miastodzwiekow -- https://freesound.org/s/188135/ -- License: Attribution 4.0
+- custom_scifi_mechanical_blast_door_heavy_mechanism_impact_sounds_12152024 by Artninja -- https://freesound.org/s/776390/ -- License: Attribution 4.0

@@ -1,0 +1,23 @@
+{
+  "loader": "skyent:scaled_block_model",
+  "render_type": "minecraft:cutout",
+  "base": {
+    "parent": "skyent:block/blast_door_frame"
+  },
+  "scale": 2.0,
+  "origin": [0, 0, 0],
+  "translation": [0, 0, -8],
+  "size": [3, 3, 1],
+  "facing_property": "facing",
+  "ambient_occlusion": false,
+  "shared_lighting": "max",
+  "disable_diffuse_shading": true,
+  "ignore_neighbor_shading": true,
+  "directional_face_shading": true,
+  "ignore_cullface": true,
+  "force_general_quads": true,
+  "runtime_shared_light": true,
+  "shared_light_reduction": 0,
+  "render_brightness_multiplier": 0.8,
+  "render_brightness_floor": 0.3
+}

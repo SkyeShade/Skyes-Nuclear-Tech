@@ -2,18 +2,18 @@ package com.skyeshade.skyent.content.shape;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Supplier;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 public final class MultiblockShapeRegistry {
-    private static final Map<ResourceLocation, MultiblockShapeDefinition> DEFINITIONS = new HashMap<>();
-    private static final Map<ResourceLocation, MultiblockShapeData> CACHE = new HashMap<>();
-    private static ResourceManager activeResourceManager;
+    private static final ConcurrentMap<ResourceLocation, MultiblockShapeDefinition> DEFINITIONS = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<ResourceLocation, MultiblockShapeData> CACHE = new ConcurrentHashMap<>();
+    private static volatile ResourceManager activeResourceManager;
 
     private MultiblockShapeRegistry() {
     }
@@ -27,8 +27,11 @@ public final class MultiblockShapeRegistry {
     public static void reload(ResourceManager resourceManager) {
         activeResourceManager = resourceManager;
         CACHE.clear();
-        for (ResourceLocation id : DEFINITIONS.keySet()) {
-            load(id);
+        for (ResourceLocation id : Map.copyOf(DEFINITIONS).keySet()) {
+            MultiblockShapeData data = load(id);
+            if (data != null) {
+                CACHE.put(id, data);
+            }
         }
     }
 
