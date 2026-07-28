@@ -26,7 +26,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 public class BlastDoorBlockEntity extends BlockEntity {
-    private static final int BLAST_DOOR_ANIMATION_DURATION_TICKS = 220;
+    private static final int BLAST_DOOR_ANIMATION_DURATION_TICKS = 120;
     private static final int DEFAULT_ANIMATION_DURATION_TICKS = BLAST_DOOR_ANIMATION_DURATION_TICKS;
     private static final int LIGHT_CHECK_INTERVAL_TICKS = 40;
     private static final float MOVEMENT_SOUND_VOLUME = 3.0F;
