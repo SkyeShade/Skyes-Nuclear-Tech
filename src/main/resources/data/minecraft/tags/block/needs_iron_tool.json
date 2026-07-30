@@ -38,6 +38,8 @@
     "skyent:mv_chemical_reactor_part",
     "skyent:blast_door",
     "skyent:blast_door_part",
+    "skyent:zone_gate",
+    "skyent:zone_gate_part",
     "skyent:medium_tank",
     "skyent:medium_tank_part",
     "skyent:lv_connector",

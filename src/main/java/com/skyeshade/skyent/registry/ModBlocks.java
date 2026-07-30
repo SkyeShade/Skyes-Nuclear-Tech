@@ -21,6 +21,7 @@ public final class ModBlocks {
     // The door is a 3x3 multiblock, so its resistance is scaled above plated concrete
     // to make the whole structure survive comparably when explosions can hit any part.
     private static final float BLAST_DOOR_BLAST_RESISTANCE = 345600.0F;
+    private static final float ZONE_GATE_BLAST_RESISTANCE = 12000.0F;
 
     public static final DeferredBlock<CombustionGeneratorBlock> COMBUSTION_GENERATOR = BLOCKS.registerBlock(
             "combustion_generator",
@@ -269,6 +270,26 @@ public final class ModBlocks {
             BlastDoorPartBlock::new,
             BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
                     .strength(8.0F, BLAST_DOOR_BLAST_RESISTANCE)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
+                    .dynamicShape()
+    );
+
+    public static final DeferredBlock<ZoneGateBlock> ZONE_GATE = BLOCKS.registerBlock(
+            "zone_gate",
+            ZoneGateBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(8.0F, ZONE_GATE_BLAST_RESISTANCE)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
+                    .dynamicShape()
+    );
+
+    public static final DeferredBlock<ZoneGatePartBlock> ZONE_GATE_PART = BLOCKS.registerBlock(
+            "zone_gate_part",
+            ZoneGatePartBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(8.0F, ZONE_GATE_BLAST_RESISTANCE)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()
                     .dynamicShape()

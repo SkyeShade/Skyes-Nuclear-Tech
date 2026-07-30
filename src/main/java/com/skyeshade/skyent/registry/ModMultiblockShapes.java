@@ -11,6 +11,7 @@ public final class ModMultiblockShapes {
     public static final ResourceLocation INDUSTRIAL_PRESS = ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "industrial_press");
     public static final ResourceLocation MEDIUM_TANK = ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "medium_tank");
     public static final ResourceLocation BLAST_DOOR_FRAME = ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "blast_door_frame");
+    public static final ResourceLocation ZONE_GATE = ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "zone_gate");
 
     private static boolean registered;
 
@@ -67,6 +68,17 @@ public final class ModMultiblockShapes {
                 new Vec3(0.0D, 0.0D, -8.0D),
                 3,
                 3,
+                1
+        ));
+
+        MultiblockShapeRegistry.register(new MultiblockShapeDefinition(
+                ZONE_GATE,
+                ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "models/block/zone_gate.json"),
+                4.0D,
+                Vec3.ZERO,
+                new Vec3(24.0D, 0.0D, -24.0D),
+                7,
+                4,
                 1
         ));
     }

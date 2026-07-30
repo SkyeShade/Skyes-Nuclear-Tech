@@ -73,6 +73,7 @@ public final class ModCreativeTabs {
                 ModItems.MV_ASSEMBLER,
                 ModItems.MV_CHEMICAL_REACTOR,
                 ModItems.BLAST_DOOR,
+                ModItems.ZONE_GATE,
                 ModItems.MEDIUM_TANK,
                 ModItems.MV_INLINE_PUMP,
                 ModItems.LV_ELECTRIC_PUMP,

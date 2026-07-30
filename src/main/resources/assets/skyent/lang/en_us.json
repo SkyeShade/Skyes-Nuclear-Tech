@@ -24,6 +24,8 @@
   "block.skyent.mv_chemical_reactor_part": "MV Chemical Reactor",
   "block.skyent.blast_door": "Blast Door",
   "block.skyent.blast_door_part": "Blast Door",
+  "block.skyent.zone_gate": "Zone Gate",
+  "block.skyent.zone_gate_part": "Zone Gate",
   "block.skyent.medium_tank": "Medium Tank",
   "block.skyent.medium_tank_part": "Medium Tank",
   "container.skyent.medium_tank": "Medium Tank",

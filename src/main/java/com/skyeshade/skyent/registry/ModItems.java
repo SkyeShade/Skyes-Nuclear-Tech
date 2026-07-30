@@ -146,6 +146,11 @@ public final class ModItems {
             new Item.Properties()
     );
 
+    public static final DeferredItem<BlockItem> ZONE_GATE = ITEMS.registerSimpleBlockItem(
+            ModBlocks.ZONE_GATE,
+            new Item.Properties()
+    );
+
     public static final DeferredItem<BlockItem> MEDIUM_TANK = ITEMS.registerSimpleBlockItem(
             ModBlocks.MEDIUM_TANK,
             new Item.Properties()
