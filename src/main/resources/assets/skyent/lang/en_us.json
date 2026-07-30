@@ -291,6 +291,7 @@
   "subtitle.skyent.chemical_reactor": "Chemical reactor churns",
   "subtitle.skyent.mechanical_lever": "Mechanical lever clicks",
   "subtitle.skyent.heavy_moving_metal": "Heavy metal moves",
+  "subtitle.skyent.heavy_door": "Heavy door moves",
   "message.skyent.too_cold_to_forge": "Too cold to forge",
   "death.attack.radiation": "%1$s died from radiation poisoning",
   "death.attack.radiation.player": "%1$s died from radiation poisoning while fighting %2$s",

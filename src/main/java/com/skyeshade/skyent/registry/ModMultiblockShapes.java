@@ -73,7 +73,7 @@ public final class ModMultiblockShapes {
 
         MultiblockShapeRegistry.register(new MultiblockShapeDefinition(
                 ZONE_GATE,
-                ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "models/block/zone_gate.json"),
+                ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "models/block/zone_gate_frame.json"),
                 4.0D,
                 Vec3.ZERO,
                 new Vec3(24.0D, 0.0D, -24.0D),

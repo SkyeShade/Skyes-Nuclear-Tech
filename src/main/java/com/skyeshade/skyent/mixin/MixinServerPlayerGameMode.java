@@ -12,6 +12,7 @@ import com.skyeshade.skyent.content.block.MVChemicalReactorBlock;
 import com.skyeshade.skyent.content.block.RollingMillBlock;
 import com.skyeshade.skyent.content.block.SteamForgeHammerBlock;
 import com.skyeshade.skyent.content.block.WireMillBlock;
+import com.skyeshade.skyent.content.block.ZoneGateBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayerGameMode;
@@ -47,6 +48,7 @@ public abstract class MixinServerPlayerGameMode {
         visualPos = MVAssemblerBlock.resolveDestroyProgressPos(this.level, visualPos);
         visualPos = MVChemicalReactorBlock.resolveDestroyProgressPos(this.level, visualPos);
         visualPos = BlastDoorBlock.resolveDestroyProgressPos(this.level, visualPos);
+        visualPos = ZoneGateBlock.resolveDestroyProgressPos(this.level, visualPos);
         visualPos = MediumTankBlock.resolveDestroyProgressPos(this.level, visualPos);
         original.call(level, breakerId, visualPos, progress);
 

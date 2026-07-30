@@ -98,6 +98,12 @@ public final class ModBlockEntities {
                     ModBlocks.BLAST_DOOR.get()
             ).build(null));
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ZoneGateBlockEntity>> ZONE_GATE =
+            BLOCK_ENTITIES.register("zone_gate", () -> BlockEntityType.Builder.of(
+                    ZoneGateBlockEntity::new,
+                    ModBlocks.ZONE_GATE.get()
+            ).build(null));
+
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<MediumTankBlockEntity>> MEDIUM_TANK =
             BLOCK_ENTITIES.register("medium_tank", () -> BlockEntityType.Builder.of(
                     MediumTankBlockEntity::new,

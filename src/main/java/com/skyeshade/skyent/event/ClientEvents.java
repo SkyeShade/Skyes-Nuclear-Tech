@@ -24,6 +24,7 @@ import com.skyeshade.skyent.client.renderer.blockentity.LVMVTransformerRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.MediumTankRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.RollingMillRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.SteamForgeHammerRenderer;
+import com.skyeshade.skyent.client.renderer.blockentity.ZoneGateRenderer;
 import com.skyeshade.skyent.client.renderer.entity.ConveyorMovingItemRenderer;
 import com.skyeshade.skyent.client.renderer.entity.NuclearExplosionRenderer;
 import com.skyeshade.skyent.client.renderer.LVConnectorRenderer;
@@ -133,6 +134,7 @@ public final class ClientEvents {
         event.registerBlockEntityRenderer(ModBlockEntities.LV_MV_TRANSFORMER.get(), LVMVTransformerRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.MEDIUM_TANK.get(), MediumTankRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.BLAST_DOOR.get(), BlastDoorRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.ZONE_GATE.get(), ZoneGateRenderer::new);
     }
 
     public static void onRegisterAdditionalModels(ModelEvent.RegisterAdditional event) {
@@ -141,6 +143,8 @@ public final class ClientEvents {
         event.register(IndustrialPressRenderer.PRESS_HEAD_MODEL);
         event.register(RollingMillRenderer.ROLLERS_MODEL);
         event.register(BlastDoorRenderer.DOOR_PANEL_MODEL);
+        event.register(ZoneGateRenderer.FRAME_MODEL);
+        event.register(ZoneGateRenderer.DOOR_PANEL_MODEL);
     }
 
     public static void onRegisterGeometryLoaders(ModelEvent.RegisterGeometryLoaders event) {

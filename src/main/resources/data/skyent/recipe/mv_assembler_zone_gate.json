@@ -1,0 +1,47 @@
+{
+  "type": "skyent:mv_assembler",
+  "ingredients": [
+    {
+      "ingredient": {
+        "item": "skyent:steel_plate"
+      },
+      "count": 24
+    },
+    {
+      "ingredient": {
+        "item": "skyent:iron_rod"
+      },
+      "count": 16
+    },
+    {
+      "ingredient": {
+        "item": "skyent:steel_rod"
+      },
+      "count": 8
+    },
+    {
+      "ingredient": {
+        "item": "skyent:electric_motor"
+      },
+      "count": 8
+    },
+    {
+      "ingredient": {
+        "item": "skyent:hydraulic_component"
+      },
+      "count": 4
+    },
+    {
+      "ingredient": {
+        "item": "skyent:reinforced_concrete"
+      },
+      "count": 8
+    }
+  ],
+  "result": {
+    "id": "skyent:zone_gate",
+    "count": 1
+  },
+  "process_time": 500,
+  "energy_per_tick": 128
+}

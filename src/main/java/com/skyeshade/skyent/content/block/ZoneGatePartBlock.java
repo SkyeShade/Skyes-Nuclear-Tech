@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.content.block;
 
 import com.mojang.serialization.MapCodec;
+import com.skyeshade.skyent.content.blockentity.ZoneGateBlockEntity;
 import com.skyeshade.skyent.registry.ModBlocks;
 import com.skyeshade.skyent.registry.ModItems;
 import net.minecraft.core.BlockPos;
@@ -59,6 +60,8 @@ public class ZoneGatePartBlock extends Block {
         BlockPos masterPos = ZoneGateBlock.getMasterPos(state, pos);
         if (!level.getBlockState(masterPos).is(ModBlocks.ZONE_GATE.get()) && !level.isClientSide) {
             level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+        } else if (!level.isClientSide) {
+            ZoneGateBlock.getMasterBlockEntity(level, state, pos).ifPresent(ZoneGateBlockEntity::updateRedstonePower);
         }
     }
 
@@ -67,7 +70,8 @@ public class ZoneGatePartBlock extends Block {
         return ZoneGateBlock.shapeForLocal(
                 state.getValue(PART_X),
                 state.getValue(PART_Y),
-                state.getValue(FACING)
+                state.getValue(FACING),
+                ZoneGateBlock.doorPanelProgress(level, state, pos)
         );
     }
 

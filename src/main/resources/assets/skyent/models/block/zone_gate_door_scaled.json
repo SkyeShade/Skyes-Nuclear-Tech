@@ -2,7 +2,7 @@
   "loader": "skyent:scaled_block_model",
   "render_type": "minecraft:cutout",
   "base": {
-    "parent": "skyent:block/zone_gate_frame"
+    "parent": "skyent:block/zone_gate_door"
   },
   "scale": 4.0,
   "origin": [0, 0, 0],

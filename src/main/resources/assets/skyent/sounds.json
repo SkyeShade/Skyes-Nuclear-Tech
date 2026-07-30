@@ -99,6 +99,12 @@
     ],
     "subtitle": "subtitle.skyent.heavy_moving_metal"
   },
+  "heavy_door": {
+    "sounds": [
+      "skyent:heavy_door"
+    ],
+    "subtitle": "subtitle.skyent.heavy_door"
+  },
   "industrial_press": {
     "sounds": [
       "skyent:industrial_press"
