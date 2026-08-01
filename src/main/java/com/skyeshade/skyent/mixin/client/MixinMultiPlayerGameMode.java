@@ -3,6 +3,7 @@ package com.skyeshade.skyent.mixin.client;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.skyeshade.skyent.content.block.BlastDoorBlock;
+import com.skyeshade.skyent.content.block.CentrifugeBlock;
 import com.skyeshade.skyent.content.block.HeatingChamberBlock;
 import com.skyeshade.skyent.content.block.IndustrialPressBlock;
 import com.skyeshade.skyent.content.block.LVMVTransformerBlock;
@@ -48,6 +49,7 @@ public abstract class MixinMultiPlayerGameMode {
         visualPos = LVMVTransformerBlock.resolveDestroyProgressPos(level, visualPos);
         visualPos = MVAssemblerBlock.resolveDestroyProgressPos(level, visualPos);
         visualPos = MVChemicalReactorBlock.resolveDestroyProgressPos(level, visualPos);
+        visualPos = CentrifugeBlock.resolveDestroyProgressPos(level, visualPos);
         visualPos = BlastDoorBlock.resolveDestroyProgressPos(level, visualPos);
         visualPos = ZoneGateBlock.resolveDestroyProgressPos(level, visualPos);
         visualPos = MediumTankBlock.resolveDestroyProgressPos(level, visualPos);

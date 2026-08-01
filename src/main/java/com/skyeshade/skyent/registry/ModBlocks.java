@@ -255,6 +255,25 @@ public final class ModBlocks {
                     .requiresCorrectToolForDrops()
     );
 
+    public static final DeferredBlock<CentrifugeBlock> CENTRIFUGE = BLOCKS.registerBlock(
+            "centrifuge",
+            CentrifugeBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 12.0F)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
+                    .dynamicShape()
+    );
+
+    public static final DeferredBlock<CentrifugePartBlock> CENTRIFUGE_PART = BLOCKS.registerBlock(
+            "centrifuge_part",
+            CentrifugePartBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 12.0F)
+                    .requiresCorrectToolForDrops()
+                    .dynamicShape()
+    );
+
     public static final DeferredBlock<BlastDoorBlock> BLAST_DOOR = BLOCKS.registerBlock(
             "blast_door",
             BlastDoorBlock::new,

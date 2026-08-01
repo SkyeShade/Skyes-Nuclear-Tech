@@ -13,39 +13,38 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 
 public class MVChemicalReactorScreen extends AbstractContainerScreen<MVChemicalReactorMenu> {
-    private static final int GUI_WIDTH = 224;
+    private static final int GUI_WIDTH = 176;
     private static final int GUI_HEIGHT = 197;
     public static final int GUI_TEXTURE_WIDTH = 256;
     public static final int GUI_TEXTURE_HEIGHT = 256;
     private static final int GUI_BACKGROUND_U = 32;
     private static final int GUI_BACKGROUND_V = 0;
-    private static final int GUI_BACKGROUND_X = 32;
     private static final int GUI_BACKGROUND_WIDTH = 176;
     private static final int CONTENT_Y_OFFSET = 3;
-    private static final int TITLE_X = 40;
+    private static final int TITLE_X = 8;
     private static final int TITLE_Y = 5;
-    private static final int INVENTORY_LABEL_X = 40;
+    private static final int INVENTORY_LABEL_X = 8;
     private static final int INVENTORY_LABEL_Y = 101 + CONTENT_Y_OFFSET;
     private static final int TITLE_COLOR = 0x404040;
 
-    private static final int INPUT_GAUGE_1_X = 41;
-    private static final int INPUT_GAUGE_2_X = 78;
-    private static final int OUTPUT_GAUGE_1_X = 124;
-    private static final int OUTPUT_GAUGE_2_X = 161;
+    private static final int INPUT_GAUGE_1_X = 9;
+    private static final int INPUT_GAUGE_2_X = 46;
+    private static final int OUTPUT_GAUGE_1_X = 92;
+    private static final int OUTPUT_GAUGE_2_X = 129;
     private static final int GAUGE_Y = 14 + CONTENT_Y_OFFSET;
     private static final int GAUGE_WIDTH = 13;
     private static final int GAUGE_HEIGHT = 52;
     private static final int GAUGE_OVERLAY_U = 232;
     private static final int GAUGE_OVERLAY_V = 14;
 
-    private static final int ENERGY_BAR_X = 186;
+    private static final int ENERGY_BAR_X = 154;
     private static final int ENERGY_BAR_Y = 8 + CONTENT_Y_OFFSET;
     private static final int ENERGY_BAR_WIDTH = 16;
     private static final int ENERGY_BAR_HEIGHT = 57;
     private static final int ENERGY_BAR_U = 211;
     private static final int ENERGY_BAR_V = 7;
 
-    private static final int PROGRESS_ARROW_X = 96;
+    private static final int PROGRESS_ARROW_X = 64;
     private static final int PROGRESS_ARROW_1_Y = 15 + CONTENT_Y_OFFSET;
     private static final int PROGRESS_ARROW_2_Y = 70 + CONTENT_Y_OFFSET;
     private static final int PROGRESS_ARROW_U = 211;
@@ -79,7 +78,7 @@ public class MVChemicalReactorScreen extends AbstractContainerScreen<MVChemicalR
 
     @Override
     protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
-        guiGraphics.blit(TEXTURE, leftPos + GUI_BACKGROUND_X, topPos, GUI_BACKGROUND_U, GUI_BACKGROUND_V, GUI_BACKGROUND_WIDTH, imageHeight, GUI_TEXTURE_WIDTH, GUI_TEXTURE_HEIGHT);
+        guiGraphics.blit(TEXTURE, leftPos, topPos, GUI_BACKGROUND_U, GUI_BACKGROUND_V, GUI_BACKGROUND_WIDTH, imageHeight, GUI_TEXTURE_WIDTH, GUI_TEXTURE_HEIGHT);
         renderTank(guiGraphics, 0, INPUT_GAUGE_1_X);
         renderTank(guiGraphics, 1, INPUT_GAUGE_2_X);
         renderTank(guiGraphics, 2, OUTPUT_GAUGE_1_X);

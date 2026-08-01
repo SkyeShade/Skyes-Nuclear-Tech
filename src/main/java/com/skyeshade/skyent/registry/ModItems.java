@@ -141,6 +141,11 @@ public final class ModItems {
             new Item.Properties()
     );
 
+    public static final DeferredItem<BlockItem> CENTRIFUGE = ITEMS.registerSimpleBlockItem(
+            ModBlocks.CENTRIFUGE,
+            new Item.Properties()
+    );
+
     public static final DeferredItem<BlockItem> BLAST_DOOR = ITEMS.registerSimpleBlockItem(
             ModBlocks.BLAST_DOOR,
             new Item.Properties()

@@ -2,6 +2,7 @@ package com.skyeshade.skyent.registry;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.menu.BrickBlastFurnaceMenu;
+import com.skyeshade.skyent.content.menu.CentrifugeMenu;
 import com.skyeshade.skyent.content.menu.CombustionGeneratorMenu;
 import com.skyeshade.skyent.content.menu.ConveyorExporterMenu;
 import com.skyeshade.skyent.content.menu.ElectricFurnaceMenu;
@@ -58,6 +59,9 @@ public final class ModMenus {
 
     public static final DeferredHolder<MenuType<?>, MenuType<MVChemicalReactorMenu>> MV_CHEMICAL_REACTOR =
             MENUS.register("mv_chemical_reactor", () -> IMenuTypeExtension.create(MVChemicalReactorMenu::new));
+
+    public static final DeferredHolder<MenuType<?>, MenuType<CentrifugeMenu>> CENTRIFUGE =
+            MENUS.register("centrifuge", () -> IMenuTypeExtension.create(CentrifugeMenu::new));
 
     public static final DeferredHolder<MenuType<?>, MenuType<MVAssemblerRecipeSelectMenu>> ASSEMBLER_RECIPE_SELECT =
             MENUS.register("assembler_recipe_select", () -> IMenuTypeExtension.create(MVAssemblerRecipeSelectMenu::new));

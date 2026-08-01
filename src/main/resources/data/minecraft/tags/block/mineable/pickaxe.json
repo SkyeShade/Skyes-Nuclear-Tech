@@ -40,6 +40,8 @@
     "skyent:mv_assembler_part",
     "skyent:mv_chemical_reactor",
     "skyent:mv_chemical_reactor_part",
+    "skyent:centrifuge",
+    "skyent:centrifuge_part",
     "skyent:blast_door",
     "skyent:blast_door_part",
     "skyent:zone_gate",

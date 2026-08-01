@@ -22,6 +22,7 @@ public final class LVCrusherRecipes {
             raw(ModItems.RAW_URANIUM.get(), ModItems.URANIUM_POWDER.get()),
             raw(ModItems.RAW_TITANIUM.get(), ModItems.TITANIUM_POWDER.get()),
             raw(ModItems.RAW_ALUMINUM.get(), ModItems.ALUMINUM_POWDER.get()),
+            new Entry(ModItems.FLUORITE_CRYSTAL.get(), ModItems.FLUORITE_POWDER.get(), 2, null, 0, 0.0D),
             siltWithSecondary(ModItems.SILT.get(), Blocks.SAND, ModItems.SMALL_TIN_POWDER.get()),
 
             ingot(Items.IRON_INGOT, ModItems.IRON_POWDER.get()),

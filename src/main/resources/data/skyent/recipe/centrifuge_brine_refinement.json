@@ -1,0 +1,24 @@
+{
+  "type": "skyent:centrifuge",
+  "fluid_inputs": [
+    {
+      "fluid": "skyent:brine",
+      "amount": 4000
+    }
+  ],
+  "item_inputs": [],
+  "fluid_outputs": [
+    {
+      "fluid": "skyent:demineralised_water",
+      "amount": 2000
+    }
+  ],
+  "item_outputs": [
+    {
+      "id": "skyent:lithium_salts",
+      "count": 1
+    }
+  ],
+  "process_time": 500,
+  "energy_per_tick": 128
+}

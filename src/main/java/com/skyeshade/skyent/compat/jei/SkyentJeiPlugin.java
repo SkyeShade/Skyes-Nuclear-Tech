@@ -7,6 +7,7 @@ import com.skyeshade.skyent.content.item.SteelFluidBarrelItem;
 import com.skyeshade.skyent.content.item.SteelFluidBarrelVariants;
 import com.skyeshade.skyent.content.item.LVCrusherRecipes;
 import com.skyeshade.skyent.content.recipe.BrickBlastFurnaceRecipe;
+import com.skyeshade.skyent.content.recipe.CentrifugeRecipe;
 import com.skyeshade.skyent.content.recipe.ChemicalReactorRecipe;
 import com.skyeshade.skyent.registry.ModItems;
 import com.skyeshade.skyent.registry.ModRecipes;
@@ -60,6 +61,7 @@ public final class SkyentJeiPlugin implements IModPlugin {
             HeatingChamberRecipeCategory.UID.toString(),
             MVAssemblerRecipeCategory.UID.toString(),
             ChemicalReactorRecipeCategory.UID.toString(),
+            CentrifugeRecipeCategory.UID.toString(),
             BrickBlastFurnaceRecipeCategory.UID.toString(),
             CoalForgeRecipeCategory.UID.toString()
     );
@@ -138,6 +140,7 @@ public final class SkyentJeiPlugin implements IModPlugin {
                 new HeatingChamberRecipeCategory(registration.getJeiHelpers().getGuiHelper()),
                 new MVAssemblerRecipeCategory(registration.getJeiHelpers().getGuiHelper()),
                 new ChemicalReactorRecipeCategory(registration.getJeiHelpers().getGuiHelper()),
+                new CentrifugeRecipeCategory(registration.getJeiHelpers().getGuiHelper()),
                 new BrickBlastFurnaceRecipeCategory(registration.getJeiHelpers().getGuiHelper()),
                 new CoalForgeRecipeCategory(registration.getJeiHelpers().getGuiHelper())
         );
@@ -168,6 +171,13 @@ public final class SkyentJeiPlugin implements IModPlugin {
                     .toList();
             registration.addRecipes(ChemicalReactorRecipeCategory.RECIPE_TYPE, chemicalReactorRecipes);
 
+            List<CentrifugeRecipe> centrifugeRecipes = level.getRecipeManager()
+                    .getAllRecipesFor(ModRecipes.CENTRIFUGE_TYPE.get())
+                    .stream()
+                    .map(RecipeHolder::value)
+                    .toList();
+            registration.addRecipes(CentrifugeRecipeCategory.RECIPE_TYPE, centrifugeRecipes);
+
             List<BrickBlastFurnaceRecipe> recipes = level.getRecipeManager()
                     .getAllRecipesFor(ModRecipes.BRICK_BLAST_FURNACE_TYPE.get())
                     .stream()
@@ -189,6 +199,7 @@ public final class SkyentJeiPlugin implements IModPlugin {
         registration.addRecipeCatalyst(ModItems.HEATING_CHAMBER.get(), HeatingChamberRecipeCategory.RECIPE_TYPE);
         registration.addRecipeCatalyst(ModItems.MV_ASSEMBLER.get(), MVAssemblerRecipeCategory.RECIPE_TYPE);
         registration.addRecipeCatalyst(ModItems.MV_CHEMICAL_REACTOR.get(), ChemicalReactorRecipeCategory.RECIPE_TYPE);
+        registration.addRecipeCatalyst(ModItems.CENTRIFUGE.get(), CentrifugeRecipeCategory.RECIPE_TYPE);
         registration.addRecipeCatalyst(ModItems.BRICK_BLAST_FURNACE.get(), BrickBlastFurnaceRecipeCategory.RECIPE_TYPE);
         registration.addRecipeCatalyst(ModItems.COAL_FORGE.get(), CoalForgeRecipeCategory.RECIPE_TYPE);
     }

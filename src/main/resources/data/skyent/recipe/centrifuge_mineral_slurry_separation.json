@@ -1,0 +1,60 @@
+{
+  "type": "skyent:centrifuge",
+  "fluid_inputs": [
+    {
+      "fluid": "skyent:mineral_slurry",
+      "amount": 1000
+    }
+  ],
+  "item_inputs": [],
+  "fluid_outputs": [],
+  "item_outputs": [
+    {
+      "id": "skyent:fluorite_crystal",
+      "count": 1,
+      "chance": 0.25
+    },
+    {
+      "id": "skyent:copper_powder",
+      "count": 1,
+      "chance": 0.15
+    },
+    {
+      "id": "skyent:iron_powder",
+      "count": 1,
+      "chance": 0.15
+    },
+    {
+      "id": "skyent:tin_powder",
+      "count": 1,
+      "chance": 0.12
+    },
+    {
+      "id": "skyent:lead_powder",
+      "count": 1,
+      "chance": 0.1
+    },
+    {
+      "id": "skyent:nickel_powder",
+      "count": 1,
+      "chance": 0.08
+    },
+    {
+      "id": "skyent:cobalt_powder",
+      "count": 1,
+      "chance": 0.06
+    },
+    {
+      "id": "skyent:titanium_powder",
+      "count": 1,
+      "chance": 0.03
+    },
+    {
+      "id": "skyent:tungsten_powder",
+      "count": 1,
+      "chance": 0.02
+    }
+  ],
+  "process_time": 400,
+  "energy_per_tick": 128
+}

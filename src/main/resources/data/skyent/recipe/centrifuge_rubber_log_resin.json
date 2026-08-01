@@ -1,0 +1,30 @@
+{
+  "type": "skyent:centrifuge",
+  "fluid_inputs": [],
+  "item_inputs": [
+    {
+      "ingredient": {
+        "item": "skyent:rubber_log"
+      },
+      "count": 1
+    }
+  ],
+  "fluid_outputs": [],
+  "item_outputs": [
+    {
+      "id": "skyent:resin",
+      "count": 1
+    },
+    {
+      "id": "skyent:resin",
+      "count": 1,
+      "chance": 0.25
+    },
+    {
+      "id": "skyent:rubber_planks",
+      "count": 3
+    }
+  ],
+  "process_time": 240,
+  "energy_per_tick": 96
+}

@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "skyent:block/centrifuge_part"
+    }
+  }
+}

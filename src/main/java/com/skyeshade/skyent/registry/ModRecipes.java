@@ -2,6 +2,7 @@ package com.skyeshade.skyent.registry;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.recipe.BrickBlastFurnaceRecipe;
+import com.skyeshade.skyent.content.recipe.CentrifugeRecipe;
 import com.skyeshade.skyent.content.recipe.ChemicalReactorRecipe;
 import com.skyeshade.skyent.content.recipe.MVAssemblerRecipe;
 import net.minecraft.core.registries.Registries;
@@ -26,6 +27,9 @@ public final class ModRecipes {
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<ChemicalReactorRecipe>> CHEMICAL_REACTOR_SERIALIZER =
             RECIPE_SERIALIZERS.register("chemical_reactor", ChemicalReactorRecipe.Serializer::new);
 
+    public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<CentrifugeRecipe>> CENTRIFUGE_SERIALIZER =
+            RECIPE_SERIALIZERS.register("centrifuge", CentrifugeRecipe.Serializer::new);
+
     public static final DeferredHolder<RecipeType<?>, RecipeType<BrickBlastFurnaceRecipe>> BRICK_BLAST_FURNACE_TYPE =
             RECIPE_TYPES.register("brick_blast_furnace", () -> new RecipeType<>() {
                 @Override
@@ -47,6 +51,14 @@ public final class ModRecipes {
                 @Override
                 public String toString() {
                     return SkyesNuclearTech.MOD_ID + ":chemical_reactor";
+                }
+            });
+
+    public static final DeferredHolder<RecipeType<?>, RecipeType<CentrifugeRecipe>> CENTRIFUGE_TYPE =
+            RECIPE_TYPES.register("centrifuge", () -> new RecipeType<>() {
+                @Override
+                public String toString() {
+                    return SkyesNuclearTech.MOD_ID + ":centrifuge";
                 }
             });
 

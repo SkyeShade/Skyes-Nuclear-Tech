@@ -1,6 +1,6 @@
 package com.skyeshade.skyent.content.menu;
 
-import com.skyeshade.skyent.content.blockentity.MVChemicalReactorBlockEntity;
+import com.skyeshade.skyent.content.blockentity.CentrifugeBlockEntity;
 import com.skyeshade.skyent.registry.ModBlocks;
 import com.skyeshade.skyent.registry.ModMenus;
 import net.minecraft.core.BlockPos;
@@ -20,49 +20,67 @@ import net.minecraft.world.level.material.Fluids;
 import net.neoforged.neoforge.items.ItemStackHandler;
 import net.neoforged.neoforge.items.SlotItemHandler;
 
-public class MVChemicalReactorMenu extends AbstractContainerMenu {
-    private static final int CONTENT_Y_OFFSET = 3;
-    public static final int INPUT_SLOT_X = 8;
-    public static final int INPUT_SLOT_Y = 69 + CONTENT_Y_OFFSET;
-    public static final int OUTPUT_SLOT_X = 91;
-    public static final int OUTPUT_SLOT_Y = 69 + CONTENT_Y_OFFSET;
-    public static final int FUTURE_POWER_ITEM_SLOT_X = 154;
-    public static final int FUTURE_POWER_ITEM_SLOT_Y = 69 + CONTENT_Y_OFFSET;
+public class CentrifugeMenu extends AbstractContainerMenu {
+    public static final int INPUT_SLOT_X = 9;
+    public static final int INPUT_SLOT_Y = 63;
+    public static final int OUTPUT_SLOT_X = 117;
+    public static final int OUTPUT_SLOT_Y = 63;
+    public static final int FUTURE_BATTERY_SLOT_X = 184;
+    public static final int FUTURE_BATTERY_SLOT_Y = 90;
 
-    private static final int PLAYER_INVENTORY_X = 8;
-    private static final int PLAYER_INVENTORY_Y = 112 + CONTENT_Y_OFFSET;
-    private static final int HOTBAR_Y = 170 + CONTENT_Y_OFFSET;
+    private static final int PLAYER_INVENTORY_X = 9;
+    private static final int PLAYER_INVENTORY_Y = 142;
+    private static final int HOTBAR_Y = 200;
     private static final int SLOT_SIZE = 18;
+    private static final int GRID_SIZE = 3;
     private static final int PLAYER_INVENTORY_ROWS = 3;
     private static final int PLAYER_INVENTORY_COLUMNS = 9;
-    private static final int MACHINE_SLOT_COUNT = MVChemicalReactorBlockEntity.INVENTORY_SLOT_COUNT;
+    private static final int MACHINE_SLOT_COUNT = CentrifugeBlockEntity.INVENTORY_SLOT_COUNT;
     private static final int PLAYER_INVENTORY_SLOT_COUNT = 27;
-    private static final int DATA_COUNT = 31;
+    private static final int DATA_COUNT = 19;
 
-    private final MVChemicalReactorBlockEntity blockEntity;
+    private final CentrifugeBlockEntity blockEntity;
     private final ContainerData data;
 
-    public MVChemicalReactorMenu(int containerId, Inventory playerInventory, RegistryFriendlyByteBuf extraData) {
+    public CentrifugeMenu(int containerId, Inventory playerInventory, RegistryFriendlyByteBuf extraData) {
         this(containerId, playerInventory, getBlockEntity(playerInventory, extraData), new SimpleContainerData(DATA_COUNT));
     }
 
-    public MVChemicalReactorMenu(int containerId, Inventory playerInventory, MVChemicalReactorBlockEntity blockEntity, ContainerData data) {
-        super(ModMenus.MV_CHEMICAL_REACTOR.get(), containerId);
+    public CentrifugeMenu(int containerId, Inventory playerInventory, CentrifugeBlockEntity blockEntity, ContainerData data) {
+        super(ModMenus.CENTRIFUGE.get(), containerId);
         this.blockEntity = blockEntity;
         this.data = data;
 
-        for (int slot = 0; slot < MVChemicalReactorBlockEntity.INPUT_SLOT_COUNT; slot++) {
-            addSlot(new InputSlot(blockEntity.getInventory(), slot, INPUT_SLOT_X + slot * SLOT_SIZE, INPUT_SLOT_Y));
+        for (int row = 0; row < GRID_SIZE; row++) {
+            for (int column = 0; column < GRID_SIZE; column++) {
+                int slot = row * GRID_SIZE + column;
+                addSlot(new InputSlot(
+                        blockEntity.getInventory(),
+                        CentrifugeBlockEntity.FIRST_INPUT_SLOT + slot,
+                        INPUT_SLOT_X + column * SLOT_SIZE,
+                        INPUT_SLOT_Y + row * SLOT_SIZE
+                ));
+            }
         }
-        for (int slot = 0; slot < MVChemicalReactorBlockEntity.OUTPUT_SLOT_COUNT; slot++) {
-            addSlot(new OutputSlot(blockEntity.getInventory(), MVChemicalReactorBlockEntity.FIRST_OUTPUT_SLOT + slot, OUTPUT_SLOT_X + slot * SLOT_SIZE, OUTPUT_SLOT_Y));
+
+        for (int row = 0; row < GRID_SIZE; row++) {
+            for (int column = 0; column < GRID_SIZE; column++) {
+                int slot = row * GRID_SIZE + column;
+                addSlot(new OutputSlot(
+                        blockEntity.getInventory(),
+                        CentrifugeBlockEntity.FIRST_OUTPUT_SLOT + slot,
+                        OUTPUT_SLOT_X + column * SLOT_SIZE,
+                        OUTPUT_SLOT_Y + row * SLOT_SIZE
+                ));
+            }
         }
-        // TODO add future power item slot at x=154,y=72 when battery behavior exists.
+
+        // TODO add future battery/recharge slot at x=184,y=90 when power item support exists.
         addPlayerInventory(playerInventory);
         addDataSlots(data);
     }
 
-    public MVChemicalReactorBlockEntity getBlockEntity() {
+    public CentrifugeBlockEntity getBlockEntity() {
         return blockEntity;
     }
 
@@ -107,7 +125,7 @@ public class MVChemicalReactorMenu extends AbstractContainerMenu {
 
     @Override
     public boolean stillValid(Player player) {
-        return stillValid(ContainerLevelAccess.create(blockEntity.getLevel(), blockEntity.getBlockPos()), player, ModBlocks.MV_CHEMICAL_REACTOR.get());
+        return stillValid(ContainerLevelAccess.create(blockEntity.getLevel(), blockEntity.getBlockPos()), player, ModBlocks.CENTRIFUGE.get());
     }
 
     @Override
@@ -123,7 +141,7 @@ public class MVChemicalReactorMenu extends AbstractContainerMenu {
                 if (!moveItemStackTo(stack, MACHINE_SLOT_COUNT, slots.size(), true)) {
                     return ItemStack.EMPTY;
                 }
-            } else if (!moveItemStackTo(stack, MVChemicalReactorBlockEntity.FIRST_INPUT_SLOT, MVChemicalReactorBlockEntity.FIRST_OUTPUT_SLOT, false)) {
+            } else if (!moveItemStackTo(stack, CentrifugeBlockEntity.FIRST_INPUT_SLOT, CentrifugeBlockEntity.FIRST_OUTPUT_SLOT, false)) {
                 if (index < MACHINE_SLOT_COUNT + PLAYER_INVENTORY_SLOT_COUNT) {
                     if (!moveItemStackTo(stack, MACHINE_SLOT_COUNT + PLAYER_INVENTORY_SLOT_COUNT, slots.size(), false)) {
                         return ItemStack.EMPTY;
@@ -160,21 +178,19 @@ public class MVChemicalReactorMenu extends AbstractContainerMenu {
         }
     }
 
-    private static MVChemicalReactorBlockEntity getBlockEntity(Inventory playerInventory, RegistryFriendlyByteBuf extraData) {
+    private static CentrifugeBlockEntity getBlockEntity(Inventory playerInventory, RegistryFriendlyByteBuf extraData) {
         BlockEntity blockEntity = playerInventory.player.level().getBlockEntity(extraData.readBlockPos());
-        if (blockEntity instanceof MVChemicalReactorBlockEntity reactor) {
-            return reactor;
+        if (blockEntity instanceof CentrifugeBlockEntity centrifuge) {
+            return centrifuge;
         }
 
-        throw new IllegalStateException("Expected MV chemical reactor block entity");
+        throw new IllegalStateException("Expected centrifuge block entity");
     }
 
     private static int tankDataBase(int tankIndex) {
         return switch (tankIndex) {
             case 0 -> 7;
             case 1 -> 13;
-            case 2 -> 19;
-            case 3 -> 25;
             default -> -1;
         };
     }

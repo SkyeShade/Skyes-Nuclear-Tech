@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.event;
 
 import com.skyeshade.skyent.event.systems.BootstrapSystem;
+import com.skyeshade.skyent.content.block.CentrifugeBlock;
 import com.skyeshade.skyent.content.block.ConveyorChuteBlock;
 import com.skyeshade.skyent.content.block.ConveyorElevatorBlock;
 import com.skyeshade.skyent.content.block.HeatingChamberPartBlock;
@@ -112,6 +113,18 @@ public final class CommonEvents {
 
         event.registerBlockEntity(
                 Capabilities.ItemHandler.BLOCK,
+                ModBlockEntities.CENTRIFUGE.get(),
+                (centrifuge, side) -> centrifuge.getAutomationItemHandler(centrifuge.getBlockPos(), side)
+        );
+
+        event.registerBlockEntity(
+                Capabilities.FluidHandler.BLOCK,
+                ModBlockEntities.CENTRIFUGE.get(),
+                (centrifuge, side) -> centrifuge.getAutomationFluidHandler(centrifuge.getBlockPos(), side)
+        );
+
+        event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
                 ModBlockEntities.BRICK_BLAST_FURNACE.get(),
                 (furnace, side) -> furnace.getAutomationItemHandler(side)
         );
@@ -210,6 +223,22 @@ public final class CommonEvents {
                         .map(reactor -> reactor.getAutomationFluidHandler(pos, side))
                         .orElse(null),
                 ModBlocks.MV_CHEMICAL_REACTOR_PART.get()
+        );
+
+        event.registerBlock(
+                Capabilities.ItemHandler.BLOCK,
+                (level, pos, state, blockEntity, side) -> CentrifugeBlock.getMasterBlockEntity(level, state, pos)
+                        .map(centrifuge -> centrifuge.getAutomationItemHandler(pos, side))
+                        .orElse(null),
+                ModBlocks.CENTRIFUGE_PART.get()
+        );
+
+        event.registerBlock(
+                Capabilities.FluidHandler.BLOCK,
+                (level, pos, state, blockEntity, side) -> CentrifugeBlock.getMasterBlockEntity(level, state, pos)
+                        .map(centrifuge -> centrifuge.getAutomationFluidHandler(pos, side))
+                        .orElse(null),
+                ModBlocks.CENTRIFUGE_PART.get()
         );
 
         event.registerBlock(

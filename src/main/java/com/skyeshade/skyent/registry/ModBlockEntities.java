@@ -92,6 +92,12 @@ public final class ModBlockEntities {
                     ModBlocks.MV_CHEMICAL_REACTOR.get()
             ).build(null));
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CentrifugeBlockEntity>> CENTRIFUGE =
+            BLOCK_ENTITIES.register("centrifuge", () -> BlockEntityType.Builder.of(
+                    CentrifugeBlockEntity::new,
+                    ModBlocks.CENTRIFUGE.get()
+            ).build(null));
+
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<BlastDoorBlockEntity>> BLAST_DOOR =
             BLOCK_ENTITIES.register("blast_door", () -> BlockEntityType.Builder.of(
                     BlastDoorBlockEntity::new,
