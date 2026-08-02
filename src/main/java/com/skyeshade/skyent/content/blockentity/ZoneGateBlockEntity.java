@@ -108,6 +108,14 @@ public class ZoneGateBlockEntity extends BlockEntity {
         return gateState == GateState.OPENING || gateState == GateState.CLOSING;
     }
 
+    public boolean isRadiationOpen() {
+        return isOpen();
+    }
+
+    public boolean isRadiationClosed() {
+        return !isOpen();
+    }
+
     public float getOpenProgress() {
         return openProgress;
     }

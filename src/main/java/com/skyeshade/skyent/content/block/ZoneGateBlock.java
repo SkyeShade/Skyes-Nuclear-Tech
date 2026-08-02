@@ -272,6 +272,36 @@ public class ZoneGateBlock extends BaseEntityBlock {
         return doorPanel.isEmpty() ? frame : Shapes.or(frame, doorPanel);
     }
 
+    public static VoxelShape radiationFrameShapeForState(BlockState state) {
+        Direction facing = state.hasProperty(FACING)
+                ? state.getValue(FACING)
+                : state.getValue(ZoneGatePartBlock.FACING);
+        int localX = state.hasProperty(ZoneGatePartBlock.PART_X)
+                ? state.getValue(ZoneGatePartBlock.PART_X)
+                : CONTROLLER_LOCAL_X;
+        int localY = state.hasProperty(ZoneGatePartBlock.PART_Y)
+                ? state.getValue(ZoneGatePartBlock.PART_Y)
+                : CONTROLLER_LOCAL_Y;
+        return frameShapeForLocal(localX, localY, facing);
+    }
+
+    public static VoxelShape radiationDoorPanelShapeForState(BlockState state, double openProgress) {
+        if (openProgress >= 1.0D) {
+            return Shapes.empty();
+        }
+
+        Direction facing = state.hasProperty(FACING)
+                ? state.getValue(FACING)
+                : state.getValue(ZoneGatePartBlock.FACING);
+        int localX = state.hasProperty(ZoneGatePartBlock.PART_X)
+                ? state.getValue(ZoneGatePartBlock.PART_X)
+                : CONTROLLER_LOCAL_X;
+        int localY = state.hasProperty(ZoneGatePartBlock.PART_Y)
+                ? state.getValue(ZoneGatePartBlock.PART_Y)
+                : CONTROLLER_LOCAL_Y;
+        return doorPanelShapeForLocal(localX, localY, facing, openProgress * ZoneGateBlockEntity.ZONE_GATE_DOOR_TRAVEL_Y);
+    }
+
     public static boolean isPoweredAnywhere(Level level, BlockPos masterPos, Direction facing) {
         for (int y = 0; y < SIZE_Y; y++) {
             for (int x = 0; x < SIZE_X; x++) {

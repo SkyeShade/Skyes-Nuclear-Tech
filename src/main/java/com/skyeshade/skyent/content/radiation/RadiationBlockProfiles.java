@@ -184,7 +184,7 @@ public final class RadiationBlockProfiles {
                 .showShieldingTooltip()
                 .build());
         register(ModBlocks.PLATED_CONCRETE, RadiationBlockProfile.builder()
-                .transmission(0.02D)
+                .transmission(0.001D)
                 .showShieldingTooltip()
                 .build());
         register(ModBlocks.ALUMINUM_BLOCK, RadiationBlockProfile.builder()
@@ -206,6 +206,13 @@ public final class RadiationBlockProfiles {
         register(ModBlocks.LEAD_BLOCK, RadiationBlockProfile.builder()
                 .transmission(0.02D)
                 .showShieldingTooltip()
+                .build());
+        register(ModBlocks.ZONE_GATE, RadiationBlockProfile.builder()
+                .transmission(0.50D)
+                .showShieldingTooltip()
+                .build());
+        register(ModBlocks.ZONE_GATE_PART, RadiationBlockProfile.builder()
+                .transmission(0.50D)
                 .build());
         register(ModBlocks.BLAST_DOOR, RadiationBlockProfile.builder()
                 .transmission(0.001D)

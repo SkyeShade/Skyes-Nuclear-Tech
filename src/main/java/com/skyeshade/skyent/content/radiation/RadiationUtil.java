@@ -2,7 +2,9 @@ package com.skyeshade.skyent.content.radiation;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.block.BlastDoorBlock;
+import com.skyeshade.skyent.content.block.ZoneGateBlock;
 import com.skyeshade.skyent.content.blockentity.BlastDoorBlockEntity;
+import com.skyeshade.skyent.content.blockentity.ZoneGateBlockEntity;
 import com.skyeshade.skyent.network.RadiationRayBatchPayload;
 import com.skyeshade.skyent.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
@@ -36,6 +38,7 @@ public final class RadiationUtil {
     private static final double RAY_PATH_STEP = 0.25D;
     private static final double MIN_RAY_MULTIPLIER = 0.01D;
     private static final double BLAST_DOOR_CLOSED_TRANSMISSION = 0.001D;
+    private static final double ZONE_GATE_SHIELDING_TRANSMISSION = 0.50D;
 
     private RadiationUtil() {
     }
@@ -284,6 +287,9 @@ public final class RadiationUtil {
         if (isBlastDoorBlock(state)) {
             return blastDoorEnvironmentalTransmission(state, level, pos);
         }
+        if (isZoneGateBlock(state)) {
+            return zoneGateEnvironmentalTransmission(state, level, pos);
+        }
         if (state.is(Blocks.GRASS_BLOCK) || state.is(ModBlocks.DEAD_GRASS.get()) || state.is(Blocks.DIRT)) {
             return 0.95D;
         }
@@ -316,11 +322,18 @@ public final class RadiationUtil {
         if (isBlastDoorBlock(state)) {
             return blastDoorEntityTransmission(state, level, pos, rayStart, rayEnd);
         }
+        if (isZoneGateBlock(state)) {
+            return zoneGateEntityTransmission(state, level, pos, rayStart, rayEnd);
+        }
         return environmentalRadiationTransmission(state, level, pos);
     }
 
     private static boolean isBlastDoorBlock(BlockState state) {
         return state.is(ModBlocks.BLAST_DOOR.get()) || state.is(ModBlocks.BLAST_DOOR_PART.get());
+    }
+
+    private static boolean isZoneGateBlock(BlockState state) {
+        return state.is(ModBlocks.ZONE_GATE.get()) || state.is(ModBlocks.ZONE_GATE_PART.get());
     }
 
     private static double blastDoorEnvironmentalTransmission(BlockState state, ServerLevel level, BlockPos pos) {
@@ -346,6 +359,41 @@ public final class RadiationUtil {
 
         BlockHitResult hit = panelShape.clip(rayStart, rayEnd, pos);
         return hit == null ? 1.0D : BLAST_DOOR_CLOSED_TRANSMISSION;
+    }
+
+    private static double zoneGateEnvironmentalTransmission(BlockState state, ServerLevel level, BlockPos pos) {
+        OptionalDouble fallbackTransmission = RadiationBlockProfiles.getCustomTransmission(state);
+        double transmission = fallbackTransmission.orElse(ZONE_GATE_SHIELDING_TRANSMISSION);
+        boolean open = ZoneGateBlock.getMasterBlockEntity(level, state, pos)
+                .map(ZoneGateBlockEntity::isRadiationOpen)
+                .orElse(false);
+        if (!open) {
+            // Match Blast Door's coarse world-ray policy: moving gates shield like closed gates.
+            return transmission;
+        }
+
+        return ZoneGateBlock.radiationFrameShapeForState(state).isEmpty() ? 1.0D : transmission;
+    }
+
+    private static double zoneGateEntityTransmission(BlockState state, ServerLevel level, BlockPos pos, Vec3 rayStart, Vec3 rayEnd) {
+        OptionalDouble fallbackTransmission = RadiationBlockProfiles.getCustomTransmission(state);
+        double transmission = fallbackTransmission.orElse(ZONE_GATE_SHIELDING_TRANSMISSION);
+
+        VoxelShape frameShape = ZoneGateBlock.radiationFrameShapeForState(state);
+        if (!frameShape.isEmpty() && frameShape.clip(rayStart, rayEnd, pos) != null) {
+            return transmission;
+        }
+
+        double openProgress = ZoneGateBlock.getMasterBlockEntity(level, state, pos)
+                .map(ZoneGateBlockEntity::getOpenProgress)
+                .orElse(0.0F);
+        VoxelShape panelShape = ZoneGateBlock.radiationDoorPanelShapeForState(state, openProgress);
+        if (panelShape.isEmpty()) {
+            return 1.0D;
+        }
+
+        BlockHitResult hit = panelShape.clip(rayStart, rayEnd, pos);
+        return hit == null ? 1.0D : transmission;
     }
 
 
