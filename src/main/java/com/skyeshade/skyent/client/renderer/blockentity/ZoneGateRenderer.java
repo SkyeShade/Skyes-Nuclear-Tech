@@ -65,8 +65,8 @@ public class ZoneGateRenderer implements BlockEntityRenderer<ZoneGateBlockEntity
         poseStack.pushPose();
         rotateForFacing(facing, poseStack);
         double yOffset = progress * ZoneGateBlockEntity.ZONE_GATE_DOOR_TRAVEL_Y;
-        renderFrameModel(state, poseStack, bufferSource, sharedLight, RenderType.cutout());
-        renderDoorModel(state, poseStack, bufferSource, sharedLight, yOffset, RenderType.cutout());
+        renderFrameModel(state, facing, poseStack, bufferSource, sharedLight, RenderType.cutout());
+        renderDoorModel(state, facing, poseStack, bufferSource, sharedLight, yOffset, RenderType.cutout());
         poseStack.popPose();
     }
 
@@ -95,7 +95,7 @@ public class ZoneGateRenderer implements BlockEntityRenderer<ZoneGateBlockEntity
         };
     }
 
-    private static void renderFrameModel(BlockState state, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, RenderType renderType) {
+    private static void renderFrameModel(BlockState state, Direction facing, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, RenderType renderType) {
         Minecraft minecraft = Minecraft.getInstance();
         BakedModel model = minecraft.getModelManager().getModel(FRAME_MODEL);
         ModelData modelData = ModelData.of(SkyentModelData.SHARED_PACKED_LIGHT, packedLight);
@@ -117,11 +117,11 @@ public class ZoneGateRenderer implements BlockEntityRenderer<ZoneGateBlockEntity
                 green = (color >> 8 & 0xFF) / 255.0F;
                 blue = (color & 0xFF) / 255.0F;
             }
-            consumer.putBulkData(poseStack.last(), quad, FULL_BRIGHTNESS, red, green, blue, 1.0F, lightmap, OverlayTexture.NO_OVERLAY, true);
+            consumer.putBulkData(poseStack.last(), correctDirectionalShadeForFacing(quad, facing), FULL_BRIGHTNESS, red, green, blue, 1.0F, lightmap, OverlayTexture.NO_OVERLAY, true);
         }
     }
 
-    private static void renderDoorModel(BlockState state, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, double yOffset, RenderType renderType) {
+    private static void renderDoorModel(BlockState state, Direction facing, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, double yOffset, RenderType renderType) {
         Minecraft minecraft = Minecraft.getInstance();
         BakedModel model = minecraft.getModelManager().getModel(DOOR_PANEL_MODEL);
         ModelData modelData = ModelData.of(SkyentModelData.SHARED_PACKED_LIGHT, packedLight);
@@ -144,9 +144,63 @@ public class ZoneGateRenderer implements BlockEntityRenderer<ZoneGateBlockEntity
                 blue = (color & 0xFF) / 255.0F;
             }
             for (BakedQuad clippedQuad : clipQuadToVisibleDoorY(quad, yOffset)) {
-                consumer.putBulkData(poseStack.last(), clippedQuad, FULL_BRIGHTNESS, red, green, blue, 1.0F, lightmap, OverlayTexture.NO_OVERLAY, true);
+                consumer.putBulkData(poseStack.last(), correctDirectionalShadeForFacing(clippedQuad, facing), FULL_BRIGHTNESS, red, green, blue, 1.0F, lightmap, OverlayTexture.NO_OVERLAY, true);
             }
         }
+    }
+
+    private static BakedQuad correctDirectionalShadeForFacing(BakedQuad quad, Direction facing) {
+        Direction modelDirection = quad.getDirection();
+        Direction worldDirection = rotateDirection(modelDirection, facing);
+        float modelShade = directionalFaceShade(modelDirection);
+        float worldShade = directionalFaceShade(worldDirection);
+        if (Math.abs(modelShade - worldShade) < 1.0E-4F || modelShade <= 0.0F) {
+            return quad;
+        }
+
+        int[] vertices = quad.getVertices().clone();
+        float scale = worldShade / modelShade;
+        for (int vertex = 0; vertex < 4; vertex++) {
+            int offset = vertex * IQuadTransformer.STRIDE + IQuadTransformer.COLOR;
+            vertices[offset] = scaleColor(vertices[offset], scale);
+        }
+        return new BakedQuad(
+                vertices,
+                quad.getTintIndex(),
+                worldDirection,
+                quad.getSprite(),
+                quad.isShade(),
+                quad.hasAmbientOcclusion()
+        );
+    }
+
+    private static Direction rotateDirection(Direction direction, Direction facing) {
+        if (direction.getAxis().isVertical()) {
+            return direction;
+        }
+        return switch (facing) {
+            case EAST -> direction.getClockWise();
+            case SOUTH -> direction.getOpposite();
+            case WEST -> direction.getCounterClockWise();
+            default -> direction;
+        };
+    }
+
+    private static float directionalFaceShade(Direction direction) {
+        return switch (direction) {
+            case UP -> 1.0F;
+            case DOWN -> 0.55F;
+            case NORTH, SOUTH -> 0.82F;
+            case EAST, WEST -> 0.70F;
+        };
+    }
+
+    private static int scaleColor(int color, float scale) {
+        int red = Math.max(0, Math.min(255, Math.round((color & 0xFF) * scale)));
+        int green = Math.max(0, Math.min(255, Math.round(((color >> 8) & 0xFF) * scale)));
+        int blue = Math.max(0, Math.min(255, Math.round(((color >> 16) & 0xFF) * scale)));
+        int alpha = (color >> 24) & 0xFF;
+        return red | green << 8 | blue << 16 | alpha << 24;
     }
 
     private static List<BakedQuad> clipQuadToVisibleDoorY(BakedQuad quad, double yOffset) {

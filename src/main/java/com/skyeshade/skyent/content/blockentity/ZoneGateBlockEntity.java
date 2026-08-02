@@ -195,8 +195,7 @@ public class ZoneGateBlockEntity extends BlockEntity {
                 }
             }
             case OPENING, CLOSING -> {
-                // Zone Gate commits to its current movement and only rechecks redstone
-                // after reaching fully open or fully closed.
+                // only rechecks redstone after reaching fully open or fully closed.
             }
         }
     }
