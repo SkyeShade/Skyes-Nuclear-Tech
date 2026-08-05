@@ -2,18 +2,7 @@ package com.skyeshade.skyent.mixin.client;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import com.skyeshade.skyent.content.block.BlastDoorBlock;
-import com.skyeshade.skyent.content.block.CentrifugeBlock;
-import com.skyeshade.skyent.content.block.HeatingChamberBlock;
-import com.skyeshade.skyent.content.block.IndustrialPressBlock;
-import com.skyeshade.skyent.content.block.LVMVTransformerBlock;
-import com.skyeshade.skyent.content.block.MediumTankBlock;
-import com.skyeshade.skyent.content.block.MVAssemblerBlock;
-import com.skyeshade.skyent.content.block.MVChemicalReactorBlock;
-import com.skyeshade.skyent.content.block.RollingMillBlock;
-import com.skyeshade.skyent.content.block.SteamForgeHammerBlock;
-import com.skyeshade.skyent.content.block.WireMillBlock;
-import com.skyeshade.skyent.content.block.ZoneGateBlock;
+import com.skyeshade.skyent.content.block.*;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.MultiPlayerGameMode;
 import net.minecraft.core.BlockPos;
@@ -52,6 +41,7 @@ public abstract class MixinMultiPlayerGameMode {
         visualPos = CentrifugeBlock.resolveDestroyProgressPos(level, visualPos);
         visualPos = BlastDoorBlock.resolveDestroyProgressPos(level, visualPos);
         visualPos = ZoneGateBlock.resolveDestroyProgressPos(level, visualPos);
+        visualPos = ArcFurnaceBlock.resolveDestroyProgressPos(level, visualPos);
         visualPos = MediumTankBlock.resolveDestroyProgressPos(level, visualPos);
         original.call(level, breakerId, visualPos, progress);
 
