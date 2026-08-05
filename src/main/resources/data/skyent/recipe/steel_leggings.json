@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "pattern": [
+    "SSS",
+    "S S",
+    "S S"
+  ],
+  "key": {
+    "S": {
+      "item": "skyent:steel_ingot"
+    }
+  },
+  "result": {
+    "id": "skyent:steel_leggings"
+  }
+}

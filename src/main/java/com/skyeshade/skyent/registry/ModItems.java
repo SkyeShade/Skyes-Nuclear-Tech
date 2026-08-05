@@ -21,6 +21,7 @@ import com.skyeshade.skyent.content.item.UraniumBlockItem;
 import com.skyeshade.skyent.content.item.WireCuttersItem;
 import com.skyeshade.skyent.content.item.WrenchItem;
 import net.minecraft.ChatFormatting;
+import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.BucketItem;
@@ -674,52 +675,72 @@ public final class ModItems {
 
     public static final DeferredItem<SwordItem> TITANIUM_SWORD = ITEMS.register(
             "titanium_sword",
-            () -> new SwordItem(SkyentToolTier.TITANIUM, new Item.Properties().durability(SkyentToolTier.TITANIUM.getUses()))
+            () -> new SwordItem(SkyentToolTier.TITANIUM, swordProperties(SkyentToolTier.TITANIUM))
     );
 
     public static final DeferredItem<PickaxeItem> TITANIUM_PICKAXE = ITEMS.register(
             "titanium_pickaxe",
-            () -> new PickaxeItem(SkyentToolTier.TITANIUM, new Item.Properties().durability(SkyentToolTier.TITANIUM.getUses()))
+            () -> new PickaxeItem(SkyentToolTier.TITANIUM, pickaxeProperties(SkyentToolTier.TITANIUM))
     );
 
     public static final DeferredItem<AxeItem> TITANIUM_AXE = ITEMS.register(
             "titanium_axe",
-            () -> new AxeItem(SkyentToolTier.TITANIUM, new Item.Properties().durability(SkyentToolTier.TITANIUM.getUses()))
+            () -> new AxeItem(SkyentToolTier.TITANIUM, axeProperties(SkyentToolTier.TITANIUM))
     );
 
     public static final DeferredItem<ShovelItem> TITANIUM_SHOVEL = ITEMS.register(
             "titanium_shovel",
-            () -> new ShovelItem(SkyentToolTier.TITANIUM, new Item.Properties().durability(SkyentToolTier.TITANIUM.getUses()))
+            () -> new ShovelItem(SkyentToolTier.TITANIUM, shovelProperties(SkyentToolTier.TITANIUM))
     );
 
     public static final DeferredItem<HoeItem> TITANIUM_HOE = ITEMS.register(
             "titanium_hoe",
-            () -> new HoeItem(SkyentToolTier.TITANIUM, new Item.Properties().durability(SkyentToolTier.TITANIUM.getUses()))
+            () -> new HoeItem(SkyentToolTier.TITANIUM, hoeProperties(SkyentToolTier.TITANIUM))
     );
 
-    public static final DeferredItem<SwordItem> TUNGSTEN_SWORD = ITEMS.register(
-            "tungsten_sword",
-            () -> new SwordItem(SkyentToolTier.TUNGSTEN, new Item.Properties().durability(SkyentToolTier.TUNGSTEN.getUses()))
+    public static final DeferredItem<SwordItem> STEEL_SWORD = ITEMS.register(
+            "steel_sword",
+            () -> new SwordItem(SkyentToolTier.STEEL, swordProperties(SkyentToolTier.STEEL))
     );
 
-    public static final DeferredItem<PickaxeItem> TUNGSTEN_PICKAXE = ITEMS.register(
-            "tungsten_pickaxe",
-            () -> new PickaxeItem(SkyentToolTier.TUNGSTEN, new Item.Properties().durability(SkyentToolTier.TUNGSTEN.getUses()))
+    public static final DeferredItem<PickaxeItem> STEEL_PICKAXE = ITEMS.register(
+            "steel_pickaxe",
+            () -> new PickaxeItem(SkyentToolTier.STEEL, pickaxeProperties(SkyentToolTier.STEEL))
     );
 
-    public static final DeferredItem<AxeItem> TUNGSTEN_AXE = ITEMS.register(
-            "tungsten_axe",
-            () -> new AxeItem(SkyentToolTier.TUNGSTEN, new Item.Properties().durability(SkyentToolTier.TUNGSTEN.getUses()))
+    public static final DeferredItem<AxeItem> STEEL_AXE = ITEMS.register(
+            "steel_axe",
+            () -> new AxeItem(SkyentToolTier.STEEL, axeProperties(SkyentToolTier.STEEL))
     );
 
-    public static final DeferredItem<ShovelItem> TUNGSTEN_SHOVEL = ITEMS.register(
-            "tungsten_shovel",
-            () -> new ShovelItem(SkyentToolTier.TUNGSTEN, new Item.Properties().durability(SkyentToolTier.TUNGSTEN.getUses()))
+    public static final DeferredItem<ShovelItem> STEEL_SHOVEL = ITEMS.register(
+            "steel_shovel",
+            () -> new ShovelItem(SkyentToolTier.STEEL, shovelProperties(SkyentToolTier.STEEL))
     );
 
-    public static final DeferredItem<HoeItem> TUNGSTEN_HOE = ITEMS.register(
-            "tungsten_hoe",
-            () -> new HoeItem(SkyentToolTier.TUNGSTEN, new Item.Properties().durability(SkyentToolTier.TUNGSTEN.getUses()))
+    public static final DeferredItem<HoeItem> STEEL_HOE = ITEMS.register(
+            "steel_hoe",
+            () -> new HoeItem(SkyentToolTier.STEEL, hoeProperties(SkyentToolTier.STEEL))
+    );
+
+    public static final DeferredItem<ArmorItem> STEEL_HELMET = ITEMS.register(
+            "steel_helmet",
+            () -> new ArmorItem(ModArmorMaterials.STEEL, ArmorItem.Type.HELMET, armorProperties(ArmorItem.Type.HELMET))
+    );
+
+    public static final DeferredItem<ArmorItem> STEEL_CHESTPLATE = ITEMS.register(
+            "steel_chestplate",
+            () -> new ArmorItem(ModArmorMaterials.STEEL, ArmorItem.Type.CHESTPLATE, armorProperties(ArmorItem.Type.CHESTPLATE))
+    );
+
+    public static final DeferredItem<ArmorItem> STEEL_LEGGINGS = ITEMS.register(
+            "steel_leggings",
+            () -> new ArmorItem(ModArmorMaterials.STEEL, ArmorItem.Type.LEGGINGS, armorProperties(ArmorItem.Type.LEGGINGS))
+    );
+
+    public static final DeferredItem<ArmorItem> STEEL_BOOTS = ITEMS.register(
+            "steel_boots",
+            () -> new ArmorItem(ModArmorMaterials.STEEL, ArmorItem.Type.BOOTS, armorProperties(ArmorItem.Type.BOOTS))
     );
 
     public static final DeferredItem<LVWireDrumItem> COPPER_WIRE_DRUM = ITEMS.register(
@@ -782,6 +803,34 @@ public final class ModItems {
 
     private static DeferredItem<Item> simpleItem(String name) {
         return ITEMS.registerSimpleItem(name, new Item.Properties());
+    }
+
+    private static Item.Properties swordProperties(SkyentToolTier tier) {
+        return toolProperties(tier).attributes(SwordItem.createAttributes(tier, 3, -2.4F));
+    }
+
+    private static Item.Properties pickaxeProperties(SkyentToolTier tier) {
+        return toolProperties(tier).attributes(PickaxeItem.createAttributes(tier, 1.0F, -2.8F));
+    }
+
+    private static Item.Properties axeProperties(SkyentToolTier tier) {
+        return toolProperties(tier).attributes(AxeItem.createAttributes(tier, 5.0F, -3.0F));
+    }
+
+    private static Item.Properties shovelProperties(SkyentToolTier tier) {
+        return toolProperties(tier).attributes(ShovelItem.createAttributes(tier, 1.5F, -3.0F));
+    }
+
+    private static Item.Properties hoeProperties(SkyentToolTier tier) {
+        return toolProperties(tier).attributes(HoeItem.createAttributes(tier, -3.0F, 0.0F));
+    }
+
+    private static Item.Properties toolProperties(SkyentToolTier tier) {
+        return new Item.Properties().durability(tier.getUses());
+    }
+
+    private static Item.Properties armorProperties(ArmorItem.Type type) {
+        return new Item.Properties().durability(type.getDurability(33));
     }
 
     private static DeferredItem<RadioactiveBlockItem> radioactiveBlockItem(String name, net.neoforged.neoforge.registries.DeferredBlock<? extends net.minecraft.world.level.block.Block> block) {

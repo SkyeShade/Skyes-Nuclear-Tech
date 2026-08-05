@@ -110,11 +110,15 @@ public final class ModCreativeTabs {
                 ModItems.TITANIUM_AXE,
                 ModItems.TITANIUM_SHOVEL,
                 ModItems.TITANIUM_HOE,
-                ModItems.TUNGSTEN_SWORD,
-                ModItems.TUNGSTEN_PICKAXE,
-                ModItems.TUNGSTEN_AXE,
-                ModItems.TUNGSTEN_SHOVEL,
-                ModItems.TUNGSTEN_HOE
+                ModItems.STEEL_SWORD,
+                ModItems.STEEL_PICKAXE,
+                ModItems.STEEL_AXE,
+                ModItems.STEEL_SHOVEL,
+                ModItems.STEEL_HOE,
+                ModItems.STEEL_HELMET,
+                ModItems.STEEL_CHESTPLATE,
+                ModItems.STEEL_LEGGINGS,
+                ModItems.STEEL_BOOTS
         );
     }
 

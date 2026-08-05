@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "R": {
+      "item": "minecraft:stick"
+    },
+    "T": {
+      "item": "skyent:titanium_ingot"
+    }
+  },
+  "pattern": [
+    "TT",
+    "TR",
+    " R"
+  ],
+  "result": {
+    "count": 1,
+    "id": "skyent:titanium_axe"
+  }
+}

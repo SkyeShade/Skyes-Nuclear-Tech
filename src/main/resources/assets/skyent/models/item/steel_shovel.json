@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/handheld",
   "textures": {
-    "layer0": "skyent:item/tungsten_sword"
+    "layer0": "skyent:item/steel_shovel"
   }
 }

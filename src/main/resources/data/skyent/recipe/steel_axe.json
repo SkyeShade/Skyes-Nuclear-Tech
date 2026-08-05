@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "R": {
+      "item": "minecraft:stick"
+    },
+    "S": {
+      "item": "skyent:steel_ingot"
+    }
+  },
+  "pattern": [
+    "SS",
+    "SR",
+    " R"
+  ],
+  "result": {
+    "count": 1,
+    "id": "skyent:steel_axe"
+  }
+}

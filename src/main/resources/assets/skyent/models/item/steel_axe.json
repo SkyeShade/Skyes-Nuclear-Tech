@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/handheld",
   "textures": {
-    "layer0": "skyent:item/tungsten_hoe"
+    "layer0": "skyent:item/steel_axe"
   }
 }
