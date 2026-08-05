@@ -1,0 +1,23 @@
+{
+  "type": "skyent:mv_assembler",
+  "ingredients": [
+    {
+      "ingredient": {
+        "item": "skyent:gold_wire"
+      },
+      "count": 8
+    },
+    {
+      "ingredient": {
+        "item": "skyent:steel_rod"
+      },
+      "count": 1
+    }
+  ],
+  "result": {
+    "id": "skyent:gold_coil",
+    "count": 1
+  },
+  "process_time": 100,
+  "energy_per_tick": 64
+}

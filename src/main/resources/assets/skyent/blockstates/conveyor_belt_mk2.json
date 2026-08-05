@@ -1,0 +1,39 @@
+{
+  "variants": {
+    "back_connected=false,facing=north,left_connected=false,right_connected=false": { "model": "skyent:block/conveyor_belt_mk2", "y": 0 },
+    "back_connected=true,facing=north,left_connected=false,right_connected=false": { "model": "skyent:block/conveyor_belt_mk2", "y": 0 },
+    "back_connected=false,facing=north,left_connected=false,right_connected=true": { "model": "skyent:block/conveyor_belt_mk2_corner", "y": 0 },
+    "back_connected=false,facing=north,left_connected=true,right_connected=false": { "model": "skyent:block/conveyor_belt_mk2_corner_inverted", "y": 0 },
+    "back_connected=true,facing=north,left_connected=true,right_connected=false": { "model": "skyent:block/conveyor_belt_mk2_back_side_inverted", "y": 0 },
+    "back_connected=true,facing=north,left_connected=false,right_connected=true": { "model": "skyent:block/conveyor_belt_mk2_back_side", "y": 0 },
+    "back_connected=false,facing=north,left_connected=true,right_connected=true": { "model": "skyent:block/conveyor_belt_mk2_sides", "y": 0 },
+    "back_connected=true,facing=north,left_connected=true,right_connected=true": { "model": "skyent:block/conveyor_belt_mk2_quad", "y": 0 },
+
+    "back_connected=false,facing=east,left_connected=false,right_connected=false": { "model": "skyent:block/conveyor_belt_mk2", "y": 90 },
+    "back_connected=true,facing=east,left_connected=false,right_connected=false": { "model": "skyent:block/conveyor_belt_mk2", "y": 90 },
+    "back_connected=false,facing=east,left_connected=false,right_connected=true": { "model": "skyent:block/conveyor_belt_mk2_corner", "y": 90 },
+    "back_connected=false,facing=east,left_connected=true,right_connected=false": { "model": "skyent:block/conveyor_belt_mk2_corner_inverted", "y": 90 },
+    "back_connected=true,facing=east,left_connected=true,right_connected=false": { "model": "skyent:block/conveyor_belt_mk2_back_side_inverted", "y": 90 },
+    "back_connected=true,facing=east,left_connected=false,right_connected=true": { "model": "skyent:block/conveyor_belt_mk2_back_side", "y": 90 },
+    "back_connected=false,facing=east,left_connected=true,right_connected=true": { "model": "skyent:block/conveyor_belt_mk2_sides", "y": 90 },
+    "back_connected=true,facing=east,left_connected=true,right_connected=true": { "model": "skyent:block/conveyor_belt_mk2_quad", "y": 90 },
+
+    "back_connected=false,facing=south,left_connected=false,right_connected=false": { "model": "skyent:block/conveyor_belt_mk2", "y": 180 },
+    "back_connected=true,facing=south,left_connected=false,right_connected=false": { "model": "skyent:block/conveyor_belt_mk2", "y": 180 },
+    "back_connected=false,facing=south,left_connected=false,right_connected=true": { "model": "skyent:block/conveyor_belt_mk2_corner", "y": 180 },
+    "back_connected=false,facing=south,left_connected=true,right_connected=false": { "model": "skyent:block/conveyor_belt_mk2_corner_inverted", "y": 180 },
+    "back_connected=true,facing=south,left_connected=true,right_connected=false": { "model": "skyent:block/conveyor_belt_mk2_back_side_inverted", "y": 180 },
+    "back_connected=true,facing=south,left_connected=false,right_connected=true": { "model": "skyent:block/conveyor_belt_mk2_back_side", "y": 180 },
+    "back_connected=false,facing=south,left_connected=true,right_connected=true": { "model": "skyent:block/conveyor_belt_mk2_sides", "y": 180 },
+    "back_connected=true,facing=south,left_connected=true,right_connected=true": { "model": "skyent:block/conveyor_belt_mk2_quad", "y": 180 },
+
+    "back_connected=false,facing=west,left_connected=false,right_connected=false": { "model": "skyent:block/conveyor_belt_mk2", "y": 270 },
+    "back_connected=true,facing=west,left_connected=false,right_connected=false": { "model": "skyent:block/conveyor_belt_mk2", "y": 270 },
+    "back_connected=false,facing=west,left_connected=false,right_connected=true": { "model": "skyent:block/conveyor_belt_mk2_corner", "y": 270 },
+    "back_connected=false,facing=west,left_connected=true,right_connected=false": { "model": "skyent:block/conveyor_belt_mk2_corner_inverted", "y": 270 },
+    "back_connected=true,facing=west,left_connected=true,right_connected=false": { "model": "skyent:block/conveyor_belt_mk2_back_side_inverted", "y": 270 },
+    "back_connected=true,facing=west,left_connected=false,right_connected=true": { "model": "skyent:block/conveyor_belt_mk2_back_side", "y": 270 },
+    "back_connected=false,facing=west,left_connected=true,right_connected=true": { "model": "skyent:block/conveyor_belt_mk2_sides", "y": 270 },
+    "back_connected=true,facing=west,left_connected=true,right_connected=true": { "model": "skyent:block/conveyor_belt_mk2_quad", "y": 270 }
+  }
+}

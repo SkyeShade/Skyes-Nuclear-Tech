@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "C": {
+      "item": "skyent:basic_conveyor_belt"
+    },
+    "M": {
+      "item": "skyent:electric_motor"
+    },
+    "P": {
+      "item": "skyent:steel_plate"
+    }
+  },
+  "pattern": [
+    "PCP",
+    "CMC",
+    "PCP"
+  ],
+  "result": {
+    "id": "skyent:conveyor_splitter",
+    "count": 4
+  }
+}

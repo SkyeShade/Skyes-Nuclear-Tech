@@ -739,6 +739,10 @@ public class IndustrialPressBlockEntity extends BlockEntity implements RJEnergyI
             return ItemStack.EMPTY;
         }
 
+        if (stack.is(ModItems.CARBON_POWDER.get())) {
+            return new ItemStack(ModItems.GRAPHITE.get(), stack.getCount());
+        }
+
         Item output = plateForIngot(stack);
         int outputCount = stack.getCount();
         if (output == null) {
@@ -762,7 +766,9 @@ public class IndustrialPressBlockEntity extends BlockEntity implements RJEnergyI
         if (item == Items.GOLD_INGOT) return ModItems.GOLD_PLATE.get();
         if (item == ModItems.LEAD_INGOT.get()) return ModItems.LEAD_PLATE.get();
         if (item == ModItems.STEEL_INGOT.get()) return ModItems.STEEL_PLATE.get();
+        if (item == ModItems.STAINLESS_STEEL_INGOT.get()) return ModItems.STAINLESS_STEEL_PLATE.get();
         if (item == ModItems.ALUMINUM_INGOT.get()) return ModItems.ALUMINUM_PLATE.get();
+        if (item == ModItems.CHROMIUM_INGOT.get()) return ModItems.CHROMIUM_PLATE.get();
         if (item == ModItems.TITANIUM_INGOT.get()) return ModItems.TITANIUM_PLATE.get();
         if (item == ModItems.TUNGSTEN_INGOT.get()) return ModItems.TUNGSTEN_PLATE.get();
         if (item == ModItems.COBALT_INGOT.get()) return ModItems.COBALT_PLATE.get();

@@ -2,7 +2,10 @@ package com.skyeshade.skyent.content.block;
 
 import com.mojang.serialization.MapCodec;
 import com.skyeshade.skyent.content.blockentity.BlastDoorBlockEntity;
-import com.skyeshade.skyent.content.shape.MultiblockShapeRegistry;
+import com.skyeshade.skyent.content.multiblock.ModelMultiblockCollisionMode;
+import com.skyeshade.skyent.content.multiblock.ModelMultiblockDefinition;
+import com.skyeshade.skyent.content.multiblock.ModelMultiblockRenderMode;
+import com.skyeshade.skyent.content.multiblock.ModelMultiblocks;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import com.skyeshade.skyent.registry.ModBlocks;
 import com.skyeshade.skyent.registry.ModItems;
@@ -36,6 +39,7 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -51,6 +55,18 @@ public class BlastDoorBlock extends BaseEntityBlock {
     public static final int CONTROLLER_LOCAL_X = 1;
     public static final int CONTROLLER_LOCAL_Y = 0;
     public static final int CONTROLLER_LOCAL_Z = 0;
+    public static final ModelMultiblockDefinition MULTIBLOCK = new ModelMultiblockDefinition(
+            ModMultiblockShapes.BLAST_DOOR_FRAME,
+            SIZE_X,
+            SIZE_Y,
+            SIZE_Z,
+            new BlockPos(CONTROLLER_LOCAL_X, CONTROLLER_LOCAL_Y, CONTROLLER_LOCAL_Z),
+            2.0D,
+            Vec3.ZERO,
+            new Vec3(0.0D, 0.0D, -8.0D),
+            ModelMultiblockCollisionMode.GENERATED_FRAME_PLUS_DYNAMIC_DOOR,
+            ModelMultiblockRenderMode.CONTROLLER_FRAME_AND_BER_DYNAMIC_PARTS
+    );
     private static final ThreadLocal<Boolean> REMOVING = ThreadLocal.withInitial(() -> false);
     private static final VoxelShape FULL_CELL_SHAPE = Shapes.block();
     private static final VoxelShape EMPTY_FRAME_CELL_SHAPE = Shapes.empty();
@@ -96,17 +112,8 @@ public class BlastDoorBlock extends BaseEntityBlock {
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         Direction facing = context.getHorizontalDirection();
         BlockPos origin = context.getClickedPos();
-        for (int y = 0; y < SIZE_Y; y++) {
-            for (int x = 0; x < SIZE_X; x++) {
-                for (int z = 0; z < SIZE_Z; z++) {
-                    if (isControllerLocalPos(x, y, z)) {
-                        continue;
-                    }
-                    if (!canPlacePartAt(context, localToWorld(origin, facing, x, y, z))) {
-                        return null;
-                    }
-                }
-            }
+        if (!ModelMultiblocks.canPlace(MULTIBLOCK, context, origin, facing)) {
+            return null;
         }
         return defaultBlockState().setValue(FACING, facing);
     }
@@ -118,19 +125,11 @@ public class BlastDoorBlock extends BaseEntityBlock {
         }
 
         Direction facing = state.getValue(FACING);
-        for (int y = 0; y < SIZE_Y; y++) {
-            for (int x = 0; x < SIZE_X; x++) {
-                for (int z = 0; z < SIZE_Z; z++) {
-                    if (isControllerLocalPos(x, y, z)) {
-                        continue;
-                    }
-                    level.setBlock(localToWorld(pos, facing, x, y, z), ModBlocks.BLAST_DOOR_PART.get().defaultBlockState()
-                            .setValue(BlastDoorPartBlock.FACING, facing)
-                            .setValue(BlastDoorPartBlock.PART_X, x)
-                            .setValue(BlastDoorPartBlock.PART_Y, y), Block.UPDATE_ALL);
-                }
-            }
-        }
+        ModelMultiblocks.placeParts(MULTIBLOCK, level, pos, facing, (x, y, z, partFacing) ->
+                ModBlocks.BLAST_DOOR_PART.get().defaultBlockState()
+                        .setValue(BlastDoorPartBlock.FACING, partFacing)
+                        .setValue(BlastDoorPartBlock.PART_X, x)
+                        .setValue(BlastDoorPartBlock.PART_Y, y));
         if (level.getBlockEntity(pos) instanceof BlastDoorBlockEntity blastDoor) {
             blastDoor.updateRedstonePower();
         }
@@ -255,7 +254,7 @@ public class BlastDoorBlock extends BaseEntityBlock {
                     state.getValue(BlastDoorPartBlock.PART_Y),
                     CONTROLLER_LOCAL_Z
             );
-            return pos.subtract(rotateLocalOffset(local, state.getValue(BlastDoorPartBlock.FACING)));
+            return ModelMultiblocks.masterPosFromLocal(MULTIBLOCK, pos, local, state.getValue(BlastDoorPartBlock.FACING));
         }
         return pos;
     }
@@ -279,7 +278,7 @@ public class BlastDoorBlock extends BaseEntityBlock {
     }
 
     public static BlockPos localToWorld(BlockPos origin, Direction facing, int x, int y, int z) {
-        return origin.offset(rotateLocalOffset(new BlockPos(x, y, z), facing));
+        return ModelMultiblocks.localToWorld(MULTIBLOCK, origin, facing, x, y, z);
     }
 
     public static VoxelShape shapeForLocal(int x, int y, Direction facing, double openProgress) {
@@ -336,22 +335,16 @@ public class BlastDoorBlock extends BaseEntityBlock {
     }
 
     public static BlockPos rotateLocalOffset(BlockPos local, Direction facing) {
-        int rightOffset = local.getX() - CONTROLLER_LOCAL_X;
-        int y = local.getY() - CONTROLLER_LOCAL_Y;
-        int forwardOffset = local.getZ() - CONTROLLER_LOCAL_Z;
-        Direction right = facing.getClockWise();
-        int worldX = facing.getStepX() * forwardOffset + right.getStepX() * rightOffset;
-        int worldZ = facing.getStepZ() * forwardOffset + right.getStepZ() * rightOffset;
-        return new BlockPos(worldX, y, worldZ);
+        return ModelMultiblocks.rotateLocalOffset(MULTIBLOCK, local, facing);
     }
 
     private static boolean isControllerLocalPos(int x, int y, int z) {
-        return x == CONTROLLER_LOCAL_X && y == CONTROLLER_LOCAL_Y && z == CONTROLLER_LOCAL_Z;
+        return MULTIBLOCK.isControllerLocal(x, y, z);
     }
 
     private static VoxelShape frameShapeForLocal(int x, int y, Direction facing) {
-        return MultiblockShapeRegistry.getShape(
-                ModMultiblockShapes.BLAST_DOOR_FRAME,
+        return ModelMultiblocks.generatedShapeForLocal(
+                MULTIBLOCK,
                 facing,
                 x,
                 y,
@@ -389,34 +382,10 @@ public class BlastDoorBlock extends BaseEntityBlock {
 
     private static void spawnDestroyParticles(Level level, BlockPos masterPos, Direction facing) {
         BlockState visualState = ModBlocks.BLAST_DOOR.get().defaultBlockState().setValue(FACING, facing);
-        int visualStateId = Block.getId(visualState);
-        for (int y = 0; y < SIZE_Y; y++) {
-            for (int x = 0; x < SIZE_X; x++) {
-                for (int z = 0; z < SIZE_Z; z++) {
-                    level.levelEvent(2001, localToWorld(masterPos, facing, x, y, z), visualStateId);
-                }
-            }
-        }
+        ModelMultiblocks.spawnDestroyParticles(MULTIBLOCK, level, masterPos, facing, visualState);
     }
 
     private static void removeParts(Level level, BlockPos masterPos, Direction facing) {
-        for (int y = 0; y < SIZE_Y; y++) {
-            for (int x = 0; x < SIZE_X; x++) {
-                for (int z = 0; z < SIZE_Z; z++) {
-                    if (isControllerLocalPos(x, y, z)) {
-                        continue;
-                    }
-                    BlockPos partPos = localToWorld(masterPos, facing, x, y, z);
-                    if (level.getBlockState(partPos).is(ModBlocks.BLAST_DOOR_PART.get())) {
-                        level.setBlock(partPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
-                    }
-                }
-            }
-        }
-    }
-
-    private static boolean canPlacePartAt(BlockPlaceContext context, BlockPos pos) {
-        BlockState state = context.getLevel().getBlockState(pos);
-        return state.canBeReplaced(context);
+        ModelMultiblocks.removeParts(MULTIBLOCK, level, masterPos, facing, ModBlocks.BLAST_DOOR_PART.get());
     }
 }

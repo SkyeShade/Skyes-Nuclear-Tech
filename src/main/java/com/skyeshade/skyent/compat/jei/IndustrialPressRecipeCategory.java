@@ -52,7 +52,9 @@ public final class IndustrialPressRecipeCategory extends ConveyorMachineRecipeCa
                 recipe(ModItems.HOT_GOLD_INGOT.get(), ModItems.GOLD_PLATE.get()),
                 recipe(ModItems.LEAD_INGOT.get(), ModItems.LEAD_PLATE.get()),
                 recipe(ModItems.HOT_STEEL_INGOT.get(), ModItems.STEEL_PLATE.get()),
+                recipe(ModItems.HOT_STAINLESS_STEEL_INGOT.get(), ModItems.STAINLESS_STEEL_PLATE.get()),
                 recipe(ModItems.HOT_ALUMINUM_INGOT.get(), ModItems.ALUMINUM_PLATE.get()),
+                recipe(ModItems.HOT_CHROMIUM_INGOT.get(), ModItems.CHROMIUM_PLATE.get()),
                 recipe(ModItems.HOT_TITANIUM_INGOT.get(), ModItems.TITANIUM_PLATE.get()),
                 recipe(ModItems.HOT_TUNGSTEN_INGOT.get(), ModItems.TUNGSTEN_PLATE.get()),
                 recipe(ModItems.HOT_COBALT_INGOT.get(), ModItems.COBALT_PLATE.get()),
@@ -66,7 +68,8 @@ public final class IndustrialPressRecipeCategory extends ConveyorMachineRecipeCa
                 recipe(ModItems.HOT_TITANIUM_ROD.get(), ModItems.TITANIUM_BOLT.get()),
                 recipe(ModItems.HOT_COBALT_ROD.get(), ModItems.COBALT_BOLT.get()),
                 recipe(ModItems.HOT_TUNGSTEN_ROD.get(), ModItems.TUNGSTEN_BOLT.get()),
-                recipe(ModItems.HOT_NICKEL_ROD.get(), ModItems.NICKEL_BOLT.get())
+                recipe(ModItems.HOT_NICKEL_ROD.get(), ModItems.NICKEL_BOLT.get()),
+                recipe(ModItems.CARBON_POWDER.get(), ModItems.GRAPHITE.get())
         );
     }
 

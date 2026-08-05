@@ -2,7 +2,11 @@ package com.skyeshade.skyent.content.block;
 
 import com.mojang.serialization.MapCodec;
 import com.skyeshade.skyent.content.blockentity.MediumTankBlockEntity;
-import com.skyeshade.skyent.content.shape.MultiblockShapeRegistry;
+import com.skyeshade.skyent.content.multiblock.ModelMultiblockCollisionMode;
+import com.skyeshade.skyent.content.multiblock.ModelMultiblockDefinition;
+import com.skyeshade.skyent.content.multiblock.ModelMultiblockOrientation;
+import com.skyeshade.skyent.content.multiblock.ModelMultiblockRenderMode;
+import com.skyeshade.skyent.content.multiblock.ModelMultiblocks;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import com.skyeshade.skyent.registry.ModBlocks;
 import com.skyeshade.skyent.registry.ModItems;
@@ -39,6 +43,7 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 
 public class MediumTankBlock extends BaseEntityBlock {
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
@@ -47,6 +52,19 @@ public class MediumTankBlock extends BaseEntityBlock {
     public static final int SIZE_Y = 2;
     public static final int SIZE_Z = 4;
     private static final BlockPos CONTROLLER_LOCAL_POS = new BlockPos(0, 0, 1);
+    public static final ModelMultiblockDefinition MULTIBLOCK = new ModelMultiblockDefinition(
+            ModMultiblockShapes.MEDIUM_TANK,
+            SIZE_X,
+            SIZE_Y,
+            SIZE_Z,
+            CONTROLLER_LOCAL_POS,
+            2.0D,
+            Vec3.ZERO,
+            new Vec3(0.0D, 0.0D, 16.0D),
+            ModelMultiblockCollisionMode.GENERATED_MODEL_SHAPES,
+            ModelMultiblockRenderMode.CONTROLLER_BLOCK_MODEL,
+            ModelMultiblockOrientation.CARDINAL_ROTATION
+    );
     private static final ThreadLocal<Boolean> REMOVING = ThreadLocal.withInitial(() -> false);
 
     public MediumTankBlock(BlockBehaviour.Properties properties) {
@@ -70,17 +88,8 @@ public class MediumTankBlock extends BaseEntityBlock {
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         Direction facing = context.getHorizontalDirection().getOpposite().getClockWise();
         BlockPos origin = context.getClickedPos();
-        for (int y = 0; y < SIZE_Y; y++) {
-            for (int x = 0; x < SIZE_X; x++) {
-                for (int z = 0; z < SIZE_Z; z++) {
-                    if (isControllerLocalPos(x, y, z)) {
-                        continue;
-                    }
-                    if (!canPlacePartAt(context, localToWorld(origin, facing, x, y, z))) {
-                        return null;
-                    }
-                }
-            }
+        if (!ModelMultiblocks.canPlace(MULTIBLOCK, context, origin, facing)) {
+            return null;
         }
         return defaultBlockState().setValue(FACING, facing);
     }
@@ -92,20 +101,12 @@ public class MediumTankBlock extends BaseEntityBlock {
         }
 
         Direction facing = state.getValue(FACING);
-        for (int y = 0; y < SIZE_Y; y++) {
-            for (int x = 0; x < SIZE_X; x++) {
-                for (int z = 0; z < SIZE_Z; z++) {
-                    if (isControllerLocalPos(x, y, z)) {
-                        continue;
-                    }
-                    level.setBlock(localToWorld(pos, facing, x, y, z), ModBlocks.MEDIUM_TANK_PART.get().defaultBlockState()
-                            .setValue(MediumTankPartBlock.FACING, facing)
-                            .setValue(MediumTankPartBlock.PART_X, x)
-                            .setValue(MediumTankPartBlock.PART_Y, y)
-                            .setValue(MediumTankPartBlock.PART_Z, z), Block.UPDATE_ALL);
-                }
-            }
-        }
+        ModelMultiblocks.placeParts(MULTIBLOCK, level, pos, facing, (x, y, z, partFacing) ->
+                ModBlocks.MEDIUM_TANK_PART.get().defaultBlockState()
+                        .setValue(MediumTankPartBlock.FACING, partFacing)
+                        .setValue(MediumTankPartBlock.PART_X, x)
+                        .setValue(MediumTankPartBlock.PART_Y, y)
+                        .setValue(MediumTankPartBlock.PART_Z, z));
     }
 
     @Override
@@ -262,7 +263,7 @@ public class MediumTankBlock extends BaseEntityBlock {
                     state.getValue(MediumTankPartBlock.PART_Y),
                     state.getValue(MediumTankPartBlock.PART_Z)
             );
-            return pos.subtract(localPartOffset(local, state.getValue(MediumTankPartBlock.FACING)));
+            return ModelMultiblocks.masterPosFromLocal(MULTIBLOCK, pos, local, state.getValue(MediumTankPartBlock.FACING));
         }
         return pos;
     }
@@ -316,12 +317,12 @@ public class MediumTankBlock extends BaseEntityBlock {
     }
 
     public static BlockPos localToWorld(BlockPos origin, Direction facing, int x, int y, int z) {
-        return origin.offset(localPartOffset(new BlockPos(x, y, z), facing));
+        return ModelMultiblocks.localToWorld(MULTIBLOCK, origin, facing, x, y, z);
     }
 
     public static VoxelShape shapeForLocal(BlockPos local, Direction facing) {
-        return MultiblockShapeRegistry.getShape(
-                ModMultiblockShapes.MEDIUM_TANK,
+        return ModelMultiblocks.generatedShapeForLocal(
+                MULTIBLOCK,
                 facing,
                 local.getX(),
                 local.getY(),
@@ -335,7 +336,7 @@ public class MediumTankBlock extends BaseEntityBlock {
     }
 
     public static boolean isControllerLocalPos(int x, int y, int z) {
-        return CONTROLLER_LOCAL_POS.getX() == x && CONTROLLER_LOCAL_POS.getY() == y && CONTROLLER_LOCAL_POS.getZ() == z;
+        return MULTIBLOCK.isControllerLocal(x, y, z);
     }
 
     private static BlockPos localPartCoordinates(BlockState state) {
@@ -376,34 +377,10 @@ public class MediumTankBlock extends BaseEntityBlock {
 
     private static void spawnDestroyParticles(Level level, BlockPos masterPos, Direction facing) {
         BlockState visualState = ModBlocks.MEDIUM_TANK.get().defaultBlockState().setValue(FACING, facing);
-        int visualStateId = Block.getId(visualState);
-        for (int y = 0; y < SIZE_Y; y++) {
-            for (int x = 0; x < SIZE_X; x++) {
-                for (int z = 0; z < SIZE_Z; z++) {
-                    level.levelEvent(2001, localToWorld(masterPos, facing, x, y, z), visualStateId);
-                }
-            }
-        }
+        ModelMultiblocks.spawnDestroyParticles(MULTIBLOCK, level, masterPos, facing, visualState);
     }
 
     private static void removeParts(Level level, BlockPos masterPos, Direction facing) {
-        for (int y = 0; y < SIZE_Y; y++) {
-            for (int x = 0; x < SIZE_X; x++) {
-                for (int z = 0; z < SIZE_Z; z++) {
-                    if (isControllerLocalPos(x, y, z)) {
-                        continue;
-                    }
-                    BlockPos partPos = localToWorld(masterPos, facing, x, y, z);
-                    if (level.getBlockState(partPos).is(ModBlocks.MEDIUM_TANK_PART.get())) {
-                        level.setBlock(partPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
-                    }
-                }
-            }
-        }
-    }
-
-    private static boolean canPlacePartAt(BlockPlaceContext context, BlockPos pos) {
-        BlockState state = context.getLevel().getBlockState(pos);
-        return state.canBeReplaced(context);
+        ModelMultiblocks.removeParts(MULTIBLOCK, level, masterPos, facing, ModBlocks.MEDIUM_TANK_PART.get());
     }
 }

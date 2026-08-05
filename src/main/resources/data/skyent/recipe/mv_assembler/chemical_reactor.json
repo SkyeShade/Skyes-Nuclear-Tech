@@ -1,0 +1,59 @@
+{
+  "type": "skyent:mv_assembler",
+  "ingredients": [
+    {
+      "ingredient": {
+        "item": "skyent:steel_shell"
+      },
+      "count": 4
+    },
+    {
+      "ingredient": {
+        "item": "skyent:stainless_steel_plate"
+      },
+      "count": 16
+    },
+    {
+      "ingredient": {
+        "item": "skyent:aluminum_plate"
+      },
+      "count": 8
+    },
+    {
+      "ingredient": {
+        "item": "skyent:steel_bolt"
+      },
+      "count": 16
+    },
+    {
+      "ingredient": {
+        "item": "skyent:electric_motor"
+      },
+      "count": 4
+    },
+    {
+      "ingredient": {
+        "item": "skyent:heating_element"
+      },
+      "count": 4
+    },
+    {
+      "ingredient": {
+        "item": "skyent:basic_fluid_duct"
+      },
+      "count": 6
+    },
+    {
+      "ingredient": {
+        "item": "skyent:basic_conveyor_belt"
+      },
+      "count": 2
+    }
+  ],
+  "result": {
+    "id": "skyent:mv_chemical_reactor",
+    "count": 1
+  },
+  "process_time": 700,
+  "energy_per_tick": 192
+}

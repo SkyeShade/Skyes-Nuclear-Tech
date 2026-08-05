@@ -58,6 +58,8 @@ public final class HotMetalItems {
         if (normalItem == ModItems.COBALT_INGOT.get()) return ModItems.HOT_COBALT_INGOT.get();
         if (normalItem == ModItems.NICKEL_INGOT.get()) return ModItems.HOT_NICKEL_INGOT.get();
         if (normalItem == ModItems.ALUMINUM_INGOT.get()) return ModItems.HOT_ALUMINUM_INGOT.get();
+        if (normalItem == ModItems.CHROMIUM_INGOT.get()) return ModItems.HOT_CHROMIUM_INGOT.get();
+        if (normalItem == ModItems.STAINLESS_STEEL_INGOT.get()) return ModItems.HOT_STAINLESS_STEEL_INGOT.get();
         if (normalItem == ModItems.TITANIUM_INGOT.get()) return ModItems.HOT_TITANIUM_INGOT.get();
         if (normalItem == ModItems.TUNGSTEN_INGOT.get()) return ModItems.HOT_TUNGSTEN_INGOT.get();
         if (normalItem == ModItems.URANIUM_INGOT.get()) return ModItems.HOT_URANIUM_INGOT.get();
@@ -86,6 +88,8 @@ public final class HotMetalItems {
         if (hotItem == ModItems.HOT_COBALT_INGOT.get()) return ModItems.COBALT_INGOT.get();
         if (hotItem == ModItems.HOT_NICKEL_INGOT.get()) return ModItems.NICKEL_INGOT.get();
         if (hotItem == ModItems.HOT_ALUMINUM_INGOT.get()) return ModItems.ALUMINUM_INGOT.get();
+        if (hotItem == ModItems.HOT_CHROMIUM_INGOT.get()) return ModItems.CHROMIUM_INGOT.get();
+        if (hotItem == ModItems.HOT_STAINLESS_STEEL_INGOT.get()) return ModItems.STAINLESS_STEEL_INGOT.get();
         if (hotItem == ModItems.HOT_TITANIUM_INGOT.get()) return ModItems.TITANIUM_INGOT.get();
         if (hotItem == ModItems.HOT_TUNGSTEN_INGOT.get()) return ModItems.TUNGSTEN_INGOT.get();
         if (hotItem == ModItems.HOT_URANIUM_INGOT.get()) return ModItems.URANIUM_INGOT.get();
@@ -119,6 +123,8 @@ public final class HotMetalItems {
                 ModItems.COBALT_INGOT.get(),
                 ModItems.NICKEL_INGOT.get(),
                 ModItems.ALUMINUM_INGOT.get(),
+                ModItems.CHROMIUM_INGOT.get(),
+                ModItems.STAINLESS_STEEL_INGOT.get(),
                 ModItems.TITANIUM_INGOT.get(),
                 ModItems.TUNGSTEN_INGOT.get(),
                 ModItems.URANIUM_INGOT.get(),

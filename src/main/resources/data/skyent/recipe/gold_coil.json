@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "WWW",
+    "WSW",
+    "WWW"
+  ],
+  "key": {
+    "W": {
+      "item": "skyent:gold_wire"
+    },
+    "S": {
+      "item": "skyent:steel_rod"
+    }
+  },
+  "result": {
+    "id": "skyent:gold_coil",
+    "count": 1
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "A": {
+      "item": "skyent:aluminum_plate"
+    },
+    "C": {
+      "item": "skyent:basic_conveyor_belt"
+    },
+    "S": {
+      "item": "skyent:steel_plate"
+    }
+  },
+  "pattern": [
+    "ASA",
+    "A A",
+    "SCS"
+  ],
+  "result": {
+    "id": "skyent:conveyor_chute",
+    "count": 4
+  }
+}

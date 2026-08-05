@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "skyent:tungsten_electrode",
+    "skyent:graphite_electrode"
+  ]
+}

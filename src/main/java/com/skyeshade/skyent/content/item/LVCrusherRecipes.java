@@ -22,6 +22,9 @@ public final class LVCrusherRecipes {
             raw(ModItems.RAW_URANIUM.get(), ModItems.URANIUM_POWDER.get()),
             raw(ModItems.RAW_TITANIUM.get(), ModItems.TITANIUM_POWDER.get()),
             raw(ModItems.RAW_ALUMINUM.get(), ModItems.ALUMINUM_POWDER.get()),
+            new Entry(ModItems.RAW_CHROMITE.get(), ModItems.CRUSHED_CHROMITE.get(), 1, ModItems.IRON_POWDER.get(), 2, 1.0D),
+            raw(Items.COAL, ModItems.CARBON_POWDER.get()),
+            raw(Items.CHARCOAL, ModItems.CARBON_POWDER.get()),
             new Entry(ModItems.FLUORITE_CRYSTAL.get(), ModItems.FLUORITE_POWDER.get(), 2, null, 0, 0.0D),
             siltWithSecondary(ModItems.SILT.get(), Blocks.SAND, ModItems.SMALL_TIN_POWDER.get()),
 
@@ -61,7 +64,9 @@ public final class LVCrusherRecipes {
             ore(ModBlocks.TITANIUM_ORE.get(), ModItems.TITANIUM_POWDER.get()),
             ore(ModBlocks.DEEPSLATE_TITANIUM_ORE.get(), ModItems.TITANIUM_POWDER.get()),
             ore(ModBlocks.ALUMINUM_ORE.get(), ModItems.ALUMINUM_POWDER.get()),
-            ore(ModBlocks.DEEPSLATE_ALUMINUM_ORE.get(), ModItems.ALUMINUM_POWDER.get())
+            ore(ModBlocks.DEEPSLATE_ALUMINUM_ORE.get(), ModItems.ALUMINUM_POWDER.get()),
+            ore(ModBlocks.CHROMITE_ORE.get(), ModItems.CRUSHED_CHROMITE.get()),
+            ore(ModBlocks.DEEPSLATE_CHROMITE_ORE.get(), ModItems.CRUSHED_CHROMITE.get())
     );
 
     private LVCrusherRecipes() {

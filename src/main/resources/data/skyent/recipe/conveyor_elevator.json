@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "A": {
+      "item": "skyent:aluminum_plate"
+    },
+    "C": {
+      "item": "skyent:basic_conveyor_belt"
+    },
+    "S": {
+      "item": "skyent:steel_rod"
+    },
+    "T": {
+      "item": "skyent:steel_plate"
+    }
+  },
+  "pattern": [
+    "ASA",
+    "ACA",
+    "TST"
+  ],
+  "result": {
+    "id": "skyent:conveyor_elevator",
+    "count": 4
+  }
+}

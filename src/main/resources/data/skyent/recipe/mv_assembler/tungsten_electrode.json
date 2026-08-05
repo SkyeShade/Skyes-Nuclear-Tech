@@ -1,0 +1,23 @@
+{
+  "type": "skyent:mv_assembler",
+  "ingredients": [
+    {
+      "ingredient": {
+        "item": "skyent:tungsten_rod"
+      },
+      "count": 1
+    },
+    {
+      "ingredient": {
+        "item": "skyent:tungsten_bolt"
+      },
+      "count": 2
+    }
+  ],
+  "result": {
+    "id": "skyent:tungsten_electrode",
+    "count": 1
+  },
+  "process_time": 120,
+  "energy_per_tick": 64
+}

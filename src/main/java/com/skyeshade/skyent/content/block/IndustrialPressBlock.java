@@ -2,7 +2,11 @@ package com.skyeshade.skyent.content.block;
 
 import com.mojang.serialization.MapCodec;
 import com.skyeshade.skyent.content.blockentity.IndustrialPressBlockEntity;
-import com.skyeshade.skyent.content.shape.MultiblockShapeRegistry;
+import com.skyeshade.skyent.content.multiblock.ModelMultiblockCollisionMode;
+import com.skyeshade.skyent.content.multiblock.ModelMultiblockDefinition;
+import com.skyeshade.skyent.content.multiblock.ModelMultiblockOrientation;
+import com.skyeshade.skyent.content.multiblock.ModelMultiblockRenderMode;
+import com.skyeshade.skyent.content.multiblock.ModelMultiblocks;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import com.skyeshade.skyent.registry.ModBlocks;
 import com.skyeshade.skyent.registry.ModItems;
@@ -37,6 +41,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -44,6 +49,22 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 public class IndustrialPressBlock extends BaseEntityBlock {
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     public static final MapCodec<IndustrialPressBlock> CODEC = simpleCodec(IndustrialPressBlock::new);
+    public static final int SIZE_X = 2;
+    public static final int SIZE_Y = 3;
+    public static final int SIZE_Z = 1;
+    public static final ModelMultiblockDefinition MULTIBLOCK = new ModelMultiblockDefinition(
+            ModMultiblockShapes.INDUSTRIAL_PRESS,
+            SIZE_X,
+            SIZE_Y,
+            SIZE_Z,
+            BlockPos.ZERO,
+            2.0D,
+            Vec3.ZERO,
+            new Vec3(0.0D, 0.0D, -8.0D),
+            ModelMultiblockCollisionMode.GENERATED_MODEL_SHAPES,
+            ModelMultiblockRenderMode.CONTROLLER_BLOCK_MODEL,
+            ModelMultiblockOrientation.CARDINAL_ROTATION
+    );
     private static final ThreadLocal<Boolean> REMOVING = ThreadLocal.withInitial(() -> false);
     private static final VoxelShape MASTER_SHAPE = Shapes.block();
 
@@ -76,15 +97,8 @@ public class IndustrialPressBlock extends BaseEntityBlock {
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         Direction facing = context.getHorizontalDirection().getCounterClockWise();
         BlockPos origin = context.getClickedPos();
-        for (int y = 0; y <= 2; y++) {
-            for (int x = 0; x <= 1; x++) {
-                if (x == 0 && y == 0) {
-                    continue;
-                }
-                if (!canPlacePartAt(context, localToWorld(origin, facing, x, y, 0))) {
-                    return null;
-                }
-            }
+        if (!ModelMultiblocks.canPlace(MULTIBLOCK, context, origin, facing)) {
+            return null;
         }
         return defaultBlockState().setValue(FACING, facing);
     }
@@ -96,17 +110,11 @@ public class IndustrialPressBlock extends BaseEntityBlock {
         }
 
         Direction facing = state.getValue(FACING);
-        for (int y = 0; y <= 2; y++) {
-            for (int x = 0; x <= 1; x++) {
-                if (x == 0 && y == 0) {
-                    continue;
-                }
-                level.setBlock(localToWorld(pos, facing, x, y, 0), ModBlocks.INDUSTRIAL_PRESS_PART.get().defaultBlockState()
-                        .setValue(IndustrialPressPartBlock.FACING, facing)
+        ModelMultiblocks.placeParts(MULTIBLOCK, level, pos, facing, (x, y, z, partFacing) ->
+                ModBlocks.INDUSTRIAL_PRESS_PART.get().defaultBlockState()
+                        .setValue(IndustrialPressPartBlock.FACING, partFacing)
                         .setValue(IndustrialPressPartBlock.PART_X, x)
-                        .setValue(IndustrialPressPartBlock.PART_Y, y), Block.UPDATE_ALL);
-            }
-        }
+                        .setValue(IndustrialPressPartBlock.PART_Y, y));
         requestSharedLightUpdate(level, pos);
     }
 
@@ -230,7 +238,7 @@ public class IndustrialPressBlock extends BaseEntityBlock {
                     state.getValue(IndustrialPressPartBlock.PART_Y),
                     0
             );
-            return pos.subtract(rotateLocalOffset(local, state.getValue(IndustrialPressPartBlock.FACING)));
+            return ModelMultiblocks.masterPosFromLocal(MULTIBLOCK, pos, local, state.getValue(IndustrialPressPartBlock.FACING));
         }
         return pos;
     }
@@ -262,12 +270,12 @@ public class IndustrialPressBlock extends BaseEntityBlock {
     }
 
     public static BlockPos localToWorld(BlockPos origin, Direction facing, int x, int y, int z) {
-        return origin.offset(rotateLocalOffset(new BlockPos(x, y, z), facing));
+        return ModelMultiblocks.localToWorld(MULTIBLOCK, origin, facing, x, y, z);
     }
 
     public static VoxelShape shapeForLocal(int x, int y, Direction facing) {
-        return MultiblockShapeRegistry.getShape(
-                ModMultiblockShapes.INDUSTRIAL_PRESS,
+        return ModelMultiblocks.generatedShapeForLocal(
+                MULTIBLOCK,
                 facing,
                 x,
                 y,
@@ -289,44 +297,15 @@ public class IndustrialPressBlock extends BaseEntityBlock {
     }
 
     public static BlockPos rotateLocalOffset(BlockPos local, Direction facing) {
-        int x = local.getX();
-        int y = local.getY();
-        int z = local.getZ();
-        return switch (facing) {
-            case NORTH -> new BlockPos(x, y, z);
-            case EAST -> new BlockPos(-z, y, x);
-            case SOUTH -> new BlockPos(-x, y, -z);
-            case WEST -> new BlockPos(z, y, -x);
-            default -> local;
-        };
+        return ModelMultiblocks.rotateLocalOffset(MULTIBLOCK, local, facing);
     }
 
     private static void spawnDestroyParticles(Level level, BlockPos masterPos, Direction facing) {
         BlockState visualState = ModBlocks.INDUSTRIAL_PRESS.get().defaultBlockState().setValue(FACING, facing);
-        int visualStateId = Block.getId(visualState);
-        for (int y = 0; y <= 2; y++) {
-            for (int x = 0; x <= 1; x++) {
-                level.levelEvent(2001, localToWorld(masterPos, facing, x, y, 0), visualStateId);
-            }
-        }
+        ModelMultiblocks.spawnDestroyParticles(MULTIBLOCK, level, masterPos, facing, visualState);
     }
 
     private static void removeParts(Level level, BlockPos masterPos, Direction facing) {
-        for (int y = 0; y <= 2; y++) {
-            for (int x = 0; x <= 1; x++) {
-                if (x == 0 && y == 0) {
-                    continue;
-                }
-                BlockPos partPos = localToWorld(masterPos, facing, x, y, 0);
-                if (level.getBlockState(partPos).is(ModBlocks.INDUSTRIAL_PRESS_PART.get())) {
-                    level.setBlock(partPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
-                }
-            }
-        }
-    }
-
-    private static boolean canPlacePartAt(BlockPlaceContext context, BlockPos pos) {
-        BlockState state = context.getLevel().getBlockState(pos);
-        return state.canBeReplaced(context);
+        ModelMultiblocks.removeParts(MULTIBLOCK, level, masterPos, facing, ModBlocks.INDUSTRIAL_PRESS_PART.get());
     }
 }

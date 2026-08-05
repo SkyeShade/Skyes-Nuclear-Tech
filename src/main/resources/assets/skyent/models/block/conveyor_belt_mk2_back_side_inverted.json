@@ -1,0 +1,8 @@
+{
+  "parent": "skyent:block/conveyor_belt_back_side_inverted",
+  "textures": {
+    "0": "skyent:block/conveyor_belt_mk2_back_side",
+    "1": "skyent:block/conveyor_belt_mk2",
+    "particle": "skyent:block/conveyor_belt_mk2_back_side"
+  }
+}

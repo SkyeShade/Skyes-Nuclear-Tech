@@ -98,6 +98,12 @@ public final class ModBlockEntities {
                     ModBlocks.CENTRIFUGE.get()
             ).build(null));
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ElectricBlastFurnaceBlockEntity>> ELECTRIC_BLAST_FURNACE =
+            BLOCK_ENTITIES.register("electric_blast_furnace", () -> BlockEntityType.Builder.of(
+                    ElectricBlastFurnaceBlockEntity::new,
+                    ModBlocks.ELECTRIC_BLAST_FURNACE.get()
+            ).build(null));
+
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<BlastDoorBlockEntity>> BLAST_DOOR =
             BLOCK_ENTITIES.register("blast_door", () -> BlockEntityType.Builder.of(
                     BlastDoorBlockEntity::new,
@@ -143,7 +149,8 @@ public final class ModBlockEntities {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<BasicConveyorBeltBlockEntity>> BASIC_CONVEYOR_BELT =
             BLOCK_ENTITIES.register("basic_conveyor_belt", () -> BlockEntityType.Builder.of(
                     BasicConveyorBeltBlockEntity::new,
-                    ModBlocks.BASIC_CONVEYOR_BELT.get()
+                    ModBlocks.BASIC_CONVEYOR_BELT.get(),
+                    ModBlocks.CONVEYOR_BELT_MK2.get()
             ).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ConveyorSplitterBlockEntity>> CONVEYOR_SPLITTER =

@@ -44,9 +44,15 @@ public class BasicConveyorBeltBlock extends BaseEntityBlock implements ConveyorB
     public static final MapCodec<BasicConveyorBeltBlock> CODEC = simpleCodec(BasicConveyorBeltBlock::new);
     public static final double ITEM_CENTER_PULL = 4.0D;
     private static final VoxelShape SHAPE = Block.box(0.0D, 0.0D, 0.0D, 16.0D, 4.0D, 16.0D);
+    private final double speedMultiplier;
 
     public BasicConveyorBeltBlock(BlockBehaviour.Properties properties) {
+        this(properties, 1.0D);
+    }
+
+    public BasicConveyorBeltBlock(BlockBehaviour.Properties properties, double speedMultiplier) {
         super(properties);
+        this.speedMultiplier = speedMultiplier;
         registerDefaultState(stateDefinition.any()
                 .setValue(FACING, Direction.NORTH)
                 .setValue(BACK_CONNECTED, false)
@@ -156,6 +162,11 @@ public class BasicConveyorBeltBlock extends BaseEntityBlock implements ConveyorB
         }
 
         return new Vec3(x, y, z);
+    }
+
+    @Override
+    public double speedMultiplier(Level level, BlockPos pos) {
+        return speedMultiplier;
     }
 
     private static Direction getTravelDirection(BlockState state) {

@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "key": {
+    "C": {
+      "item": "skyent:basic_conveyor_belt"
+    },
+    "M": {
+      "item": "skyent:electric_motor"
+    },
+    "P": {
+      "item": "skyent:steel_plate"
+    },
+    "R": {
+      "item": "skyent:steel_rod"
+    },
+    "W": {
+      "item": "skyent:copper_wire"
+    }
+  },
+  "pattern": [
+    " R ",
+    "WMW",
+    "PCP"
+  ],
+  "result": {
+    "id": "skyent:conveyor_exporter",
+    "count": 4
+  }
+}

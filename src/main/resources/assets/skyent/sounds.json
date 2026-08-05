@@ -110,5 +110,11 @@
       "skyent:industrial_press"
     ],
     "subtitle": "subtitle.skyent.industrial_press"
+  },
+  "electric_blast_furnace": {
+    "sounds": [
+      "skyent:electric_blast_furnace"
+    ],
+    "subtitle": "subtitle.skyent.electric_blast_furnace"
   }
 }

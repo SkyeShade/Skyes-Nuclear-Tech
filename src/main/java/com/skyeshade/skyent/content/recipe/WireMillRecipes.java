@@ -9,6 +9,7 @@ import net.minecraft.world.level.ItemLike;
 public final class WireMillRecipes {
     private static final List<WireMillRecipe> RECIPES = List.of(
             recipe(ModItems.HOT_COPPER_ROD.get(), ModItems.COPPER_WIRE.get(), 4),
+            recipe(ModItems.GOLD_ROD.get(), ModItems.GOLD_WIRE.get(), 4),
             recipe(ModItems.HOT_TIN_ROD.get(), ModItems.TIN_WIRE.get(), 4),
             recipe(ModItems.HOT_STEEL_ROD.get(), ModItems.STEEL_WIRE.get(), 4),
             recipe(ModItems.HOT_COBALT_ROD.get(), ModItems.COBALT_WIRE.get(), 4),

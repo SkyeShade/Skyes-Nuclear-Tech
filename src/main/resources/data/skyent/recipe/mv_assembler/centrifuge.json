@@ -1,0 +1,59 @@
+{
+  "type": "skyent:mv_assembler",
+  "ingredients": [
+    {
+      "ingredient": {
+        "item": "skyent:steel_shell"
+      },
+      "count": 6
+    },
+    {
+      "ingredient": {
+        "item": "skyent:stainless_steel_plate"
+      },
+      "count": 20
+    },
+    {
+      "ingredient": {
+        "item": "skyent:aluminum_plate"
+      },
+      "count": 8
+    },
+    {
+      "ingredient": {
+        "item": "skyent:titanium_bolt"
+      },
+      "count": 10
+    },
+    {
+      "ingredient": {
+        "item": "skyent:steel_rod"
+      },
+      "count": 8
+    },
+    {
+      "ingredient": {
+        "item": "skyent:steel_bearing"
+      },
+      "count": 4
+    },
+    {
+      "ingredient": {
+        "item": "skyent:industrial_motor"
+      },
+      "count": 2
+    },
+    {
+      "ingredient": {
+        "item": "skyent:basic_conveyor_belt"
+      },
+      "count": 2
+    }
+  ],
+  "result": {
+    "id": "skyent:centrifuge",
+    "count": 1
+  },
+  "process_time": 700,
+  "energy_per_tick": 192
+}

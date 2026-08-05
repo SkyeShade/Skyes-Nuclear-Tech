@@ -1,0 +1,47 @@
+{
+  "type": "skyent:mv_assembler",
+  "ingredients": [
+    {
+      "ingredient": {
+        "item": "skyent:stainless_steel_plate"
+      },
+      "count": 4
+    },
+    {
+      "ingredient": {
+        "item": "skyent:steel_rod"
+      },
+      "count": 2
+    },
+    {
+      "ingredient": {
+        "item": "skyent:steel_bearing"
+      },
+      "count": 2
+    },
+    {
+      "ingredient": {
+        "item": "skyent:gold_coil"
+      },
+      "count": 2
+    },
+    {
+      "ingredient": {
+        "item": "skyent:aluminum_plate"
+      },
+      "count": 2
+    },
+    {
+      "ingredient": {
+        "item": "skyent:electric_motor"
+      },
+      "count": 1
+    }
+  ],
+  "result": {
+    "id": "skyent:industrial_motor",
+    "count": 1
+  },
+  "process_time": 400,
+  "energy_per_tick": 192
+}

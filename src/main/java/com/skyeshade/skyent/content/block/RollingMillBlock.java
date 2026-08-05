@@ -2,7 +2,11 @@ package com.skyeshade.skyent.content.block;
 
 import com.mojang.serialization.MapCodec;
 import com.skyeshade.skyent.content.blockentity.RollingMillBlockEntity;
-import com.skyeshade.skyent.content.shape.MultiblockShapeRegistry;
+import com.skyeshade.skyent.content.multiblock.ModelMultiblockCollisionMode;
+import com.skyeshade.skyent.content.multiblock.ModelMultiblockDefinition;
+import com.skyeshade.skyent.content.multiblock.ModelMultiblockOrientation;
+import com.skyeshade.skyent.content.multiblock.ModelMultiblockRenderMode;
+import com.skyeshade.skyent.content.multiblock.ModelMultiblocks;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import com.skyeshade.skyent.registry.ModBlocks;
 import com.skyeshade.skyent.registry.ModItems;
@@ -34,6 +38,7 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -44,6 +49,19 @@ public class RollingMillBlock extends BaseEntityBlock {
     public static final int SIZE_X = 4;
     public static final int SIZE_Y = 3;
     public static final int SIZE_Z = 2;
+    public static final ModelMultiblockDefinition MULTIBLOCK = new ModelMultiblockDefinition(
+            ModMultiblockShapes.ROLLING_MILL,
+            SIZE_X,
+            SIZE_Y,
+            SIZE_Z,
+            BlockPos.ZERO,
+            2.0D,
+            Vec3.ZERO,
+            new Vec3(16.0D, 0.0D, 0.0D),
+            ModelMultiblockCollisionMode.GENERATED_MODEL_SHAPES,
+            ModelMultiblockRenderMode.CONTROLLER_BLOCK_MODEL,
+            ModelMultiblockOrientation.CARDINAL_ROTATION
+    );
     private static final ThreadLocal<Boolean> REMOVING = ThreadLocal.withInitial(() -> false);
 
     public RollingMillBlock(BlockBehaviour.Properties properties) {
@@ -75,17 +93,8 @@ public class RollingMillBlock extends BaseEntityBlock {
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         Direction facing = context.getHorizontalDirection().getCounterClockWise();
         BlockPos origin = context.getClickedPos();
-        for (int y = 0; y < SIZE_Y; y++) {
-            for (int x = 0; x < SIZE_X; x++) {
-                for (int z = 0; z < SIZE_Z; z++) {
-                    if (x == 0 && y == 0 && z == 0) {
-                        continue;
-                    }
-                    if (!canPlacePartAt(context, localToWorld(origin, facing, x, y, z))) {
-                        return null;
-                    }
-                }
-            }
+        if (!ModelMultiblocks.canPlace(MULTIBLOCK, context, origin, facing)) {
+            return null;
         }
         return defaultBlockState().setValue(FACING, facing);
     }
@@ -97,21 +106,13 @@ public class RollingMillBlock extends BaseEntityBlock {
         }
 
         Direction facing = state.getValue(FACING);
-        for (int y = 0; y < SIZE_Y; y++) {
-            for (int x = 0; x < SIZE_X; x++) {
-                for (int z = 0; z < SIZE_Z; z++) {
-                    if (x == 0 && y == 0 && z == 0) {
-                        continue;
-                    }
-                    level.setBlock(localToWorld(pos, facing, x, y, z), ModBlocks.ROLLING_MILL_PART.get().defaultBlockState()
-                            .setValue(RollingMillPartBlock.FACING, facing)
-                            .setValue(RollingMillPartBlock.PART_X, x)
-                            .setValue(RollingMillPartBlock.PART_Y, y)
-                            .setValue(RollingMillPartBlock.PART_Z, z)
-                            .setValue(RollingMillPartBlock.LIGHT_BLOCKING, shouldPartBlockLight(x, y, z)), Block.UPDATE_ALL);
-                }
-            }
-        }
+        ModelMultiblocks.placeParts(MULTIBLOCK, level, pos, facing, (x, y, z, partFacing) ->
+                ModBlocks.ROLLING_MILL_PART.get().defaultBlockState()
+                        .setValue(RollingMillPartBlock.FACING, partFacing)
+                        .setValue(RollingMillPartBlock.PART_X, x)
+                        .setValue(RollingMillPartBlock.PART_Y, y)
+                        .setValue(RollingMillPartBlock.PART_Z, z)
+                        .setValue(RollingMillPartBlock.LIGHT_BLOCKING, shouldPartBlockLight(x, y, z)));
     }
 
     @Override
@@ -230,7 +231,7 @@ public class RollingMillBlock extends BaseEntityBlock {
                     state.getValue(RollingMillPartBlock.PART_Y),
                     state.getValue(RollingMillPartBlock.PART_Z)
             );
-            return pos.subtract(rotateLocalOffset(local, state.getValue(RollingMillPartBlock.FACING)));
+            return ModelMultiblocks.masterPosFromLocal(MULTIBLOCK, pos, local, state.getValue(RollingMillPartBlock.FACING));
         }
         return pos;
     }
@@ -254,12 +255,12 @@ public class RollingMillBlock extends BaseEntityBlock {
     }
 
     public static BlockPos localToWorld(BlockPos origin, Direction facing, int x, int y, int z) {
-        return origin.offset(rotateLocalOffset(new BlockPos(x, y, z), facing));
+        return ModelMultiblocks.localToWorld(MULTIBLOCK, origin, facing, x, y, z);
     }
 
     public static VoxelShape shapeForLocal(int x, int y, int z, Direction facing) {
-        return MultiblockShapeRegistry.getShape(
-                ModMultiblockShapes.ROLLING_MILL,
+        return ModelMultiblocks.generatedShapeForLocal(
+                MULTIBLOCK,
                 facing,
                 x,
                 y,
@@ -310,16 +311,7 @@ public class RollingMillBlock extends BaseEntityBlock {
     }
 
     public static BlockPos rotateLocalOffset(BlockPos local, Direction facing) {
-        int x = local.getX();
-        int y = local.getY();
-        int z = local.getZ();
-        return switch (facing) {
-            case NORTH -> new BlockPos(x, y, z);
-            case EAST -> new BlockPos(-z, y, x);
-            case SOUTH -> new BlockPos(-x, y, -z);
-            case WEST -> new BlockPos(z, y, -x);
-            default -> local;
-        };
+        return ModelMultiblocks.rotateLocalOffset(MULTIBLOCK, local, facing);
     }
 
     private static boolean shouldPartBlockLight(int x, int y, int z) {
@@ -328,34 +320,10 @@ public class RollingMillBlock extends BaseEntityBlock {
 
     private static void spawnDestroyParticles(Level level, BlockPos masterPos, Direction facing) {
         BlockState visualState = ModBlocks.ROLLING_MILL.get().defaultBlockState().setValue(FACING, facing);
-        int visualStateId = Block.getId(visualState);
-        for (int y = 0; y < SIZE_Y; y++) {
-            for (int x = 0; x < SIZE_X; x++) {
-                for (int z = 0; z < SIZE_Z; z++) {
-                    level.levelEvent(2001, localToWorld(masterPos, facing, x, y, z), visualStateId);
-                }
-            }
-        }
+        ModelMultiblocks.spawnDestroyParticles(MULTIBLOCK, level, masterPos, facing, visualState);
     }
 
     private static void removeParts(Level level, BlockPos masterPos, Direction facing) {
-        for (int y = 0; y < SIZE_Y; y++) {
-            for (int x = 0; x < SIZE_X; x++) {
-                for (int z = 0; z < SIZE_Z; z++) {
-                    if (x == 0 && y == 0 && z == 0) {
-                        continue;
-                    }
-                    BlockPos partPos = localToWorld(masterPos, facing, x, y, z);
-                    if (level.getBlockState(partPos).is(ModBlocks.ROLLING_MILL_PART.get())) {
-                        level.setBlock(partPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
-                    }
-                }
-            }
-        }
-    }
-
-    private static boolean canPlacePartAt(BlockPlaceContext context, BlockPos pos) {
-        BlockState state = context.getLevel().getBlockState(pos);
-        return state.canBeReplaced(context);
+        ModelMultiblocks.removeParts(MULTIBLOCK, level, masterPos, facing, ModBlocks.ROLLING_MILL_PART.get());
     }
 }

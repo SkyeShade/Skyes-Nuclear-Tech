@@ -2,6 +2,7 @@ package com.skyeshade.skyent.event.systems;
 
 import com.skyeshade.skyent.content.block.LVMVTransformerBlock;
 import com.skyeshade.skyent.content.block.CentrifugeBlock;
+import com.skyeshade.skyent.content.block.ElectricBlastFurnaceBlock;
 import com.skyeshade.skyent.content.block.MVInlinePumpBlock;
 import com.skyeshade.skyent.content.block.MVAssemblerBlock;
 import com.skyeshade.skyent.content.block.MVChemicalReactorBlock;
@@ -10,6 +11,7 @@ import com.skyeshade.skyent.content.block.IndustrialPressBlock;
 import com.skyeshade.skyent.content.block.RollingMillBlock;
 import com.skyeshade.skyent.content.block.WireMillBlock;
 import com.skyeshade.skyent.content.blockentity.ElectricFurnaceBlockEntity;
+import com.skyeshade.skyent.content.blockentity.ElectricBlastFurnaceBlockEntity;
 import com.skyeshade.skyent.content.blockentity.CentrifugeBlockEntity;
 import com.skyeshade.skyent.content.blockentity.HeatingChamberBlockEntity;
 import com.skyeshade.skyent.content.blockentity.IndustrialPressBlockEntity;
@@ -272,6 +274,9 @@ public final class LVElectricalNetworkSystem {
             CentrifugeBlockEntity centrifuge = attachedConnector != null && attachedConnector.getConnectorTier() == ElectricalTier.MV
                     ? resolveCentrifuge(level, endpointState, endpointPos)
                     : null;
+            ElectricBlastFurnaceBlockEntity electricBlastFurnace = attachedConnector != null && attachedConnector.getConnectorTier() == ElectricalTier.MV
+                    ? resolveElectricBlastFurnace(level, endpointState, endpointPos)
+                    : null;
             MVInlinePumpBlockEntity inlinePump = attachedConnector != null
                     && attachedConnector.getConnectorTier() == ElectricalTier.MV
                     && blockEntity instanceof MVInlinePumpBlockEntity pump
@@ -437,6 +442,18 @@ public final class LVElectricalNetworkSystem {
                         return centrifuge.receiveRJ(attachedConnector.getConnectorTier(), amount, simulate);
                     }
                 }));
+            } else if (electricBlastFurnace != null) {
+                consumers.add(new Consumer(connectorPos, new NetworkConsumer() {
+                    @Override
+                    public int availableRJCapacity() {
+                        return electricBlastFurnace.getAvailableRJCapacity();
+                    }
+
+                    @Override
+                    public int receiveRJ(int amount, boolean simulate) {
+                        return electricBlastFurnace.receiveRJ(attachedConnector.getConnectorTier(), amount, simulate);
+                    }
+                }));
             } else if (blockEntity instanceof LVSteamTurbineBlockEntity turbine) {
                 producers.add(new Producer(connectorPos, new NetworkProducer() {
                     @Override
@@ -573,6 +590,11 @@ public final class LVElectricalNetworkSystem {
     @Nullable
     private static CentrifugeBlockEntity resolveCentrifuge(ServerLevel level, BlockState state, BlockPos pos) {
         return CentrifugeBlock.getMasterBlockEntity(level, state, pos).orElse(null);
+    }
+
+    @Nullable
+    private static ElectricBlastFurnaceBlockEntity resolveElectricBlastFurnace(ServerLevel level, BlockState state, BlockPos pos) {
+        return ElectricBlastFurnaceBlock.getMasterBlockEntity(level, state, pos).orElse(null);
     }
 
     @Nullable

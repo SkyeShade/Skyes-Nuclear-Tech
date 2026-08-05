@@ -17,6 +17,7 @@ import com.skyeshade.skyent.client.particle.StreakParticle;
 import com.skyeshade.skyent.client.renderer.blockentity.CoalForgeRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.BlastDoorRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.CentrifugeRenderer;
+import com.skyeshade.skyent.client.renderer.blockentity.ElectricBlastFurnaceRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.ForgingAnvilRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.GeigerCounterPlacedRenderer;
 import com.skyeshade.skyent.client.renderer.blockentity.HeatingChamberRenderer;
@@ -44,6 +45,7 @@ import com.skyeshade.skyent.client.screen.CentrifugeScreen;
 import com.skyeshade.skyent.client.screen.CombustionGeneratorScreen;
 import com.skyeshade.skyent.client.screen.ConveyorExporterScreen;
 import com.skyeshade.skyent.client.screen.ElectricFurnaceScreen;
+import com.skyeshade.skyent.client.screen.ElectricBlastFurnaceScreen;
 import com.skyeshade.skyent.client.screen.LVCrusherScreen;
 import com.skyeshade.skyent.client.screen.LVElectricPumpScreen;
 import com.skyeshade.skyent.client.screen.LVSteamTurbineScreen;
@@ -119,6 +121,7 @@ public final class ClientEvents {
         event.register(ModMenus.MV_ASSEMBLER.get(), MVAssemblerScreen::new);
         event.register(ModMenus.MV_CHEMICAL_REACTOR.get(), MVChemicalReactorScreen::new);
         event.register(ModMenus.CENTRIFUGE.get(), CentrifugeScreen::new);
+        event.register(ModMenus.ELECTRIC_BLAST_FURNACE.get(), ElectricBlastFurnaceScreen::new);
         event.register(ModMenus.ASSEMBLER_RECIPE_SELECT.get(), MVAssemblerRecipeSelectScreen::new);
     }
 
@@ -137,6 +140,7 @@ public final class ClientEvents {
         event.registerBlockEntityRenderer(ModBlockEntities.LV_MV_TRANSFORMER.get(), LVMVTransformerRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.MEDIUM_TANK.get(), MediumTankRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.CENTRIFUGE.get(), CentrifugeRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.ELECTRIC_BLAST_FURNACE.get(), ElectricBlastFurnaceRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.BLAST_DOOR.get(), BlastDoorRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.ZONE_GATE.get(), ZoneGateRenderer::new);
     }
@@ -147,6 +151,12 @@ public final class ClientEvents {
         event.register(IndustrialPressRenderer.PRESS_HEAD_MODEL);
         event.register(RollingMillRenderer.ROLLERS_MODEL);
         event.register(CentrifugeRenderer.DRUM_MODEL);
+        event.register(ElectricBlastFurnaceRenderer.BASE_MODEL);
+        event.register(ElectricBlastFurnaceRenderer.ELECTRODE_1_MODEL);
+        event.register(ElectricBlastFurnaceRenderer.ELECTRODE_2_MODEL);
+        event.register(ElectricBlastFurnaceRenderer.ELECTRODE_3_MODEL);
+        event.register(ElectricBlastFurnaceRenderer.ELECTRODE_3_TOPS_MODEL);
+        event.register(ElectricBlastFurnaceRenderer.ELECTRODE_HOT_MODEL);
         event.register(BlastDoorRenderer.DOOR_PANEL_MODEL);
         event.register(ZoneGateRenderer.FRAME_MODEL);
         event.register(ZoneGateRenderer.DOOR_PANEL_MODEL);

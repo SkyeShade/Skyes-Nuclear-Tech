@@ -13,6 +13,7 @@ public final class ModMultiblockShapes {
     public static final ResourceLocation BLAST_DOOR_FRAME = ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "blast_door_frame");
     public static final ResourceLocation ZONE_GATE = ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "zone_gate");
     public static final ResourceLocation CENTRIFUGE = ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "centrifuge");
+    public static final ResourceLocation ELECTRIC_BLAST_FURNACE = ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "electric_blast_furnace");
 
     private static boolean registered;
 
@@ -91,6 +92,17 @@ public final class ModMultiblockShapes {
                 new Vec3(0.0D, 0.0D, 16.0D),
                 3,
                 3,
+                3
+        ));
+
+        MultiblockShapeRegistry.register(new MultiblockShapeDefinition(
+                ELECTRIC_BLAST_FURNACE,
+                ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "models/block/electric_blast_furnace.json"),
+                2.0D,
+                Vec3.ZERO,
+                new Vec3(0.0D, 0.0D, 16.0D),
+                3,
+                4,
                 3
         ));
     }

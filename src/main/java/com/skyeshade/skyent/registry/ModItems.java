@@ -146,6 +146,11 @@ public final class ModItems {
             new Item.Properties()
     );
 
+    public static final DeferredItem<BlockItem> ELECTRIC_BLAST_FURNACE = ITEMS.registerSimpleBlockItem(
+            ModBlocks.ELECTRIC_BLAST_FURNACE,
+            new Item.Properties()
+    );
+
     public static final DeferredItem<BlockItem> BLAST_DOOR = ITEMS.registerSimpleBlockItem(
             ModBlocks.BLAST_DOOR,
             new Item.Properties()
@@ -154,6 +159,16 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> ZONE_GATE = ITEMS.registerSimpleBlockItem(
             ModBlocks.ZONE_GATE,
             new Item.Properties()
+    );
+
+    public static final DeferredItem<Item> TUNGSTEN_ELECTRODE = ITEMS.registerSimpleItem(
+            "tungsten_electrode",
+            new Item.Properties().durability(2048)
+    );
+
+    public static final DeferredItem<Item> GRAPHITE_ELECTRODE = ITEMS.registerSimpleItem(
+            "graphite_electrode",
+            new Item.Properties().durability(16384)
     );
 
     public static final DeferredItem<BlockItem> MEDIUM_TANK = ITEMS.registerSimpleBlockItem(
@@ -194,6 +209,11 @@ public final class ModItems {
 
     public static final DeferredItem<BlockItem> BASIC_CONVEYOR_BELT = ITEMS.registerSimpleBlockItem(
             ModBlocks.BASIC_CONVEYOR_BELT,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> CONVEYOR_BELT_MK2 = ITEMS.registerSimpleBlockItem(
+            ModBlocks.CONVEYOR_BELT_MK2,
             new Item.Properties()
     );
 
@@ -342,6 +362,16 @@ public final class ModItems {
             new Item.Properties()
     );
 
+    public static final DeferredItem<BlockItem> CHROMITE_ORE = ITEMS.registerSimpleBlockItem(
+            ModBlocks.CHROMITE_ORE,
+            new Item.Properties()
+    );
+
+    public static final DeferredItem<BlockItem> DEEPSLATE_CHROMITE_ORE = ITEMS.registerSimpleBlockItem(
+            ModBlocks.DEEPSLATE_CHROMITE_ORE,
+            new Item.Properties()
+    );
+
     public static final DeferredItem<ShieldingBlockItem> ALUMINUM_BLOCK = ITEMS.register(
             "aluminum_block",
             () -> new ShieldingBlockItem(ModBlocks.ALUMINUM_BLOCK.get(), new Item.Properties())
@@ -460,9 +490,13 @@ public final class ModItems {
     public static final DeferredItem<Item> RAW_TITANIUM = simpleItem("raw_titanium");
     public static final DeferredItem<Item> RAW_TUNGSTEN = simpleItem("raw_tungsten");
     public static final DeferredItem<Item> RAW_ALUMINUM = simpleItem("raw_aluminum");
+    public static final DeferredItem<Item> RAW_CHROMITE = simpleItem("raw_chromite");
+    public static final DeferredItem<Item> CRUSHED_CHROMITE = simpleItem("crushed_chromite");
     public static final DeferredItem<Item> SULFUR = simpleItem("sulfur");
     public static final DeferredItem<Item> FLUORITE_CRYSTAL = simpleItem("fluorite_crystal");
     public static final DeferredItem<Item> FLUORITE_POWDER = simpleItem("fluorite_powder");
+    public static final DeferredItem<Item> CARBON_POWDER = simpleItem("carbon_powder");
+    public static final DeferredItem<Item> GRAPHITE = simpleItem("graphite");
     public static final DeferredItem<RadioactiveToxicItem> YELLOWCAKE = ITEMS.register(
             "yellowcake",
             () -> new RadioactiveToxicItem(new Item.Properties())
@@ -479,6 +513,8 @@ public final class ModItems {
     public static final DeferredItem<Item> TITANIUM_INGOT = simpleItem("titanium_ingot");
     public static final DeferredItem<Item> TUNGSTEN_INGOT = simpleItem("tungsten_ingot");
     public static final DeferredItem<Item> ALUMINUM_INGOT = simpleItem("aluminum_ingot");
+    public static final DeferredItem<Item> CHROMIUM_INGOT = simpleItem("chromium_ingot");
+    public static final DeferredItem<Item> STAINLESS_STEEL_INGOT = simpleItem("stainless_steel_ingot");
     public static final DeferredItem<ToxicItem> LEAD_INGOT = ITEMS.register(
             "lead_ingot",
             () -> new ToxicItem(new Item.Properties())
@@ -499,6 +535,8 @@ public final class ModItems {
     public static final DeferredItem<Item> HOT_COBALT_INGOT = simpleItem("hot_cobalt_ingot");
     public static final DeferredItem<Item> HOT_NICKEL_INGOT = simpleItem("hot_nickel_ingot");
     public static final DeferredItem<Item> HOT_ALUMINUM_INGOT = simpleItem("hot_aluminum_ingot");
+    public static final DeferredItem<Item> HOT_CHROMIUM_INGOT = simpleItem("hot_chromium_ingot");
+    public static final DeferredItem<Item> HOT_STAINLESS_STEEL_INGOT = simpleItem("hot_stainless_steel_ingot");
     public static final DeferredItem<Item> HOT_TITANIUM_INGOT = simpleItem("hot_titanium_ingot");
     public static final DeferredItem<Item> HOT_TUNGSTEN_INGOT = simpleItem("hot_tungsten_ingot");
     public static final DeferredItem<Item> HOT_URANIUM_INGOT = simpleItem("hot_uranium_ingot");
@@ -508,8 +546,10 @@ public final class ModItems {
     public static final DeferredItem<Item> STEEL_PLATE = simpleItem("steel_plate");
     public static final DeferredItem<Item> GOLD_PLATE = simpleItem("gold_plate");
     public static final DeferredItem<Item> ALUMINUM_PLATE = simpleItem("aluminum_plate");
+    public static final DeferredItem<Item> CHROMIUM_PLATE = simpleItem("chromium_plate");
     public static final DeferredItem<Item> TITANIUM_PLATE = simpleItem("titanium_plate");
     public static final DeferredItem<Item> TUNGSTEN_PLATE = simpleItem("tungsten_plate");
+    public static final DeferredItem<Item> STAINLESS_STEEL_PLATE = simpleItem("stainless_steel_plate");
     public static final DeferredItem<Item> COPPER_PLATE = simpleItem("copper_plate");
     public static final DeferredItem<Item> COBALT_PLATE = simpleItem("cobalt_plate");
     public static final DeferredItem<Item> NICKEL_PLATE = simpleItem("nickel_plate");
@@ -534,6 +574,7 @@ public final class ModItems {
     public static final DeferredItem<Item> COPPER_POWDER = simpleItem("copper_powder");
     public static final DeferredItem<Item> TITANIUM_POWDER = simpleItem("titanium_powder");
     public static final DeferredItem<Item> ALUMINUM_POWDER = simpleItem("aluminum_powder");
+    public static final DeferredItem<Item> CHROMIUM_POWDER = simpleItem("chromium_powder");
     public static final DeferredItem<Item> COBALT_POWDER = simpleItem("cobalt_powder");
     public static final DeferredItem<Item> NICKEL_POWDER = simpleItem("nickel_powder");
     public static final DeferredItem<Item> TIN_POWDER = simpleItem("tin_powder");
@@ -556,6 +597,8 @@ public final class ModItems {
     public static final DeferredItem<Item> ALUMINUM_ROD = simpleItem("aluminum_rod");
     public static final DeferredItem<Item> TITANIUM_ROD = simpleItem("titanium_rod");
     public static final DeferredItem<Item> TUNGSTEN_ROD = simpleItem("tungsten_rod");
+    public static final DeferredItem<Item> STAINLESS_STEEL_ROD = simpleItem("stainless_steel_rod");
+    public static final DeferredItem<Item> GOLD_ROD = simpleItem("gold_rod");
     public static final DeferredItem<Item> COBALT_ROD = simpleItem("cobalt_rod");
     public static final DeferredItem<Item> NICKEL_ROD = simpleItem("nickel_rod");
     public static final DeferredItem<Item> COBALT_BRONZE_ROD = simpleItem("cobalt_bronze_rod");
@@ -572,11 +615,13 @@ public final class ModItems {
     public static final DeferredItem<Item> HOT_COBALT_BRONZE_ROD = simpleItem("hot_cobalt_bronze_rod");
     public static final DeferredItem<Item> HOT_CUPRONICKEL_ROD = simpleItem("hot_cupronickel_rod");
     public static final DeferredItem<Item> COPPER_WIRE = simpleItem("copper_wire");
+    public static final DeferredItem<Item> GOLD_WIRE = simpleItem("gold_wire");
     public static final DeferredItem<Item> TIN_WIRE = simpleItem("tin_wire");
     public static final DeferredItem<Item> STEEL_WIRE = simpleItem("steel_wire");
     public static final DeferredItem<Item> COBALT_BRONZE_WIRE = simpleItem("cobalt_bronze_wire");
     public static final DeferredItem<Item> CUPRONICKEL_WIRE = simpleItem("cupronickel_wire");
     public static final DeferredItem<Item> COPPER_COIL = simpleItem("copper_coil");
+    public static final DeferredItem<Item> GOLD_COIL = simpleItem("gold_coil");
     public static final DeferredItem<Item> TRANSFORMER_COIL = simpleItem("transformer_coil");
     public static final DeferredItem<Item> STEEL_BEARING = simpleItem("steel_bearing");
     public static final DeferredItem<Item> STEEL_SHELL = simpleItem("steel_shell");
@@ -584,6 +629,7 @@ public final class ModItems {
     public static final DeferredItem<Item> TITANIUM_TURBINE_BLADE = simpleItem("titanium_turbine_blade");
     public static final DeferredItem<Item> HEATING_ELEMENT = simpleItem("heating_element");
     public static final DeferredItem<Item> ELECTRIC_MOTOR = simpleItem("electric_motor");
+    public static final DeferredItem<Item> INDUSTRIAL_MOTOR = simpleItem("industrial_motor");
     public static final DeferredItem<Item> HYDRAULIC_COMPONENT = simpleItem("hydraulic_component");
     public static final DeferredItem<Item> RESIN = simpleItem("resin");
     public static final DeferredItem<Item> RUBBER = simpleItem("rubber");

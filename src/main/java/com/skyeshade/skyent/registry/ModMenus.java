@@ -6,6 +6,7 @@ import com.skyeshade.skyent.content.menu.CentrifugeMenu;
 import com.skyeshade.skyent.content.menu.CombustionGeneratorMenu;
 import com.skyeshade.skyent.content.menu.ConveyorExporterMenu;
 import com.skyeshade.skyent.content.menu.ElectricFurnaceMenu;
+import com.skyeshade.skyent.content.menu.ElectricBlastFurnaceMenu;
 import com.skyeshade.skyent.content.menu.LVCrusherMenu;
 import com.skyeshade.skyent.content.menu.LVElectricPumpMenu;
 import com.skyeshade.skyent.content.menu.LVSteamTurbineMenu;
@@ -62,6 +63,9 @@ public final class ModMenus {
 
     public static final DeferredHolder<MenuType<?>, MenuType<CentrifugeMenu>> CENTRIFUGE =
             MENUS.register("centrifuge", () -> IMenuTypeExtension.create(CentrifugeMenu::new));
+
+    public static final DeferredHolder<MenuType<?>, MenuType<ElectricBlastFurnaceMenu>> ELECTRIC_BLAST_FURNACE =
+            MENUS.register("electric_blast_furnace", () -> IMenuTypeExtension.create(ElectricBlastFurnaceMenu::new));
 
     public static final DeferredHolder<MenuType<?>, MenuType<MVAssemblerRecipeSelectMenu>> ASSEMBLER_RECIPE_SELECT =
             MENUS.register("assembler_recipe_select", () -> IMenuTypeExtension.create(MVAssemblerRecipeSelectMenu::new));

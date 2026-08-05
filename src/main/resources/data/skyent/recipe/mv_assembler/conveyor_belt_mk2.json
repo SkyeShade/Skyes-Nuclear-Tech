@@ -1,0 +1,35 @@
+{
+  "type": "skyent:mv_assembler",
+  "ingredients": [
+    {
+      "ingredient": {
+        "item": "skyent:rubber"
+      },
+      "count": 6
+    },
+    {
+      "ingredient": {
+        "item": "skyent:aluminum_plate"
+      },
+      "count": 4
+    },
+    {
+      "ingredient": {
+        "item": "skyent:steel_rod"
+      },
+      "count": 2
+    },
+    {
+      "ingredient": {
+        "item": "skyent:industrial_motor"
+      },
+      "count": 1
+    }
+  ],
+  "result": {
+    "id": "skyent:conveyor_belt_mk2",
+    "count": 4
+  },
+  "process_time": 240,
+  "energy_per_tick": 128
+}

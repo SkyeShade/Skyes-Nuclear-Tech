@@ -1,0 +1,8 @@
+{
+  "parent": "skyent:block/conveyor_belt_corner",
+  "textures": {
+    "0": "skyent:block/conveyor_belt_mk2_corner",
+    "1": "skyent:block/conveyor_belt_mk2",
+    "particle": "skyent:block/conveyor_belt_mk2_corner"
+  }
+}

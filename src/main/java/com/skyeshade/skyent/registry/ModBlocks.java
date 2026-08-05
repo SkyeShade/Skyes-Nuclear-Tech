@@ -274,6 +274,26 @@ public final class ModBlocks {
                     .dynamicShape()
     );
 
+    public static final DeferredBlock<ElectricBlastFurnaceBlock> ELECTRIC_BLAST_FURNACE = BLOCKS.registerBlock(
+            "electric_blast_furnace",
+            ElectricBlastFurnaceBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 12.0F)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
+                    .dynamicShape()
+    );
+
+    public static final DeferredBlock<ElectricBlastFurnacePartBlock> ELECTRIC_BLAST_FURNACE_PART = BLOCKS.registerBlock(
+            "electric_blast_furnace_part",
+            ElectricBlastFurnacePartBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .strength(5.0F, 12.0F)
+                    .requiresCorrectToolForDrops()
+                    .noOcclusion()
+                    .dynamicShape()
+    );
+
     public static final DeferredBlock<BlastDoorBlock> BLAST_DOOR = BLOCKS.registerBlock(
             "blast_door",
             BlastDoorBlock::new,
@@ -372,6 +392,13 @@ public final class ModBlocks {
     public static final DeferredBlock<BasicConveyorBeltBlock> BASIC_CONVEYOR_BELT = BLOCKS.registerBlock(
             "basic_conveyor_belt",
             BasicConveyorBeltBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+                    .noOcclusion()
+    );
+
+    public static final DeferredBlock<BasicConveyorBeltBlock> CONVEYOR_BELT_MK2 = BLOCKS.registerBlock(
+            "conveyor_belt_mk2",
+            properties -> new BasicConveyorBeltBlock(properties, 2.0D),
             BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
                     .noOcclusion()
     );
@@ -492,6 +519,16 @@ public final class ModBlocks {
 
     public static final DeferredBlock<?> DEEPSLATE_ALUMINUM_ORE = BLOCKS.registerSimpleBlock(
             "deepslate_aluminum_ore",
+            BlockBehaviour.Properties.ofFullCopy(Blocks.DEEPSLATE_IRON_ORE)
+    );
+
+    public static final DeferredBlock<?> CHROMITE_ORE = BLOCKS.registerSimpleBlock(
+            "chromite_ore",
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_ORE)
+    );
+
+    public static final DeferredBlock<?> DEEPSLATE_CHROMITE_ORE = BLOCKS.registerSimpleBlock(
+            "deepslate_chromite_ore",
             BlockBehaviour.Properties.ofFullCopy(Blocks.DEEPSLATE_IRON_ORE)
     );
 

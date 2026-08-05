@@ -167,7 +167,7 @@ public class ConveyorMovingItemEntity extends Entity implements RadioactiveCarri
             return;
         }
 
-        Vec3 next = belt.surface().getTravelLocation(level(), belt.pos(), position(), BELT_ITEM_SPEED);
+        Vec3 next = belt.surface().getTravelLocation(level(), belt.pos(), position(), BELT_ITEM_SPEED * belt.surface().speedMultiplier(level(), belt.pos()));
 
         if (usesHorizontalOutput(belt) && wouldReachOutputEdge(belt, next) && shouldPreHandleOutput(belt)) {
             setPos(canOutputFromBelt(belt) ? clampedFrontPosition(belt) : blockedPosition(belt));

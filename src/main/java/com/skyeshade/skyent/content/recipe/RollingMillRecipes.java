@@ -10,10 +10,12 @@ public final class RollingMillRecipes {
     private static final List<RollingRecipe> RECIPES = List.of(
             recipe(ModItems.HOT_IRON_INGOT.get(), ModItems.IRON_ROD.get()),
             recipe(ModItems.HOT_COPPER_INGOT.get(), ModItems.COPPER_ROD.get()),
+            recipe(net.minecraft.world.item.Items.GOLD_INGOT, ModItems.GOLD_ROD.get()),
             recipe(ModItems.HOT_STEEL_INGOT.get(), ModItems.STEEL_ROD.get()),
             recipe(ModItems.HOT_ALUMINUM_INGOT.get(), ModItems.ALUMINUM_ROD.get()),
             recipe(ModItems.HOT_TITANIUM_INGOT.get(), ModItems.TITANIUM_ROD.get()),
             recipe(ModItems.HOT_TUNGSTEN_INGOT.get(), ModItems.TUNGSTEN_ROD.get()),
+            recipe(ModItems.HOT_STAINLESS_STEEL_INGOT.get(), ModItems.STAINLESS_STEEL_ROD.get()),
             recipe(ModItems.HOT_COBALT_INGOT.get(), ModItems.COBALT_ROD.get()),
             recipe(ModItems.HOT_NICKEL_INGOT.get(), ModItems.NICKEL_ROD.get()),
             recipe(ModItems.HOT_COBALT_BRONZE_INGOT.get(), ModItems.COBALT_BRONZE_ROD.get()),

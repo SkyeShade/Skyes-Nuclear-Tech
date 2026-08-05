@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.event;
 
 import com.skyeshade.skyent.content.radiation.ModDamageSources;
+import com.skyeshade.skyent.content.block.ElectricBlastFurnaceBlock;
 import com.skyeshade.skyent.content.entity.NukePerformanceBudget;
 import com.skyeshade.skyent.content.shape.MultiblockShapeRegistry;
 import com.skyeshade.skyent.event.systems.BootstrapSystem;
@@ -113,10 +114,13 @@ public final class ServerEvents {
     }
 
     public static void onEntityTick(EntityTickEvent.Post event) {
-        if (event.getEntity() instanceof LivingEntity entity && !(entity instanceof ServerPlayer)) {
-            RadiationExposureSystem.tickLivingEntity(entity);
-            ToxicitySystem.tickLivingEntity(entity);
-            HotItemSystem.tickLivingEntity(entity);
+        if (event.getEntity() instanceof LivingEntity entity) {
+            ElectricBlastFurnaceBlock.tickExternalLadder(entity);
+            if (!(entity instanceof ServerPlayer)) {
+                RadiationExposureSystem.tickLivingEntity(entity);
+                ToxicitySystem.tickLivingEntity(entity);
+                HotItemSystem.tickLivingEntity(entity);
+            }
         } else if (event.getEntity() instanceof ItemEntity itemEntity) {
             HotItemSystem.tickItemEntity(itemEntity);
         }

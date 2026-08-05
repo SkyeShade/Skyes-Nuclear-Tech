@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.content.block;
 
 import com.mojang.serialization.MapCodec;
+import com.skyeshade.skyent.content.conveyor.ConveyorVisualFeeder;
 import com.skyeshade.skyent.registry.ModBlocks;
 import com.skyeshade.skyent.registry.ModItems;
 import net.minecraft.core.BlockPos;
@@ -25,7 +26,7 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-public class CentrifugePartBlock extends Block {
+public class CentrifugePartBlock extends Block implements ConveyorVisualFeeder {
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     public static final IntegerProperty PART_X = IntegerProperty.create("part_x", 0, CentrifugeBlock.SIZE_X - 1);
     public static final IntegerProperty PART_Y = IntegerProperty.create("part_y", 0, CentrifugeBlock.SIZE_Y - 1);
@@ -130,5 +131,20 @@ public class CentrifugePartBlock extends Block {
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(FACING, PART_X, PART_Y, PART_Z);
+    }
+
+    @Override
+    public boolean skyent$feedsConveyorToward(BlockState state, Direction direction) {
+        return isOutputItemPortPart(state) && state.getValue(FACING).getCounterClockWise() == direction;
+    }
+
+    private static boolean isOutputItemPortPart(BlockState state) {
+        return state.is(ModBlocks.CENTRIFUGE_PART.get())
+                && state.hasProperty(PART_X)
+                && state.hasProperty(PART_Y)
+                && state.hasProperty(PART_Z)
+                && state.getValue(PART_X) == 0
+                && state.getValue(PART_Y) == 0
+                && state.getValue(PART_Z) == 0;
     }
 }

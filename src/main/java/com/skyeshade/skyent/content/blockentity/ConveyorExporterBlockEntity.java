@@ -2,8 +2,7 @@ package com.skyeshade.skyent.content.blockentity;
 
 import com.skyeshade.skyent.content.block.ConveyorExporterBlock;
 import com.skyeshade.skyent.content.conveyor.ConveyorBeltSurface;
-import com.skyeshade.skyent.content.conveyor.ConveyorDirectTransfer;
-import com.skyeshade.skyent.content.conveyor.ConveyorInsertionUtil;
+import com.skyeshade.skyent.content.conveyor.ConveyorOutputHelper;
 import com.skyeshade.skyent.content.menu.ConveyorExporterMenu;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import com.skyeshade.skyent.registry.ModBlocks;
@@ -135,12 +134,7 @@ public class ConveyorExporterBlockEntity extends BlockEntity implements MenuProv
             return stack;
         }
 
-        var directRemainder = ConveyorDirectTransfer.tryInsert(level, outputPos, stack, fromDirection, simulate);
-        if (directRemainder.isPresent()) {
-            return directRemainder.get();
-        }
-
-        return fallbackHandler == null ? stack : ConveyorInsertionUtil.insertIntoHandler(fallbackHandler, stack, simulate);
+        return ConveyorOutputHelper.insertIntoOutput(level, outputPos, fromDirection, fallbackHandler, stack, simulate);
     }
 
     public boolean matchesFilter(ItemStack stack) {

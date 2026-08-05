@@ -34,6 +34,7 @@ public final class ModSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> HEAVY_MOVING_METAL_END = register("heavy_moving_metal_end");
     public static final DeferredHolder<SoundEvent, SoundEvent> HEAVY_DOOR = register("heavy_door");
     public static final DeferredHolder<SoundEvent, SoundEvent> INDUSTRIAL_PRESS = register("industrial_press");
+    public static final DeferredHolder<SoundEvent, SoundEvent> ELECTRIC_BLAST_FURNACE = register("electric_blast_furnace");
 
     private ModSounds() {
     }

@@ -1,0 +1,29 @@
+{
+  "type": "skyent:mv_assembler",
+  "ingredients": [
+    {
+      "ingredient": {
+        "item": "skyent:graphite"
+      },
+      "count": 4
+    },
+    {
+      "ingredient": {
+        "item": "skyent:tungsten_rod"
+      },
+      "count": 1
+    },
+    {
+      "ingredient": {
+        "item": "skyent:copper_wire"
+      },
+      "count": 2
+    }
+  ],
+  "result": {
+    "id": "skyent:graphite_electrode",
+    "count": 1
+  },
+  "process_time": 180,
+  "energy_per_tick": 96
+}

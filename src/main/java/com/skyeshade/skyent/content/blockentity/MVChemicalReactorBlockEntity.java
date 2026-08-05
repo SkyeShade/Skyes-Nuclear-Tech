@@ -8,6 +8,7 @@ import com.skyeshade.skyent.content.conveyor.ConveyorDirectTransfer;
 import com.skyeshade.skyent.content.conveyor.ConveyorGateSurface;
 import com.skyeshade.skyent.content.conveyor.ConveyorInsertionUtil;
 import com.skyeshade.skyent.content.conveyor.ConveyorLogicConstants;
+import com.skyeshade.skyent.content.conveyor.MachineConveyorOutput;
 import com.skyeshade.skyent.content.entity.ConveyorMovingItemEntity;
 import com.skyeshade.skyent.content.energy.ElectricalTier;
 import com.skyeshade.skyent.content.energy.RJEnergyInfo;
@@ -120,8 +121,8 @@ public class MVChemicalReactorBlockEntity extends BlockEntity implements MenuPro
     private final FluidTank[] inputTanks = {createTank(), createTank()};
     private final FluidTank[] outputTanks = {createTank(), createTank()};
     private final RJStorage rjStorage = new RJStorage(ENERGY_CAPACITY_RJ);
-    private final Map<AutomationHandlerKey, IItemHandler> automationItemHandlers = new HashMap<>();
-    private final Map<AutomationHandlerKey, IFluidHandler> automationFluidHandlers = new HashMap<>();
+    private final Map<MachineAutomationHandlerKey, IItemHandler> automationItemHandlers = new HashMap<>();
+    private final Map<MachineAutomationHandlerKey, IFluidHandler> automationFluidHandlers = new HashMap<>();
     private final ContainerData data = new ContainerData() {
         @Override
         public int get(int index) {
@@ -271,7 +272,7 @@ public class MVChemicalReactorBlockEntity extends BlockEntity implements MenuPro
         if (!isInputItemPort(queriedPos, side) && !isOutputItemPort(queriedPos, side)) {
             return null;
         }
-        AutomationHandlerKey key = new AutomationHandlerKey(queriedPos.immutable(), side);
+        MachineAutomationHandlerKey key = new MachineAutomationHandlerKey(queriedPos.immutable(), side);
         return automationItemHandlers.computeIfAbsent(key, ignored -> new AutomationItemHandler(queriedPos.immutable(), side));
     }
 
@@ -279,13 +280,13 @@ public class MVChemicalReactorBlockEntity extends BlockEntity implements MenuPro
     public IFluidHandler getAutomationFluidHandler(BlockPos queriedPos, @Nullable Direction side) {
         int inputTank = inputFluidPortIndex(queriedPos, side);
         if (inputTank >= 0) {
-            AutomationHandlerKey key = new AutomationHandlerKey(queriedPos.immutable(), side);
+            MachineAutomationHandlerKey key = new MachineAutomationHandlerKey(queriedPos.immutable(), side);
             return automationFluidHandlers.computeIfAbsent(key, ignored -> new SingleTankFluidHandler(inputTanks[inputTank], true, false));
         }
 
         int outputTank = outputFluidPortIndex(queriedPos, side);
         if (outputTank >= 0) {
-            AutomationHandlerKey key = new AutomationHandlerKey(queriedPos.immutable(), side);
+            MachineAutomationHandlerKey key = new MachineAutomationHandlerKey(queriedPos.immutable(), side);
             return automationFluidHandlers.computeIfAbsent(key, ignored -> new SingleTankFluidHandler(outputTanks[outputTank], false, true));
         }
 
@@ -716,40 +717,7 @@ public class MVChemicalReactorBlockEntity extends BlockEntity implements MenuPro
     }
 
     private ItemStack tryInsertItemOutput(BlockPos targetPos, Direction outputDirection, ItemStack stack, boolean simulate) {
-        var directRemainder = ConveyorDirectTransfer.tryInsert(level, targetPos, stack, outputDirection.getOpposite(), simulate);
-        if (directRemainder.isPresent()) {
-            return directRemainder.get();
-        }
-
-        IItemHandler handler = level.getCapability(Capabilities.ItemHandler.BLOCK, targetPos, outputDirection.getOpposite());
-        if (handler != null) {
-            return ConveyorInsertionUtil.insertIntoHandler(handler, stack, simulate);
-        }
-
-        BlockState targetState = level.getBlockState(targetPos);
-        if (!(targetState.getBlock() instanceof ConveyorBeltSurface surface)) {
-            return stack;
-        }
-        if (targetState.getBlock() instanceof ConveyorGateSurface gate
-                && !gate.skyent$canConveyorItemEnter(level, targetPos, targetState, outputDirection.getOpposite())) {
-            return stack;
-        }
-
-        Vec3 outputStart = new Vec3(
-                targetPos.getX() + 0.5D - outputDirection.getStepX() * 0.45D,
-                targetPos.getY() + ConveyorLogicConstants.ITEM_PATH_Y_OFFSET,
-                targetPos.getZ() + 0.5D - outputDirection.getStepZ() * 0.45D
-        );
-        Vec3 spawnPos = surface.getClosestSnappingPosition(level, targetPos, outputStart);
-        if (!hasRoomAt(spawnPos)) {
-            return stack;
-        }
-
-        if (!simulate) {
-            ConveyorMovingItemEntity entity = new ConveyorMovingItemEntity(level, spawnPos.x, spawnPos.y, spawnPos.z, stack.copy());
-            level.addFreshEntity(entity);
-        }
-        return ItemStack.EMPTY;
+        return MachineConveyorOutput.tryInsert(level, targetPos, outputDirection, stack, simulate);
     }
 
     private boolean hasRoomAt(Vec3 position) {
@@ -940,9 +908,6 @@ public class MVChemicalReactorBlockEntity extends BlockEntity implements MenuPro
 
     private static int high(int value) {
         return value >>> 16;
-    }
-
-    private record AutomationHandlerKey(BlockPos queriedPos, @Nullable Direction side) {
     }
 
     private final class AutomationItemHandler implements IItemHandler {
