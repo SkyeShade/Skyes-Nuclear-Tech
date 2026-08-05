@@ -1,20 +1,7 @@
 package com.skyeshade.skyent.registry;
 
 import com.skyeshade.skyent.SkyesNuclearTech;
-import com.skyeshade.skyent.content.menu.BrickBlastFurnaceMenu;
-import com.skyeshade.skyent.content.menu.CentrifugeMenu;
-import com.skyeshade.skyent.content.menu.CombustionGeneratorMenu;
-import com.skyeshade.skyent.content.menu.ConveyorExporterMenu;
-import com.skyeshade.skyent.content.menu.ElectricFurnaceMenu;
-import com.skyeshade.skyent.content.menu.ElectricBlastFurnaceMenu;
-import com.skyeshade.skyent.content.menu.LVCrusherMenu;
-import com.skyeshade.skyent.content.menu.LVElectricPumpMenu;
-import com.skyeshade.skyent.content.menu.LVSteamTurbineMenu;
-import com.skyeshade.skyent.content.menu.MediumTankMenu;
-import com.skyeshade.skyent.content.menu.MVAssemblerMenu;
-import com.skyeshade.skyent.content.menu.MVAssemblerRecipeSelectMenu;
-import com.skyeshade.skyent.content.menu.MVChemicalReactorMenu;
-import com.skyeshade.skyent.content.menu.MVInlinePumpMenu;
+import com.skyeshade.skyent.content.menu.*;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.inventory.MenuType;
 import net.neoforged.bus.api.IEventBus;
@@ -64,8 +51,14 @@ public final class ModMenus {
     public static final DeferredHolder<MenuType<?>, MenuType<CentrifugeMenu>> CENTRIFUGE =
             MENUS.register("centrifuge", () -> IMenuTypeExtension.create(CentrifugeMenu::new));
 
-    public static final DeferredHolder<MenuType<?>, MenuType<ElectricBlastFurnaceMenu>> ELECTRIC_BLAST_FURNACE =
-            MENUS.register("electric_blast_furnace", () -> IMenuTypeExtension.create(ElectricBlastFurnaceMenu::new));
+    public static final DeferredHolder<MenuType<?>, MenuType<ArcFurnaceMenu>> ARC_FURNACE =
+            MENUS.register("arc_furnace", () -> IMenuTypeExtension.create(ArcFurnaceMenu::new));
+
+    public static final DeferredHolder<MenuType<?>, MenuType<SteelCrateMenu>> STEEL_CRATE =
+            MENUS.register("steel_crate", () -> IMenuTypeExtension.create(SteelCrateMenu::new));
+
+    public static final DeferredHolder<MenuType<?>, MenuType<StainlessSteelCrateMenu>> STAINLESS_STEEL_CRATE =
+            MENUS.register("stainless_steel_crate", () -> IMenuTypeExtension.create(StainlessSteelCrateMenu::new));
 
     public static final DeferredHolder<MenuType<?>, MenuType<MVAssemblerRecipeSelectMenu>> ASSEMBLER_RECIPE_SELECT =
             MENUS.register("assembler_recipe_select", () -> IMenuTypeExtension.create(MVAssemblerRecipeSelectMenu::new));

@@ -1,0 +1,24 @@
+{
+  "type": "skyent:arc_furnace",
+  "mode": "alloying",
+  "ingredients": [
+    {
+      "ingredient": {
+        "item": "skyent:nickel_ingot"
+      },
+      "count": 1
+    },
+    {
+      "ingredient": {
+        "item": "minecraft:copper_ingot"
+      },
+      "count": 1
+    }
+  ],
+  "result": {
+    "id": "skyent:cupronickel_ingot",
+    "count": 2
+  },
+  "process_time": 600,
+  "energy_per_tick": 192
+}

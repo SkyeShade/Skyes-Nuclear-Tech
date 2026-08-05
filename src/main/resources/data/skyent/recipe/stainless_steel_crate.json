@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "B": {
+      "item": "skyent:steel_crate"
+    },
+    "S": {
+      "item": "skyent:stainless_steel_plate"
+    }
+  },
+  "pattern": [
+    "SSS",
+    "SBS",
+    "SSS"
+  ],
+  "result": {
+    "count": 1,
+    "id": "skyent:stainless_steel_crate"
+  }
+}

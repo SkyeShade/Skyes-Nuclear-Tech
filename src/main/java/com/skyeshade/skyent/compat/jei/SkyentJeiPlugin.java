@@ -62,7 +62,7 @@ public final class SkyentJeiPlugin implements IModPlugin {
             MVAssemblerRecipeCategory.UID.toString(),
             ChemicalReactorRecipeCategory.UID.toString(),
             CentrifugeRecipeCategory.UID.toString(),
-            ElectricBlastFurnaceRecipeCategory.UID.toString(),
+            ArcFurnaceRecipeCategory.UID.toString(),
             BrickBlastFurnaceRecipeCategory.UID.toString(),
             CoalForgeRecipeCategory.UID.toString()
     );
@@ -142,7 +142,7 @@ public final class SkyentJeiPlugin implements IModPlugin {
                 new MVAssemblerRecipeCategory(registration.getJeiHelpers().getGuiHelper()),
                 new ChemicalReactorRecipeCategory(registration.getJeiHelpers().getGuiHelper()),
                 new CentrifugeRecipeCategory(registration.getJeiHelpers().getGuiHelper()),
-                new ElectricBlastFurnaceRecipeCategory(registration.getJeiHelpers().getGuiHelper()),
+                new ArcFurnaceRecipeCategory(registration.getJeiHelpers().getGuiHelper()),
                 new BrickBlastFurnaceRecipeCategory(registration.getJeiHelpers().getGuiHelper()),
                 new CoalForgeRecipeCategory(registration.getJeiHelpers().getGuiHelper())
         );
@@ -179,7 +179,7 @@ public final class SkyentJeiPlugin implements IModPlugin {
                     .map(RecipeHolder::value)
                     .toList();
             registration.addRecipes(CentrifugeRecipeCategory.RECIPE_TYPE, centrifugeRecipes);
-            registration.addRecipes(ElectricBlastFurnaceRecipeCategory.RECIPE_TYPE, ElectricBlastFurnaceRecipeCategory.getAllRecipes(level));
+            registration.addRecipes(ArcFurnaceRecipeCategory.RECIPE_TYPE, ArcFurnaceRecipeCategory.getAllRecipes(level));
 
             List<BrickBlastFurnaceRecipe> recipes = level.getRecipeManager()
                     .getAllRecipesFor(ModRecipes.BRICK_BLAST_FURNACE_TYPE.get())
@@ -203,7 +203,7 @@ public final class SkyentJeiPlugin implements IModPlugin {
         registration.addRecipeCatalyst(ModItems.MV_ASSEMBLER.get(), MVAssemblerRecipeCategory.RECIPE_TYPE);
         registration.addRecipeCatalyst(ModItems.MV_CHEMICAL_REACTOR.get(), ChemicalReactorRecipeCategory.RECIPE_TYPE);
         registration.addRecipeCatalyst(ModItems.CENTRIFUGE.get(), CentrifugeRecipeCategory.RECIPE_TYPE);
-        registration.addRecipeCatalyst(ModItems.ELECTRIC_BLAST_FURNACE.get(), ElectricBlastFurnaceRecipeCategory.RECIPE_TYPE);
+        registration.addRecipeCatalyst(ModItems.ARC_FURNACE.get(), ArcFurnaceRecipeCategory.RECIPE_TYPE);
         registration.addRecipeCatalyst(ModItems.BRICK_BLAST_FURNACE.get(), BrickBlastFurnaceRecipeCategory.RECIPE_TYPE);
         registration.addRecipeCatalyst(ModItems.COAL_FORGE.get(), CoalForgeRecipeCategory.RECIPE_TYPE);
     }

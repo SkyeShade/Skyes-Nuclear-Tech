@@ -4,7 +4,7 @@ import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.recipe.BrickBlastFurnaceRecipe;
 import com.skyeshade.skyent.content.recipe.CentrifugeRecipe;
 import com.skyeshade.skyent.content.recipe.ChemicalReactorRecipe;
-import com.skyeshade.skyent.content.recipe.ElectricBlastFurnaceRecipe;
+import com.skyeshade.skyent.content.recipe.ArcFurnaceRecipe;
 import com.skyeshade.skyent.content.recipe.MVAssemblerRecipe;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.crafting.RecipeSerializer;
@@ -31,8 +31,8 @@ public final class ModRecipes {
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<CentrifugeRecipe>> CENTRIFUGE_SERIALIZER =
             RECIPE_SERIALIZERS.register("centrifuge", CentrifugeRecipe.Serializer::new);
 
-    public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<ElectricBlastFurnaceRecipe>> ELECTRIC_BLAST_FURNACE_SERIALIZER =
-            RECIPE_SERIALIZERS.register("electric_blast_furnace", ElectricBlastFurnaceRecipe.Serializer::new);
+    public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<ArcFurnaceRecipe>> ARC_FURNACE_SERIALIZER =
+            RECIPE_SERIALIZERS.register("arc_furnace", ArcFurnaceRecipe.Serializer::new);
 
     public static final DeferredHolder<RecipeType<?>, RecipeType<BrickBlastFurnaceRecipe>> BRICK_BLAST_FURNACE_TYPE =
             RECIPE_TYPES.register("brick_blast_furnace", () -> new RecipeType<>() {
@@ -66,11 +66,11 @@ public final class ModRecipes {
                 }
             });
 
-    public static final DeferredHolder<RecipeType<?>, RecipeType<ElectricBlastFurnaceRecipe>> ELECTRIC_BLAST_FURNACE_TYPE =
-            RECIPE_TYPES.register("electric_blast_furnace", () -> new RecipeType<>() {
+    public static final DeferredHolder<RecipeType<?>, RecipeType<ArcFurnaceRecipe>> ARC_FURNACE_TYPE =
+            RECIPE_TYPES.register("arc_furnace", () -> new RecipeType<>() {
                 @Override
                 public String toString() {
-                    return SkyesNuclearTech.MOD_ID + ":electric_blast_furnace";
+                    return SkyesNuclearTech.MOD_ID + ":arc_furnace";
                 }
             });
 

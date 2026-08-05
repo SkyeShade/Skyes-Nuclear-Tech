@@ -4,7 +4,7 @@ import com.skyeshade.skyent.event.systems.BootstrapSystem;
 import com.skyeshade.skyent.content.block.CentrifugeBlock;
 import com.skyeshade.skyent.content.block.ConveyorChuteBlock;
 import com.skyeshade.skyent.content.block.ConveyorElevatorBlock;
-import com.skyeshade.skyent.content.block.ElectricBlastFurnaceBlock;
+import com.skyeshade.skyent.content.block.ArcFurnaceBlock;
 import com.skyeshade.skyent.content.block.HeatingChamberPartBlock;
 import com.skyeshade.skyent.content.block.MediumTankBlock;
 import com.skyeshade.skyent.content.block.MVAssemblerBlock;
@@ -25,7 +25,7 @@ import com.skyeshade.skyent.network.RadiationRayBatchPayload;
 import com.skyeshade.skyent.network.RadiationRaysDebugPayload;
 import com.skyeshade.skyent.network.SelectMVAssemblerRecipePayload;
 import com.skyeshade.skyent.network.ServerPayloadHandlers;
-import com.skyeshade.skyent.network.ToggleElectricBlastFurnaceModePayload;
+import com.skyeshade.skyent.network.ToggleArcFurnaceModePayload;
 import com.skyeshade.skyent.registry.ModBlockEntities;
 import com.skyeshade.skyent.registry.ModBlocks;
 import com.skyeshade.skyent.registry.ModItems;
@@ -121,10 +121,21 @@ public final class CommonEvents {
 
         event.registerBlockEntity(
                 Capabilities.ItemHandler.BLOCK,
-                ModBlockEntities.ELECTRIC_BLAST_FURNACE.get(),
+                ModBlockEntities.ARC_FURNACE.get(),
                 (furnace, side) -> furnace.getAutomationItemHandler(furnace.getBlockPos(), side)
         );
 
+        event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
+                ModBlockEntities.STEEL_CRATE.get(),
+                (crate, side) -> crate.getAutomationItemHandler(side)
+        );
+
+        event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
+                ModBlockEntities.STAINLESS_STEEL_CRATE.get(),
+                (crate, side) -> crate.getAutomationItemHandler(side)
+        );
         event.registerBlockEntity(
                 Capabilities.FluidHandler.BLOCK,
                 ModBlockEntities.CENTRIFUGE.get(),
@@ -243,10 +254,10 @@ public final class CommonEvents {
 
         event.registerBlock(
                 Capabilities.ItemHandler.BLOCK,
-                (level, pos, state, blockEntity, side) -> ElectricBlastFurnaceBlock.getMasterBlockEntity(level, state, pos)
+                (level, pos, state, blockEntity, side) -> ArcFurnaceBlock.getMasterBlockEntity(level, state, pos)
                         .map(furnace -> furnace.getAutomationItemHandler(pos, side))
                         .orElse(null),
-                ModBlocks.ELECTRIC_BLAST_FURNACE_PART.get()
+                ModBlocks.ARC_FURNACE_PART.get()
         );
 
         event.registerBlock(
@@ -380,9 +391,9 @@ public final class CommonEvents {
                         ServerPayloadHandlers::handleSelectMVAssemblerRecipe
                 )
                 .playToServer(
-                        ToggleElectricBlastFurnaceModePayload.TYPE,
-                        ToggleElectricBlastFurnaceModePayload.STREAM_CODEC,
-                        ServerPayloadHandlers::handleToggleElectricBlastFurnaceMode
+                        ToggleArcFurnaceModePayload.TYPE,
+                        ToggleArcFurnaceModePayload.STREAM_CODEC,
+                        ServerPayloadHandlers::handleToggleArcFurnaceMode
                 );
     }
 }

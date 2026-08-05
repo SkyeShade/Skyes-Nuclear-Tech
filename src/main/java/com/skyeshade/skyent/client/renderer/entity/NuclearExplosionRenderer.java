@@ -62,8 +62,36 @@ public class NuclearExplosionRenderer extends EntityRenderer<NuclearExplosionEnt
 
         poseStack.pushPose();
         poseStack.scale(scale, scale, scale);
-        VertexConsumer rays = bufferSource.getBuffer(RenderType.dragonRays());
-        VertexConsumer raysDepth = bufferSource.getBuffer(RenderType.dragonRaysDepth());
+        renderDragonRayPass(
+                entity,
+                poseStack,
+                bufferSource.getBuffer(RenderType.dragonRays()),
+                255,
+                255,
+                255,
+                Math.round(alpha * 255.0F)
+        );
+        renderDragonRayPass(
+                entity,
+                poseStack,
+                bufferSource.getBuffer(RenderType.dragonRaysDepth()),
+                255,
+                245,
+                220,
+                Math.round(alpha * 180.0F)
+        );
+        poseStack.popPose();
+    }
+
+    private static void renderDragonRayPass(
+            NuclearExplosionEntity entity,
+            PoseStack poseStack,
+            VertexConsumer buffer,
+            int red,
+            int green,
+            int blue,
+            int alpha
+    ) {
         RandomSource random = RandomSource.create(entity.getVisualSeed());
 
         for (int index = 0; index < RAY_COUNT; index++) {
@@ -79,12 +107,9 @@ public class NuclearExplosionRenderer extends EntityRenderer<NuclearExplosionEnt
             float length = 0.75F + random.nextFloat() * 2.35F;
             float width = 0.15F + random.nextFloat() * 0.45F;
             Matrix4f pose = poseStack.last().pose();
-            drawDragonRay(rays, pose, length, width, 255, 255, 255, Math.round(alpha * 255.0F));
-            drawDragonRay(raysDepth, pose, length, width, 255, 245, 220, Math.round(alpha * 180.0F));
+            drawDragonRay(buffer, pose, length, width, red, green, blue, alpha);
             poseStack.popPose();
         }
-
-        poseStack.popPose();
     }
 
     private static void drawDragonRay(VertexConsumer buffer, Matrix4f pose, float length, float width, int red, int green, int blue, int alpha) {

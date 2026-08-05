@@ -122,6 +122,15 @@ public final class HotItemUtil {
         if (item == ModItems.TUNGSTEN_INGOT.get() || item == ModItems.TUNGSTEN_ROD.get()) {
             return 1600.0D;
         }
+        if (item == ModItems.STAINLESS_STEEL_INGOT.get() || item == ModItems.STAINLESS_STEEL_ROD.get()) {
+            return 1260.0D;
+        }
+        if (item == ModItems.CHROMIUM_INGOT.get()) {
+            return 1100.0D;
+        }
+        if (item == ModItems.STAINLESS_STEEL_INGOT.get() || item == ModItems.STAINLESS_STEEL_ROD.get()) {
+            return 1260.0D;
+        }
         return Double.POSITIVE_INFINITY;
     }
 

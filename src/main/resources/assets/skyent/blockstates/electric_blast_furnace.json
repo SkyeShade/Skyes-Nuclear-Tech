@@ -1,8 +1,0 @@
-{
-  "variants": {
-    "facing=north": { "model": "skyent:block/electric_blast_furnace_scaled_north" },
-    "facing=east": { "model": "skyent:block/electric_blast_furnace_scaled_east", "y": 90 },
-    "facing=south": { "model": "skyent:block/electric_blast_furnace_scaled_south", "y": 180 },
-    "facing=west": { "model": "skyent:block/electric_blast_furnace_scaled_west", "y": 270 }
-  }
-}

@@ -98,10 +98,22 @@ public final class ModBlockEntities {
                     ModBlocks.CENTRIFUGE.get()
             ).build(null));
 
-    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ElectricBlastFurnaceBlockEntity>> ELECTRIC_BLAST_FURNACE =
-            BLOCK_ENTITIES.register("electric_blast_furnace", () -> BlockEntityType.Builder.of(
-                    ElectricBlastFurnaceBlockEntity::new,
-                    ModBlocks.ELECTRIC_BLAST_FURNACE.get()
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ArcFurnaceBlockEntity>> ARC_FURNACE =
+            BLOCK_ENTITIES.register("arc_furnace", () -> BlockEntityType.Builder.of(
+                    ArcFurnaceBlockEntity::new,
+                    ModBlocks.ARC_FURNACE.get()
+            ).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<SteelCrateBlockEntity>> STEEL_CRATE =
+            BLOCK_ENTITIES.register("steel_crate", () -> BlockEntityType.Builder.of(
+                    SteelCrateBlockEntity::new,
+                    ModBlocks.STEEL_CRATE.get()
+            ).build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<StainlessSteelCrateBlockEntity>> STAINLESS_STEEL_CRATE =
+            BLOCK_ENTITIES.register("stainless_steel_crate", () -> BlockEntityType.Builder.of(
+                    StainlessSteelCrateBlockEntity::new,
+                    ModBlocks.STAINLESS_STEEL_CRATE.get()
             ).build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<BlastDoorBlockEntity>> BLAST_DOOR =

@@ -1,0 +1,18 @@
+{
+  "type": "skyent:arc_furnace",
+  "mode": "smelting",
+  "ingredients": [
+    {
+      "ingredient": {
+        "item": "skyent:aluminum_powder"
+      },
+      "count": 1
+    }
+  ],
+  "result": {
+    "id": "skyent:aluminum_ingot",
+    "count": 1
+  },
+  "process_time": 1200,
+  "energy_per_tick": 256
+}

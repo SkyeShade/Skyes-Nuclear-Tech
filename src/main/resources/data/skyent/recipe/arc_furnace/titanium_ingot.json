@@ -1,0 +1,18 @@
+{
+  "type": "skyent:arc_furnace",
+  "mode": "smelting",
+  "ingredients": [
+    {
+      "ingredient": {
+        "item": "skyent:titanium_powder"
+      },
+      "count": 1
+    }
+  ],
+  "result": {
+    "id": "skyent:titanium_ingot",
+    "count": 1
+  },
+  "process_time": 2400,
+  "energy_per_tick": 256
+}

@@ -1,0 +1,24 @@
+{
+  "type": "skyent:arc_furnace",
+  "mode": "alloying",
+  "ingredients": [
+    {
+      "ingredient": {
+        "item": "minecraft:iron_ingot"
+      },
+      "count": 1
+    },
+    {
+      "ingredient": {
+        "item": "minecraft:coal"
+      },
+      "count": 1
+    }
+  ],
+  "result": {
+    "id": "skyent:steel_ingot",
+    "count": 1
+  },
+  "process_time": 600,
+  "energy_per_tick": 192
+}

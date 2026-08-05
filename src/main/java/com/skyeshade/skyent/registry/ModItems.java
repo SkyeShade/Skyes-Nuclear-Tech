@@ -146,11 +146,19 @@ public final class ModItems {
             new Item.Properties()
     );
 
-    public static final DeferredItem<BlockItem> ELECTRIC_BLAST_FURNACE = ITEMS.registerSimpleBlockItem(
-            ModBlocks.ELECTRIC_BLAST_FURNACE,
+    public static final DeferredItem<BlockItem> ARC_FURNACE = ITEMS.registerSimpleBlockItem(
+            ModBlocks.ARC_FURNACE,
             new Item.Properties()
     );
 
+    public static final DeferredItem<BlockItem> STEEL_CRATE = ITEMS.registerSimpleBlockItem(
+            ModBlocks.STEEL_CRATE,
+            new Item.Properties()
+    );
+    public static final DeferredItem<BlockItem> STAINLESS_STEEL_CRATE = ITEMS.registerSimpleBlockItem(
+            ModBlocks.STAINLESS_STEEL_CRATE,
+            new Item.Properties()
+    );
     public static final DeferredItem<BlockItem> BLAST_DOOR = ITEMS.registerSimpleBlockItem(
             ModBlocks.BLAST_DOOR,
             new Item.Properties()

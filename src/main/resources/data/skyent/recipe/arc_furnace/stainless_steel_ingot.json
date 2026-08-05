@@ -1,0 +1,30 @@
+{
+  "type": "skyent:arc_furnace",
+  "mode": "alloying",
+  "ingredients": [
+    {
+      "ingredient": {
+        "item": "skyent:steel_ingot"
+      },
+      "count": 4
+    },
+    {
+      "ingredient": {
+        "item": "skyent:chromium_ingot"
+      },
+      "count": 1
+    },
+    {
+      "ingredient": {
+        "item": "skyent:nickel_ingot"
+      },
+      "count": 1
+    }
+  ],
+  "result": {
+    "id": "skyent:stainless_steel_ingot",
+    "count": 6
+  },
+  "process_time": 800,
+  "energy_per_tick": 256
+}

@@ -274,9 +274,9 @@ public final class ModBlocks {
                     .dynamicShape()
     );
 
-    public static final DeferredBlock<ElectricBlastFurnaceBlock> ELECTRIC_BLAST_FURNACE = BLOCKS.registerBlock(
-            "electric_blast_furnace",
-            ElectricBlastFurnaceBlock::new,
+    public static final DeferredBlock<ArcFurnaceBlock> ARC_FURNACE = BLOCKS.registerBlock(
+            "arc_furnace",
+            ArcFurnaceBlock::new,
             BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
                     .strength(5.0F, 12.0F)
                     .requiresCorrectToolForDrops()
@@ -284,14 +284,29 @@ public final class ModBlocks {
                     .dynamicShape()
     );
 
-    public static final DeferredBlock<ElectricBlastFurnacePartBlock> ELECTRIC_BLAST_FURNACE_PART = BLOCKS.registerBlock(
-            "electric_blast_furnace_part",
-            ElectricBlastFurnacePartBlock::new,
+    public static final DeferredBlock<ArcFurnacePartBlock> ARC_FURNACE_PART = BLOCKS.registerBlock(
+            "arc_furnace_part",
+            ArcFurnacePartBlock::new,
             BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
                     .strength(5.0F, 12.0F)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()
                     .dynamicShape()
+    );
+
+    public static final DeferredBlock<SteelCrateBlock> STEEL_CRATE = BLOCKS.registerBlock(
+            "steel_crate",
+            SteelCrateBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.COPPER_BLOCK)
+                    .strength(5.0F, 12.0F)
+                    .requiresCorrectToolForDrops()
+    );
+    public static final DeferredBlock<StainlessSteelCrateBlock> STAINLESS_STEEL_CRATE = BLOCKS.registerBlock(
+            "stainless_steel_crate",
+            StainlessSteelCrateBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.COPPER_BLOCK)
+                    .strength(5.0F, 12.0F)
+                    .requiresCorrectToolForDrops()
     );
 
     public static final DeferredBlock<BlastDoorBlock> BLAST_DOOR = BLOCKS.registerBlock(

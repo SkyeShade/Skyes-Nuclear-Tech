@@ -111,10 +111,22 @@
     ],
     "subtitle": "subtitle.skyent.industrial_press"
   },
-  "electric_blast_furnace": {
+  "arc_furnace": {
     "sounds": [
-      "skyent:electric_blast_furnace"
+      "skyent:arc_furnace"
     ],
-    "subtitle": "subtitle.skyent.electric_blast_furnace"
+    "subtitle": "subtitle.skyent.arc_furnace"
+  },
+  "steel_crate_open": {
+    "sounds": [
+      "skyent:opening_metal_box"
+    ],
+    "subtitle": "subtitle.skyent.steel_crate_open"
+  },
+  "steel_crate_close": {
+    "sounds": [
+      "skyent:closing_metal_box"
+    ],
+    "subtitle": "subtitle.skyent.steel_crate_close"
   }
 }

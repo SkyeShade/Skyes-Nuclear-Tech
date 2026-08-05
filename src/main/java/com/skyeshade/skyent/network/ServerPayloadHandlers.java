@@ -1,7 +1,7 @@
 package com.skyeshade.skyent.network;
 
 import com.skyeshade.skyent.content.blockentity.MVAssemblerBlockEntity;
-import com.skyeshade.skyent.content.menu.ElectricBlastFurnaceMenu;
+import com.skyeshade.skyent.content.menu.ArcFurnaceMenu;
 import com.skyeshade.skyent.content.menu.MVAssemblerMenu;
 import com.skyeshade.skyent.content.menu.MVAssemblerRecipeSelectMenu;
 import net.minecraft.network.chat.Component;
@@ -47,9 +47,9 @@ public final class ServerPayloadHandlers {
         });
     }
 
-    public static void handleToggleElectricBlastFurnaceMode(ToggleElectricBlastFurnaceModePayload payload, IPayloadContext context) {
+    public static void handleToggleArcFurnaceMode(ToggleArcFurnaceModePayload payload, IPayloadContext context) {
         context.enqueueWork(() -> {
-            if (context.player().containerMenu instanceof ElectricBlastFurnaceMenu menu
+            if (context.player().containerMenu instanceof ArcFurnaceMenu menu
                     && menu.getBlockPos().equals(payload.pos())) {
                 menu.getBlockEntity().toggleMode();
             }
