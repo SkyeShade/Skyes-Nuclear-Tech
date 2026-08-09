@@ -2,13 +2,13 @@
   "type": "minecraft:crafting_shaped",
   "category": "equipment",
   "pattern": [
-    "SSS",
-    "S S",
-    "S S"
+    "PPP",
+    "P P",
+    "P P"
   ],
   "key": {
-    "S": {
-      "item": "skyent:steel_ingot"
+    "P": {
+      "item": "skyent:steel_plate"
     }
   },
   "result": {
