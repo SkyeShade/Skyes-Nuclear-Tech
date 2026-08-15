@@ -4,6 +4,7 @@ import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.energy.LVWireType;
 import com.skyeshade.skyent.content.item.ForgingHammerItem;
 import com.skyeshade.skyent.content.item.GeigerCounterItem;
+import com.skyeshade.skyent.content.item.InsulatedCopperCableItem;
 import com.skyeshade.skyent.content.item.LVWireDrumItem;
 import com.skyeshade.skyent.content.item.RadioactiveBlockItem;
 import com.skyeshade.skyent.content.item.RadioactiveItem;
@@ -214,6 +215,36 @@ public final class ModItems {
     public static final DeferredItem<BlockItem> BASIC_FLUID_DUCT = ITEMS.registerSimpleBlockItem(
             ModBlocks.BASIC_FLUID_DUCT,
             new Item.Properties()
+    );
+
+    public static final DeferredItem<InsulatedCopperCableItem> INSULATED_COPPER_CABLE = ITEMS.register(
+            "insulated_copper_cable",
+            () -> new InsulatedCopperCableItem(ModBlocks.INSULATED_COPPER_CABLE.get(), new Item.Properties())
+    );
+
+    public static final DeferredItem<InsulatedCopperCableItem> COPPER_CABLE_BLOCK = ITEMS.register(
+            "copper_cable_block",
+            () -> new InsulatedCopperCableItem(ModBlocks.COPPER_CABLE_BLOCK.get(), new Item.Properties())
+    );
+
+    public static final DeferredItem<InsulatedCopperCableItem> BRICKED_COPPER_CABLE = ITEMS.register(
+            "bricked_copper_cable",
+            () -> new InsulatedCopperCableItem(ModBlocks.BRICKED_COPPER_CABLE.get(), new Item.Properties())
+    );
+
+    public static final DeferredItem<InsulatedCopperCableItem> REINFORCED_COPPER_CABLE = ITEMS.register(
+            "reinforced_copper_cable",
+            () -> new InsulatedCopperCableItem(ModBlocks.REINFORCED_COPPER_CABLE.get(), new Item.Properties())
+    );
+
+    public static final DeferredItem<InsulatedCopperCableItem> TUNGSTEN_REINFORCED_COPPER_CABLE = ITEMS.register(
+            "tungsten_reinforced_copper_cable",
+            () -> new InsulatedCopperCableItem(ModBlocks.TUNGSTEN_REINFORCED_COPPER_CABLE.get(), new Item.Properties())
+    );
+
+    public static final DeferredItem<InsulatedCopperCableItem> PLATED_COPPER_CABLE = ITEMS.register(
+            "plated_copper_cable",
+            () -> new InsulatedCopperCableItem(ModBlocks.PLATED_COPPER_CABLE.get(), new Item.Properties())
     );
 
     public static final DeferredItem<BlockItem> BASIC_CONVEYOR_BELT = ITEMS.registerSimpleBlockItem(

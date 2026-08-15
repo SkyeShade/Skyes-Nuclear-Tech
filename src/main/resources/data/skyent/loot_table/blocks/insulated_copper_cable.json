@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:block",
+  "random_sequence": "skyent:blocks/insulated_copper_cable",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "skyent:insulated_copper_cable"
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "building",
+  "ingredients": [
+    {
+      "item": "skyent:copper_cable_block"
+    },
+    {
+      "item": "skyent:tungsten_reinforced_concrete"
+    }
+  ],
+  "result": {
+    "id": "skyent:tungsten_reinforced_copper_cable",
+    "count": 1
+  }
+}

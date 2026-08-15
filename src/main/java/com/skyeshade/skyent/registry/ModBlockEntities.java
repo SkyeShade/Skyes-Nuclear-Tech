@@ -158,6 +158,17 @@ public final class ModBlockEntities {
                     ModBlocks.BASIC_FLUID_DUCT.get()
             ).build(null));
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<InsulatedCopperCableBlockEntity>> INSULATED_COPPER_CABLE =
+            BLOCK_ENTITIES.register("insulated_copper_cable", () -> BlockEntityType.Builder.of(
+                    InsulatedCopperCableBlockEntity::new,
+                    ModBlocks.INSULATED_COPPER_CABLE.get(),
+                    ModBlocks.COPPER_CABLE_BLOCK.get(),
+                    ModBlocks.BRICKED_COPPER_CABLE.get(),
+                    ModBlocks.REINFORCED_COPPER_CABLE.get(),
+                    ModBlocks.TUNGSTEN_REINFORCED_COPPER_CABLE.get(),
+                    ModBlocks.PLATED_COPPER_CABLE.get()
+            ).build(null));
+
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<BasicConveyorBeltBlockEntity>> BASIC_CONVEYOR_BELT =
             BLOCK_ENTITIES.register("basic_conveyor_belt", () -> BlockEntityType.Builder.of(
                     BasicConveyorBeltBlockEntity::new,

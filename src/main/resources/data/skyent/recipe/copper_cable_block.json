@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "skyent:steel_plate"
+    },
+    {
+      "item": "skyent:insulated_copper_cable"
+    }
+  ],
+  "result": {
+    "id": "skyent:copper_cable_block",
+    "count": 1
+  }
+}

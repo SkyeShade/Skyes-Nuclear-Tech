@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "skyent:insulated_copper_cable",
+    "skyent:copper_cable_block",
+    "skyent:bricked_copper_cable",
+    "skyent:reinforced_copper_cable",
+    "skyent:tungsten_reinforced_copper_cable",
+    "skyent:plated_copper_cable"
+  ]
+}

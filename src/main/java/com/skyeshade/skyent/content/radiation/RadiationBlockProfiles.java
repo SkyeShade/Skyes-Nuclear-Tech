@@ -167,7 +167,15 @@ public final class RadiationBlockProfiles {
                 .transmission(0.85D)
                 .showShieldingTooltip()
                 .build());
+        register(ModBlocks.BRICKED_COPPER_CABLE, RadiationBlockProfile.builder()
+                .transmission(0.85D)
+                .showShieldingTooltip()
+                .build());
         register(ModBlocks.REINFORCED_CONCRETE, RadiationBlockProfile.builder()
+                .transmission(0.65D)
+                .showShieldingTooltip()
+                .build());
+        register(ModBlocks.REINFORCED_COPPER_CABLE, RadiationBlockProfile.builder()
                 .transmission(0.65D)
                 .showShieldingTooltip()
                 .build());
@@ -183,7 +191,15 @@ public final class RadiationBlockProfiles {
                 .transmission(0.25D)
                 .showShieldingTooltip()
                 .build());
+        register(ModBlocks.TUNGSTEN_REINFORCED_COPPER_CABLE, RadiationBlockProfile.builder()
+                .transmission(0.25D)
+                .showShieldingTooltip()
+                .build());
         register(ModBlocks.PLATED_CONCRETE, RadiationBlockProfile.builder()
+                .transmission(0.001D)
+                .showShieldingTooltip()
+                .build());
+        register(ModBlocks.PLATED_COPPER_CABLE, RadiationBlockProfile.builder()
                 .transmission(0.001D)
                 .showShieldingTooltip()
                 .build());

@@ -1,0 +1,5 @@
+{
+  "multipart": [
+    { "apply": { "model": "skyent:block/plated_copper_cable" } }
+  ]
+}

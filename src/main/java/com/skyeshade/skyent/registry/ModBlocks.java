@@ -400,8 +400,63 @@ public final class ModBlocks {
     public static final DeferredBlock<BasicFluidDuctBlock> BASIC_FLUID_DUCT = BLOCKS.registerBlock(
             "basic_fluid_duct",
             BasicFluidDuctBlock::new,
-            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK)
+            BlockBehaviour.Properties.ofFullCopy(Blocks.COPPER_BLOCK)
                     .noOcclusion()
+    );
+
+    public static final DeferredBlock<InsulatedCopperCableBlock> INSULATED_COPPER_CABLE = BLOCKS.registerBlock(
+            "insulated_copper_cable",
+            InsulatedCopperCableBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.COPPER_BLOCK)
+                    .strength(3.5F, 6.0F)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.STONE)
+                    .noOcclusion()
+    );
+
+    public static final DeferredBlock<InsulatedCopperCableBlock> COPPER_CABLE_BLOCK = BLOCKS.registerBlock(
+            "copper_cable_block",
+            properties -> new InsulatedCopperCableBlock(properties, true),
+            BlockBehaviour.Properties.ofFullCopy(Blocks.COPPER_BLOCK)
+                    .strength(3.5F, 6.0F)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.STONE)
+    );
+
+    public static final DeferredBlock<InsulatedCopperCableBlock> BRICKED_COPPER_CABLE = BLOCKS.registerBlock(
+            "bricked_copper_cable",
+            properties -> new InsulatedCopperCableBlock(properties, true),
+            BlockBehaviour.Properties.ofFullCopy(Blocks.GRAY_CONCRETE)
+                    .strength(8.0F, OBSIDIAN_BLAST_RESISTANCE * 2.0F)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.STONE)
+    );
+
+    public static final DeferredBlock<InsulatedCopperCableBlock> REINFORCED_COPPER_CABLE = BLOCKS.registerBlock(
+            "reinforced_copper_cable",
+            properties -> new InsulatedCopperCableBlock(properties, true),
+            BlockBehaviour.Properties.ofFullCopy(Blocks.GRAY_CONCRETE)
+                    .strength(12.0F, OBSIDIAN_BLAST_RESISTANCE * 4.0F)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.STONE)
+    );
+
+    public static final DeferredBlock<InsulatedCopperCableBlock> TUNGSTEN_REINFORCED_COPPER_CABLE = BLOCKS.registerBlock(
+            "tungsten_reinforced_copper_cable",
+            properties -> new InsulatedCopperCableBlock(properties, true),
+            BlockBehaviour.Properties.ofFullCopy(Blocks.GRAY_CONCRETE)
+                    .strength(18.0F, OBSIDIAN_BLAST_RESISTANCE * 8.0F)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.STONE)
+    );
+
+    public static final DeferredBlock<InsulatedCopperCableBlock> PLATED_COPPER_CABLE = BLOCKS.registerBlock(
+            "plated_copper_cable",
+            properties -> new InsulatedCopperCableBlock(properties, true),
+            BlockBehaviour.Properties.ofFullCopy(Blocks.GRAY_CONCRETE)
+                    .strength(30.0F, OBSIDIAN_BLAST_RESISTANCE * 32.0F)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.STONE)
     );
 
     public static final DeferredBlock<BasicConveyorBeltBlock> BASIC_CONVEYOR_BELT = BLOCKS.registerBlock(

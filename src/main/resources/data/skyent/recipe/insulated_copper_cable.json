@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "RCR",
+    "CCC",
+    "RCR"
+  ],
+  "key": {
+    "C": {
+      "item": "skyent:copper_wire"
+    },
+    "R": {
+      "item": "skyent:rubber"
+    }
+  },
+  "result": {
+    "id": "skyent:insulated_copper_cable",
+    "count": 8
+  }
+}

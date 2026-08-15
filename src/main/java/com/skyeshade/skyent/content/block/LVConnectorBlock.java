@@ -1,6 +1,7 @@
 package com.skyeshade.skyent.content.block;
 
 import com.mojang.serialization.MapCodec;
+import com.skyeshade.skyent.SkyesNuclearTech;
 import com.skyeshade.skyent.content.blockentity.LVConnectorBlockEntity;
 import com.skyeshade.skyent.event.systems.LVElectricalNetworkSystem;
 import com.skyeshade.skyent.registry.ModBlockEntities;
@@ -9,6 +10,8 @@ import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.tags.BlockTags;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
@@ -31,6 +34,10 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 
 public class LVConnectorBlock extends BaseEntityBlock {
     public static final DirectionProperty FACING = BlockStateProperties.FACING;
+    public static final TagKey<Block> WIRE_CONNECTOR_SUPPORTS = BlockTags.create(ResourceLocation.fromNamespaceAndPath(
+            SkyesNuclearTech.MOD_ID,
+            "wire_connector_supports"
+    ));
     public static final MapCodec<LVConnectorBlock> CODEC = simpleCodec(LVConnectorBlock::new);
 
     private static final VoxelShape UP_SHAPE = Shapes.or(
@@ -159,7 +166,8 @@ public class LVConnectorBlock extends BaseEntityBlock {
             return MVInlinePumpBlock.isValidEnergyConnection(supportState, facing);
         }
 
-        return canSupportConnector(level, supportPos, supportState, facing)
+        return supportState.is(WIRE_CONNECTOR_SUPPORTS)
+                || canSupportConnector(level, supportPos, supportState, facing)
                 || LVMVTransformerBlock.isConnectorSupportCell(supportState)
                 || HeatingChamberBlock.isConnectorSupportCell(supportState)
                 || IndustrialPressBlock.isConnectorSupportCell(supportState)
