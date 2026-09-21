@@ -113,6 +113,7 @@
   "block.skyent.lv_rj_converter": "LV RJ Converter",
   "block.skyent.lv_fe_converter": "LV FE Converter",
   "block.skyent.lv_mv_transformer": "LV-MV Transformer",
+  "config.jade.plugin_skyent.rj_energy": "RJ Energy",
   "block.skyent.geiger_counter_placed": "Geiger Counter",
   "container.skyent.combustion_generator": "Solid Fuel Boiler",
   "container.skyent.electric_furnace": "Electric Furnace",
