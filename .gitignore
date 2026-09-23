@@ -15,6 +15,7 @@ out/
 .run/
 art/
 docs/
+tools/
 ### Eclipse ###
 .apt_generated
 .classpath

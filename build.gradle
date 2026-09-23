@@ -22,7 +22,8 @@ sourceSets.main.resources {
     srcDir('src/generated/resources')
 
     // Exclude common development only resources from finalized outputs
-    exclude("**/*.bbmodel") // BlockBench project files
+    // Only this approved runtime mesh is shipped; all other editor projects remain excluded.
+    exclude { entry -> entry.path.endsWith('.bbmodel') && entry.path != 'assets/skyent/models/block/mv_steam_turbine_mesh.bbmodel' }
     exclude("src/generated/**/.cache") // datagen cache files
 }
 
@@ -36,6 +37,14 @@ base {
 
 // Mojang ships Java 21 to end users in 1.21.1, so mods should target Java 21.
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+// Development-only integration tests; never included in the release JAR.
+sourceSets {
+    meshTest {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
+    }
+}
 
 neoForge {
     // Specify the version of NeoForge to use.
@@ -59,6 +68,28 @@ neoForge {
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
         }
 
+        meshClient {
+            client()
+            gameDirectory = project.file('build/mesh-client')
+            systemProperty 'skyent.meshVisualTest', 'true'
+            programArguments.addAll '--username', 'MeshValidation', '--width', '1280', '--height', '800'
+        }
+
+        shapeClient {
+            client()
+            gameDirectory = project.file('build/shape-client')
+            systemProperty 'skyent.shapeVisualTest', 'true'
+            programArguments.addAll '--username', 'ShapeValidation', '--width', '1280', '--height', '800'
+        }
+
+        metadataClient {
+            client()
+            gameDirectory = project.file('build/metadata-client')
+            systemProperty 'skyent.shapeVisualTest', 'true'
+            systemProperty 'skyent.metadataVisualTest', 'true'
+            programArguments.addAll '--username', 'MetadataTest', '--width', '1280', '--height', '800'
+        }
+
         server {
             server()
             programArgument '--nogui'
@@ -70,6 +101,8 @@ neoForge {
         // The gametest system is also enabled by default for other run configs under the /test command.
         gameTestServer {
             type = "gameTestServer"
+            gameDirectory = project.file('build/mesh-gametest')
+            jvmArgument '-Xlog:class+load=info:file=mesh-classload.log'
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
         }
 
@@ -105,6 +138,7 @@ neoForge {
         // multi mod projects should define one per mod
         "${mod_id}" {
             sourceSet(sourceSets.main)
+            sourceSet(sourceSets.meshTest)
         }
     }
 }
@@ -117,7 +151,15 @@ configurations {
     runtimeClasspath.extendsFrom localRuntime
 }
 
+// Optional renderer regression run: ./gradlew runMeshClient -PmeshVanilla
+if (providers.gradleProperty('meshVanilla').isPresent()) {
+    configurations.runtimeClasspath.exclude group: 'curse.maven', module: 'sodium-394468'
+    configurations.runtimeClasspath.exclude group: 'curse.maven', module: 'irisshaders-455508'
+}
+
 dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.2'
     // Example optional mod dependency with JEI
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
     // compileOnly "mezz.jei:jei-${mc_version}-common-api:${jei_version}"
@@ -191,6 +233,44 @@ publishing {
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
 }
+
+sourceSets.test.compileClasspath += sourceSets.main.compileClasspath
+sourceSets.test.runtimeClasspath += sourceSets.main.runtimeClasspath
+tasks.named('test', Test) {
+    useJUnitPlatform()
+    workingDir = layout.buildDirectory.dir('mesh-unit-test').get().asFile
+    doFirst { workingDir.mkdirs() }
+}
+
+// Keep the runtime scene and authored UV metadata, not embedded duplicate PNGs or editor filesystem paths.
+tasks.named('processResources', ProcessResources) {
+    doLast {
+        def runtimeMesh = destinationDir.toPath().resolve('assets/skyent/models/block/mv_steam_turbine_mesh.bbmodel').toFile()
+        def scene = new groovy.json.JsonSlurper().parse(runtimeMesh, 'UTF-8')
+        scene.textures.each { texture -> texture.remove('source'); texture.remove('path'); texture.remove('relative_path') }
+        runtimeMesh.setText(groovy.json.JsonOutput.toJson(scene), 'UTF-8')
+    }
+}
+
+tasks.register('verifyMeshJar') {
+    dependsOn tasks.named('jar')
+    def releaseJar = tasks.named('jar', Jar).flatMap { it.archiveFile }
+    inputs.file(releaseJar)
+    doLast {
+        new java.util.zip.ZipFile(releaseJar.get().asFile).withCloseable { zip ->
+            def modelPath = 'assets/skyent/models/block/mv_steam_turbine_mesh.bbmodel'
+            def models = zip.entries().findAll { it.name.endsWith('.bbmodel') }*.name
+            assert models == [modelPath] : "Unexpected runtime model assets: $models"
+            def scene = new groovy.json.JsonSlurper().parse(zip.getInputStream(zip.getEntry(modelPath)), 'UTF-8')
+            assert scene.textures.every { !it.containsKey('source') && !it.containsKey('path') }
+            ['machine/large_steam_turbine_main', 'machine/large_steam_details', 'machine/large_steam_canopy',
+             'machine/large_steam_rotor', 'block/i_o'].each { assert zip.getEntry("assets/skyent/textures/${it}.png") != null }
+            assert !zip.entries().any { it.name.startsWith('com/skyeshade/skyent/test/') }
+            println 'Verified runtime mesh, five texture sheets, stripped editor data, and exclusion of development harnesses.'
+        }
+    }
+}
+tasks.named('check') { dependsOn tasks.named('verifyMeshJar') }
 
 // IDEA no longer automatically downloads sources/javadoc jars for dependencies, so we need to explicitly enable the behavior.
 idea {

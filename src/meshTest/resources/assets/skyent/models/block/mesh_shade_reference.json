@@ -1,0 +1,9 @@
+{
+  "loader": "skyent:scaled_block_model",
+  "scale": 1,
+  "directional_face_shading": true,
+  "disable_diffuse_shading": true,
+  "force_general_quads": true,
+  "ignore_cullface": true,
+  "base": { "parent": "minecraft:block/white_concrete" }
+}

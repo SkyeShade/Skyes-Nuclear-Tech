@@ -1,0 +1,228 @@
+{
+  "version": "5.2.1",
+  "authoredPoint": [
+    -8,
+    16,
+    24
+  ],
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [
+        -118.91,
+        -34.35,
+        -178.32
+      ],
+      "translation": [
+        -2,
+        0.5,
+        0
+      ],
+      "scale": [
+        0.17,
+        0.17,
+        0.17
+      ]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [
+        -118.91,
+        -34.35,
+        -178.32
+      ],
+      "translation": [
+        -0.25,
+        0.5,
+        0
+      ],
+      "scale": [
+        0.17,
+        0.17,
+        0.17
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        45,
+        0
+      ],
+      "scale": [
+        0.4,
+        0.4,
+        0.4
+      ]
+    },
+    "firstperson_lefthand": {
+      "rotation": [
+        0,
+        -135,
+        0
+      ],
+      "scale": [
+        0.4,
+        0.4,
+        0.4
+      ]
+    },
+    "ground": {
+      "translation": [
+        1,
+        3,
+        1
+      ],
+      "scale": [
+        0.25,
+        0.25,
+        0.25
+      ]
+    },
+    "gui": {
+      "rotation": [
+        30,
+        -135,
+        0
+      ],
+      "translation": [
+        -1.75,
+        0,
+        0
+      ],
+      "scale": [
+        0.35,
+        0.35,
+        0.35
+      ]
+    },
+    "fixed": {
+      "rotation": [
+        0,
+        -89.5,
+        0
+      ],
+      "translation": [
+        -2,
+        0,
+        3
+      ],
+      "scale": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    }
+  },
+  "samples": [
+    {
+      "context": "gui",
+      "point": [
+        -0.35686237341529164,
+        0.39904181907756836,
+        -0.34116070498705625
+      ],
+      "origin": [
+        0,
+        -8,
+        0
+      ],
+      "order": "XYZ"
+    },
+    {
+      "context": "ground",
+      "point": [
+        -0.0625,
+        0.3125,
+        0.4375
+      ],
+      "origin": [
+        0,
+        -8,
+        0
+      ],
+      "order": "XYZ"
+    },
+    {
+      "context": "fixed",
+      "point": [
+        -0.877153076172722,
+        0.25,
+        -0.05594557914226214
+      ],
+      "origin": [
+        0,
+        -8,
+        0
+      ],
+      "order": "XYZ"
+    },
+    {
+      "context": "firstperson_righthand",
+      "point": [
+        0.28284271247461906,
+        0.2,
+        0.565685424949238
+      ],
+      "origin": [
+        0,
+        -8,
+        0
+      ],
+      "order": "XYZ"
+    },
+    {
+      "context": "firstperson_lefthand",
+      "point": [
+        0.565685424949238,
+        0.2,
+        -0.282842712474619
+      ],
+      "origin": [
+        0,
+        -8,
+        0
+      ],
+      "order": "XYZ"
+    },
+    {
+      "context": "thirdperson_righthand",
+      "point": [
+        -0.19667916766748134,
+        0.2986099398991657,
+        -0.05343930631671451
+      ],
+      "origin": [
+        0,
+        -8,
+        0
+      ],
+      "order": "XYZ"
+    },
+    {
+      "context": "thirdperson_lefthand",
+      "point": [
+        0.22759689339369668,
+        0.2170872791819191,
+        -0.0027243489777831753
+      ],
+      "origin": [
+        0,
+        -8,
+        0
+      ],
+      "order": "XYZ"
+    },
+    {
+      "context": "head",
+      "point": [
+        -0.5,
+        0.5,
+        1.5
+      ],
+      "origin": [
+        0,
+        -8,
+        0
+      ],
+      "order": "XYZ"
+    }
+  ]
+}

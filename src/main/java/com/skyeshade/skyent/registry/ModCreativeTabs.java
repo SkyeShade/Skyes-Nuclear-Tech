@@ -69,6 +69,7 @@ public final class ModCreativeTabs {
                 ModItems.STEAM_FORGE_HAMMER,
                 ModItems.HEATING_CHAMBER,
                 ModItems.ROLLING_MILL,
+                ModItems.LARGE_STEAM_TURBINE,
                 ModItems.INDUSTRIAL_PRESS,
                 ModItems.WIRE_MILL,
                 ModItems.MV_ASSEMBLER,

@@ -1,0 +1,8 @@
+{
+  "loader": "skyent:blockbench_mesh",
+  "machine": "skyent:large_steam_turbine",
+  "render_type": "minecraft:cutout",
+  "textures": {
+    "particle": "skyent:machine/large_steam_turbine_main"
+  }
+}

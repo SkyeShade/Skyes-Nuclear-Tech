@@ -1,4 +1,6 @@
 {
+  "block.skyent.large_steam_turbine": "Large Steam Turbine",
+  "block.skyent.large_steam_turbine_part": "Large Steam Turbine Part",
   "block.skyent.combustion_generator": "Solid Fuel Boiler",
   "block.skyent.electric_furnace": "Electric Furnace",
   "block.skyent.lv_crusher": "LV Crusher",

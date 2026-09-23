@@ -50,6 +50,7 @@ public final class CommonEvents {
     }
 
     public static void onCommonSetup(FMLCommonSetupEvent event) {
+        event.enqueueWork(com.skyeshade.skyent.content.shape.MeshMachineShapeCache::initialize);
         ModMultiblockShapes.registerDefaults();
         BootstrapSystem.onCommonSetup(event);
         event.enqueueWork(CommonEvents::registerDeadLeavesFlammability);

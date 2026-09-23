@@ -76,6 +76,7 @@ public final class ClientEvents {
     }
 
     public static void register(IEventBus modEventBus) {
+        NeoForge.EVENT_BUS.addListener(com.skyeshade.skyent.client.debug.MeshMachineDebug::register);
         modEventBus.addListener(ClientEvents::onClientSetup);
         modEventBus.addListener(ClientEvents::onRegisterMenuScreens);
         modEventBus.addListener(ClientEvents::onRegisterRenderers);
@@ -115,6 +116,7 @@ public final class ClientEvents {
     }
 
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
+        event.registerBlockEntityRenderer(ModBlockEntities.LARGE_STEAM_TURBINE.get(), com.skyeshade.skyent.client.renderer.blockentity.LargeSteamTurbineRenderer::new);
         event.registerEntityRenderer(ModEntities.CONVEYOR_MOVING_ITEM.get(), ConveyorMovingItemRenderer::new);
         event.registerEntityRenderer(ModEntities.NUCLEAR_EXPLOSION.get(), NuclearExplosionRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.LV_CONNECTOR.get(), LVConnectorRenderer::new);
@@ -135,6 +137,7 @@ public final class ClientEvents {
     }
 
     public static void onRegisterAdditionalModels(ModelEvent.RegisterAdditional event) {
+        event.register(com.skyeshade.skyent.client.renderer.blockentity.LargeSteamTurbineRenderer.STATIC_MODEL);
         event.register(SteamForgeHammerRenderer.PISTON_MODEL);
         event.register(HeatingChamberRenderer.CHAMBER_MODEL);
         event.register(IndustrialPressRenderer.PRESS_HEAD_MODEL);
@@ -152,6 +155,7 @@ public final class ClientEvents {
     }
 
     public static void onRegisterGeometryLoaders(ModelEvent.RegisterGeometryLoaders event) {
+        event.register(ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "blockbench_mesh"), com.skyeshade.skyent.client.model.BlockbenchMeshGeometry.Loader.INSTANCE);
         event.register(ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "scaled_block_model"), ScaledBlockModel.Loader.INSTANCE);
         event.register(ResourceLocation.fromNamespaceAndPath(SkyesNuclearTech.MOD_ID, "sliced_scaled_block_model"), SlicedScaledBlockModel.Loader.INSTANCE);
     }

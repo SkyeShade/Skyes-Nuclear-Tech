@@ -66,6 +66,7 @@ public final class ServerEvents {
     }
 
     public static void onRegisterCommands(RegisterCommandsEvent event) {
+        com.skyeshade.skyent.content.model.MeshModelAuditCommand.register(event);
         RadiationDebugSystem.registerCommands(event);
     }
 

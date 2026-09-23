@@ -165,6 +165,15 @@ public final class ModBlocks {
                     .requiresCorrectToolForDrops()
     );
 
+    public static final DeferredBlock<LargeSteamTurbineBlock> LARGE_STEAM_TURBINE = BLOCKS.registerBlock(
+            "large_steam_turbine", LargeSteamTurbineBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK).strength(5.0F,12.0F).requiresCorrectToolForDrops().noOcclusion().dynamicShape()
+                    .pushReaction(net.minecraft.world.level.material.PushReaction.BLOCK));
+    public static final DeferredBlock<LargeSteamTurbinePartBlock> LARGE_STEAM_TURBINE_PART = BLOCKS.registerBlock(
+            "large_steam_turbine_part", LargeSteamTurbinePartBlock::new,
+            BlockBehaviour.Properties.ofFullCopy(Blocks.IRON_BLOCK).strength(5.0F,12.0F).requiresCorrectToolForDrops().noOcclusion().dynamicShape()
+                    .pushReaction(net.minecraft.world.level.material.PushReaction.BLOCK));
+
     public static final DeferredBlock<RollingMillBlock> ROLLING_MILL = BLOCKS.registerBlock(
             "rolling_mill",
             RollingMillBlock::new,

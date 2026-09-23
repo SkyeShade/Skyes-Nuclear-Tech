@@ -119,6 +119,9 @@ public final class ModItems {
             new Item.Properties()
     );
 
+    public static final DeferredItem<com.skyeshade.skyent.content.item.LargeSteamTurbineItem> LARGE_STEAM_TURBINE = ITEMS.register(
+            "large_steam_turbine", () -> new com.skyeshade.skyent.content.item.LargeSteamTurbineItem(ModBlocks.LARGE_STEAM_TURBINE.get(),new Item.Properties()));
+
     public static final DeferredItem<BlockItem> ROLLING_MILL = ITEMS.registerSimpleBlockItem(
             ModBlocks.ROLLING_MILL,
             new Item.Properties()

@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "skyent:block/large_steam_turbine_controller"
+    }
+  }
+}

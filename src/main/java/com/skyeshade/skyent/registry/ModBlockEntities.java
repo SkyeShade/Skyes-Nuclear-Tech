@@ -62,6 +62,10 @@ public final class ModBlockEntities {
                     ModBlocks.HEATING_CHAMBER.get()
             ).build(null));
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<LargeSteamTurbineBlockEntity>> LARGE_STEAM_TURBINE =
+            BLOCK_ENTITIES.register("large_steam_turbine", () -> BlockEntityType.Builder.of(
+                    LargeSteamTurbineBlockEntity::new, ModBlocks.LARGE_STEAM_TURBINE.get()).build(null));
+
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<RollingMillBlockEntity>> ROLLING_MILL =
             BLOCK_ENTITIES.register("rolling_mill", () -> BlockEntityType.Builder.of(
                     RollingMillBlockEntity::new,

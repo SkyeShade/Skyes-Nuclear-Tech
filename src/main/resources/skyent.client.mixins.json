@@ -8,6 +8,8 @@
     "CameraShakeMixin",
     "MixinItemInHandRenderer",
     "MixinLevelRenderer",
+    "MeshLevelRendererMixin",
+    "MeshBlockRenderDispatcherMixin",
     "MixinLightPipelineAwareModelBlockRenderer",
     "MixinModelBlockRenderer",
     "MixinMultiPlayerGameMode"
